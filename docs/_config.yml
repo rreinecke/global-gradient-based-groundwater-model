@@ -1,4 +1,4 @@
-theme: jekyll-theme-merlot
+theme: jekyll-theme-minimal
 show_downloads: true
 git_branch: master
 title: G3M a flexible groundwater framework
