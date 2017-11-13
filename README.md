@@ -1,25 +1,24 @@
-# The global gradient-based groundwater model G³M
-The global gradient-based groundwater model G³M
+# The global gradient-based groundwater model framework G³M
+The global gradient-based groundwater model framework G³M-f is an extesible model framework that is the basis for the G³M coupled to the global hydrologic model WaterGAP (http://watergap.de/).
 
-One Paragraph of project description goes here
+While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+What things you need to install the software and how to install them.
 
 ```
-Give examples
+libboost >= 1.56
+OpenMP
+libGMP
+Gtest
 ```
 
 ### Installing
-
-A step by step series of examples that tell you have to get a development env running
-
-Say what the step will be
 
 ```
 Give the example
@@ -31,41 +30,33 @@ And repeat
 until finished
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+## Running a simple model
+```
+Give the example
+```
+## Deployment in other models
 
 ## Running the tests
 
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
+Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
+You can run them by executing the test executable.
 
 ```
-Give an example
+runUnitTests
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
+* [GTest](https://github.com/google/googletest) - Test framework
+* [libboost](http://www.boost.org) - C++ magic
+* [OpenMP](http://www.openmp.org) - Accelerator und Multi-Core support
+* [GMP](https://gmplib.org) - Large numbers
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md]() for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
@@ -73,16 +64,15 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
+* **Robert Reinecke** - *Initial work*
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors]() who participated in this project.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU General Public License - see the [LICENSE.md](LICENSE.md) file for details
 
 ## Acknowledgments
 
-* Hat tip to anyone who's code was used
-* Inspiration
-* etc
+* [Modflow 2005] (https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
+* [Eigen3](http://eigen.tuxfamily.org) for their awesome framework
