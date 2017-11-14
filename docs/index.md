@@ -12,29 +12,146 @@ These instructions will get you a copy of the project up and running on your loc
 What things you need to install the software and how to install them.
 
 ```
+gcc > 6.2 or clang > 3.8
 libboost >= 1.56
 OpenMP
 libGMP
 Gtest
 ```
 
-### Installing
+### How to use
+Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
 
 ```
-Give the example
+class GW_Interface {
+    public:
+        virtual ~GW_Interface() {}
+
+        virtual void
+        loadSettings() = 0;
+
+        virtual void
+        setupSimulation() = 0;
+
+        virtual void
+        writeData() = 0;
+
+        virtual void
+        simulate() = 0;
+};
 ```
 
-And repeat
+## Reading in Data
 
 ```
-until finished
+TODO
+```
+
+## Write out data
+```
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "wtd",
+        "type": "csv",
+        "field": "DepthToWaterTable",
+        "ID": "false",
+        "position": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}
+
+```
+
+## Config model
+```
+{
+  "config": {
+    "model_config": {
+      "nodes": "grid_simple.csv",
+      "row_cols": "true",
+      "stadystate": "true",
+      "numberofnodes": 100,
+      "threads": 1,
+      "layers": 2,
+      "confinement": [
+        "false",
+        "true"
+      ],
+      "cache": "false",
+      "adaptivestepsize": "false",
+      "boundarycondition": "SeaLevel",
+      "sensitivity": "false"
+    },
+    "numerics": {
+      "solver": "PCG",
+      "iterations": 500,
+      "inner_itter": 10,
+      "closingcrit": 1e-8,
+      "headchange": 0.0001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5,
+      "stepsize": "daily"
+    },
+  "input": {
+    "data_config": {
+      "k_from_lith": "true",
+      "k_ocean_from_file": "false",
+      "specificstorage_from_file": "false",
+      "specificyield_from_file": "false",
+      "k_river_from_file": "true",
+      "aquifer_depth_from_file": "false",
+      "initial_head_from_file": "true",
+      "data_as_array": "false"
+    },
+    "default_data": {
+      "initial_head": 5,
+      "K": 0.008,
+      "oceanK": 800,
+      "aquifer_thickness": [
+        10,
+        10
+      ],
+      "anisotropy": 10,
+      "specificyield": 0.15,
+      "specificstorage": 0.000015
+    },
+    "data": {
+      "recharge": "recharge_simple.csv",
+      "elevation": "elevation_simple.csv",
+      "rivers": "rivers_simple.csv",
+      "lithologie": "lithology_simple.csv",
+      "river_conductance": "rivers_simple.csv",
+      "initial_head": "heads_simple.csv"
+    }
+  }
+  }
+}
 ```
 
 ## Running a simple model
 ```
-Give the example
+void StandaloneRunner::simulate() {
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+    for (Simulation::step step : stepper) {
+        LOG(userinfo) << "Running a steady state step";
+        step.first->toogleSteadyState();
+        step.first->solve();
+        sim.printMassBalances();
+    }
+    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //sim.save();
+}
 ```
 ## Deployment in other models
+Just implement the GW_interface and provide a DataReader.
 
 ## Running the tests
 
