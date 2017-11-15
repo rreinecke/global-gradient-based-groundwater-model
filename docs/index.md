@@ -1,5 +1,5 @@
 # The global gradient-based groundwater model framework G³M
-The global gradient-based groundwater model framework G³M-f is an extesible model framework that is the basis for the G³M coupled to the global hydrologic model WaterGAP (http://watergap.de/).
+The global gradient-based groundwater model framework G³M-f is an extesible model framework that is the basis for the G³M coupled to the global hydrologic model [WaterGAP](http://watergap.de/).
 
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
@@ -41,13 +41,8 @@ class GW_Interface {
 };
 ```
 
-## Reading in Data
-
-```
-TODO
-```
-
 ## Write out data
+The framework provides a extensible factory to write out any internal data. The following example writes the resulting depth to watertable as a CSV file with Lat and Lon.
 ```
 {
   "output": {
@@ -70,6 +65,7 @@ TODO
 ```
 
 ## Config model
+In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
 ```
 {
   "config": {
@@ -137,6 +133,13 @@ TODO
 ```
 
 ## Running a simple model
+A simple two-layered groundwater model can be implemented rather quickly.
+The following picture shows the conceptual example model:
+![](simple_model.png)
+
+The main simulation method (as implemented by the GW interface) provides a simple steady-state simulation step.
+In addition you need to implement the [DataReader Interface](repo/blob/master/src/DataProcessing/DataReader.hpp).
+
 ```
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
