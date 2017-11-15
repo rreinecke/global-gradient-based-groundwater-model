@@ -39,12 +39,6 @@ class GW_Interface {
 };
 ```
 
-## Reading in Data
-
-```
-TODO
-```
-
 ## Write out data
 ```
 {
@@ -65,73 +59,6 @@ TODO
   }
 }
 
-```
-
-## Config model
-```
-{
-  "config": {
-    "model_config": {
-      "nodes": "grid_simple.csv",
-      "row_cols": "true",
-      "stadystate": "true",
-      "numberofnodes": 100,
-      "threads": 1,
-      "layers": 2,
-      "confinement": [
-        "false",
-        "true"
-      ],
-      "cache": "false",
-      "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
-      "sensitivity": "false"
-    },
-    "numerics": {
-      "solver": "PCG",
-      "iterations": 500,
-      "inner_itter": 10,
-      "closingcrit": 1e-8,
-      "headchange": 0.0001,
-      "damping": "false",
-      "min_damp": 0.01,
-      "max_damp": 0.5,
-      "stepsize": "daily"
-    },
-  "input": {
-    "data_config": {
-      "k_from_lith": "true",
-      "k_ocean_from_file": "false",
-      "specificstorage_from_file": "false",
-      "specificyield_from_file": "false",
-      "k_river_from_file": "true",
-      "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "true",
-      "data_as_array": "false"
-    },
-    "default_data": {
-      "initial_head": 5,
-      "K": 0.008,
-      "oceanK": 800,
-      "aquifer_thickness": [
-        10,
-        10
-      ],
-      "anisotropy": 10,
-      "specificyield": 0.15,
-      "specificstorage": 0.000015
-    },
-    "data": {
-      "recharge": "recharge_simple.csv",
-      "elevation": "elevation_simple.csv",
-      "rivers": "rivers_simple.csv",
-      "lithologie": "lithology_simple.csv",
-      "river_conductance": "rivers_simple.csv",
-      "initial_head": "heads_simple.csv"
-    }
-  }
-  }
-}
 ```
 
 ## Running a simple model
@@ -171,17 +98,15 @@ runUnitTests
 
 ## Contributing
 
-Please read [CONTRIBUTING.md]() for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
-## Authors
+## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work*
-
-See also the list of [contributors]() who participated in this project.
 
 ## License
 
