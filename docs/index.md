@@ -194,5 +194,5 @@ This project is licensed under the GNU General Public License - see the [LICENSE
 
 ## Acknowledgments
 
-* [Modflow 2005] (https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
+* [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
 * [Eigen3](http://eigen.tuxfamily.org) for their awesome framework
