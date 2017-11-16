@@ -110,7 +110,8 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## License
 
-This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
+Please note that the code contains a modified version of the Eigen3 library which is published under the [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
 ## Acknowledgments
 
