@@ -12,9 +12,15 @@ These instructions will get you a copy of the project up and running on your loc
 ```
 gcc > 6.2 or clang > 3.8 with openMP
 libboost >= 1.56
-OpenMP
 libGMP
-Gtest
+libGtest
+```
+### Build
+```
+mkdir build
+cd build
+cmake ../
+make
 ```
 
 ### How to use
