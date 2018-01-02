@@ -1,88 +1,125 @@
-# The global gradient-based groundwater model G³M
-The global gradient-based groundwater model G³M
+# The global gradient-based groundwater model framework G³M
+The global gradient-based groundwater model framework G³M-f is an extesible model framework that is the basis for the G³M coupled to the global hydrologic model WaterGAP (http://watergap.de/).
 
-One Paragraph of project description goes here
+While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
-
 ```
-Give examples
+clang >= 3.8 with openMP
+libboost >= 1.56
+libGMP
+libGtest
 ```
-
-### Installing
-
-A step by step series of examples that tell you have to get a development env running
-
-Say what the step will be
-
+### Build
 ```
-Give the example
+mkdir build
+cd build
+cmake ../
+make
 ```
 
-And repeat
+### How to use
+Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
 
 ```
-until finished
+class GW_Interface {
+    public:
+        virtual ~GW_Interface() {}
+
+        virtual void
+        loadSettings() = 0;
+
+        virtual void
+        setupSimulation() = 0;
+
+        virtual void
+        writeData() = 0;
+
+        virtual void
+        simulate() = 0;
+};
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+## Write out data
+```
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "wtd",
+        "type": "csv",
+        "field": "DepthToWaterTable",
+        "ID": "false",
+        "position": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}
+
+```
+
+## Running a simple model
+```
+void StandaloneRunner::simulate() {
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+    for (Simulation::step step : stepper) {
+        LOG(userinfo) << "Running a steady state step";
+        step.first->toogleSteadyState();
+        step.first->solve();
+        sim.printMassBalances();
+    }
+    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //sim.save();
+}
+```
+## Deployment in other models
+Just implement the GW_interface and provide a DataReader.
 
 ## Running the tests
 
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
+Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
+You can run them by executing the test executable.
 
 ```
-Give an example
+runUnitTests
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
 
 ## Built With
 
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
+* [GTest](https://github.com/google/googletest) - Test framework
+* [libboost](http://www.boost.org) - C++ magic
+* [OpenMP](http://www.openmp.org) - Accelerator und Multi-Core support
+* [GMP](https://gmplib.org) - Large numbers
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
-## Authors
+## Authors and Contributors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+* **Robert Reinecke** - *Initial work*
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
+Please note that the code contains a modified version of the Eigen3 library which is published under the [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
 ## Acknowledgments
 
-* Hat tip to anyone who's code was used
-* Inspiration
-* etc
+* [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
+* [Eigen3](http://eigen.tuxfamily.org) for their awesome framework
