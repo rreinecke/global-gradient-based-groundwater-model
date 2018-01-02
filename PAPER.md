@@ -5,8 +5,6 @@ tags:
 - gradient-based
 - global
 - conjugate-gradient
-author: Robert Reinecke
-institute: Goethe University Frankfurt
 authors:
 - name: Robert Reinecke
   orcid: 0000-0001-5699-8584
