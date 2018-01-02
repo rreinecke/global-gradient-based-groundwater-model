@@ -1,6 +1,8 @@
 # The global gradient-based groundwater model framework G³M
-The global gradient-based groundwater model framework G³M-f is an extesible model framework that is the basis for the G³M coupled to the global hydrologic model WaterGAP (http://watergap.de/).
-
+The global gradient-based groundwater model framework G³M-f is an extesible model framework.
+Its main purpose is to be used as a main bilding block for the global groundwater mode G³M.
+G³M is a newly developed gradient-based groundwater model which adapts MODFLOW [@harbaugh2005modflow] principles for the globalscale.
+It is written in C++ and intended to be coupled to the global hydraulic model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydraulic models.
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
 ## Getting Started
