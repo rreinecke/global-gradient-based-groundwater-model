@@ -168,11 +168,14 @@ runUnitTests
 ```
 
 ### Running a simple model
+The following picture shows the conceptual example model:
+![](docs/simple_model.png)
+
 After compilation run:
 ```
 simple_model
 ```
-It will yield a depth to water table CSV file called wtd.csv for a simple model descriped on the model main page: groundwatermodel.org
+It will yield a depth to water table CSV file called wtd.csv for a simple model.
 
 ## Built With
 
