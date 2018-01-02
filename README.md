@@ -12,7 +12,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Prerequisites
 
 ```
-clang >= 3.8 with openMP
+clang >= 3.8 with openMP (currently gcc is not supported)
 libboost >= 1.56
 libGMP
 libGtest
@@ -27,6 +27,7 @@ make
 
 ### How to use
 Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
+Implement this interface if you want to couple your model to G³M-f or build a custom standalone application.
 
 ```
 class GW_Interface {
@@ -48,6 +49,8 @@ class GW_Interface {
 ```
 
 ## Write out data
+Writeout of data is specified by a JSON file called out.json.
+If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 ```
 {
   "output": {
@@ -69,7 +72,76 @@ class GW_Interface {
 
 ```
 
-## Running a simple model
+## Config model
+In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
+```
+{
+  "config": {
+    "model_config": {
+      "nodes": "grid_simple.csv",
+      "row_cols": "true",
+      "stadystate": "true",
+      "numberofnodes": 100,
+      "threads": 1,
+      "layers": 2,
+      "confinement": [
+        "false",
+        "true"
+      ],
+      "cache": "false",
+      "adaptivestepsize": "false",
+      "boundarycondition": "SeaLevel",
+      "sensitivity": "false"
+    },
+    "numerics": {
+      "solver": "PCG",
+      "iterations": 500,
+      "inner_itter": 10,
+      "closingcrit": 1e-8,
+      "headchange": 0.0001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5,
+      "stepsize": "daily"
+    },
+  "input": {
+    "data_config": {
+      "k_from_lith": "true",
+      "k_ocean_from_file": "false",
+      "specificstorage_from_file": "false",
+      "specificyield_from_file": "false",
+      "k_river_from_file": "true",
+      "aquifer_depth_from_file": "false",
+      "initial_head_from_file": "true",
+      "data_as_array": "false"
+    },
+    "default_data": {
+      "initial_head": 5,
+      "K": 0.008,
+      "oceanK": 800,
+      "aquifer_thickness": [
+        10,
+        10
+      ],
+      "anisotropy": 10,
+      "specificyield": 0.15,
+      "specificstorage": 0.000015
+    },
+    "data": {
+      "recharge": "recharge_simple.csv",
+      "elevation": "elevation_simple.csv",
+      "rivers": "rivers_simple.csv",
+      "lithologie": "lithology_simple.csv",
+      "river_conductance": "rivers_simple.csv",
+      "initial_head": "heads_simple.csv"
+    }
+  }
+  }
+}
+```
+
+## Building a simple model
+The following shows the code for a simple model loop running a steady-state model with daily timesteps.
 ```
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
@@ -83,11 +155,11 @@ void StandaloneRunner::simulate() {
     //sim.save();
 }
 ```
+
 ## Deployment in other models
 Just implement the GW_interface and provide a DataReader.
 
 ## Running the tests
-
 Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
 You can run them by executing the test executable.
 
@@ -95,6 +167,12 @@ You can run them by executing the test executable.
 runUnitTests
 ```
 
+### Running a simple model
+After compilation run:
+```
+simple_model
+```
+It will yield a depth to water table CSV file called wtd.csv for a simple model descriped on the model main page: groundwatermodel.org
 
 ## Built With
 

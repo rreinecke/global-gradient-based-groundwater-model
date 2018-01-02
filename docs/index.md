@@ -14,7 +14,7 @@ These instructions will get you a copy of the project up and running on your loc
 What things you need to install the software and how to install them.
 
 ```
-gcc > 6.2 or clang > 3.8
+clang > 3.8 (gcc currently not supported)
 libboost >= 1.56
 OpenMP
 libGMP
@@ -139,6 +139,13 @@ A simple two-layered groundwater model can be implemented rather quickly.
 The following picture shows the conceptual example model:
 ![](simple_model.png)
 
+After compilation run:
+```
+simple_model
+```
+It will yield a depth to water table CSV file called wtd.csv for a simple model descriped on the model main page: groundwatermodel.org
+
+If you want to implement your own simple model:
 The main simulation method (as implemented by the GW interface) provides a simple steady-state simulation step.
 In addition you need to implement the [DataReader Interface](repo/blob/master/src/DataProcessing/DataReader.hpp).
 
@@ -155,6 +162,7 @@ void StandaloneRunner::simulate() {
     //sim.save();
 }
 ```
+
 ## Deployment in other models
 Just implement the GW_interface and provide a DataReader.
 
@@ -166,7 +174,6 @@ You can run them by executing the test executable.
 ```
 runUnitTests
 ```
-
 
 ## Built With
 
