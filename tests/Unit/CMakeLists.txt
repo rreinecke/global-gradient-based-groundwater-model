@@ -1,0 +1,14 @@
+add_subdirectory(Model)
+add_subdirectory(Simulation)
+add_subdirectory(DataProcessing)
+add_subdirectory(Solver)
+set(SOURCE
+   ${SOURCE}
+   PARENT_SCOPE
+)
+set(HEADERS
+   ${HEADERS}
+   ${CMAKE_CURRENT_SOURCE_DIR}/GW_Interface__TEST.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/UnitTests.hpp
+   PARENT_SCOPE
+)
