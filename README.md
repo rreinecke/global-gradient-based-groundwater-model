@@ -25,6 +25,27 @@ cmake ../
 make
 ```
 
+### Equations
+The three dimensional flow of water through the porous material between the cells is solved as a partial differential equation.
+Where K is the hydraulic conductivity [L/T] along the three axis, S the specific storage and W is the volumentric flux per unit volume in and out of the groundwater system.
+The hydraulic conductivity between two cells is caluclated b yusing the harmonic mean.
+The equation is solved using a conjugate gradient approach and an Incomplete LUT preconditioner.
+![alt text](https://latex.codecogs.com/gif.download?%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20x%7D%5Cleft%20%28%20K_%7Bx%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20x%7D%20%5Cright%20%29%20+%20%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20y%7D%5Cleft%20%28%20K_%7By%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20y%7D%20%5Cright%20%29%20+%20%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20z%7D%5Cleft%20%28%20K_%7Bz%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20z%7D%20%5Cright%20%29%20+%20W%20%3D%20S_%7Bs%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20t%7D "Main equation")
+
+### Boundary Conditions
+G³M support multiple boundary condition types:
+* No-flow boundary
+* Static head boundary
+* General head boundary
+* Groundwater recharge
+* Lakes
+* Wetlands
+* Different river approaches
+
+New flows can be defined in Model/ExternalFlows.hpp.
+The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as ocean boundary for irregual grids.
+This behaviour can be changed in DataProcessing/Neighbouring.hpp.
+
 ### How to use
 Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
 Implement this interface if you want to couple your model to G³M-f or build a custom standalone application.
