@@ -30,7 +30,7 @@ The three dimensional flow of water through the porous material between the cell
 Where K is the hydraulic conductivity [L/T] along the three axis, S the specific storage and W is the volumentric flux per unit volume in and out of the groundwater system.
 The hydraulic conductivity between two cells is caluclated b yusing the harmonic mean.
 The equation is solved using a conjugate gradient approach and an Incomplete LUT preconditioner.
-![alt text](https://latex.codecogs.com/gif.download?%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20x%7D%5Cleft%20%28%20K_%7Bx%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20x%7D%20%5Cright%20%29%20+%20%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20y%7D%5Cleft%20%28%20K_%7By%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20y%7D%20%5Cright%20%29%20+%20%5Cfrac%7B%5Cpartial%7D%7B%5Cpartial%20z%7D%5Cleft%20%28%20K_%7Bz%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20z%7D%20%5Cright%20%29%20+%20W%20%3D%20S_%7Bs%7D%20%5Cfrac%7B%5Cpartial%20h%7D%7B%5Cpartial%20t%7D "Main equation")
+![](https://latex.codecogs.com/gif.latex?\frac{\partial}{\partial&space;x}\left&space;(&space;K_{x}&space;\frac{\partial&space;h}{\partial&space;x}&space;\right&space;)&space;&plus;&space;\frac{\partial}{\partial&space;y}\left&space;(&space;K_{y}&space;\frac{\partial&space;h}{\partial&space;y}&space;\right&space;)&space;&plus;&space;\frac{\partial}{\partial&space;z}\left&space;(&space;K_{z}&space;\frac{\partial&space;h}{\partial&space;z}&space;\right&space;)&space;&plus;&space;W&space;=&space;S_{s}&space;\frac{\partial&space;h}{\partial&space;t} "Main equation")
 
 ### Boundary Conditions
 G³M support multiple boundary condition types:
