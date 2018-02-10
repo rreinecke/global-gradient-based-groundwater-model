@@ -89,7 +89,7 @@ list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simpl
 
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
-target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest)
 add_test(AllTests runUnitTests)
 
 
