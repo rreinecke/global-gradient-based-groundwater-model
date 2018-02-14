@@ -48,7 +48,26 @@ New flows can be defined in Model/ExternalFlows.hpp.
 The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as ocean boundary for irregual grids.
 This behaviour can be changed in DataProcessing/Neighbouring.hpp.
 
-### How to use
+## Quick start
+The following picture shows the conceptual example model:
+![](docs/simple_model.png)
+
+After compilation run:
+```
+simple_model
+```
+It will yield a depth to water table CSV file called wtd.csv for a simple model.
+
+## How to use
+The follwing will guide you through the building blocks of the simple model shipped along with the code.
+It assumes that you've constructed your model domain and have input data for the following
+* Groundwater recharge (recharge_simple.csv)
+* Surface elevation (elevation_simple.csv)
+* Rivers, location, elevation and depth (rivers_simple.csv)
+* Hydrogeology (lithology_simple.csv)
+* Riverbed conductance (rivers_simple.csv)
+* Inital head guess (otherwise the model assumes the surface elevation as best guess) ("heads_simple.csv")
+
 Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
 Implement this interface if you want to couple your model to G³M-f or build a custom standalone application.
 In tests/SimpleModel you'll find an example implementation explained further in the following.
@@ -87,7 +106,7 @@ void StandaloneRunner::simulate() {
 }
 ```
 
-## Write out data
+### Write out data
 Write out of data is specified by a JSON file called out.json.
 If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 ```
@@ -111,7 +130,7 @@ If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 
 ```
 
-## Config model
+### Config model
 In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
 
 ### Parameters
@@ -199,15 +218,6 @@ The following explains the main config parameters.
   }
 }
 ```
-### Running a simple model
-The following picture shows the conceptual example model:
-![](docs/simple_model.png)
-
-After compilation run:
-```
-simple_model
-```
-It will yield a depth to water table CSV file called wtd.csv for a simple model.
 
 ## Deployment in other models
 The main steps towards your own model is to implement the GW_interface and provide a DataReader.
