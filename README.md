@@ -69,6 +69,21 @@ class GW_Interface {
 };
 ```
 
+The following shows the code for a simple model loop running a steady-state model with daily timesteps.
+```
+void StandaloneRunner::simulate() {
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+    for (Simulation::step step : stepper) {
+        LOG(userinfo) << "Running a steady state step";
+        step.first->toogleSteadyState();
+        step.first->solve();
+        sim.printMassBalances();
+    }
+    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //sim.save();
+}
+```
+
 ## Write out data
 Write out of data is specified by a JSON file called out.json.
 If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
@@ -95,6 +110,27 @@ If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 
 ## Config model
 In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
+
+### Parameters
+The following explains the main config parameters.
+
+* model_config
+  * nodes: A file describing the input grid
+  * row_cols: true: neighbouring is determined by their position in an evenly grid, false: neighbouring is determined by their lat and lon position (currently only supports 5' resolution)
+  * threads: How many computation threads to use to solve the equation
+  * layers: Number of layers of the model domain
+  * confinement: Define which of the layers is a confined layer
+* numerics
+  * solver: Currently only Preconditioned Conjugent Gradient, code for a newton approach is available but untested
+  * iterations: Number of picard iterations
+  * closingcrit: Inf norm of the residuals
+  * headchange: Closing criterion for max. head change for 3 consecutive iterations
+  * damping: Damping of residuals in between picard iterations
+* input: Internaly the model code assumes time dependant parameters to be per day
+  * data_config: Describes wether default data is used or a input file should be read
+  * default_data: specifiy default parameters
+  * data: Inputdata - can be modified according to the users need. The shown inputs are the supported defaults
+
 ```
 {
   "config": {
@@ -160,22 +196,15 @@ In order to configure the model variables you can simply change the .json file. 
   }
 }
 ```
+### Running a simple model
+The following picture shows the conceptual example model:
+![](docs/simple_model.png)
 
-## Building a simple model
-The following shows the code for a simple model loop running a steady-state model with daily timesteps.
+After compilation run:
 ```
-void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running a steady state step";
-        step.first->toogleSteadyState();
-        step.first->solve();
-        sim.printMassBalances();
-    }
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
-    //sim.save();
-}
+simple_model
 ```
+It will yield a depth to water table CSV file called wtd.csv for a simple model.
 
 ## Deployment in other models
 Just implement the GW_interface and provide a DataReader.
@@ -187,16 +216,6 @@ You can run them by executing the test executable.
 ```
 runUnitTests
 ```
-
-### Running a simple model
-The following picture shows the conceptual example model:
-![](docs/simple_model.png)
-
-After compilation run:
-```
-simple_model
-```
-It will yield a depth to water table CSV file called wtd.csv for a simple model.
 
 ## Built With
 
