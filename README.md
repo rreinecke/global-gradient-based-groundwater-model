@@ -49,6 +49,7 @@ This behaviour can be changed in DataProcessing/Neighbouring.hpp.
 ### How to use
 Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
 Implement this interface if you want to couple your model to G³M-f or build a custom standalone application.
+In tests/SimpleModel you'll find an example implementation explained further in the following.
 
 ```
 class GW_Interface {
