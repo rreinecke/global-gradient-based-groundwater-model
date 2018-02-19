@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
+
 # The global gradient-based groundwater model framework G³M
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
 Its main purpose is to be used as a main building block for the global groundwater mode G³M.
