@@ -260,6 +260,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work*
+[ResearchGate](https://www.researchgate.net/profile/Robert_Reinecke2)
 
 ## License
 
