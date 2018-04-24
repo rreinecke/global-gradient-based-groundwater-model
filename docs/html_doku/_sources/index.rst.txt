@@ -1,0 +1,141 @@
+The global gradient-based groundwater model framework G³M Documentation
+=======================================================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+|
+|
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`search`
+
+.. include:: README.rst
+
+
+
+G³M framework
+=============
+The following describes the classes and modules that G³M provides for building a groundwater model.
+The framework is separated into 6 packages:
+
+    * DataProcessing
+    * Logging
+    * Misc
+    * Model
+    * Simulation
+    * Solver
+
+In order to implement any model the following interface has to be implemented:
+
+.. doxygenclass:: GlobalFlow::GW_Interface
+
+DataProcessing
+--------------
+Data processing is mainly concerned with providing utilities for reading in data (*DataReader*) or writing out data.
+New types of outputs can be implemented in the *OutputFactory*.
+
+.. doxygenclass:: GlobalFlow::DataReader
+
+DataOutput
+~~~~~~~~~~
+
+**FieldCollector**
+
+.. doxygenenum:: GlobalFlow::DataProcessing::DataOutput::FieldType
+
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::FieldCollector
+
+**OutputFactory**
+
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::OutputInterface
+
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::CSVOutput
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::NETCDFOutput
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::GFS_JSONOutput
+
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::OutputFactory
+
+**OutputManager**
+
+.. doxygenclass:: GlobalFlow::DataProcessing::DataOutput::OutputManager
+
+Logging
+-------
+Provides readable logging facilities
+
+.. doxygenclass:: GlobalFlow::Logging::Logger
+
+
+Misc
+----
+Contains some deprecated helpers for iterating different grid solutions not documented here.
+
+.. doxygenfile:: Helpers.hpp
+
+
+Model
+-----
+
+**ExternalFlow**
+
+.. doxygenclass:: GlobalFlow::Model::ExternalFlow
+
+**FluidMechanics**
+
+.. doxygenclass:: GlobalFlow::Model::FluidMechanics
+
+**NodeInterface**
+
+.. doxygenclass:: GlobalFlow::Model::NodeInterface
+
+Simulation
+----------
+
+**Options**
+
+.. doxygenclass:: GlobalFlow::Simulation::Options
+
+**Simulation**
+
+.. doxygenclass:: GlobalFlow::Simulation::Simulation
+
+**Stepper**
+
+.. doxygenclass:: GlobalFlow::Simulation::Stepper
+
+Solver
+------
+
+**Equation**
+
+.. doxygenclass:: GlobalFlow::Solver::Equation
+
+**AdaptiveDamping**
+.. doxygenclass:: GlobalFlow::Solver::AdaptiveDamping
+
+
+G³M steady-state model
+======================
+The implementation of the steady state-model along with the input data e.g. yearly average recharge, consists of two classes:
+    1) The main class which implements the *Groundwater Interface*
+    2) A data reader implementing the *Data Reader Interface*, which specifies how to read in the data
+
+**Main**
+
+.. doxygenclass:: GlobalFlow::GlobalStandaloneRunner
+    :private-members:
+
+**Global Data Reader**
+
+.. doxygenclass:: GlobalFlow::DataProcessing::GlobalDataReader
+
+|
+|
+
+.. include:: LICENSE.rst
+

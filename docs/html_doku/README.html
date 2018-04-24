@@ -1,0 +1,353 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Quickstart: The model framework &#8212; G³M - Global Gradient Groundwater Model 1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quickstart-the-model-framework">
+<h1>Quickstart: The model framework<a class="headerlink" href="#quickstart-the-model-framework" title="Permalink to this headline">¶</a></h1>
+<p>The global gradient-based groundwater model framework G³M-f is an
+extesible model framework. Its main purpose is to be used as a main
+bilding block for the global groundwater mode G³M. G³M is a newly
+developed gradient-based groundwater model which adapts MODFLOW
+[&#64;harbaugh2005modflow] principles for the globalscale. It is written in
+C++ and intended to be coupled to the global hydraulic model WaterGAP
+(<a class="reference external" href="http://watergap.de">http://watergap.de</a>), but can also be used for regional groundwater
+models and coupling to other hydraulic models. While it is intended to
+be used as a in memory coupled model it is also capable of running a
+standard standalone groundwater model.</p>
+<div class="section" id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
+<p>These instructions will get you a copy of the project up and running on
+your local machine for development and testing purposes.</p>
+<div class="section" id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">clang</span> <span class="o">&gt;=</span> <span class="mf">3.8</span> <span class="k">with</span> <span class="n">openMP</span> <span class="p">(</span><span class="n">currently</span> <span class="n">gcc</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">supported</span><span class="p">)</span>
+<span class="n">libboost</span> <span class="o">&gt;=</span> <span class="mf">1.56</span>
+<span class="n">libGMP</span>
+<span class="n">libGtest</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="build">
+<h3>Build<a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="n">build</span>
+<span class="n">cd</span> <span class="n">build</span>
+<span class="n">cmake</span> <span class="o">../</span>
+<span class="n">make</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="how-to-use">
+<h3>How to use<a class="headerlink" href="#how-to-use" title="Permalink to this headline">¶</a></h3>
+<p>Center building stone for the framework is the GW_interface connecting
+any model with the groundwater code. Implement this interface if you
+want to couple your model to G³M-f or build a custom standalone
+application.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">GW_Interface</span> <span class="p">{</span>
+    <span class="n">public</span><span class="p">:</span>
+        <span class="n">virtual</span> <span class="o">~</span><span class="n">GW_Interface</span><span class="p">()</span> <span class="p">{}</span>
+
+        <span class="n">virtual</span> <span class="n">void</span>
+        <span class="n">loadSettings</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="n">virtual</span> <span class="n">void</span>
+        <span class="n">setupSimulation</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="n">virtual</span> <span class="n">void</span>
+        <span class="n">writeData</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="n">virtual</span> <span class="n">void</span>
+        <span class="n">simulate</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="write-out-data">
+<h2>Write out data<a class="headerlink" href="#write-out-data" title="Permalink to this headline">¶</a></h2>
+<p>Writeout of data is specified by a JSON file called out.json. If you
+want to add custom fields you can do so in
+src/DataProcessing/DataOutput.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;StaticResult&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;wtd&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;field&quot;</span><span class="p">:</span> <span class="s2">&quot;DepthToWaterTable&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;InnerIteration&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;OuterIteration&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="config-model">
+<h2>Config model<a class="headerlink" href="#config-model" title="Permalink to this headline">¶</a></h2>
+<p>In order to configure the model variables you can simply change the
+.json file. Allowing you to change the convergence criteria and the
+location for your input files.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;model_config&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="s2">&quot;grid_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;row_cols&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;stadystate&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;numberofnodes&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+      <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="s2">&quot;layers&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+      <span class="s2">&quot;confinement&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;true&quot;</span>
+      <span class="p">],</span>
+      <span class="s2">&quot;cache&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;adaptivestepsize&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;boundarycondition&quot;</span><span class="p">:</span> <span class="s2">&quot;SeaLevel&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;sensitivity&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;numerics&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;solver&quot;</span><span class="p">:</span> <span class="s2">&quot;PCG&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;iterations&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+      <span class="s2">&quot;inner_itter&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="s2">&quot;closingcrit&quot;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">,</span>
+      <span class="s2">&quot;headchange&quot;</span><span class="p">:</span> <span class="mf">0.0001</span><span class="p">,</span>
+      <span class="s2">&quot;damping&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;min_damp&quot;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+      <span class="s2">&quot;max_damp&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span>
+      <span class="s2">&quot;stepsize&quot;</span><span class="p">:</span> <span class="s2">&quot;daily&quot;</span>
+    <span class="p">},</span>
+  <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;data_config&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;k_from_lith&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;k_ocean_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;specificstorage_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;specificyield_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;k_river_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;aquifer_depth_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;initial_head_from_file&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;data_as_array&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;default_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;initial_head&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+      <span class="s2">&quot;K&quot;</span><span class="p">:</span> <span class="mf">0.008</span><span class="p">,</span>
+      <span class="s2">&quot;oceanK&quot;</span><span class="p">:</span> <span class="mi">800</span><span class="p">,</span>
+      <span class="s2">&quot;aquifer_thickness&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="mi">10</span><span class="p">,</span>
+        <span class="mi">10</span>
+      <span class="p">],</span>
+      <span class="s2">&quot;anisotropy&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+      <span class="s2">&quot;specificyield&quot;</span><span class="p">:</span> <span class="mf">0.15</span><span class="p">,</span>
+      <span class="s2">&quot;specificstorage&quot;</span><span class="p">:</span> <span class="mf">0.000015</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;recharge&quot;</span><span class="p">:</span> <span class="s2">&quot;recharge_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;elevation&quot;</span><span class="p">:</span> <span class="s2">&quot;elevation_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;rivers&quot;</span><span class="p">:</span> <span class="s2">&quot;rivers_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;lithologie&quot;</span><span class="p">:</span> <span class="s2">&quot;lithology_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;river_conductance&quot;</span><span class="p">:</span> <span class="s2">&quot;rivers_simple.csv&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;initial_head&quot;</span><span class="p">:</span> <span class="s2">&quot;heads_simple.csv&quot;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="building-a-simple-model">
+<h2>Building a simple model<a class="headerlink" href="#building-a-simple-model" title="Permalink to this headline">¶</a></h2>
+<p>The following shows the code for a simple model loop running a
+steady-state model with daily timesteps.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">void</span> <span class="n">StandaloneRunner</span><span class="p">::</span><span class="n">simulate</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">Simulation</span><span class="p">::</span><span class="n">Stepper</span> <span class="n">stepper</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">::</span><span class="n">Stepper</span><span class="p">(</span><span class="n">_eq</span><span class="p">,</span> <span class="n">Simulation</span><span class="p">::</span><span class="n">DAY</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Simulation</span><span class="p">::</span><span class="n">step</span> <span class="n">step</span> <span class="p">:</span> <span class="n">stepper</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">LOG</span><span class="p">(</span><span class="n">userinfo</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s2">&quot;Running a steady state step&quot;</span><span class="p">;</span>
+        <span class="n">step</span><span class="o">.</span><span class="n">first</span><span class="o">-&gt;</span><span class="n">toogleSteadyState</span><span class="p">();</span>
+        <span class="n">step</span><span class="o">.</span><span class="n">first</span><span class="o">-&gt;</span><span class="n">solve</span><span class="p">();</span>
+        <span class="n">sim</span><span class="o">.</span><span class="n">printMassBalances</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="n">DataProcessing</span><span class="p">::</span><span class="n">DataOutput</span><span class="p">::</span><span class="n">OutputManager</span><span class="p">(</span><span class="s2">&quot;data/out_simple.json&quot;</span><span class="p">,</span> <span class="n">sim</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">();</span>
+    <span class="o">//</span><span class="n">sim</span><span class="o">.</span><span class="n">save</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deployment-in-other-models">
+<h2>Deployment in other models<a class="headerlink" href="#deployment-in-other-models" title="Permalink to this headline">¶</a></h2>
+<p>Just implement the GW_interface and provide a DataReader.</p>
+</div>
+<div class="section" id="running-the-tests">
+<h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h2>
+<p>Automated tests consits of gunit test which are compiled automatically
+with the attached cmake file. You can run them by executing the test
+executable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">runUnitTests</span>
+</pre></div>
+</div>
+<div class="section" id="running-a-simple-model">
+<h3>Running a simple model<a class="headerlink" href="#running-a-simple-model" title="Permalink to this headline">¶</a></h3>
+<p>The following picture shows the conceptual example model: <img alt="image0" src="_images/simple_model.png" /></p>
+<p>After compilation run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">simple_model</span>
+</pre></div>
+</div>
+<p>It will yield a depth to water table CSV file called wtd.csv for a
+simple model.</p>
+</div>
+</div>
+<div class="section" id="built-with">
+<h2>Built With<a class="headerlink" href="#built-with" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="http://eigen.tuxfamily.org">Eigen3</a> - Doing the math magic</li>
+<li><a class="reference external" href="https://github.com/google/googletest">GTest</a> - Test framework</li>
+<li><a class="reference external" href="http://www.boost.org">libboost</a> - C++ magic</li>
+<li><a class="reference external" href="http://www.openmp.org">OpenMP</a> - Accelerator und Multi-Core
+support</li>
+<li><a class="reference external" href="https://gmplib.org">GMP</a> - Large numbers</li>
+</ul>
+</div>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>Please read <a class="reference external" href="CONTRIBUTING.md">CONTRIBUTING.md</a> for details on our
+code of conduct, and the process for submitting pull requests to us.</p>
+</div>
+<div class="section" id="versioning">
+<h2>Versioning<a class="headerlink" href="#versioning" title="Permalink to this headline">¶</a></h2>
+<p>We use <a class="reference external" href="http://semver.org/">SemVer</a> for versioning. For the versions
+available, see the <a class="reference external" href="https://github.com/your/project/tags">tags on this
+repository</a>.</p>
+</div>
+<div class="section" id="authors-and-contributors">
+<h2>Authors and Contributors<a class="headerlink" href="#authors-and-contributors" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>Robert Reinecke</strong> - <em>Initial work</em></li>
+</ul>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>This project is licensed under the GNU General Public License - see the
+<a class="reference external" href="LICENSE">LICENSE</a> file for details. Please note that the code
+contains a modified version of the Eigen3 library which is published
+under the <a class="reference external" href="https://www.mozilla.org/en-US/MPL/2.0/">MPL 2.0</a>.</p>
+</div>
+<div class="section" id="acknowledgments">
+<h2>Acknowledgments<a class="headerlink" href="#acknowledgments" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference external" href="https://water.usgs.gov/ogw/modflow/MODFLOW.html">Modflow 2005</a>
+for their great documentation</li>
+<li><a class="reference external" href="http://eigen.tuxfamily.org">Eigen3</a> for their awesome framework</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quickstart: The model framework</a><ul>
+<li><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#build">Build</a></li>
+<li><a class="reference internal" href="#how-to-use">How to use</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#write-out-data">Write out data</a></li>
+<li><a class="reference internal" href="#config-model">Config model</a></li>
+<li><a class="reference internal" href="#building-a-simple-model">Building a simple model</a></li>
+<li><a class="reference internal" href="#deployment-in-other-models">Deployment in other models</a></li>
+<li><a class="reference internal" href="#running-the-tests">Running the tests</a><ul>
+<li><a class="reference internal" href="#running-a-simple-model">Running a simple model</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#built-with">Built With</a></li>
+<li><a class="reference internal" href="#contributing">Contributing</a></li>
+<li><a class="reference internal" href="#versioning">Versioning</a></li>
+<li><a class="reference internal" href="#authors-and-contributors">Authors and Contributors</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+<li><a class="reference internal" href="#acknowledgments">Acknowledgments</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/README.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Robert Reinecke.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/README.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

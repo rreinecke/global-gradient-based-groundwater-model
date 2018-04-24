@@ -241,6 +241,11 @@ You can run them by executing the test executable.
 runUnitTests
 ```
 
+## Further documentation:
+
+[The full documentation](html_doku/index.html)
+
+
 ## Built With
 
 * [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
