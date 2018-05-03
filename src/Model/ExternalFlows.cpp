@@ -29,10 +29,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case RIVER_MM:
             return -calcERC(recharge, eq_head, head, eqFlow);
         case WETLAND:
-            if (head > flowHead)
-                return -conductance;
-            else
-                return out;
+            return -conductance;
         case GLOBAL_WETLAND:
             return -conductance;
         case LAKE:
@@ -76,10 +73,7 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case RIVER_MM:
             return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
         case WETLAND:
-            if (head > flowHead)
-                return conductance * flowHead;
-            else
-                return out;
+            return conductance * flowHead;
         case GLOBAL_WETLAND:
             return conductance * flowHead;
         case LAKE:

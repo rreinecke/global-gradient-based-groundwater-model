@@ -81,6 +81,8 @@ Options::load(const std::string &filename) {
 
     pt::ptree input = tree.get_child("input");
 
+//BASE_PATH = input.get<string>("base_path");
+
     pt::ptree data_config = input.get_child("data_config");
     k_from_lith = data_config.get<bool>("k_from_lith");
     k_ocean_from_file = data_config.get<bool>("k_ocean_from_file");

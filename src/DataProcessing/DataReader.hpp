@@ -34,38 +34,51 @@
 
 
 namespace GlobalFlow {
-using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
-namespace fs = boost::filesystem;
-using large_num = unsigned long int;
+    using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
+    namespace fs = boost::filesystem;
+    using large_num = unsigned long int;
 
-/**
- * @interface Interface that needs to be implemented for reading in required data for the model
- */
-class DataReader {
+    /**
+     * @class DataReader
+     * @brief Interface that needs to be implemented for reading in required data for the model
+     */
+    class DataReader {
     protected:
         NodeVector nodes;
         int stepMod;
-        //<GlobalID, ID>
+        /**
+         * @var basePath the standard path for data to be read from
+         * relative to executable or absolute path
+         */
+        std::string basePath{"data"};
+        fs::path data_dir{basePath};
+        /** @var lookupglobIDtoID <GlobalID, ID>*/
         std::unordered_map<int, int> lookupglobIDtoID;
-        //<ARCID(0.5°), vector<GlobalID(5')>>
+        /** @var lookupZeroPointFivetoFiveMinute <ARCID(0.5°), vector<GlobalID(5')>>*/
         std::unordered_map<int, std::vector<int>> lookupZeroPointFivetoFiveMinute;
     public:
+        /** Virt destructor -> interface*/
         virtual ~DataReader() {}
 
+        /**
+         * @brief Initialize internal ref to node vetor
+         * @param nodes The vector of nodes
+         */
         void initNodes(NodeVector nodes) { this->nodes = nodes; }
 
         /**
-         * @attention Needs to be implemented!
-         * @note Is called by simulation at startup
+         * @brief Entry point for reading simulation data
+         * @attention This method needs to be implemented!
+         * @note readData() is called by simulation at startup
          * @param op Options object
          */
         virtual void readData(Simulation::Options op) = 0;
 
         /**
-         * Gereric method for looping through files inside a directory and apply a gernic function
-         * @param path
-         * @param files
-         * @param fun a function
+         * @brief Generic method for looping through files inside a directory and applying a generic function
+         * @param path the directory
+         * @param files a vector of files
+         * @param fun a function that is applied e.g. reading the data
          */
         template<class Fun>
         void loopFiles(std::string path, std::vector<std::string> files, Fun fun) {
@@ -75,6 +88,11 @@ class DataReader {
             }
         }
 
+        /**
+         * @brief Check weather id exists in the simulation
+         * @param globid Global identifier, can be different from position in node vector
+         * @return i the position in the node vector
+         */
         inline int check(int globid) {
             int i{0};
             try {
@@ -87,8 +105,8 @@ class DataReader {
         }
 
         /**
-         * Read data from a two-column csv file and apply function to data
-         * @param path
+         * @brief Read data from a two-column csv file and apply function to data
+         * @param path to the csv file
          * @param processData A processing function e.g. upscaling of data
          */
         template<class ProcessDataFunction>
@@ -111,8 +129,8 @@ class DataReader {
         }
 
         /**
-         * Creates a mapping of 0.5° ArcIDs to a list of contained 5' GlobIDs
-         * @param path
+         * @brief Creates a mapping of 0.5° ArcIDs to a list of contained 5' GlobIDs
+         * @param path to file
          */
         void readZeroPointFiveToFiveMin(std::string path) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -126,21 +144,30 @@ class DataReader {
         }
 
 
-        const std::unordered_map<int, std::vector<int>> &
-        getArcIDMapping() {
+        /**
+         * @brief provides acccess to mapping of different resolutions
+         * @return <ARCID(0.5°), vector<GlobalID(5')>>
+         */
+        const std::unordered_map<int, std::vector<int>> &getArcIDMapping() {
             return lookupZeroPointFivetoFiveMinute;
         };
 
-        const std::unordered_map<int, int> &
-        getGlobIDMapping() {
+        /**
+         * @brief provides access to mapping of data ids to position in node vector
+         * @return <GlobalID, ID>
+         */
+        const std::unordered_map<int, int> &getGlobIDMapping() {
             return lookupglobIDtoID;
         };
 
-        fs::path data_dir{"data"};
-
+        /**
+         * @brief Builds a corect path from the base dir
+         * @param path The relative path from the config
+         * @return A path based on the base dir
+         */
         std::string buildDir(std::string path) {
             return (data_dir / fs::path(path)).string();
         };
-};
+    };
 }
 #endif //DATAREADER_HPP

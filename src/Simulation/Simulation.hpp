@@ -490,6 +490,97 @@ class Simulation {
 
         }
 
+
+    /**
+     * Expects a file with global_ID, parameter, multiplier
+     * Multiplier is log scaled
+     * @param path to csv file
+     * @returns a vector of node-ids (used to write out heads in correct order)
+     */
+    std::vector<int> readMultipliersPerID(string path) {
+        std::vector<int> ids;
+        io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+        in.read_header(io::ignore_no_column, "global_ID", "mult", "parameter");
+        int id;
+        string parameter;
+        string prev_parameter;
+        bool n_param{false};
+        double mult;
+        while (in.read_row(id, mult, parameter)) {
+            int i = reader->getGlobIDMapping().at(id);
+
+            //Only save head ids once
+            if (not n_param) {
+                prev_parameter = parameter;
+                n_param = true;
+                ids.push_back(i);
+            } else if (prev_parameter == parameter) {
+                ids.push_back(i);
+            }
+
+            mult = pow(10, mult);
+            NANChecker(mult, "Sensitivity multiplier");
+
+            if (parameter == "K") {
+                quantity<Model::Velocity> k = nodes->at(
+                        i)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>();
+                nodes->at(i)->setK(k * mult);
+            }
+            if (parameter == "K_Lakes") {
+                try {
+                    nodes->at(i)->updateExternalFlowConduct(mult, Model::LAKE);
+                }
+                catch (const std::out_of_range &ex) {}
+            }
+            if (parameter == "K_Wetlands") {
+                try {
+                    nodes->at(i)->updateExternalFlowConduct(mult, Model::WETLAND);
+                }
+                catch (const std::out_of_range &ex) {}
+            }
+            if (parameter == "K_Global_Wet") {
+                try {
+                    nodes->at(i)->updateExternalFlowConduct(mult, Model::GLOBAL_WETLAND);
+                }
+                catch (const std::out_of_range &ex) {}
+            }
+            if (parameter == "RE") {
+                try {
+                    Model::ExternalFlow flow = nodes->at(i)->getExternalFlowByName(Model::RECHARGE);
+                    double val = flow.getRecharge().value() * mult;
+                    nodes->at(i)->updateUniqueFlow(val, Model::RECHARGE);
+                }
+                catch (const std::out_of_range &ex) {}
+            }
+            if (parameter == "River_Mult") {
+                try {
+                    nodes->at(i)->scaleDynamicRivers(mult);
+                }
+                catch (const std::out_of_range &ex) {}
+            }
+            if (parameter == "AqThickness") {
+                quantity<Model::Meter> d = nodes->at(i)->getProperties().get<quantity<Model::Meter>,
+                        Model::VerticalSize>();
+                nodes->at(i)->getProperties().set<quantity<Model::Meter>, Model::VerticalSize>(d * mult);
+            }
+            if (parameter == "SWB_Elevation") {
+                try {
+                    nodes->at(i)->updateExternalFlowFlowHead(mult, Model::GLOBAL_WETLAND);
+                } catch (const std::out_of_range &ex) {}
+                try {
+                    nodes->at(i)->updateExternalFlowFlowHead(mult, Model::WETLAND);
+                } catch (const std::out_of_range &ex) {}
+                try {
+                    nodes->at(i)->updateExternalFlowFlowHead(mult, Model::LAKE);
+                } catch (const std::out_of_range &ex) {}
+                try {
+                    nodes->at(i)->updateExternalFlowFlowHead(mult, Model::RIVER_MM);
+                } catch (const std::out_of_range &ex) {}
+            }
+        }
+        return ids;
+    }
+
         /**
          * Scale values for sensitivity analysis
          * @param path
@@ -500,28 +591,16 @@ class Simulation {
             string name;
             double value;
             while (in.read_row(name, value)) {
+	 	value = pow(10, value);
+            	NANChecker(value, "Sensitivity multiplier");
                 if (name == "K") {
                     scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
-                        return node->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value() <
-                               300;
-                    }, "K", value);
-                } else if (name == "K_M") {
-                    scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
-                        return node->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value() >
-                               300;
+                        return true;
                     }, "K", value);
                 } else if (name == "RE") {
-                    //std::cout << "Updating recharge:" << value << "\n";
                     scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
-                        return node->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value() <
-                               300;
-                    }, "RECHARGE", value);
-                } else if (name == "RE_M") {
-                    //std::cout << "Updating rechargeM:" << value << "\n";
-                    scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
-                        return node->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value() >
-                               300;
-                    }, "RECHARGE", value);
+                        return true;
+		    }, "RECHARGE", value);
                 } else if (name == "K_Wetlands") {
                     scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
                         return true;
@@ -542,10 +621,6 @@ class Simulation {
                     scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
                         return true;
                     }, "Depth0", value);
-                } else if (name == "Anisotrophie") {
-                    scaleByFunction([](const std::unique_ptr<Model::NodeInterface> &node) {
-                        return true;
-                    }, "Anisotropy", value);
                 }
             }
         }

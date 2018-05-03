@@ -27,102 +27,75 @@
 #include <unordered_map>
 
 namespace GlobalFlow {
-namespace Model {
+    namespace Model {
 
-/**
- * @class FluidMechanics
- * Provides helper functions for conductance calulcations
- */
-class FluidMechanics {
-    public:
-        FluidMechanics() {}
+        using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
+        using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
 
         /**
-         * Used to calculate if a cell is dry
+         * @class FluidMechanics
+         * Provides helper functions for conductance calulcations
          */
-        t_meter
-        calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept;
+        class FluidMechanics {
+        public:
+            FluidMechanics() {}
 
-        /**
-         * @brief Calculates the horizontal flow between two nodes
-         * @param k_neig K-value of neighbouring node
-         * @param edgeLength_neig The edge size of the neighbouring node (assumes rectengular cells)
-         * @return A weighted conductance value for the flow between two nodes
-         *
-         * Calculates the harmonic mean conductance between two nodes.
-         * C = 2*EdgeLenght_1 * (TR_1 * TR_2) / (TR_1 * EdgeLenght_1 + TR_2 * EdgeLenght_2)
-         */
-        t_s_meter_t calculateHarmonicMeanConductance
-                (t_vel k_neig,
-                 t_vel k_self,
-                 t_meter edgeLength_neig,
-                 t_meter edgeLength_self,
-                 t_meter head_neig,
-                 t_meter head_self,
-                 t_meter ele_neig,
-                 t_meter ele_self,
-                 t_meter deltaV_neig,
-                 t_meter deltaV_self,
-                 bool confined) noexcept;
+            /**
+             * Used to calculate if a cell is dry
+             */
+            t_meter
+            calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept;
 
-        /**
-         * Simple smoother function to buffer iteration steps in NWT approach
-         * @param elevation
-         * @param verticalSize
-         * @param head
-         * @return
-         */
-        double smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head);
+            /**
+             * @brief Calculates the horizontal flow between two nodes
+             * @param flow a touple of inputs about the aquifer
+             * @return A weighted conductance value for the flow between two nodes
+             * Calculates the harmonic mean conductance between two nodes.
+             * $C = 2 \times EdgeLenght_1 \times \frac{ (TR_1 \times TR_2)}{(TR_1 \times EdgeLenght_1 + TR_2 \times EdgeLenght_2)}$
+             */
+            t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
 
-        /**
-         * Get the coeffiecients for storage and P components
-         * @param steadyState
-         * @param stepModifier
-         * @param storageCapacity
-         * @param P
-         * @return
-         */
-        t_s_meter_t getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
-                t_s_meter storageCapacity, t_s_meter_t P) noexcept;
+            /**
+             * Simple smoother function to buffer iteration steps in NWT approach
+             * @param elevation
+             * @param verticalSize
+             * @param head
+             * @return smoothed head
+             */
+            double smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head);
 
-        /**
-         * Calculates the vertical flow between two nodes
-         * @param k_vert_neig
-         * @param k_vert_self
-         * @param verticalSize_self
-         * @param head_self
-         * @param elevation_self
-         * @param area_self
-         * @param elevation_neig
-         * @param depth_neig
-         * @param head_neig
-         * @param confined
-         * @return
-         */
-        t_s_meter_t calculateVerticalConductance(t_vel k_vert_neig,
-                                     t_vel k_vert_self,
-                                     t_meter verticalSize_self,
-                                     t_meter head_self,
-                                     t_meter elevation_self,
-                                     t_s_meter area_self,
-                                     t_meter elevation_neig,
-                                     t_meter depth_neig,
-                                     t_meter head_neig,
-                                     bool confined) noexcept;
+            /**
+             * Get the coeffiecients for storage and P components
+             * @param steadyState
+             * @param stepModifier
+             * @param storageCapacity
+             * @param P
+             * @return HCOF
+             */
+            t_s_meter_t getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
+                                t_s_meter storageCapacity, t_s_meter_t P) noexcept;
 
-        /**
-         * Calculate derivates for NWT approach
-         * @param elevation
-         * @param verticalSize
-         * @param head
-         * @return
-         */
-        double getDerivate__NWT(t_meter elevation,
-                         t_meter verticalSize,
-                         t_meter head);
 
-};
+            /**
+             * Calculates the vertical flow between two nodes
+             * @param flow a touple of inputs about the aquifer
+             * @return the vertical conductance
+             */
+            t_s_meter_t calculateVerticalConductance(FlowInputVert flow) noexcept;
 
-}
+            /**
+             * Calculate derivates for NWT approach
+             * @param elevation
+             * @param verticalSize
+             * @param head
+             * @return
+             */
+            double getDerivate__NWT(t_meter elevation,
+                                    t_meter verticalSize,
+                                    t_meter head);
+
+        };
+
+    }
 }//ns
 #endif

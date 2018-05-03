@@ -349,13 +349,42 @@ Modify Properties
         bool cached{false};
         t_vol_t eq_flow{0 * si::cubic_meter / day};
 
+        template<class HeadType>
+        FlowInputHor createDataTuple(map_itter got) {
+            return std::make_tuple(at(got)->getK(),
+                                   getK(),
+                                   getAt<t_meter, EdgeLenght>(got),
+                                   get<t_meter, EdgeLenght>(),
+                                   getAt<t_meter, HeadType>(got),
+                                   get<t_meter, HeadType>(),
+                                   getAt<t_meter, Elevation>(got),
+                                   get<t_meter, Elevation>(),
+                                   getAt<t_meter, VerticalSize>(got),
+                                   get<t_meter, VerticalSize>(),
+                                   get<bool, Confinement>());
+        }
+
+        FlowInputVert createDataTuple(map_itter got) {
+            return std::make_tuple(at(got)->getK_vertical(),
+                                   getK_vertical(),
+                                   get<t_meter, VerticalSize>(),
+                                   get<t_meter, Head>(),
+                                   get<t_meter, Elevation>(),
+                                   get<t_s_meter, Area>(),
+                                   getAt<t_meter, Elevation>(got),
+                                   getAt<t_meter, VerticalSize>(got),
+                                   getAt<t_meter, Head>(got),
+                                   get<bool, Confinement>());
+        }
+
+
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
          * Generic function used for calulating equlibrium and current step flow
          * @return
          */
         template<class HeadType>
-        t_vol_t calcLateralFlows() {
+        t_vol_t calcLateralFlows(bool onlyOut) {
             t_vol_t lateral_flow{0 * si::cubic_meter / day};
             std::forward_list<NeighbourPosition> possible_neighbours =
                     {NeighbourPosition::BACK, NeighbourPosition::FRONT, NeighbourPosition::LEFT,
@@ -366,20 +395,12 @@ Modify Properties
                 if (got == neighbours.end()) {//No neighbouring node
                 } else {
                     //There is a neighbour node
-                    t_s_meter_t conductance =
-                            mechanics.calculateHarmonicMeanConductance(at(got)->getK(),
-                                                                       getK(),
-                                                                       getAt<t_meter, EdgeLenght>(got),
-                                                                       get<t_meter, EdgeLenght>(),
-                                                                       getAt<t_meter, HeadType>(got),
-                                                                       get<t_meter, HeadType>(),
-                                                                       getAt<t_meter, Elevation>(got),
-                                                                       get<t_meter, Elevation>(),
-                                                                       getAt<t_meter, VerticalSize>(got),
-                                                                       get<t_meter, VerticalSize>(),
-                                                                       get<bool, Confinement>());
-                    lateral_flow =
-                            lateral_flow - conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
+                    t_s_meter_t conductance = mechanics.calculateHarmonicMeanConductance(
+                            createDataTuple<HeadType>(got));
+                    t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
+                    if (onlyOut) {
+                        if (flow.value() > 0) { lateral_flow = lateral_flow - flow; }
+                    } else { lateral_flow = lateral_flow - flow; }
                 }
             }
             return lateral_flow;
@@ -391,7 +412,7 @@ Modify Properties
          */
         t_vol_t getEqFlow() noexcept {
             if (not cached) {
-                t_vol_t lateral_flow = calcLateralFlows<EQHead>();
+                t_vol_t lateral_flow = calcLateralFlows<EQHead>(false);
                 NANChecker(lateral_flow.value(), "Eq Flow");
                 eq_flow = lateral_flow;
                 cached = true;
@@ -404,8 +425,17 @@ Modify Properties
          * @return
          */
         t_vol_t getLateralFlows() {
-            return calcLateralFlows<Head>() * get<t_dim, StepModifier>();
+            return calcLateralFlows<Head>(false) * get<t_dim, StepModifier>();
         }
+
+        /**
+         * Get the current lateral out flows
+         * @return
+         */
+        t_vol_t getLateralOutFlows() {
+            return calcLateralFlows<Head>(true) * get<t_dim, StepModifier>();
+        }
+
 
         /**
          * @brief Cuts off all heads above surface elevation
@@ -613,17 +643,7 @@ Modify Properties
                 t_meter head_n = getAt<t_meter, Head>(hasDown);
                 //Check if a dewatered condition is present
                 if (head_n < elev and get<t_meter, Head>() > elev) {
-                    t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(
-                            at(hasDown)->getK_vertical(),
-                            getK_vertical(),
-                            get<t_meter, VerticalSize>(),
-                            get<t_meter, Head>(),
-                            get<t_meter, Elevation>(),
-                            get<t_s_meter, Area>(),
-                            elev,
-                            getAt<t_meter, VerticalSize>(hasDown),
-                            head_n,
-                            get<bool, Confinement>());
+                    t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
                     out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
                 }
             }
@@ -634,17 +654,7 @@ Modify Properties
                 //Check if a dewatered condition is present
                 if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
                     t_s_meter_t conductance_above =
-                            mechanics.calculateVerticalConductance(
-                                    at(hasUp)->getK_vertical(),
-                                    getK_vertical(),
-                                    get<t_meter, VerticalSize>(),
-                                    get<t_meter, Head>(),
-                                    get<t_meter, Elevation>(),
-                                    get<t_s_meter, Area>(),
-                                    elev,
-                                    getAt<t_meter, VerticalSize>(hasUp),
-                                    head_n,
-                                    get<bool, Confinement>());
+                            mechanics.calculateVerticalConductance(createDataTuple(hasUp));
                     out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
                            get<t_dim, StepModifier>();
                 }
@@ -794,6 +804,21 @@ Modify Properties
             if (hasTypeOfExternalFlow(type)) {
                 t_meter flowHead = getExternalFlowByName(type).getFlowHead();
                 double conduct = getExternalFlowByName(type).getConductance().value() * amount;
+                t_meter bottom = getExternalFlowByName(type).getBottom();
+                removeExternalFlow(type);
+                addExternalFlow(type, flowHead, conduct, bottom);
+            }
+        }
+
+        /**
+        * @brief Multiplies flow head for Sensitivity An. wetlands, lakes, rivers
+        * @param amount
+        * @param type
+        */
+        void updateExternalFlowFlowHead(double amount, FlowType type) {
+            if (hasTypeOfExternalFlow(type)) {
+                t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount;
+                double conduct = getExternalFlowByName(type).getConductance().value();
                 t_meter bottom = getExternalFlowByName(type).getBottom();
                 removeExternalFlow(type);
                 addExternalFlow(type, flowHead, conduct, bottom);
@@ -974,46 +999,10 @@ Modify Properties
                 } else {
                     //There is a neighbour node
                     if (got->first == TOP or got->first == DOWN) {
-                        conduct = mechanics.calculateVerticalConductance(
-                                nodes->at(got->second)->getK_vertical(),
-                                getK_vertical(),
-                                get<t_meter, VerticalSize>(),
-                                get<t_meter, Head>(),
-                                get<t_meter, Elevation>(),
-                                get<t_s_meter, Area>(),
-                                nodes->at(got->second)->get<t_meter, Elevation>(),
-                                nodes->at(got->second)->get<t_meter, VerticalSize>(),
-                                nodes->at(got->second)->get<t_meter, Head>(),
-                                get<bool, Confinement>());
+                        conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                     } else {
                         K = nodes->at(got->second)->getK();
-                        conduct = mechanics.calculateHarmonicMeanConductance
-                                (nodes->at(got->second)->getK(),
-                                 getK(),
-                                 nodes->at(got->second)->get<quantity
-                                         <Meter>,
-                                         EdgeLenght>(),
-                                 get<quantity
-                                         <Meter>, EdgeLenght>(),
-                                 nodes->at(got->second)->get<quantity
-                                         <Meter>,
-                                         Head>(),
-                                 get<quantity
-                                         <Meter>,
-                                         Head>(),
-                                 nodes->at(got->second)->get<quantity
-                                         <Meter>,
-                                         Elevation>(),
-                                 get<quantity
-                                         <Meter>,
-                                         Elevation>(),
-                                 nodes->at(got->second)->get<quantity
-                                         <Meter>,
-                                         VerticalSize>(),
-                                 get<quantity
-                                         <Meter>,
-                                         VerticalSize>(),
-                                 get<bool, Confinement>());
+                        conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
                     }
                     NANChecker(conduct.value(), "Conductances");
                     /*if(conduct.value() == 0){
@@ -1123,18 +1112,7 @@ Modify Properties
         quantity<Velocity> getVelocity(map_itter pos) {
             t_vol_t lateral_flow{0 * si::cubic_meter / day};
             t_meter vert_size = get<t_meter, VerticalSize>();
-            t_s_meter_t conductance =
-                    mechanics.calculateHarmonicMeanConductance(at(pos)->getK(),
-                                                               getK(),
-                                                               getAt<t_meter, EdgeLenght>(pos),
-                                                               get<t_meter, EdgeLenght>(),
-                                                               getAt<t_meter, Head>(pos),
-                                                               get<t_meter, Head>(),
-                                                               getAt<t_meter, Elevation>(pos),
-                                                               get<t_meter, Elevation>(),
-                                                               getAt<t_meter, VerticalSize>(pos),
-                                                               vert_size,
-                                                               get<bool, Confinement>());
+            t_s_meter_t conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
             lateral_flow = conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(pos));
             return lateral_flow / (vert_size * vert_size);
         }

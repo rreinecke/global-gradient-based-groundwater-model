@@ -89,6 +89,7 @@ class Options {
         string BOUNDARY_CONDITION{"SeaLevel"};
         bool SENSITIVITY{false};
         vector<bool> CONFINED{};
+    string BASE_PATH{"data"};
         bool k_from_lith{true};
         bool k_ocean_from_file{false};
         bool specificstorage_from_file{false};
@@ -200,6 +201,10 @@ class Options {
             }
             return false;
         }
+
+        //string getBasePath() {
+        //    return BASE_PATH;
+        //}
 
         string
         getNodesDir() {

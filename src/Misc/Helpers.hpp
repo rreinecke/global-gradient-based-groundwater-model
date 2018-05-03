@@ -24,18 +24,23 @@
 #define GLOBAL_FLOW_HELPERS_HPP
 
 #include "../Logging/Logging.hpp"
-inline void
-NANChecker(const double &value, std::string message) noexcept
-{
-    if (std::isnan(value))
-    {
+
+class NANInSolutionException : public std::exception {
+    virtual const char *what() const throw() { return "NaN value in result"; }
+};
+
+class InfInSolutionException : public std::exception {
+    virtual const char *what() const throw() { return "Inf value in result"; }
+};
+
+inline void NANChecker(const double &value, std::string message) {
+    if (std::isnan(value)) {
 	    LOG(GlobalFlow::critical) << "NAN value! :((" << message << "\n";
-        exit(400);
+        throw new NANInSolutionException();
     }
-    if (std::isinf(value))
-    {
+    if (std::isinf(value)) {
 	    LOG(GlobalFlow::critical) << "INF value! :((" << message << "\n";
-        exit(400);
+        throw new InfInSolutionException();
     }
 }
 
