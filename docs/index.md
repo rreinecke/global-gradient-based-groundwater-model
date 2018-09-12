@@ -1,8 +1,9 @@
 [![status](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867/status.svg)](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867)
 
-<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="500" width="100%" src="http://globalvis.robert-reinecke.de"></iframe>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="300" width="100%" src="http://globalvis.robert-reinecke.de"></iframe>
+[Direct link to the visualization of the global groundwater model](http://globalvis.robert-reinecke.de)
 
-# The global gradient-based groundwater model framework G³M
+# The global gradient-based groundwater model framework G³M-f
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
 Its main purpose is to be used as a main building block for the global groundwater mode G³M.
 G³M is a newly developed gradient-based groundwater model which adapts MODFLOW [@harbaugh2005modflow] principles for the globalscale.
