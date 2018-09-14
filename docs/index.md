@@ -1,4 +1,12 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+# Publications
 [![status](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867/status.svg)](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867)
+[![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120)
+
+# Data and code dois
+[![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
 
 <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="300" width="100%" src="http://globalvis.robert-reinecke.de?option=iframe#current/gw/surface/level/overlay=recharge/orthographic=-341.92,5.59,1894"></iframe>
 
