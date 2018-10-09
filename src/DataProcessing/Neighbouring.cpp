@@ -109,9 +109,9 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                 break;
             case Simulation::Options::CONSTANT_HEAD_SEA_LEVEL: {
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                -5 * Model::si::meter,
+                                                0 * Model::si::meter,
                                                 oceanCoduct,
-                                                -5 * Model::si::meter);
+                                                0 * Model::si::meter);
             }
                 break;
             case Simulation::Options::STATIC_HEAD_SEA_LEVEL: {
