@@ -10,7 +10,7 @@
 
 <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="300" width="100%" src="http://globalvis.robert-reinecke.de?option=iframe#current/gw/surface/level/overlay=recharge/orthographic=-341.92,5.59,1894"></iframe>
 
-Interactive visualisation (in progress) of lateral groundwater flows computed by the global model. 
+Interactive visualisation (development in progress) of lateral groundwater flows computed by the global model. 
 
 # The global gradient-based groundwater model framework G³M-f
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
