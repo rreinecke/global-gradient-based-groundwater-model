@@ -246,6 +246,17 @@ You can run them by executing the test executable.
 runUnitTests
 ```
 
+## Known issues
+If you running on Ubuntu google tests might not be build by installing `apt install libgtest-dev`. This can be fixed by:
+```
+cd /usr/src/googletest/googletest
+mkdir build
+cd build
+cmake ..
+make
+cp *.a /usr/lib
+```
+
 ## Built With
 
 * [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
