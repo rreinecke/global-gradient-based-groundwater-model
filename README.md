@@ -229,6 +229,8 @@ The following explains the main config parameters.
 ## Deployment in other models
 The main steps towards your own model is to implement the GW_interface and provide a DataReader.
 A standlone version can be easily implemented by extending the simple example provided above.
+If extended coupling is necessar the newest version provides a coupling interface.
+
 
 ### In memory coupling
 G³M-f is written with the coupling to other models in mind.
@@ -275,7 +277,8 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors and Contributors
 
-* **Robert Reinecke** - *Initial work*
+* **Robert Reinecke** - *Initial work* *Maintainer*
+* **Alexander Wachholz** - *Documentation review*
 
 ## License
 
