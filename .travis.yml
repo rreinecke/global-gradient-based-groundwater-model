@@ -14,10 +14,11 @@ addons:
       - cmake-data
       - cmake
       - clang-5.0
-      - libboost-all-dev
+      - libboost1.58-all-dev
     sources: 
       - george-edison55-precise-backports
       - llvm-toolchain-trusty-5.0
+      - sourceline: 'ppa:kojoley/boost'
 before_script: 
   - "mkdir build"
   - "cd build"
