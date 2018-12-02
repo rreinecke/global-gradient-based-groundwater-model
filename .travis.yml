@@ -6,6 +6,8 @@ branches:
 dist: trusty
 os: 
   - linux
+compiler:
+  - clang
 addons: 
   apt: 
     packages: 
@@ -23,8 +25,8 @@ addons:
       - george-edison55-precise-backports
       - llvm-toolchain-trusty-6.0
       - sourceline: 'ppa:kojoley/boost'
-    env:
-      - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+env:
+  - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
 before_install:
       - eval "${MATRIX_EVAL}"
 before_script: 
