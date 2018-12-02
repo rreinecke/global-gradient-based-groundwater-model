@@ -4,6 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120)
 
+[![Build Status](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model.svg?branch=master)](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model)
 
 # The global gradient-based groundwater model framework G³M
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
