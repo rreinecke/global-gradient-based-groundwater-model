@@ -1,39 +1,26 @@
 language: cpp
-#sudo: required
-dist: trusty
-compiler:
+branches: 
+  only: 
+    - master
+    - dev
+compiler: 
   - clang
-os:
+dist: trusty
+os: 
   - linux
-addons:
-  apt:
-    sources:
-      - george-edison55-precise-backports
-    packages:
+addons: 
+  apt: 
+    packages: 
       - cmake-data
       - cmake
-matrix:
-  - os: linux
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-5.0
-          packages:
-            - clang-5.0
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-
-before_install:
-  - echo "before"
-  - eval "${MATRIX_EVAL}"
-branches:
-  only:
-  - master
-  - dev
-
-before_script:
-  - mkdir build
-  - cd build
-  - cmake ..
-
+      - clang-5.0
+    sources: 
+      - george-edison55-precise-backports
+      - llvm-toolchain-trusty-5.0
+before_install: 
+  - "echo \"before\""
+before_script: 
+  - "mkdir build"
+  - "cd build"
+  - "cmake .."
 script: make
