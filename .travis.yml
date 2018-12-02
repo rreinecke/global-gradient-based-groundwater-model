@@ -13,7 +13,7 @@ addons:
     packages: 
       - cmake-data
       - cmake
-      - clang-5.0
+      - clang-6.0
       - libboost1.58-dev
       - libboost-system1.58-dev
       - libboost-filesystem1.58-dev
@@ -22,7 +22,7 @@ addons:
       - lcov
     sources: 
       - george-edison55-precise-backports
-      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-trusty-6.0
       - sourceline: 'ppa:kojoley/boost'
 before_script: 
   - "mkdir build"
