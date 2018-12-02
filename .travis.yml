@@ -5,7 +5,6 @@ branches:
     - dev
 compiler: 
   - clang
-sudo: required
 dist: trusty
 os: 
   - linux
@@ -15,11 +14,10 @@ addons:
       - cmake-data
       - cmake
       - clang-5.0
+      - libboost-all-dev
     sources: 
       - george-edison55-precise-backports
       - llvm-toolchain-trusty-5.0
-before_install: 
-  - sudo apt install libboost1.65-all-dev
 before_script: 
   - "mkdir build"
   - "cd build"
