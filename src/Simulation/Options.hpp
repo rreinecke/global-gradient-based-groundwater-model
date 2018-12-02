@@ -88,8 +88,9 @@ class Options {
         double SPECIFIC_STORAGE{0.000015};
         string BOUNDARY_CONDITION{"SeaLevel"};
         bool SENSITIVITY{false};
+    	bool ONE_LAYER{false};
         vector<bool> CONFINED{};
-    string BASE_PATH{"data"};
+    	string BASE_PATH{"data"};
         bool k_from_lith{true};
         bool k_ocean_from_file{false};
         bool specificstorage_from_file{false};
@@ -124,6 +125,8 @@ class Options {
         double getMaxHeadChange() { return MAX_HEAD_CHANGE; }
 
         bool isConfined(int layer) { return CONFINED[layer]; }
+
+    	bool isOneLayerApproach() { return ONE_LAYER; }
 
         vector<bool> getConfinements() { return CONFINED; }
 

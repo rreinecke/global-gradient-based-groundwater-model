@@ -92,13 +92,13 @@ class Equation {
          * Toogle the steady-state in all nodes
          * @return
          */
-        bool toogleSteadyState() {
+        bool toggleSteadyState() {
             SteadyState = !SteadyState;
             bool state = SteadyState;
             std::for_each(nodes->begin(),
                           nodes->end(),
                           [state](std::unique_ptr<Model::NodeInterface> const &node) {
-                              node->toogleStadyState(state);
+                              node->toggleSteadyState(state);
                           });
             return SteadyState;
         }
@@ -107,7 +107,7 @@ class Equation {
          * Set the correct stepsize (default is DAY)
          * @param mod
          */
-        void updateStepSize(size_t mod) {
+        void updateStepSize(double mod) {
             std::for_each(nodes->begin(),
                           nodes->end(),
                           [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
@@ -121,6 +121,13 @@ class Equation {
         }
 
         void updateClosingCrit(double crit) { cg.setTolerance(crit); }
+
+    /**
+     * @note resests dampening object and counters
+     */
+    void enableDamping() {
+        isAdaptiveDamping = true;
+    }
 
     private:
         bool initalized = false;

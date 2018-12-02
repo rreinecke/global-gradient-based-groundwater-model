@@ -133,15 +133,17 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
     //Static MM
     t_meter stage = eq_head - flowHead;
 
+    //Scale parameter not in use
     double p = 1;
     if (stage.value() <= 0) {
-        stage = 1 * si::meter;
+        stage = .1 * si::meter;
     }
 
-    NANChecker(out.value(), "Recharge problem");
+    //possibility to lock conductance equation with former recharge e.g. from steady-state model
+    if (lock_recharge) { current_recharge = locked_recharge; }
 
     out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;
-    NANChecker(out.value(), "ERC Problem");
+    NANChecker(out.value(), "ERC Recharge problem");
 
     if (out < conductance) {
         //Only happens if cell was loosing in eq and is now gaining
@@ -153,7 +155,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
         if (tmp_conduct.value() > 1e+10) {
             tmp_conduct = 1e+10 * si::square_meter / day;
         }
-        NANChecker(tmp_conduct.value(), "ERC Problem");
+        NANChecker(tmp_conduct.value(), "ERC Problem low flow head");
         if (tmp_conduct.value() <= 0) {
             LOG(critical) << "conductance <= 0";
         }
@@ -162,7 +164,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
         if (out.value() > 1e+10) {
             out = 1e+10 * si::square_meter / day;
         }
-        NANChecker(out.value(), "ERC Problem");
+        NANChecker(out.value(), "ERC Problem high flow head");
         if (out.value() <= 0) {
             LOG(critical) << "conductance <= 0";
         }

@@ -21,65 +21,40 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef GLOBAL_FLOW_GW_INTERFACE_H
-#define GLOBAL_FLOW_GW_INTERFACE_H
+#ifndef GLOBAL_FLOW_COUPLINGINTERFACE_HPP
+#define GLOBAL_FLOW_COUPLINGINTERFACE_HPP
 
-#include "CouplingInterface.hpp"
-#include "Simulation/Options.hpp"
+#include "Misc/Helpers.hpp"
+#include "Model/Node.hpp"
+#include "DataProcessing/DataReader.hpp"
 
 namespace GlobalFlow {
-
-    using namespace std;
+    using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
 
     /**
-     * @interface GW_Interface
-     * @class GW_Interface
-     * @brief Main interface to the groundwater model
-     *
-     * Interface to the groundwater simulation
-     * Implement me!
+     * This interface needs to be implemented to access datafields in the simulation class of G³M-f
+     * How data is transferred from the coupled model to G³M-f is the responsibility of the implemented class
      */
-    template<class T>
-    class GW_Interface {
+    template<class Container>
+    class CouplingInterface {
     public:
-        virtual ~GW_Interface() {}
+        virtual ~CouplingInterface() {}
 
-        /**
-         * Read general simulation settings
-         * e.g. Options
-         */
-        virtual void loadSettings() = 0;
+        CouplingInterface(NodeVector nodeVector, DataReader *reader) : nodes(nodeVector), reader(reader) {}
 
-        /**
-         * Do additional work required for a running simulation
-         */
-        virtual void setupSimulation() = 0;
+        virtual void updateRecharge(Container data, short month, int numberOfGridCells) {}
 
-        /**
-         * Write data for specific year or month
-         */
-        virtual void writeData(std::string) = 0;
+        virtual void updateNetAbstraction(Container data, short month, int numberOfGridCells) {}
 
-        /**
-         * Simulate/Run the model
-         */
-        virtual void simulate() = 0;
+        virtual void updateRivers(Container data, short month, int numberOfGridCells) {}
 
-        void initInterface(CouplingInterface<T> *intf_ptr) {
-            interface = intf_ptr;
-            intf_set = true;
-        }
+        virtual void getRiverData(Container data, short month, int numberOfGridCells) {}
 
-        CouplingInterface<T> *getInterface() {
-            if (not intf_set) { throw std::domain_error("Interface is not initalized yet"); }
-            return interface;
-        }
+        virtual void getStorageData(Container data, short month, int numberOfGridCells) {}
 
-        void deleteInterface() { delete interface; }
-
-    private:
-        CouplingInterface<T> *interface;
-        bool intf_set{false};
+    protected:
+        NodeVector nodes;
+        DataReader *reader;
     };
-}//ns
-#endif //GW_INTERFACE_H
+}
+#endif

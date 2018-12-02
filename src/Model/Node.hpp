@@ -116,7 +116,8 @@ class NodeInterface {
             t_meter folding = get<t_meter, EFolding>();
             if (folding == 0.0 * si::meter)
                 return 1 * si::si_dimensionless;
-            z = (z / (2 * si::si_dimensionless));
+            //Alter if a different size should be used and not full vertical size
+            //z = (z / (2 * si::si_dimensionless));
             t_dim out = exp(-z / folding);
             if (out == 0 * si::si_dimensionless)
                 return 1e-7 * si::si_dimensionless;
@@ -395,8 +396,14 @@ Modify Properties
                 if (got == neighbours.end()) {//No neighbouring node
                 } else {
                     //There is a neighbour node
-                    t_s_meter_t conductance = mechanics.calculateHarmonicMeanConductance(
-                            createDataTuple<HeadType>(got));
+                    t_s_meter_t conductance;
+                    //TODO check for option!
+                    //if (get<int, Layer>() > 0) {
+                    //    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                    //}else{
+                    conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                    //}
+
                     t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
                     if (onlyOut) {
                         if (flow.value() > 0) { lateral_flow = lateral_flow - flow; }
@@ -530,7 +537,7 @@ Modify Properties
          * @param onOFF true=on
          * Turns all storage equations to zero with no timesteps
          */
-        void toogleStadyState(bool onOFF) { this->steadyState = onOFF; }
+        void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
 
         void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
 
@@ -770,8 +777,19 @@ Modify Properties
          * @brief Updates GW recharge
          * Curently assumes only one recharge as external flow!
          * @param amount The new flow amount
+         * @param Should the recharge in the dynamic rivers be locked or updated by this change?
          */
-        void updateUniqueFlow(double amount, FlowType flow = RECHARGE) {
+        void updateUniqueFlow(double amount, FlowType flow = RECHARGE, bool lock = true) {
+            if (lock) {
+                if (hasTypeOfExternalFlow(RIVER_MM)) {
+                    //get current recharge and lock it bevor setting new recharge
+                    //in arid regions recharge might be 0
+                    t_vol_t recharge{0 * si::cubic_meter /day};
+                    if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
+                    getExternalFlowByName(RIVER_MM).setLock();
+                    getExternalFlowByName(RIVER_MM).setLockRecharge(recharge);
+                }
+            }
             if (hasTypeOfExternalFlow(flow)) {
                 //LOG(debug) << "current: " << getExternalFlowByName(RECHARGE).getRecharge().value();
                 removeExternalFlow(flow);
@@ -822,6 +840,44 @@ Modify Properties
                 t_meter bottom = getExternalFlowByName(type).getBottom();
                 removeExternalFlow(type);
                 addExternalFlow(type, flowHead, conduct, bottom);
+            }
+        }
+
+        /**
+        * @brief Sets flowHead An. wetlands, lakes, rivers
+        * @param amount
+        * @param type
+        */
+        void setExternalFlowFlowHead(double amount, FlowType type) {
+            if (hasTypeOfExternalFlow(type)) {
+                t_meter flowHead = amount * si::meter;
+                double conduct = getExternalFlowByName(type).getConductance().value();
+                t_meter bottom = getExternalFlowByName(type).getBottom();
+                removeExternalFlow(type);
+                addExternalFlow(type, flowHead, conduct, bottom);
+            }
+        }
+
+        /**
+       * @brief adds delta to flowHead An. wetlands, lakes, rivers
+       * @note Also checks for locked recharge
+       * @param amount
+       * @param type
+       */
+        void addExternalFlowFlowHead(double amount, FlowType type) {
+            if (hasTypeOfExternalFlow(type)) {
+                t_meter delta{amount * si::meter};
+                t_meter flowHead{getExternalFlowByName(type).getFlowHead() + delta};
+                double conduct{getExternalFlowByName(type).getConductance().value()};
+                t_meter bottom{getExternalFlowByName(type).getBottom()};
+                bool lock{getExternalFlowByName(type).getLock()};
+                t_vol_t recharge{getExternalFlowByName(type).getLockRecharge()};
+                removeExternalFlow(type);
+                addExternalFlow(type, flowHead, conduct, bottom);
+                if (lock) {
+                    getExternalFlowByName(type).setLock();
+                    getExternalFlowByName(type).setLockRecharge(recharge);
+                }
             }
         }
 
@@ -992,7 +1048,6 @@ Modify Properties
 
             for (const auto &position: possible_neighbours) {
                 map_itter got = neighbours.find(position);
-                t_vel K = 0;
                 t_s_meter_t conduct = 0;
                 if (got == neighbours.end()) {
                     //No neighbouring node
@@ -1001,8 +1056,12 @@ Modify Properties
                     if (got->first == TOP or got->first == DOWN) {
                         conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                     } else {
-                        K = nodes->at(got->second)->getK();
+                        //TODO check for option!
+                        //if (get<int, Layer>() > 0) {
+                        //    conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                        //}else{
                         conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        //}
                     }
                     NANChecker(conduct.value(), "Conductances");
                     /*if(conduct.value() == 0){
@@ -1112,7 +1171,14 @@ Modify Properties
         quantity<Velocity> getVelocity(map_itter pos) {
             t_vol_t lateral_flow{0 * si::cubic_meter / day};
             t_meter vert_size = get<t_meter, VerticalSize>();
-            t_s_meter_t conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
+            t_s_meter_t conductance;
+            //TODO check for option!
+            //if (get<int, Layer>() > 0) {
+            //    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(pos), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(pos));
+            //}else{
+            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
+            //}
+
             lateral_flow = conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(pos));
             return lateral_flow / (vert_size * vert_size);
         }

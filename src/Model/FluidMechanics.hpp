@@ -46,6 +46,8 @@ namespace GlobalFlow {
             t_meter
             calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept;
 
+            t_s_meter_t calculateEFoldingConductance(FlowInputHor flow, t_meter folding_self, t_meter folding_neig);
+
             /**
              * @brief Calculates the horizontal flow between two nodes
              * @param flow a touple of inputs about the aquifer

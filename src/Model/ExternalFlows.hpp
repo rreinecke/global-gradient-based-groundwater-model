@@ -150,6 +150,7 @@ class ExternalFlow {
 
         t_vol_t getRecharge() const noexcept { return special_flow; }
 
+
         t_meter getFlowHead() const noexcept { return flowHead; }
 
         t_s_meter_t getDyn(t_vol_t current_recharge,
@@ -171,6 +172,14 @@ class ExternalFlow {
             return;
         }
 
+    void setLock() { lock_recharge = true; }
+
+    bool getLock() { return lock_recharge; }
+
+    void setLockRecharge(t_vol_t re) { locked_recharge = re; }
+
+    t_vol_t getLockRecharge() { return locked_recharge; }
+
     private:
         const int ID;
         const FlowType type;
@@ -179,6 +188,9 @@ class ExternalFlow {
         const t_vol_t special_flow;
         const t_meter bottom;
         t_dim mult{1 * si::si_dimensionless}; //Multiplier only used for SA
+
+    t_vol_t locked_recharge;
+    bool lock_recharge{false};
 
         t_vol_t
         calculateFloodplaindDrainage(t_meter head) const noexcept;

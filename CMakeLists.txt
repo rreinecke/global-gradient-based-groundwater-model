@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+
 ################################
 # Simple Demo Model
 ################################
@@ -7,9 +13,6 @@ project(simple)
 add_subdirectory(src)
 add_subdirectory(lib)
 
-set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 set(BOOST_ROOT=/usr/local/lib)
 set(Boost_NO_SYSTEM_PATHS=TRUE)
@@ -55,10 +58,6 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
 
-# Prevent GoogleTest from overriding our compiler/linker options
-# when building with Visual Studio
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
 # Add googletest directly to our build. This adds
 # the following targets: gtest, gtest_main, gmock
 # and gmock_main
@@ -73,34 +72,27 @@ if(CMAKE_VERSION VERSION_LESS 2.8.11)
                         "${gmock_SOURCE_DIR}/include")
 endif()
 
-# Now simply link your own targets against gtest, gmock,
-# etc. as appropriate
-
 add_subdirectory(tests)
 enable_testing()
-#find_package(GTest REQUIRED)
-#include_directories(${GTEST_INCLUDE_DIRS})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 
 set(testing_src ${SOURCE})
 set(testing_hrd ${HEADERS})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 
-
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
-target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest)
+target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)
 add_test(AllTests runUnitTests)
 
-
-#project(Coverage)
-#INCLUDE(cmake/CodeCoverage.cmake)
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
-#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+project(Coverage)
+include(cmake/CodeCoverage.cmake)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
 #
-#SETUP_TARGET_FOR_COVERAGE(
-#		coverage_target     # Name for custom target.
-#		runUnitTests        # Name of the test driver executable that runs the tests.
-#		# NOTE! This should always have a ZERO as exit code
-#		# otherwise the coverage generation will not complete.
-#		coverage            # Name of output directory.
-#)
+set(COVERAGE_LCOV_EXCLUDES '${PROJECT_SOURCE_DIR}/lib/*' '/usr/include/*' '/usr/local/*' '*asio/*' '*googletest/*')
+
+SETUP_TARGET_FOR_COVERAGE_LCOV(
+                DEPENDENCIES runUnitTests
+                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
+                NAME coverage
+)
+

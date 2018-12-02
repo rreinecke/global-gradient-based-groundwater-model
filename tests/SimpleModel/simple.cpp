@@ -20,19 +20,28 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running a steady state step";
-        step.first->toogleSteadyState();
+        step.first->toggleSteadyState();
+        step.first->solve();
+        sim.printMassBalances();
+        step.first->toggleSteadyState();
+    }
+
+    LOG(userinfo) << "Running a transient steps";
+    Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
+    for (Simulation::step step : transientStepper) {
         step.first->solve();
         sim.printMassBalances();
     }
+
     DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
-    //sim.save();
+    delete reader;
 }
 
 void StandaloneRunner::getResults() {
 
 }
 
-void StandaloneRunner::writeData() {
+void StandaloneRunner::writeData(std::string) {
 
 }
 

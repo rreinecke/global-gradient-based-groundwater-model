@@ -4,7 +4,7 @@ namespace GlobalFlow {
 namespace Solver {
 
 Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes << "\n";
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodes;
 
     this->numberOfNodes = numberOfNodes;
     this->IITER = options.getMaxIterations();
@@ -202,19 +202,19 @@ Equation::updateMatrix() {
     //Check if after iteration former 0 values turned to non-zero
     if (disable_dry_cells) {
         if ((not _A_.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             _A_.makeCompressed();
         }
     } else {
         if ((not A.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             A.makeCompressed();
         }
     }
 }
 
 void inline Equation::preconditioner() {
-    LOG(numerics) << "Decomposing Matrix\n";
+    LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
         if (disable_dry_cells) {
             bicgstab.compute(_A_);
@@ -222,7 +222,7 @@ void inline Equation::preconditioner() {
             bicgstab.compute(A);
         }
         if (bicgstab.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     } else {
@@ -232,7 +232,7 @@ void inline Equation::preconditioner() {
             cg.compute(A);
         }
         if (cg.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     }
@@ -287,17 +287,17 @@ Equation::updateBudget() {
 void
 Equation::solve() {
 
-    LOG(numerics) << "Updating Matrix\n";
+    LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
     if (!isCached) {
-        LOG(numerics) << "Compressing matrix\n";
+        LOG(numerics) << "Compressing matrix";
         if (disable_dry_cells) {
             _A_.makeCompressed();
         } else {
             A.makeCompressed();
         }
-        LOG(numerics) << "Cached Matrix\n";
+        LOG(numerics) << "Cached Matrix";
         isCached = true;
     }
 
@@ -308,7 +308,7 @@ Equation::solve() {
         adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
     }
 
-    std::cout << "Running Time Step\n";
+    LOG(numerics) << "Running Time Step";
     // Returns true if max headchange is greater as defined val
     auto isHeadChangeGreater = [this]() -> bool {
         double lowerBound = maxHeadChange;
@@ -420,7 +420,7 @@ Equation::solve() {
     }
 
     if (iterations == IITER) {
-        std::cerr << "Fail in solving matrix with max iterations \n";
+        std::cerr << "Fail in solving matrix with max iterations";
         if (nwt) {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
         } else {
