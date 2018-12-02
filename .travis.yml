@@ -19,6 +19,7 @@ addons:
       - libboost-filesystem1.58-dev
       - libboost-serialization1.58-dev
       - libboost-log1.58-dev
+      - lcov
     sources: 
       - george-edison55-precise-backports
       - llvm-toolchain-trusty-5.0
