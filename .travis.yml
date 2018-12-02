@@ -20,7 +20,8 @@ addons:
       - libboost-serialization1.58-dev
       - libboost-log1.58-dev
       - lcov
-    sources: 
+    sources:
+      - ubuntu-toolchain-r-test 
       - george-edison55-precise-backports
       - llvm-toolchain-trusty-6.0
       - sourceline: 'ppa:kojoley/boost'
