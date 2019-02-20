@@ -8,10 +8,6 @@
 [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
 
-<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="300" width="100%" src="http://globalvis.robert-reinecke.de?option=iframe#current/gw/surface/level/overlay=recharge/orthographic=-341.92,5.59,1894"></iframe>
-
-Interactive visualisation (development in progress) of lateral groundwater flows computed by the global model. 
-
 # The global gradient-based groundwater model framework G³M-f
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
 Its main purpose is to be used as a main building block for the global groundwater mode G³M.
