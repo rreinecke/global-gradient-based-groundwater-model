@@ -31,11 +31,10 @@
 #include <boost/serialization/export.hpp>
 #include <boost/serialization/unique_ptr.hpp>
 #include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 #include <boost/multiprecision/gmp.hpp>
 #include <type_traits>
 #include <boost/filesystem.hpp>
-
+#include "../Misc/serializer.hpp"
 #include "../Solver/Equation.hpp"
 #include "../DataProcessing/DataReader.hpp"
 #include "../Logging/Logging.hpp"
@@ -43,6 +42,40 @@
 #include "../DataProcessing/Neighbouring.hpp"
 #include "../Misc/Helpers.hpp"
 //#include "sensitivity.hpp"
+
+namespace boost { namespace serialization {
+
+        using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>>;
+
+        template<class Archive>
+        inline void serialize(Archive & ar, NodeVector& foo, const unsigned int file_version){
+            LOG(GlobalFlow::debug) << "Serializing called";
+        }
+
+
+        template<class Archive>
+        inline void save_construct_data(Archive & ar, const NodeVector* foo, const unsigned int file_version){
+            LOG(GlobalFlow::debug) << "Serializing vector";
+            ar & foo->get()->size();
+            for(auto it=foo->get()->begin(), end=foo->get()->end(); it!=end; ++it){
+                ar & *it;
+            }
+        }
+
+        template<class Archive>
+        inline void load_construct_data(Archive & ar, NodeVector* foo, const unsigned int file_version){
+            size_t size{0};
+            ar & size;
+            foo->get()->clear();
+            foo->get()->reserve(size);
+            for (int i = 0; i <size ; ++i) {
+                std::unique_ptr<GlobalFlow::Model::NodeInterface> p;
+                ar & p;
+                foo->get()->push_back(std::move(p));
+            }
+        }
+    }}
+
 
 
 namespace GlobalFlow {
@@ -82,19 +115,32 @@ namespace GlobalFlow {
 
             Solver::Equation *getEquation() { return eq.get(); };
 
+            /**
+             * Serialize current node state
+             */
             void save() {
-                //Serialize current node state
                 if (serialize) {
-                    cout << "Saving nodes for faster reboot .. \n";
+                    LOG(stateinfo) << "Saving state for faster reboot..";
                     {
-                        std::ofstream ofs("savedNodes", ios::out | ios::binary);
+                        std::ofstream ofs(saveName, ios::out | ios::binary);
                         boost::archive::binary_oarchive outStream(ofs);
-                        // write class instance to archive
                         outStream << nodes;
                     }
-                    cout << "Nodes saved\n";
+                    LOG(stateinfo) << "Nodes saved";
                 }
             };
+
+            void restore(){
+               if(loadNodes) {
+                   LOG(stateinfo) << "Restoring state..";
+                   {
+                        std::ifstream in(saveName, ios::in | ios::binary);
+                        boost::archive::binary_iarchive inStream(in);
+                        inStream >> nodes;
+                   }
+                   LOG(stateinfo) << "Restored state successfully..";
+               }
+            }
 
             /**
              * Get basic node information by its id
@@ -363,25 +409,25 @@ namespace GlobalFlow {
             /**
              * Prints all mass balances
              */
-            void printMassBalances() {
+            void printMassBalances(custom_severity_level level) {
                 MassError currentErr = getCurrentMassError();
                 MassError totalErr = getMassError();
-                LOG(stateinfo) << "All units in meter per stepsize";
-                LOG(stateinfo) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
+                LOG(level) << "All units in meter per stepsize";
+                LOG(level) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
                               << currentErr.OUT;
-                LOG(stateinfo) << "Total mass error: " << totalErr.ERR << "IN: " << totalErr.IN << "Out: "
+                LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
                               << totalErr.OUT;
-                LOG(stateinfo) << "General Head Boundary" << getFlowByName(GENERAL_HEAD_BOUNDARY);
+                LOG(level) << "General Head Boundary" << getFlowByName(GENERAL_HEAD_BOUNDARY);
                 LOG(stateinfo) << "Rivers: " << getFlowByName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
-                LOG(stateinfo) << "Dynamic Rivers: " << getFlowByName(RIVER_MM);
-                LOG(stateinfo) << "Lakes: " << getFlowByName(LAKES);
-                LOG(stateinfo) << "Wetlands: " << getFlowByName(WETLANDS);
-                LOG(stateinfo) << "Global wetlands: " << getFlowByName(GLOBAL_WETLANDS);
-                LOG(stateinfo) << "Recharge: " << getFlowByName(RECHARGE);
+                LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);
+                LOG(level) << "Lakes: " << getFlowByName(LAKES);
+                LOG(level) << "Wetlands: " << getFlowByName(WETLANDS);
+                LOG(level) << "Global wetlands: " << getFlowByName(GLOBAL_WETLANDS);
+                LOG(level) << "Recharge: " << getFlowByName(RECHARGE);
                 //LOG(userinfo) << "Fast Surface Runoff: " << getFlowByName(FASTSURFACE) << "\n";
-                LOG(stateinfo) << "Net abstraction from groudnwater: " << getFlowByName(NAG);
-                LOG(stateinfo) << "Storage (only valid if transient run): " << getFlowByName(STORAGE);
+                LOG(level) << "Net abstraction from groundwater: " << getFlowByName(NAG);
+                LOG(level) << "Storage (only valid if transient run): " << getFlowByName(STORAGE);
             }
 
             DataReader *getDataReader() {
@@ -397,7 +443,7 @@ namespace GlobalFlow {
              * @param path
              */
             void writeResiduals(string path) {
-                Eigen::VectorXd vector = eq->getResiduals();
+                Eigen::Matrix<long double, Eigen::Dynamic, 1> vector = eq->getResiduals();
                 std::ofstream ofs;
                 ofs.open(path, std::ofstream::out | std::ofstream::trunc);
                 ofs << "X,Y,data" << "\n";
@@ -411,6 +457,7 @@ namespace GlobalFlow {
                 ofs.close();
             }
 
+            bool isRestored(){ return succefullyRestored; }
 
         private:
             NodeVector nodes;
@@ -424,8 +471,10 @@ namespace GlobalFlow {
             };
 
 
-            bool serialize = false;
-            bool loadNodes = false;
+            bool serialize{false};
+            bool loadNodes{false};
+            std::string saveName{".cached_simulation"};
+            bool succefullyRestored{false};
         };
 
     }

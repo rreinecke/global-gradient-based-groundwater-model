@@ -2,9 +2,9 @@
   "output": {
     "StaticResult": [
       {
-        "name": "wtd",
+        "name": "head",
         "type": "csv",
-        "field": "DepthToWaterTable",
+        "field": "Head",
         "ID": "false",
         "position": "true"
       }

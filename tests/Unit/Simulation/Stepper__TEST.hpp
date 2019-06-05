@@ -52,6 +52,7 @@ public:
     volatile int writeMe{0};
     void IwillCrash(){
         MockEquation equation(4,nodes,op);
+
         Stepper stepper = Stepper(&equation, MONTH, 1,true);
         for (step step : stepper) {writeMe = static_cast<int>(10);}
     }

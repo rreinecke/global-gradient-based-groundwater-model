@@ -1,6 +1,23 @@
 #include <gtest/gtest.h>
 #include "../../../src/Model/FluidMechanics.hpp"
 
+TEST(FluidMechanics, estimateConductance) {
+    FluidMechanics m = FluidMechanics();
+    //t_vel K, t_meter length, t_meter width, t_meter Daq, t_meter G, depth
+    ASSERT_DOUBLE_EQ(m.estimateConductance(1 * si::meter / day, 100 * si::meter, 10 * si::meter, 100 * si::meter,
+                                           1000 * si::meter, 10 * si::meter).value(), 32.855614163202617);
+    ASSERT_DOUBLE_EQ(m.estimateConductance(0.01 * si::meter / day, 1000 * si::meter, 100 * si::meter, 100 * si::meter,
+                                           1000 * si::meter, 10 * si::meter).value(), 10.949907990410804);
+    testing::FLAGS_gtest_death_test_style = "threadsafe";
+    ASSERT_DEATH(m.estimateConductance(0.01 * si::meter / day, 1000 * si::meter, 100 * si::meter, 100 * si::meter,
+                                       1000 * si::meter, 1000 * si::meter).value(),
+                 "Depth of river and thickness of cell are not fit for this equation");
+    ASSERT_DEATH(m.estimateConductance(0 * si::meter / day, 0 * si::meter, 0 * si::meter, 0 * si::meter,
+                                       0 * si::meter, 0 * si::meter).value(), "Inputs can't be 0!");
+    ASSERT_DEATH(m.estimateConductance(0 * si::meter / day, 0 * si::meter, 0 * si::meter, 1 * si::meter,
+                                       1 * si::meter, 0 * si::meter).value(), "Inputs can't be 0!");
+}
+
 TEST(FluidMechanics, calcDeltaV) {
     FluidMechanics m = FluidMechanics();
     //quantity<Meter> head, quantity<Meter> elevation, quantity<Meter> depth
@@ -66,8 +83,8 @@ TEST(FluidMechanics, calculateVerticalConductance) {
 
 
     FlowInputVert t = std::make_tuple(k_vert_neig, k_vert_self, verticalSize_self, head_self, elevation_self, area_self,
-                                     elevation_neig, depth_neig, head_neig,
-                                     confined);
+                                      elevation_neig, depth_neig, head_neig,
+                                      confined);
     ASSERT_DOUBLE_EQ(m.calculateVerticalConductance(t).value(), 0.1);
 }
 

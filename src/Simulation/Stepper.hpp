@@ -77,7 +77,7 @@ namespace GlobalFlow {
                 return *this;
             }
 
-            const void calcInit(){
+            const void calcInit() {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
                 _delta_t_n = __delta;

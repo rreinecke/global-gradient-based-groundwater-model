@@ -211,9 +211,7 @@ namespace GlobalFlow {
                                                               quantity<MeterSquaredPerTime> P) noexcept {
             if (steadyState)
                 return P;
-            quantity<MeterSquaredPerTime> out =
-                    P - (storageCapacity / day);
-            //* stepModifier
+            quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
             NANChecker(out.value(), "HCOF");
             return out;
         }

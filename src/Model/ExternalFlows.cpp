@@ -27,6 +27,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case RIVER:
             return -conductance;
         case RIVER_MM:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ return out; }
             return -calcERC(recharge, eq_head, head, eqFlow);
         case WETLAND:
             return -conductance;
@@ -71,6 +73,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case RIVER:
             return conductance * flowHead;
         case RIVER_MM:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ return out; }
             return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
         case WETLAND:
             return conductance * flowHead;
@@ -132,6 +136,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
 
     //Static MM
     t_meter stage = eq_head - flowHead;
+    NANChecker(stage.value(), "ERC stage problem");
 
     //Scale parameter not in use
     double p = 1;
@@ -140,7 +145,10 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
     }
 
     //possibility to lock conductance equation with former recharge e.g. from steady-state model
-    if (lock_recharge) { current_recharge = locked_recharge; }
+    if (lock_recharge) {
+        current_recharge = locked_recharge;
+        return locked_conductance * mult;
+    }
 
     out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;
     NANChecker(out.value(), "ERC Recharge problem");

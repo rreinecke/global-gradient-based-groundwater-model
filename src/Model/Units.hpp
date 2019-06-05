@@ -25,7 +25,6 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/unique_ptr.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 
 namespace GlobalFlow {
 namespace Model {
@@ -59,7 +58,7 @@ using t_s_meter_t = quantity<MeterSquaredPerTime>;
 using t_s_meter = quantity<SquareMeter>;
 
 using large_num = unsigned long int;
-
+const Dimensionless d = si::si_dimensionless;
 }
 }
 #endif //_HPP

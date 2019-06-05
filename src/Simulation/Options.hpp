@@ -62,6 +62,7 @@ class Options {
         string SS_FILE{""};
         string SY_FILE{""};
         string AQ_DEPTH{""};
+        string INITIAL_HEADS{""};
 
         //++Special mappings++//
         string NODEID_ARCID{""};
@@ -165,6 +166,8 @@ class Options {
         string getSYDir() { return SY_FILE; }
 
         string getAQDepthDir() { return AQ_DEPTH; }
+
+        string getInitialHeadsDir() {return INITIAL_HEADS;}
 
         bool isRowCol() { return ROW_COLS; }
 
@@ -314,7 +317,7 @@ class Options {
 
         //Computations are all based on daily
         const int
-        getStepsizeModifier() throw(out_of_range) {
+        getStepsizeModifier() {
             switch (stepsize) {
                 case DAILY:
                     return 1;

@@ -71,6 +71,9 @@ inline void NANChecker(const double &value, std::string message) {
     }
 }
 
+template<typename T>
+T const pi = std::acos(-T(1));
+
 /*
  * Helper function for rounding double values up
  */
@@ -137,12 +140,6 @@ protected:
 };
 
 template<typename C> C *Singleton<C>::_instance = 0;
-
-//Only needed for cpp11
-template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args){
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 //Usage:
 /*class LoggerInterface : public Singleton<LoggerInterface> {

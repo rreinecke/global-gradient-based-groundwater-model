@@ -142,6 +142,9 @@ Options::load(const std::string &filename) {
     SY_FILE = getOptional("specificyield", data);
     AQ_DEPTH = getOptional("aquiferdepth", data);
 
+    INITIAL_HEADS = getOptional("initial_head", data);
+
+
     boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
     if (mappings) {
         NODEID_ARCID = mappings.value().get<string>("nodeID-arcID");

@@ -90,9 +90,9 @@ TEST_F(StandardNodeFixture, setK) {
 TEST_F(StandardNodeFixture, getStorageCapacity) {
     at(0)->setElevation(10 * si::meter);
     at(0)->setHead_direct(5);
-    ASSERT_EQ(at(0)->getStorageCapacity().value(), 1);
+    ASSERT_EQ(at(0)->getStorageCapacity().value(), 0.2);
     at(0)->setElevation(5 * si::meter);
-    ASSERT_EQ(at(0)->getStorageCapacity().value(), 1);
+    ASSERT_EQ(at(0)->getStorageCapacity().value(), 0.2);
 }
 
 TEST_F(StandardNodeFixture, AddAndRemoveExternalFlow) {
@@ -181,13 +181,13 @@ TEST_F(StandardNodeFixture, calculateNotHeadDependandFlows) {
 }
 
 TEST_F(StandardNodeFixture, getConductance) {
-    ASSERT_NEAR((at(0)->getConductance()[0].value()), -2.34, 0.01);
+    ASSERT_NEAR((at(0)->getConductance()[0].value()), -1.54, 0.01);
     ASSERT_NEAR((at(0)->getConductance()[1].value()), 1.33, 0.01);
 }
 
 TEST_F(StandardNodeFixture, getJacobian) {
-    ASSERT_NEAR((at(0)->getJacobian()[0].value()), -2.34, 0.01);
-    ASSERT_NEAR((at(0)->getJacobian()[1].value()), 0.133, 0.01);
+    ASSERT_NEAR((at(0)->getJacobian()[0].value()), -1.54, 0.01);
+    ASSERT_NEAR((at(0)->getJacobian()[1].value()), 0, 0.01);
 }
 
 TEST_F(StandardNodeFixture, getRHS) {
@@ -195,7 +195,7 @@ TEST_F(StandardNodeFixture, getRHS) {
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_EQ((at(0)->getRHS().value()), -51);
+    ASSERT_EQ((at(0)->getRHS().value()), -50);
 }
 
 TEST_F(StandardNodeFixture, getRHS__NWT) {
@@ -203,7 +203,7 @@ TEST_F(StandardNodeFixture, getRHS__NWT) {
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_EQ((at(0)->getRHS().value()), -51);
+    ASSERT_EQ((at(0)->getRHS().value()), -50);
 }
 
 TEST_F(StandardNodeFixture, setHead__NWT) {

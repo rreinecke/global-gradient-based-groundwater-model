@@ -42,15 +42,27 @@ namespace GlobalFlow {
 
         CouplingInterface(NodeVector nodeVector, DataReader *reader) : nodes(nodeVector), reader(reader) {}
 
-        virtual void updateRecharge(Container data, short month, int numberOfGridCells) {}
+        virtual void updateRechargeInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void updateNetAbstraction(Container data, short month, int numberOfGridCells) {}
+        virtual void updateNetAbstractionInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void updateRivers(Container data, short month, int numberOfGridCells) {}
+        virtual void updateRiversInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void getRiverData(Container data, short month, int numberOfGridCells) {}
+        virtual void updateGlobalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void getStorageData(Container data, short month, int numberOfGridCells) {}
+        virtual void updateLocalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
+
+        virtual void updateLakesInGW(Container data1, Container data2, short month, int numberOfGridCells) {}
+
+        virtual void writeRiver(Container data, short month, int numberOfGridCells) {}
+
+        virtual void writeGlobalWetlands(Container data, short month, int numberOfGridCells) {}
+
+        virtual void writeLocalWetlands(Container data, short month, int numberOfGridCells) {}
+
+        virtual void writeLakes(Container data, short month, int numberOfGridCells) {}
+
+        virtual void writeStorage(Container data, short month, int numberOfGridCells) {}
 
     protected:
         NodeVector nodes;

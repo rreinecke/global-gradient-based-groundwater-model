@@ -234,6 +234,26 @@ class NodeInterface {
         }
 
     public:
+
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            LOG(debug) << "Serializing abstract node";
+            ar & nodes;
+            ar & neighbours;
+            ar & externalFlows;
+            ar & numOfExternalFlows;
+            ar & nwt;
+            ar & initial_head;
+            ar & simpleDistance;
+            ar & simpleK;
+            ar & steadyState;
+            ar & fields;
+            ar & cached;
+            ar & eq_flow;
+        }
+
+
         /**
          * @brief Constructor of abstract class NodeInterface
          * @param nodes Vector of all other existing nodes
@@ -522,6 +542,8 @@ Modify Properties
          */
         void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
+        void setSimpleK(){simpleK = true;}
+
         /**
          * @brief Get all outflow since simulation start
          */
@@ -549,7 +571,17 @@ Modify Properties
          */
         t_s_meter getStorageCapacity() noexcept {
             t_meter epsilon = 0.001 * si::meter;
-            if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
+		//TODO make this an option!
+	    if(get<int, Layer>() == 0){
+		//If this is the first layer always use equation for unconfined storage
+		//if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
+		//else { return getStorageCapacity__Secondary();} 
+		    return getStorageCapacity__Secondary();
+	    }else{
+		//when we are in the second layer check if we are defined as confined
+	    	if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
+	    }
+	    //we are not in the first layer and we are in unconfined conditions as specified by the user
             if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                 //water-table condition
                 if (nwt) { return getStorageCapacity__SecondaryNWT(); }
@@ -565,7 +597,7 @@ Modify Properties
          * @return Ref to external flow
          * @throw OutOfRangeException
          */
-        ExternalFlow &getExternalFlowByName(FlowType type) throw(out_of_range) {
+        ExternalFlow &getExternalFlowByName(FlowType type) {
             if (externalFlows.find(type) == externalFlows.end())
                 throw out_of_range("No such flow");
             return externalFlows.at(type);
@@ -593,7 +625,7 @@ Modify Properties
          * while water released from storage is treated as inflow (+), that is a source of water to the flow system
          */
         t_vol_t getTotalStorageFlow() noexcept {
-            return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / day * get<t_dim, StepModifier>();
+            return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / (day * get<t_dim, StepModifier>());
         }
 
         /**
@@ -770,7 +802,10 @@ Modify Properties
          * @return bool
          */
         bool hasTypeOfExternalFlow(FlowType type) {
-            return (externalFlows.find(type) != externalFlows.end());
+            if(externalFlows.find(type) == externalFlows.end()){
+                return false;
+            }
+            return true;
         }
 
         /**
@@ -780,7 +815,7 @@ Modify Properties
          * @param Should the recharge in the dynamic rivers be locked or updated by this change?
          */
         void updateUniqueFlow(double amount, FlowType flow = RECHARGE, bool lock = true) {
-            if (lock) {
+            if (lock and flow == RECHARGE) {
                 if (hasTypeOfExternalFlow(RIVER_MM)) {
                     //get current recharge and lock it bevor setting new recharge
                     //in arid regions recharge might be 0
@@ -788,6 +823,8 @@ Modify Properties
                     if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
                     getExternalFlowByName(RIVER_MM).setLock();
                     getExternalFlowByName(RIVER_MM).setLockRecharge(recharge);
+                    //also lock conductance value
+                    getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
                 }
             }
             if (hasTypeOfExternalFlow(flow)) {
@@ -795,6 +832,7 @@ Modify Properties
                 removeExternalFlow(flow);
             }
             if (amount == 0) {
+		        //recharge is 0 no need to add it
                 return;
             }
             addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
@@ -866,17 +904,22 @@ Modify Properties
        */
         void addExternalFlowFlowHead(double amount, FlowType type) {
             if (hasTypeOfExternalFlow(type)) {
+                ExternalFlow& externalFlow = getExternalFlowByName(type);
                 t_meter delta{amount * si::meter};
-                t_meter flowHead{getExternalFlowByName(type).getFlowHead() + delta};
-                double conduct{getExternalFlowByName(type).getConductance().value()};
-                t_meter bottom{getExternalFlowByName(type).getBottom()};
-                bool lock{getExternalFlowByName(type).getLock()};
-                t_vol_t recharge{getExternalFlowByName(type).getLockRecharge()};
+                t_meter bottom{externalFlow.getBottom()};
+                t_meter flowHead{externalFlow.getFlowHead() + delta};
+                //The river is dry
+                if(std::isnan(amount)){ flowHead = bottom; }
+                double conduct{externalFlow.getConductance().value()};
+                bool lock{externalFlow.getLock()};
+                t_vol_t recharge{externalFlow.getLockRecharge()};
+                t_s_meter_t l_cond{externalFlow.getLockConduct()};
                 removeExternalFlow(type);
                 addExternalFlow(type, flowHead, conduct, bottom);
                 if (lock) {
                     getExternalFlowByName(type).setLock();
                     getExternalFlowByName(type).setLockRecharge(recharge);
+                    getExternalFlowByName(type).setLockConduct(l_cond);
                 }
             }
         }
@@ -1096,8 +1139,7 @@ Modify Properties
             t_vol_t dwateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
-                    (getStorageCapacity() * get<t_meter, Head>()) / day;
-            //* get<t_dim, StepModifier>();
+                    (getStorageCapacity() * get<t_meter, Head_TZero>()) / (day* get<t_dim, StepModifier>());
             if (steadyState) {
                 storageFlow = 0 * (si::cubic_meter / day);
             }
@@ -1296,6 +1338,28 @@ class StandardNode : public NodeInterface {
 
         virtual bool
         __isStaticNode() { return false; }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+        boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+        boost::serialization::base_object<NodeInterface>(*this);
+        LOG(debug) << "Serializing Standard Node";
+        ar & nodes;
+        ar & neighbours;
+        ar & externalFlows;
+        ar & numOfExternalFlows;
+        ar & nwt;
+        ar & initial_head;
+        ar & simpleDistance;
+        ar & simpleK;
+        ar & steadyState;
+        ar & fields;
+        ar & cached;
+        ar & eq_flow;
+    }
+
 };
 
 /**
@@ -1327,8 +1391,31 @@ class StaticHeadNode : public NodeInterface {
         virtual t_meter __calcInitialHead(t_meter initialParam) { return 0; }
 
         virtual bool __isStaticNode() { return true; }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        boost::serialization::void_cast_register<NodeInterface, StaticHeadNode>();
+        boost::serialization::void_cast_register<StaticHeadNode, NodeInterface>();
+        boost::serialization::base_object<NodeInterface>(*this);
+        LOG(debug) << "Serializing Static Node";
+        ar & nodes;
+        ar & neighbours;
+        ar & externalFlows;
+        ar & numOfExternalFlows;
+        ar & nwt;
+        ar & initial_head;
+        ar & simpleDistance;
+        ar & simpleK;
+        ar & steadyState;
+        ar & fields;
+        ar & cached;
+        ar & eq_flow;
+    }
+
 };
 
 }
-}//ns
+}
+
 #endif //NODE_HPP
