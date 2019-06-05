@@ -1037,8 +1037,7 @@ Modify Properties
             t_vol_t dwateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
-                    (getStorageCapacity() * get<t_meter, Head>()) / day;
-            //* get<t_dim, StepModifier>();
+                    (getStorageCapacity() * get<t_meter, Head_TZero>()) / (day* get<t_dim, StepModifier>());
             if (steadyState) {
                 storageFlow = 0 * (si::cubic_meter / day);
             }
