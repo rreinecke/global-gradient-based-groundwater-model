@@ -277,6 +277,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 * **Robert Reinecke** - *Initial work*
 [ResearchGate](https://www.researchgate.net/profile/Robert_Reinecke2)
+<span id="badgeCont935"><script type="text/javascript" src="https://publons.com/mashlets?el=badgeCont935&rid=K-3693-2019&size=small"></script></span>
 
 ## License
 
