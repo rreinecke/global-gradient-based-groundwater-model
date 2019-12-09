@@ -4,7 +4,7 @@
 
 [Global model description in GMD](https://www.geosci-model-dev.net/12/2401/2019/)
 
-[Sensitivity Analysis in HESS](https://doi.org/10.5194/hess-2019-10)
+[Sensitivity Analysis in HESS](https://www.hydrol-earth-syst-sci.net/23/4561/2019/hess-23-4561-2019.html)
 
 
 # Data and code dois
