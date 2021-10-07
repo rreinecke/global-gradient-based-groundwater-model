@@ -281,6 +281,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Robert Reinecke** - *Initial work* *Maintainer*
 * **Alexander Wachholz** - *Documentation review*
 * **Christoph Niemann** - *Spatial IDs* *Developer*
+* **Daniel Kretschmer** - *Maintainer*
 
 ## License
 
