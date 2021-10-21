@@ -279,9 +279,13 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work* *Maintainer*
+* **Daniel Kretschmer** - *Maintainer*
+* **Sebastian Ackermann** - *Maintainer*
+
+### Past Contributors
+
 * **Alexander Wachholz** - *Documentation review*
 * **Christoph Niemann** - *Spatial IDs* *Developer*
-* **Daniel Kretschmer** - *Maintainer*
 
 ## License
 
