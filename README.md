@@ -18,14 +18,15 @@ While it is intended to be used as a in memory coupled model it is also capable 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
-
+To make the program run, you need:
 ```
 clang >= 3.8 with openMP (currently gcc is not supported)
-libboost >= 1.56
+libboost >= 1.71
 libGMP
 libGtest
 ```
 ### Build
+If the current directory is the model folder, enter the following commands in the linux terminal:
 ```
 mkdir build
 cd build
