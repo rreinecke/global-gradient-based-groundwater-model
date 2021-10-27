@@ -26,7 +26,7 @@ libGMP
 libGtest
 ```
 ### Build
-If the current directory is the model folder, enter the following commands in the linux terminal:
+If the current directory is the model folder, enter the following commands in the terminal:
 ```
 mkdir build
 cd build
