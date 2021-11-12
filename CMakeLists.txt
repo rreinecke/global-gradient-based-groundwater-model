@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
-
+cmake_minimum_required(VERSION 3.15.3)
+if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
+    message(STATUS "You need to upgrade to CMake 3.15.3")
+endif()
 ################################
 # Simple Demo Model
 ################################
