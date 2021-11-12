@@ -15,6 +15,7 @@
 #define GLOBAL_FLOW_LOGGING_HPP
 
 #include "Sinks.hpp"
+#include <iostream>
 
 #define LOG(level) BOOST_LOG_SEV(GlobalFlow::Logging::global_logger::get(), level)
 namespace GlobalFlow {

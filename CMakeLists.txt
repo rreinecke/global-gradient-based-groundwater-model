@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
-
+cmake_minimum_required(VERSION 3.15.3)
+if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
+    message(STATUS "You need to upgrade to CMake 3.15.3")
+endif()
 ################################
 # Simple Demo Model
 ################################
@@ -14,7 +16,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 set(BOOST_ROOT=/usr/local/lib)
 set(Boost_NO_SYSTEM_PATHS=TRUE)
 
-find_package(Boost 1.56.0 COMPONENTS system filesystem serialization log REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")

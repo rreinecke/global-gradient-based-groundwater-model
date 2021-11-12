@@ -190,11 +190,13 @@ class Simulation {
         MassError getError(FunOut fun1, FunIn fun2) {
             mpf_float_1000 out = 0;
             mpf_float_1000 in = 0;
-            mpf_float error = 0;
+            mpf_float_1000 error = 0;
+
             for (int j = 0; j < nodes->size(); ++j) {
                 out = out + fun1(j);
                 in = in + fun2(j);
             }
+
             if (abs(in - out) > 0.00001) {
                 error = ((100 * (in - out)) / ((in + out) / 2));
             }
