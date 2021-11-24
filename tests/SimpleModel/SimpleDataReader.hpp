@@ -95,13 +95,12 @@ class SimpleDataReader : public DataReader {
 
         void readConduct(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
-                if (data > 0.01) {
-                    //possible data error - just not possible
-                    data = 0.01;
+                if (data > 10) {
+                    LOG(debug) << "Very high conductance value at global_ID "<<pos<<". Possible Data Error";
                 }
-                nodes->at(pos)->setK(data * 100 * (Model::si::meter / Model::day));
+                nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
             });
-        }
+        };
 
         void
         readElevation(std::string path) {
