@@ -41,7 +41,7 @@
     },
     "default_data": {
       "initial_head": 5,
-      "K": 0.008,
+      "K": 0.8,
       "oceanK": 800,
       "aquifer_thickness": [
         10,
