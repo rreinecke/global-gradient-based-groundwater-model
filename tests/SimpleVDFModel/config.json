@@ -1,0 +1,62 @@
+{
+  "config": {
+    "model_config": {
+      "nodes": "grid_simpleVDF.csv",
+      "row_cols": "true",
+      "stadystate": "true",
+      "numberofnodes": 50,
+      "threads": 1,
+      "layers": 1,
+      "confinement": [
+        "true"
+      ],
+      "cache": "false",
+      "adaptivestepsize": "false",
+      "boundarycondition": "SeaLevel",
+      "sensitivity": "false"
+    },
+    "numerics": {
+      "solver": "PCG",
+      "iterations": 500,
+      "inner_itter": 10,
+      "closingcrit": 1e-8,
+      "headchange": 0.0001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5,
+      "stepsize": "daily",
+      "wetting_approach": "nwt"
+    },
+  "input": {
+    "data_config": {
+      "k_from_lith": "true",
+      "k_ocean_from_file": "false",
+      "specificstorage_from_file": "false",
+      "specificyield_from_file": "false",
+      "k_river_from_file": "true",
+      "aquifer_depth_from_file": "false",
+      "initial_head_from_file": "true",
+      "data_as_array": "false"
+    },
+    "default_data": {
+      "initial_head": 5,
+      "K": 0.8,
+      "oceanK": 800,
+      "aquifer_thickness": [
+        40
+      ],
+      "anisotropy": 10,
+      "specificyield": 0.15,
+      "specificstorage": 0.000015
+    },
+    "data": {
+      "recharge": "recharge_simpleVDF.csv",
+      "elevation": "elevation_simpleVDF.csv",
+      "rivers": "rivers_simpleVDF.csv",
+      "lithologie": "lithology_simpleVDF.csv",
+      "river_conductance": "rivers_simpleVDF.csv",
+      "initial_head": "heads_simpleVDF.csv"
+    }
+  }
+  }
+}
