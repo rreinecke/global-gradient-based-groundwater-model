@@ -24,12 +24,6 @@ class SimpleVDFDataReader : public DataReader {
                             op.getSpecificStorage(),
                             op.isConfined(0));
 
-            LOG(userinfo) << "Building the bottom layers";
-            DataProcessing::buildBottomLayers(nodes,
-                                              op.getNumberOfLayers(),
-                                              op.getConfinements(),
-                                              op.getAquiferDepth());
-
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));
             readElevation(buildDir(op.getElevation()));
@@ -37,15 +31,11 @@ class SimpleVDFDataReader : public DataReader {
             LOG(userinfo) << "Reading the groundwater recharge";
             readGWRecharge(buildDir(op.getRecharge()));
 
-            LOG(userinfo) << "Initializing head";
-            //TODO
-
-            LOG(userinfo) << "Defining rivers";
-            readRiver(buildDir(op.getKRiverDir()));
-
-            LOG(userinfo) << "Connecting the layers";
+            LOG(userinfo) << "Connecting the model cells";
             DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
                                         op.getBoundaryCondition());
+
+
         }
 
     private:
@@ -57,7 +47,7 @@ class SimpleVDFDataReader : public DataReader {
                  double anisotropy,
                  double specificYield,
                  double specificStorage, bool confined) {
-            Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
+            Matrix<int> out = Matrix<int>(numberOfNodes, std::vector<int>(numberOfNodes));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "global_ID", "X", "Y", "cell_area", "row", "col");
@@ -143,7 +133,16 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
-
+        void readHeadBoundary(std::string path) {
+            readTwoColumns(path, [this](double data, int pos) {
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                data * Model::si::meter,
+                                                data * nodes->at(pos)->getProperties().get < Model::quantity <
+                                                        Model::SquareMeter > ,
+                                                        Model::Area > ().value(),
+                                                0 * Model::si::meter);
+            });
+        }
 };
 }
 }
