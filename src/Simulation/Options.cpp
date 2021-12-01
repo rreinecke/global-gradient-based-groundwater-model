@@ -51,11 +51,16 @@ Options::load(const std::string &filename) {
     NUMBER_OF_NODES = config.get<long>("numberofnodes");
     THREADS = config.get<int>("threads");
     LAYERS = config.get<int>("layers");
+    ONE_LAYER = config.get<bool>("one_layer_approach");
     CONFINED = getTypeArray<bool>("confinement", config);
     if (LAYERS != CONFINED.size()) {
         LOG(critical) << "mismatching layers";
         exit(3);
     }
+    //if (ONE_LAYER and LAYERS > 1) {
+    //    LOG(critical) << "Approach only viable with one layer";
+    //    exit(3);
+    //}
     CACHE = config.get<bool>("cache");
     ADAPTIVE_STEPSIZE = config.get<bool>("adaptivestepsize");
     BOUNDARY_CONDITION = config.get<string>("boundarycondition");
@@ -136,6 +141,9 @@ Options::load(const std::string &filename) {
     SS_FILE = getOptional("specificstorage", data);
     SY_FILE = getOptional("specificyield", data);
     AQ_DEPTH = getOptional("aquiferdepth", data);
+
+    INITIAL_HEADS = getOptional("initial_head", data);
+
 
     boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
     if (mappings) {

@@ -308,7 +308,6 @@ public:
     return m_error;
   }
 
-    //ROBERT REINECKE ADDITON
     /** \returns the tolerance error reached during the last solve but using the infinite norm
      * instead of the L2 norm
     */
@@ -318,7 +317,7 @@ public:
       return m_error_inf;
     }
 
-    Matrix<Scalar,Dynamic,1> getResiduals() const
+    Matrix<Scalar,Dynamic,1>& getResiduals() const
     {
       eigen_assert(m_isInitialized && "ConjugateGradient is not initialized.");
       return resid;
@@ -398,9 +397,8 @@ protected:
   RealScalar m_tolerance;
   
   mutable RealScalar m_error;
-    //Robert Reinecke add
-    mutable RealScalar m_error_inf;
-    mutable Matrix<Scalar,Dynamic,1> resid;
+  mutable RealScalar m_error_inf;
+  mutable Matrix<Scalar,Dynamic,1> resid;
   mutable Index m_iterations;
   mutable ComputationInfo m_info;
   mutable bool m_analysisIsOk, m_factorizationIsOk;

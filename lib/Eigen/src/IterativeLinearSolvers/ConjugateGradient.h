@@ -10,8 +10,6 @@
 #ifndef EIGEN_CONJUGATE_GRADIENT_H
 #define EIGEN_CONJUGATE_GRADIENT_H
 
-#include <iostream>
-
 namespace Eigen { 
 
 namespace internal {
@@ -40,41 +38,44 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   typedef Matrix<Scalar,Dynamic,1> VectorType;
 
     /**
-     * Modified version for G3M
+     * Modified version for 3GM
      * Changes iter criterion to inf instead of squared norm.
      * Old code was only commented out.
      * TODO Needs to be refactored into a generic way to pass different norms
      */
 
-  //RealScalar tol = tol_error;
+  RealScalar tol = tol_error;
   //Get error from input as inf error
-  RealScalar tol_inf = tol_error;
+  RealScalar tol_inf = tol_error_inf;
   Index maxIters = iters;
   
   Index n = mat.cols();
 
   VectorType residual = rhs - mat * x; //initial residual
-
   //RealScalar rhsNorm2 = rhs.squaredNorm();
+
   RealScalar rhsNormInf = rhs.template lpNorm<Infinity>();
+  //rhsNormInf = rhsNormInf * (rhs.template lpNorm<1>() / rhs.size());
   //if(rhsNorm2 == 0)
   if(rhsNormInf == 0)
   {
     x.setZero();
     iters = 0;
-    //tol_error = 0;
+    tol_error_inf = 0;
     return;
   }
   //RealScalar threshold = tol*tol*rhsNorm2;
-  RealScalar threshold = tol_inf * rhsNormInf;
-  //RealScalar residualNorm2 = residual.squaredNorm();
-  //Robert Reinecke add
+  //FIX from Eigen 3.3.6
+  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
+  RealScalar threshold = numext::maxi(tol_inf*tol_inf*rhsNormInf,considerAsZero);
+
+  //RealScalar threshold = tol_inf * tol_inf / rhsNormInf;
+  RealScalar residualNorm2 = residual.squaredNorm();
   RealScalar residualNormInf = residual.template lpNorm<Infinity>();
 
   if (residualNormInf < threshold) {
     iters = 0;
-    //tol_error = sqrt(residualNorm2 / rhsNorm2);
-    tol_error_inf = residualNormInf / rhsNormInf;
+    tol_error_inf = sqrt(residualNormInf / rhsNormInf);
     return;
   }
 
@@ -84,7 +85,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   //  tol_error = sqrt(residualNorm2 / rhsNorm2);
   //  return;
   //}
-  
+
   VectorType p(n);
   p = precond.solve(residual);      // initial search direction
 
@@ -99,7 +100,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
     x += alpha * p;                             // update solution
     residual -= alpha * tmp;                    // update residual
     
-    //residualNorm2 = residual.squaredNorm();
+    residualNorm2 = residual.squaredNorm();
     residualNormInf = residual.template lpNorm<Infinity>();
 
     if(residualNormInf < threshold)
@@ -116,7 +117,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
     p = z + beta * p;                           // update search direction
     i++;
   }
-  //tol_error = sqrt(residualNorm2 / rhsNorm2);
+  tol_error = residualNorm2;
   tol_error_inf = residual.template lpNorm<Infinity>() / rhsNormInf;
   resid = residual;
 
@@ -193,9 +194,8 @@ class ConjugateGradient : public IterativeSolverBase<ConjugateGradient<_MatrixTy
   typedef IterativeSolverBase<ConjugateGradient> Base;
   using Base::matrix;
   using Base::m_error;
-    //Robert Reinecke add
-    using Base::m_error_inf;
-    using Base::resid;
+  using Base::m_error_inf;
+  using Base::resid;
   using Base::m_iterations;
   using Base::m_info;
   using Base::m_isInitialized;
@@ -248,12 +248,12 @@ public:
                                            typename MatrixWrapper::template ConstSelfAdjointViewReturnType<UpLo>::Type
                                           >::type SelfAdjointWrapper;
     m_iterations = Base::maxIterations();
-    m_error = Base::m_tolerance;
+    m_error_inf = Base::m_tolerance;
 
     for(Index j=0; j<b.cols(); ++j)
     {
       m_iterations = Base::maxIterations();
-      m_error = Base::m_tolerance;
+      m_error_inf = Base::m_tolerance;
 
       typename Dest::ColXpr xj(x,j);
       RowMajorWrapper row_mat(matrix());
