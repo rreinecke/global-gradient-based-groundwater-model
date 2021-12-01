@@ -20,6 +20,8 @@
 #include <boost/log/sinks.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+#include <boost/core/null_deleter.hpp>
+
 #include <fstream>
 
 namespace GlobalFlow {

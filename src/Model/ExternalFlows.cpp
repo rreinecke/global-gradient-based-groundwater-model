@@ -27,12 +27,35 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case RIVER:
             return -conductance;
         case RIVER_MM:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){
+		    //stil allow gaining conditions!
+		    if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
+		    return out;}
             return -calcERC(recharge, eq_head, head, eqFlow);
         case WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){
+		    if(head >= bottom){return -conductance;}
+		    return out; }
             return -conductance;
         case GLOBAL_WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return -conductance;}
+		    return out; }
             return -conductance;
         case LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return -conductance;}
+		    return out; }
+            return -conductance;
+        case GLOBAL_LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){
+                if(head >= bottom){return -conductance;}
+                return out; }
             return -conductance;
         case DRAIN:
             if (head > flowHead) {
@@ -71,12 +94,34 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case RIVER:
             return conductance * flowHead;
         case RIVER_MM:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
+		    return out; }
             return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
         case WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
             return conductance * flowHead;
         case GLOBAL_WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
             return conductance * flowHead;
         case LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
+            return conductance * flowHead;
+        case GLOBAL_LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){
+                if(head >= bottom){return conductance * flowHead;}
+                return out; }
             return conductance * flowHead;
         case DRAIN:
             if (head > flowHead) {
@@ -132,16 +177,22 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
 
     //Static MM
     t_meter stage = eq_head - flowHead;
+    NANChecker(stage.value(), "ERC stage problem");
 
+    //Scale parameter not in use
     double p = 1;
     if (stage.value() <= 0) {
-        stage = 1 * si::meter;
+        stage = .1 * si::meter;
     }
 
-    NANChecker(out.value(), "Recharge problem");
+    //possibility to lock conductance equation with former recharge e.g. from steady-state model
+    if (lock_recharge) {
+        current_recharge = locked_recharge;
+        return locked_conductance * mult;
+    }
 
     out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;
-    NANChecker(out.value(), "ERC Problem");
+    NANChecker(out.value(), "ERC Recharge Problem");
 
     if (out < conductance) {
         //Only happens if cell was loosing in eq and is now gaining
@@ -162,7 +213,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
         if (out.value() > 1e+10) {
             out = 1e+10 * si::square_meter / day;
         }
-        NANChecker(out.value(), "ERC Problem");
+        NANChecker(out.value(), "ERC high flow head Problem");
         if (out.value() <= 0) {
             LOG(critical) << "conductance <= 0";
         }

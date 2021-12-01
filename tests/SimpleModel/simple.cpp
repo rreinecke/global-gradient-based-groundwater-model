@@ -22,7 +22,7 @@ void StandaloneRunner::simulate() {
         LOG(userinfo) << "Running a steady state step";
         step.first->toogleSteadyState();
         step.first->solve();
-        sim.printMassBalances();
+        sim.printMassBalances(userinfo);
     }
     DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
     //sim.save();
@@ -32,7 +32,7 @@ void StandaloneRunner::getResults() {
 
 }
 
-void StandaloneRunner::writeData() {
+void StandaloneRunner::writeData(std::string s) {
 
 }
 

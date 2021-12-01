@@ -28,6 +28,7 @@
 
 #include "../../lib/Eigen/Sparse"
 #include "../../lib/Eigen/Core"
+//#include "../../lib/Eigen/PardisoSupport"
 #include "../Model/Node.hpp"
 #include "../Simulation/Options.hpp"
 #include "Numerics.hpp"
@@ -37,8 +38,10 @@ namespace Solver {
 using namespace boost::units;
 using namespace Eigen;
 
+using pr_t = double; //change here if other precision should be used e.g. long double
 using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
 using large_num = unsigned long int;
+using long_vector = Matrix<pr_t, Dynamic, 1>;
 
 /**
  * @class Equation The internal finite difference equation
@@ -84,7 +87,7 @@ class Equation {
             return os;
         };
 
-        VectorXd getResults() {
+        long_vector getResults() {
             return this->x;
         }
 
@@ -107,20 +110,37 @@ class Equation {
          * Set the correct stepsize (default is DAY)
          * @param mod
          */
-        void updateStepSize(size_t mod) {
+        void updateStepSize(double mod) {
             std::for_each(nodes->begin(),
                           nodes->end(),
                           [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
         }
 
-        typedef typename Eigen::MatrixXd::Scalar Scalar;
+        typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;
         typedef Matrix<Scalar, Dynamic, 1> VectorType;
 
-        VectorType getResiduals() {
+        VectorType& getResiduals() {
             return cg.getResiduals();
         }
 
-        void updateClosingCrit(double crit) { cg.setTolerance(crit); }
+        void updateClosingCrit(pr_t crit) {
+		RCLOSE = crit;
+		cg.setTolerance(crit);
+	}
+        void updateMaxHeadChange(double head) {
+	       	maxHeadChange = head;
+	}
+        void updateMaxItter(int itter) {
+		inner_iterations = itter;
+		cg.setMaxIterations(itter);
+	}
+
+    /**
+     * @note resests dampening object and counters
+     */
+    void enableDamping() {
+        isAdaptiveDamping = true;
+    }
 
     private:
         bool initalized = false;
@@ -132,20 +152,22 @@ class Equation {
          * _var_ only used if disabling of cells is required
          */
         NodeVector nodes;
-        VectorXd x;
-        VectorXd _x_;
-        VectorXd b;
-        VectorXd _b_;
-        SparseMatrix<double> A;
-        SparseMatrix<double> _A_;
+
+        long_vector x;
+        long_vector _x_;
+        long_vector b;
+        long_vector _b_;
+        SparseMatrix<pr_t> A;
+        SparseMatrix<pr_t> _A_;
 
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
 
-        int IITER{0};
-        double RCLOSE{0};
+        int IITER{0};//FIXME this is used as outer iterations
+        pr_t RCLOSE{0};
+	int inner_iterations{0};
 
         //From current run
         int __itter{0};
@@ -170,14 +192,9 @@ class Equation {
                    && std::equal(lhs.begin(), lhs.end(), rhs.begin());
         }
 
-        //Need to be at same place as matrix A !!!!
-        //By pointer or rev breaks calculation!!
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<SparseMatrix<double>::Scalar, Lower | Upper>> cg;
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper, DiagonalPreconditioner<SparseMatrix<double>::Scalar>> cg;
-        ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteLUT<SparseMatrix<double>::Scalar>> cg;
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
+        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg; 	
 
-        BiCGSTAB<SparseMatrix<double>, IncompleteLUT<SparseMatrix<double>::Scalar>> bicgstab;
+        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
         //Used for NWT
         bool nwt{false};
 

@@ -23,6 +23,33 @@
 #ifndef GLOBAL_FLOW_HELPERS_HPP
 #define GLOBAL_FLOW_HELPERS_HPP
 
+#include <boost/progress.hpp>
+
+#include "colors.hpp"
+
+#include <boost/preprocessor.hpp>
+
+#define X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE(r, data, elem)    \
+    case elem : return BOOST_PP_STRINGIZE(elem);
+
+#define DEFINE_ENUM_WITH_STRING_CONVERSIONS(name, enumerators)                \
+    enum name {                                                               \
+        BOOST_PP_SEQ_ENUM(enumerators)                                        \
+    };                                                                        \
+                                                                              \
+    inline const char* ToString(name v)                                       \
+    {                                                                         \
+        switch (v)                                                            \
+        {                                                                     \
+            BOOST_PP_SEQ_FOR_EACH(                                            \
+                X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE,          \
+                name,                                                         \
+                enumerators                                                   \
+            )                                                                 \
+            default: return "[Unknown " BOOST_PP_STRINGIZE(name) "]";         \
+        }                                                                     \
+    }
+
 #include "../Logging/Logging.hpp"
 
 class NANInSolutionException : public std::exception {
@@ -44,6 +71,9 @@ inline void NANChecker(const double &value, std::string message) {
     }
 }
 
+template<typename T>
+T const pi = std::acos(-T(1));
+
 /*
  * Helper function for rounding double values up
  */
@@ -51,13 +81,6 @@ inline double
 roundValue(double valueToRound)
 {
 	return ceil(valueToRound * 100) / 100;
-}
-
-template<typename T, typename... Args>
-std::unique_ptr<T>
-make_unique(Args &&... args)
-{
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 /** http://stackoverflow.com/questions/15181579 **/
@@ -93,5 +116,39 @@ public:
     const double lat{0};
     const double lon{0};
 };
+
+
+template<typename C>
+class Singleton {
+public:
+    static C *instance() {
+        if (!_instance) {
+            _instance = new C();
+        }
+        return _instance;
+    }
+
+    virtual
+    ~Singleton() {
+        _instance = 0;
+    }
+
+private:
+    static C *_instance;
+protected:
+    Singleton() {}
+};
+
+template<typename C> C *Singleton<C>::_instance = 0;
+
+//Usage:
+/*class LoggerInterface : public Singleton<LoggerInterface> {
+    friend class Singleton<LoggerInterface>;
+
+private:
+
+public:
+    virtual ~LoggerInterface() {};
+};*/
 
 #endif

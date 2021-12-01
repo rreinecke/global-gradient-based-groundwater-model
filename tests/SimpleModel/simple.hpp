@@ -24,8 +24,10 @@
 #include "../../src/Misc/colors.hpp"
 #include "SimpleDataReader.hpp"
 
+struct Dummy;
+
 namespace GlobalFlow {
-class StandaloneRunner : GW_Interface {
+class StandaloneRunner : GW_Interface<Dummy> {
     public:
 
         StandaloneRunner();
@@ -43,7 +45,7 @@ class StandaloneRunner : GW_Interface {
         getResults();
 
         void
-        writeData();
+        writeData(std::string s);
 
     private:
         Solver::Equation *_eq;

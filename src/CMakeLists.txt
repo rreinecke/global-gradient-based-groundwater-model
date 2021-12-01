@@ -11,5 +11,6 @@ set(SOURCE
 set(HEADERS
    ${HEADERS}
    ${CMAKE_CURRENT_SOURCE_DIR}/GW_Interface.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/CouplingInterface.hpp
    PARENT_SCOPE
 )

@@ -59,6 +59,7 @@ using t_s_meter_t = quantity<MeterSquaredPerTime>;
 using t_s_meter = quantity<SquareMeter>;
 
 using large_num = unsigned long int;
+const Dimensionless d = si::si_dimensionless;
 
 }
 }

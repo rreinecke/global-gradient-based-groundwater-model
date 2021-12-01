@@ -28,184 +28,208 @@
 #include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {
-namespace Model {
-/**
- * @enum External Flow Types
- * Flow types as defined in MODFLOW:
- *  - RECHARGE
- *  - RIVER
- *  - DRAIN
- *  - GENERAL_HEAD_BOUNDARY
- *
- * Additional flows:
- *
- * RECHARGE:
- *
- * RIVER_MM:
- *  dynamic river conductance as defined by Miguez-Macho 2007
- *
- * FLOODPLAIN_DRAIN:
- *  as defined in Inge de Graaf. 2014
- *
- *
- * LAKE, WETLAND
- *  similar to modflow river definition
- */
-enum FlowType : int {
-    RECHARGE = 1,
-    FAST_SURFACE_RUNOFF,
-    NET_ABSTRACTION,
-    EVAPOTRANSPIRATION,
-    RIVER,
-    RIVER_MM,
-    DRAIN,
-    FLOODPLAIN_DRAIN,
-    WETLAND,
-    GLOBAL_WETLAND,
-    LAKE,
-    GENERAL_HEAD_BOUNDARY
-};
+    namespace Model {
+        /**
+         * @enum External Flow Types
+         * Flow types as defined in MODFLOW:
+         *  - RECHARGE
+         *  - RIVER
+         *  - DRAIN
+         *  - GENERAL_HEAD_BOUNDARY
+         *
+         * Additional flows:
+         *
+         * RECHARGE:
+         *
+         * RIVER_MM:
+         *  dynamic river conductance as defined by Miguez-Macho 2007
+         *
+         * FLOODPLAIN_DRAIN:
+         *  as defined in Inge de Graaf. 2014
+         *
+         *
+         * LAKE, WETLAND
+         *  similar to modflow river definition
+         */
+        enum FlowType : int {
+            RECHARGE = 1,
+            FAST_SURFACE_RUNOFF,
+            NET_ABSTRACTION,
+            EVAPOTRANSPIRATION,
+            RIVER,
+            RIVER_MM,
+            DRAIN,
+            FLOODPLAIN_DRAIN,
+            WETLAND,
+            GLOBAL_WETLAND,
+            LAKE,
+            GLOBAL_LAKE,
+            GENERAL_HEAD_BOUNDARY
+        };
 
-struct FlowTypeHash {
-    template<typename T>
-    std::size_t operator()(T t) const {
-        return static_cast<std::size_t>(t);
-    }
-};
-
-/**
- * @class ExternalFlow
- *
- * TODO add flow equation here
- */
-class ExternalFlow {
-    public:
-        ExternalFlow(int id,
-                     FlowType type,
-                     t_meter flowHead,
-                     t_s_meter_t cond,
-                     t_meter bottom)
-                : ID(id), type(type), flowHead(flowHead), conductance(cond), bottom(bottom) {}
+        struct FlowTypeHash {
+            template<typename T>
+            std::size_t operator()(T t) const {
+                return static_cast<std::size_t>(t);
+            }
+        };
 
         /**
-         * Only for RECHARGE
-        FAST_SURFACE_RUNOFF
+         * @class ExternalFlow
+         *
+         * TODO add flow equation here
          */
-        ExternalFlow(int id, t_vol_t recharge, FlowType type)
-                : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(recharge) {}
+        class ExternalFlow {
+        public:
+            ExternalFlow(int id,
+                         FlowType type,
+                         t_meter flowHead,
+                         t_s_meter_t cond,
+                         t_meter bottom)
+                    : ID(id), type(type), flowHead(flowHead), conductance(cond), bottom(bottom) {}
 
-        /**
-         * @brief Constructor for Evapotranspiration
-         * @param id
-         * @param flowHead
-         * @param bottom
-         * @param evapotrans
-         * @return
-         */
-        ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
-                : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0), special_flow(evapotrans) {}
+            /**
+             * Only for RECHARGE
+            FAST_SURFACE_RUNOFF
+             */
+            ExternalFlow(int id, t_vol_t recharge, FlowType type)
+                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(recharge) {}
 
-        /**
-         * Check if flow can be calculated on the right hand side
-         * @param head The current hydraulic head
-         * @return Bool
-         */
-        bool flowIsHeadDependant(t_meter head) const noexcept {
-            return (head > bottom);
-        }
+            /**
+             * @brief Constructor for Evapotranspiration
+             * @param id
+             * @param flowHead
+             * @param bottom
+             * @param evapotrans
+             * @return
+             */
+            ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
+                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
+                      special_flow(evapotrans) {}
 
-        /**
-         * The head dependant part of the external flow equation
-         * @param head The current hydraulic head
-         * @param eq_head The equilibrium head
-         * @param recharge The current recharge
-         * @param slope
-         * @param eqFlow
-         * @return
-         */
-        t_s_meter_t getP(t_meter head,
+            /**
+             * Check if flow can be calculated on the right hand side
+             * @param head The current hydraulic head
+             * @return Bool
+             */
+            bool flowIsHeadDependant(t_meter head) const noexcept {
+                return (head > bottom);
+            }
+
+            /**
+             * The head dependant part of the external flow equation
+             * @param head The current hydraulic head
+             * @param eq_head The equilibrium head
+             * @param recharge The current recharge
+             * @param slope
+             * @param eqFlow
+             * @return
+             */
+            t_s_meter_t getP(t_meter head,
+                             t_meter eq_head,
+                             t_vol_t recharge,
+                             t_dim slope,
+                             t_vol_t eqFlow) const noexcept;
+
+            /**
+             * The head independant part of the external flow equation
+             * @param head
+             * @param eq_head
+             * @param recharge
+             * @param slope
+             * @param eqFlow
+             * @return
+             */
+            t_vol_t getQ(t_meter head,
                          t_meter eq_head,
                          t_vol_t recharge,
                          t_dim slope,
                          t_vol_t eqFlow) const noexcept;
 
-        /**
-         * The head independant part of the external flow equation
-         * @param head
-         * @param eq_head
-         * @param recharge
-         * @param slope
-         * @param eqFlow
-         * @return
-         */
-        t_vol_t getQ(t_meter head,
-                     t_meter eq_head,
-                     t_vol_t recharge,
-                     t_dim slope,
-                     t_vol_t eqFlow) const noexcept;
+            FlowType getType() const noexcept { return type; }
 
-        FlowType getType() const noexcept { return type; }
+            t_meter getBottom() const noexcept { return bottom; }
 
-        t_meter getBottom() const noexcept { return bottom; }
+            t_vol_t getRecharge() const noexcept { return special_flow; }
 
-        t_vol_t getRecharge() const noexcept { return special_flow; }
 
-        t_meter getFlowHead() const noexcept { return flowHead; }
+            t_meter getFlowHead() const noexcept { return flowHead; }
 
-        t_s_meter_t getDyn(t_vol_t current_recharge,
-                           t_meter eq_head,
-                           t_meter head,
-                           t_vol_t eq_flow) const noexcept {
-            t_s_meter_t out = calcERC(current_recharge, eq_head, head, eq_flow);
-            return out;
-        }
+            t_s_meter_t getDyn(t_vol_t current_recharge,
+                               t_meter eq_head,
+                               t_meter head,
+                               t_vol_t eq_flow) const noexcept {
+                t_s_meter_t out = calcERC(current_recharge, eq_head, head, eq_flow);
+                return out;
+            }
 
-        t_meter getRiverDiff(t_meter eqHead) const noexcept;
+            t_meter getRiverDiff(t_meter eqHead) const noexcept;
 
-        t_s_meter_t getConductance() const noexcept { return conductance; }
+            t_s_meter_t getConductance() const noexcept { return conductance; }
 
-        int getID() const noexcept { return ID; }
+            int getID() const noexcept { return ID; }
 
-        void setMult(double mult) {
-            this->mult = mult;
-            return;
-        }
+            void setMult(double mult) {
+                this->mult = mult;
+                return;
+            }
 
-    private:
-        const int ID;
-        const FlowType type;
-        const t_meter flowHead;
-        const t_s_meter_t conductance; //for special_flow same as q
-        const t_vol_t special_flow;
-        const t_meter bottom;
-        t_dim mult{1 * si::si_dimensionless}; //Multiplier only used for SA
+            void setLock() { lock_recharge = true; }
 
-        t_vol_t
-        calculateFloodplaindDrainage(t_meter head) const noexcept;
+            bool getLock() { return lock_recharge; }
 
-        /**
-        * Calculate river conductance as in Miguez-Macho 2007
-        * RC = ERC * F
-        * Input: F-data, ERC
-        * Output: RC
-        */
-        t_s_meter_t
-        dynamicRiverConductance(t_meter head,
-                                t_vol_t current_recharge,
-                                t_dim slope,
-                                t_vol_t eq_flow) const noexcept;
+            void setLockRecharge(t_vol_t re) { locked_recharge = re; }
 
-        /**
-        * Calculate ERC (must be repeated every time step)
-        * ERC = (GW_Recharge + eq_flow) / (eq_head - river_elevation)
-        */
-        t_s_meter_t
-        calcERC(t_vol_t current_recharge,
-                t_meter eq_head,
-                t_meter current_head,
-                t_vol_t eq_flow) const noexcept;
-};
+            t_vol_t getLockRecharge() { return locked_recharge; }
 
-}
+            void setLockConduct(t_s_meter_t c) { locked_conductance = c; }
+
+            t_s_meter_t getLockConduct() { return locked_conductance; }
+
+            void getERC(t_vol_t current_recharge,
+                    t_meter eq_head,
+                    t_meter current_head,
+                    t_vol_t eq_flow) { locked_conductance = calcERC(current_recharge,eq_head,current_head,eq_flow); };
+
+        private:
+            const int ID;
+            const FlowType type;
+            const t_meter flowHead;
+            const t_s_meter_t conductance; //for special_flow same as q
+            const t_vol_t special_flow;
+            const t_meter bottom;
+            t_dim mult{1 * si::si_dimensionless}; //Multiplier only used for SA
+
+            t_vol_t locked_recharge;
+            t_s_meter_t locked_conductance;
+            bool lock_recharge{false};
+
+            t_vol_t
+            calculateFloodplaindDrainage(t_meter head) const noexcept;
+
+            /**
+            * Calculate river conductance as in Miguez-Macho 2007
+            * RC = ERC * F
+            * Input: F-data, ERC
+            * Output: RC
+            */
+            t_s_meter_t
+            dynamicRiverConductance(t_meter head,
+                                    t_vol_t current_recharge,
+                                    t_dim slope,
+                                    t_vol_t eq_flow) const noexcept;
+
+            /**
+            * Calculate ERC (must be repeated every time step)
+            * ERC = (GW_Recharge + eq_flow) / (eq_head - river_elevation)
+            */
+            t_s_meter_t
+            calcERC(t_vol_t current_recharge,
+                    t_meter eq_head,
+                    t_meter current_head,
+                    t_vol_t eq_flow) const noexcept;
+        };
+
+    }
 }//ns
 #endif //EXTERNALFLOWS_HPP

@@ -112,7 +112,7 @@ namespace GlobalFlow {
         template<class ProcessDataFunction>
         void readTwoColumns(std::string path, ProcessDataFunction processData) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "global_ID", "data");
+            in.read_header(io::ignore_no_column, "spatID", "data");
             int globid = 0;
             double data = 0;
             int pos = 0;
@@ -121,7 +121,7 @@ namespace GlobalFlow {
                 if (pos == -1) {
                     continue;
                 }
-                if (nodes->at(pos)->getProperties().get<large_num, Model::ArcID>() != globid) {
+                if (nodes->at(pos)->getProperties().get<large_num, Model::SpatID>() != globid) {
                     throw "Error in reading globID";
                 }
                 processData(data, pos);
@@ -134,7 +134,7 @@ namespace GlobalFlow {
          */
         void readZeroPointFiveToFiveMin(std::string path) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "GLOBALID", "ARC_ID");
+            in.read_header(io::ignore_no_column, "spatID", "ARC_ID");
             int globID = 0;
             int arcID = 0;
 
@@ -154,7 +154,7 @@ namespace GlobalFlow {
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
-         * @return <GlobalID, ID>
+         * @return <SpatID, ID (internal array id)>
          */
         const std::unordered_map<int, int> &getGlobIDMapping() {
             return lookupglobIDtoID;

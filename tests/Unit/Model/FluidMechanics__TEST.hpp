@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "../../../src/Model/FluidMechanics.hpp"
-#include <tuple>
 
 TEST(FluidMechanics, calcDeltaV) {
 	FluidMechanics m = FluidMechanics();
@@ -26,9 +25,9 @@ TEST(FluidMechanics, calculateHarmonicMeanConductance) {
 
 	//TODO add complexer examples
 	ASSERT_DOUBLE_EQ(m.calculateHarmonicMeanConductance(
-		std::make_tuple(k_neig, k_self, edgeLength_neig, edgeLength_self,
+		k_neig, k_self, edgeLength_neig, edgeLength_self,
 		head_neig, head_self, ele_neig, ele_self, deltaV_neig,
-		deltaV_self, confined)).value(), 0.1);
+		deltaV_self, confined).value(), 0.1);
 }
 
 TEST(FluidMechanics, smoothFunction__NWT) {
@@ -66,8 +65,8 @@ TEST(FluidMechanics, calculateVerticalConductance) {
 
 	//TODO find more complexe examples
 	double out = m.calculateVerticalConductance(
-		std::make_tuple(k_vert_neig, k_vert_self, verticalSize_self, head_self, elevation_self, area_self, elevation_neig, depth_neig, head_neig,
-		confined)).value();
+		k_vert_neig, k_vert_self, verticalSize_self, head_self, elevation_self, area_self, elevation_neig, depth_neig, head_neig,
+		confined).value();
 	ASSERT_DOUBLE_EQ(out, 0.1);
 }
 

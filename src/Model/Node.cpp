@@ -17,7 +17,7 @@ PhysicalProperties initProperties() {
     int, ID > (0);
     fields.emplace < unsigned
     long
-    int, ArcID > (0);
+    int, SpatID > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
@@ -62,7 +62,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<SquareMeter>, Area>(area);
     fields.set < unsigned
     long
-    int, ArcID > (arcID);
+    int, SpatID > (arcID);
     fields.set < unsigned
     long
     int, ID > (identifier);
