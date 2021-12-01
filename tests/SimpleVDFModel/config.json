@@ -50,6 +50,7 @@
       "specificstorage": 0.000015
     },
     "data": {
+      "ocean_conductance": "ocean_conductance_simpleVDF.csv",
       "recharge": "recharge_simpleVDF.csv",
       "elevation": "elevation_simpleVDF.csv",
       "rivers": "rivers_simpleVDF.csv",
