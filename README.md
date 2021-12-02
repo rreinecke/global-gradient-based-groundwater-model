@@ -4,6 +4,7 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120)
 
+[![Build Status](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model.svg?branch=master)](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model)
 
 # The global gradient-based groundwater model framework G³M
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
@@ -17,14 +18,16 @@ While it is intended to be used as a in memory coupled model it is also capable 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
-
+To make the program run, you need:
 ```
-clang >= 3.8 with openMP (currently gcc is not supported)
-libboost >= 1.56
+clang >= 13 with openMP (currently gcc is not supported)
+cmake >= 3.15.3
+libboost >= 1.71
 libGMP
 libGtest
 ```
 ### Build
+If the current directory is the model folder, enter the following commands in the terminal:
 ```
 mkdir build
 cd build
@@ -278,7 +281,13 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work* *Maintainer*
+* **Daniel Kretschmer** - *Maintainer*
+* **Sebastian Ackermann** - *Maintainer*
+
+### Past Contributors
+
 * **Alexander Wachholz** - *Documentation review*
+* **Christoph Niemann** - *Spatial IDs* *Developer*
 
 ## License
 

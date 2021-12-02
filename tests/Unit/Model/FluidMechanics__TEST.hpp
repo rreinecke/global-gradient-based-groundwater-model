@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../../../src/Model/FluidMechanics.hpp"
+#include <tuple>
 
 TEST(FluidMechanics, estimateConductance) {
     FluidMechanics m = FluidMechanics();
@@ -44,7 +45,7 @@ TEST(FluidMechanics, calculateHarmonicMeanConductance) {
                                      head_neig, head_self, ele_neig, ele_self, deltaV_neig,
                                      deltaV_self, confined);
 
-    //TODO add complexer examples
+    //TODO add more complex examples
     ASSERT_DOUBLE_EQ(m.calculateHarmonicMeanConductance(t).value(), 0.1);
 }
 
@@ -80,8 +81,7 @@ TEST(FluidMechanics, calculateVerticalConductance) {
     quantity<Meter> depth_neig = 1 * si::meter;
     quantity<Meter> head_neig = 1 * si::meter;
     bool confined = false;
-
-
+  
     FlowInputVert t = std::make_tuple(k_vert_neig, k_vert_self, verticalSize_self, head_self, elevation_self, area_self,
                                       elevation_neig, depth_neig, head_neig,
                                       confined);

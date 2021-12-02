@@ -15,7 +15,7 @@
 #define GLOBAL_FLOW_LOGGING_HPP
 
 #include "Sinks.hpp"
-#include "iostream"
+#include <iostream>
 
 // This nasty hack is only necessary because WaterGAP doesn't stick to Macro guidelines :(
 #pragma push_macro("ng")

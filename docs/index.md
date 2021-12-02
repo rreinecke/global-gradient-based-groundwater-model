@@ -1,16 +1,15 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 # Publications
-[![status](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867/status.svg)](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867)
-[![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120)
+
+[Global model description in GMD](https://www.geosci-model-dev.net/12/2401/2019/)
+
+[Sensitivity Analysis in HESS](https://www.hydrol-earth-syst-sci.net/23/4561/2019/hess-23-4561-2019.html)
+
 
 # Data and code dois
 [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
-
-<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" height="300" width="100%" src="http://globalvis.robert-reinecke.de?option=iframe#current/gw/surface/level/overlay=recharge/orthographic=-341.92,5.59,1894"></iframe>
-
-Interactive visualisation (development in progress) of lateral groundwater flows computed by the global model. 
 
 # The global gradient-based groundwater model framework G³M-f
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
@@ -278,6 +277,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 * **Robert Reinecke** - *Initial work*
 [ResearchGate](https://www.researchgate.net/profile/Robert_Reinecke2)
+<span id="badgeCont935"><script type="text/javascript" src="https://publons.com/mashlets?el=badgeCont935&rid=K-3693-2019&size=small"></script></span>
 
 ## License
 

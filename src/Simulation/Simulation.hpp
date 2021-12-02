@@ -51,7 +51,7 @@ namespace boost { namespace serialization {
         inline void serialize(Archive & ar, NodeVector& foo, const unsigned int file_version){
             LOG(GlobalFlow::debug) << "Serializing called";
         }
-
+        
 
         template<class Archive>
         inline void save_construct_data(Archive & ar, const NodeVector* foo, const unsigned int file_version){
@@ -92,11 +92,11 @@ namespace GlobalFlow {
          */
         class MassError {
         public:
-            MassError(mpf_float_1000 OUT, mpf_float_1000 IN, mpf_float ERR) : OUT(OUT), IN(IN), ERR(ERR) {}
+            MassError(mpf_float_1000 OUT, mpf_float_1000 IN, mpf_float_1000 ERR) : OUT(OUT), IN(IN), ERR(ERR) {}
 
             mpf_float_1000 OUT;
             mpf_float_1000 IN;
-            mpf_float ERR = 0;
+            mpf_float_1000 ERR = 0;
         };
 
         /**
@@ -252,7 +252,7 @@ namespace GlobalFlow {
             MassError getError(FunOut fun1, FunIn fun2) {
                 mpf_float_1000 out = 0;
                 mpf_float_1000 in = 0;
-                mpf_float error = 0;
+                mpf_float_1000 error = 0;
                 for (int j = 0; j < nodes->size(); ++j) {
                     out = out + fun1(j);
                     in = in + fun2(j);
