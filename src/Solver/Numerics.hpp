@@ -16,8 +16,8 @@
 namespace GlobalFlow {
 namespace Solver {
 
-using vector = Eigen::VectorXd;
-using r_vector = Eigen::RowVectorXd;
+using vector = Eigen::Matrix<long double, Eigen::Dynamic, 1>;
+using r_vector = Eigen::Matrix<long double, 1, Eigen::Dynamic>;
 
 /**
  * @class AdaptiveDamping
@@ -29,37 +29,38 @@ class AdaptiveDamping {
 
         AdaptiveDamping() : Sigma_MIN(0), Sigma_MAX(0), Change_MAX(0.01) {};
 
-        AdaptiveDamping(double Sigma_Min, double Sigma_Max, double Change_Max, vector x_t0)
+        AdaptiveDamping(long double Sigma_Min, long double Sigma_Max, long double Change_Max, vector x_t0)
                 : Sigma_MIN(Sigma_Min), Sigma_MAX(Sigma_Max), Change_MAX(Change_Max), x_t0(x_t0) {
             Sigma_t0 = sqrt(Sigma_Min * Sigma_Max);
         }
 
-        vector getDamping(vector &residuals, vector &x, bool apply) {
+        vector getDamping(const vector &residuals, const vector &x, bool apply) {
+            assert(x.rows() == x_t0.rows() && "Damping hasn't been properly initialized");
             vector changes = x - x_t0;
-            double sigma = applyAdaptiveDamping(changes.maxCoeff(), getDampNorm(residuals, x));
+	        long double sigma;
+	        if(apply)
+		        sigma = applyAdaptiveDamping(changes.maxCoeff(), getDampNorm(residuals, x));
             x_t0 = x;
-            //FIXME sigma is calculated even if damping is not used
-            if (not apply) {
+	        if (not apply)
                 return changes;
-            }
             LOG(numerics) << "Damping applied: " << sigma;
             return changes * sigma;
         }
 
-        double getNorm() { return norm_t0; }
+        long double getNorm() { return norm_t0; }
 
     private:
         bool first{true};
 
         vector x_t0;
 
-        double norm_t0;
-        double max_headChange_t0;
-        double Sigma_t0;
+        long double norm_t0;
+        long double max_headChange_t0;
+        long double Sigma_t0;
 
-        double Sigma_MIN;
-        double Sigma_MAX;
-        double Change_MAX;
+        long double Sigma_MIN;
+        long double Sigma_MAX;
+        long double Change_MAX;
 
         int cnt{0};
 
@@ -67,25 +68,25 @@ class AdaptiveDamping {
          * @brief Get the norm of the current residuals for adaptive damping
          * @note Use only once per Iteration! Modifies x_t0
          */
-        double getDampNorm(vector &residuals, vector &x) {
+        double getDampNorm(const vector &residuals, const vector &x) {
             vector changes = x_t0 - x;
-            double res = residuals.transpose() * residuals;
-            double ch = changes.transpose() * changes;
-            x_t0 = x;
-            double norm = sqrt(res * ch);
+            long double res = residuals.transpose() * residuals;
+            long double ch = changes.transpose() * changes;
+            long double norm = sqrt(res * ch);
             LOG(numerics) << "square root norm of residuals: " << norm;
             return norm;
         }
 
         double applyAdaptiveDamping(double max_headChange, double norm) {
-            double PHI{0.01};
-            double sigma{0};
+            long double PHI{0.01};
+            long double sigma{0};
 
-            double p_n;
-            double p_h;
+            long double p_n;
+            long double p_h;
             if (first) {
                 p_n = norm;
                 p_h = max_headChange;
+		first = false;
             } else {
                 p_n = norm / norm_t0;
                 p_h = max_headChange / max_headChange_t0;
@@ -109,7 +110,7 @@ class AdaptiveDamping {
                 sigma = Sigma_t0 / p_h;
             }
 
-            double sig_t{sqrt(sigma * Sigma_t0)};
+            long double sig_t{sqrt(sigma * Sigma_t0)};
             if (std::abs(max_headChange) > Change_MAX and sig_t > (Change_MAX / std::abs(max_headChange))) {
                 sig_t = Change_MAX / std::abs(max_headChange);
             }

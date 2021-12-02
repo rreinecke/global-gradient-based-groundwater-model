@@ -17,79 +17,59 @@
 #include "Sinks.hpp"
 #include <iostream>
 
+// This nasty hack is only necessary because WaterGAP doesn't stick to Macro guidelines :(
+#pragma push_macro("ng")
+#undef ng
+
+#include <boost/log/support/date_time.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+
 #define LOG(level) BOOST_LOG_SEV(GlobalFlow::Logging::global_logger::get(), level)
+
+
 namespace GlobalFlow {
-/**
- * @enum The logging levels for the global logger
- */
-enum severity_level {
-    debug,
-    userinfo,
-    stateinfo,
-    numerics,
-    error,
-    critical
-};
-namespace Logging {
 
-// Initializing global boost::log logger
-typedef boost::log::sources::severity_channel_logger_mt<
-        severity_level, std::string> global_logger_type;
+#define NUM_SEVERITY_LEVELS 6
 
-BOOST_LOG_INLINE_GLOBAL_LOGGER_INIT(global_logger, global_logger_type) {
-    return
-            global_logger_type(boost::log::keywords::channel = "global_logger");
-}
+    /**
+     * @enum The logging levels for the global logger
+     */
+    enum custom_severity_level {
+        debug = 0,
+        userinfo,
+        stateinfo,
+        numerics,
+        error,
+        critical
+    };
 
-BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", severity_level);
+    template< typename CharT, typename TraitsT >
+    std::basic_ostream< CharT, TraitsT >&
+    operator<< (std::basic_ostream< CharT, TraitsT >& strm, custom_severity_level lvl) {
+        const char* severity_level_str[NUM_SEVERITY_LEVELS] = {
+                "DEBUG",
+                "USER INFO",
+                "STATE INFO",
+                "NUMERIC",
+                "ERROR",
+                "CRITICAL"
+        };
+        const char* str = severity_level_str[lvl];
+        if (lvl < NUM_SEVERITY_LEVELS && lvl >= 0)
+            strm << str;
+        else
+            strm << static_cast< int >(lvl);
+        return strm;
+    }
 
-template<typename C>
-class Singleton {
-    public:
-        static C *instance() {
-            if (!_instance) {
-                _instance = new C();
-            }
-            return _instance;
-        }
+    namespace Logging {
+        BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", custom_severity_level);
 
-        virtual
-        ~Singleton() {
-            _instance = 0;
-        }
-
-    private:
-        static C *_instance;
-    protected:
-        Singleton() {}
-};
-
-template<typename C> C *Singleton<C>::_instance = 0;
-
-class LoggerInterface : public Singleton<LoggerInterface> {
-        friend class Singleton<LoggerInterface>;
-
-    private:
-
-    public:
-        virtual ~LoggerInterface() {};
-};
-
-/**
- * @class A simple logger to write logs to files
- */
-class Logger : public LoggerInterface {
-    private:
-        void
-        initSinks() {
-            initLogFile();
-            initCoutLog();
-            //initInfoDump();
-        }
-
-        void
-        initLogFile() {
-            std::string logfilename = "test.log";
+        inline void initLogFile() {
+            boost::gregorian::date d = boost::gregorian::day_clock::universal_day();
+            std::stringstream ss;
+            ss <<  "output_" << d.day() << d.month() << d.year() << ".log";
+            std::string logfilename = ss.str();
             // create sink to logfile
             boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
             sink->locked_backend()->add_stream(boost::make_shared<std::ofstream>(logfilename.c_str()));
@@ -101,56 +81,55 @@ class Logger : public LoggerInterface {
             sink->set_formatter
                     (
                             expr::format("%1%: <%2%> %3%")
-                            % expr::attr < unsigned
-            int > ("LineID")
-                  % logboost::trivial::severity
-                  % expr::smessage
-            );
+                            % expr::attr<unsigned int>("LineID")
+                            % expr::attr<custom_severity_level>("Severity")
+                            % expr::smessage
+                    );
 
-            // filter
-            sink->set_filter(severity == debug);
+            //
+            //sink->set_filter(severity == debug | logboost::trivial::severity == userinfo |
+            //                 logboost::trivial::severity == numerics | logboost::trivial::severity == error |
+            //                 logboost::trivial::severity == critical);
 
             // register sink
             logboost::core::get()->add_sink(sink);
         }
 
-        void
-        initCoutLog() {
+        inline void initCoutLog() {
             // create sink to stdout
             boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
-            sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::cout));
+            sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
 
             // flush
             sink->locked_backend()->auto_flush(true);
 
             // format sink
-            /*sink->set_formatter
-                (
-                    expr::format("%1%: <%2%> %3%")
-                        % expr::attr < unsigned
-            int > ("LineID")
-                % logboost::trivial::severity
-                % expr::smessage
-                );*/
+            // Currently looks like that:
+            // YYYY-MM-DD HH:MI:SS: <level> A message
+            sink->set_formatter(
+                    expr::stream
+                            << expr::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S")
+                            << ": <" << expr::attr<custom_severity_level>("Severity")
+                            << "> " << expr::smessage
+            );
 
-            // filter
-            sink->set_filter(severity == userinfo | severity == numerics | severity == error | severity == critical);
+            // filter no logging of debug and numerics messages
+            sink->set_filter(severity != custom_severity_level::debug and severity != custom_severity_level::numerics);
 
             // register sink
             logboost::core::get()->add_sink(sink);
         }
 
-        void
-        initInfoDump() {
-
+        // Initializing global boost::log logger
+        typedef boost::log::sources::severity_channel_logger_mt<custom_severity_level, std::string> global_logger_type;
+        BOOST_LOG_INLINE_GLOBAL_LOGGER_INIT(global_logger, global_logger_type) {
+            boost::log::add_common_attributes();
+            initLogFile();
+            initCoutLog();
+            return global_logger_type(boost::log::keywords::channel = "global_logger");
         }
-
-    public:
-        Logger() {
-            initSinks();
-        };
-};
 
 } //ns Logging
 } //ns GlobalFlow
+#pragma pop_macro("ng")
 #endif //LOGGING_HPP

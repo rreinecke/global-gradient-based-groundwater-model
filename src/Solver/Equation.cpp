@@ -4,7 +4,7 @@ namespace GlobalFlow {
 namespace Solver {
 
 Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes << "\n";
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodes;
 
     this->numberOfNodes = numberOfNodes;
     this->IITER = options.getMaxIterations();
@@ -23,15 +23,15 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
 
     this->nodes = nodes;
 
-    VectorXd __x(numberOfNodes);
-    VectorXd __b(numberOfNodes);
+    long_vector __x(numberOfNodes);
+    long_vector __b(numberOfNodes);
 
     x = std::move(__x);
     b = std::move(__b);
 
-    Eigen::SparseMatrix<double> __A(numberOfNodes, numberOfNodes);
+    Eigen::SparseMatrix<long double> __A(numberOfNodes, numberOfNodes);
     A = std::move(__A);
-    A.reserve(Eigen::VectorXd::Constant(numberOfNodes, 7));
+    A.reserve(long_vector::Constant(numberOfNodes, 7));
 
     //Init first result vector
     //Initial head should be positive
@@ -86,13 +86,11 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
         }
     }
 
-    for (const auto &conductance : map) {
-        double tmp = conductance.second.value();
-        NANChecker(tmp, "Add to A");
+    for (const auto &conductance : map) { 
         if (cached) {
-            A.coeffRef(nodeID, conductance.first) = std::move(tmp);
+            A.coeffRef(nodeID, conductance.first) = conductance.second.value();
         } else {
-            A.insert(nodeID, conductance.first) = std::move(tmp);
+            A.insert(nodeID, conductance.first) = conductance.second.value();
         }
     }
 }
@@ -111,7 +109,7 @@ void inline Equation::reallocateMatrix() {
 
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
-    Matrix2Xd new_matrix(size, size);
+    Matrix<long double, 2, Dynamic> new_matrix(size, size);
 
     if (dry_have_changed) {
         index_mapping.clear();
@@ -137,8 +135,8 @@ void inline Equation::reallocateMatrix() {
     }
     _A_ = new_matrix.sparseView();
 
-    VectorXd buffer_b;
-    VectorXd buffer_x;
+    long_vector buffer_b;
+    long_vector buffer_x;
     for (int j = 0; j < b.size(); ++j) {
         auto m = index_mapping[j];
         if (m != -1) {
@@ -202,19 +200,19 @@ Equation::updateMatrix() {
     //Check if after iteration former 0 values turned to non-zero
     if (disable_dry_cells) {
         if ((not _A_.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             _A_.makeCompressed();
         }
     } else {
         if ((not A.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             A.makeCompressed();
         }
     }
 }
 
 void inline Equation::preconditioner() {
-    LOG(numerics) << "Decomposing Matrix\n";
+    LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
         if (disable_dry_cells) {
             bicgstab.compute(_A_);
@@ -222,7 +220,7 @@ void inline Equation::preconditioner() {
             bicgstab.compute(A);
         }
         if (bicgstab.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     } else {
@@ -232,7 +230,7 @@ void inline Equation::preconditioner() {
             cg.compute(A);
         }
         if (cg.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     }
@@ -240,12 +238,11 @@ void inline Equation::preconditioner() {
 
 void inline
 Equation::updateIntermediateHeads() {
-    Eigen::VectorXd resid = getResiduals();
-    VectorXd changes;
+    long_vector changes;
     if (disable_dry_cells) {
-        changes = adaptiveDamping.getDamping(resid, _x_, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals(), _x_, isAdaptiveDamping);
     } else {
-        changes = adaptiveDamping.getDamping(resid, x, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
 
     bool reduced = disabled_nodes.empty();
@@ -254,11 +251,11 @@ Equation::updateIntermediateHeads() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
 
         if (reduced) {
-            nodes->at(k)->setHead(changes[id] * si::meter);
+            nodes->at(k)->setHead((double) changes[id] * si::meter);
         } else {
             auto m = index_mapping[id];
             if (m != -1) {
-                nodes->at(k)->setHead(changes[m] * si::meter);
+                nodes->at(k)->setHead((double) changes[m] * si::meter);
             }
         }
     }
@@ -287,17 +284,19 @@ Equation::updateBudget() {
 void
 Equation::solve() {
 
-    LOG(numerics) << "Updating Matrix\n";
+
+    LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
-    if (!isCached) {
-        LOG(numerics) << "Compressing matrix\n";
+
+        if (!isCached) {
+        LOG(numerics) << "Compressing matrix";
         if (disable_dry_cells) {
             _A_.makeCompressed();
         } else {
             A.makeCompressed();
         }
-        LOG(numerics) << "Cached Matrix\n";
+        LOG(numerics) << "Cached Matrix";
         isCached = true;
     }
 
@@ -308,7 +307,7 @@ Equation::solve() {
         adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
     }
 
-    std::cout << "Running Time Step\n";
+    LOG(numerics) << "Running Time Step";
     // Returns true if max headchange is greater as defined val
     auto isHeadChangeGreater = [this]() -> bool {
         double lowerBound = maxHeadChange;
@@ -329,6 +328,7 @@ Equation::solve() {
     char smallHeadChanges{0};
     bool headConverged{false};
     while (iterations < IITER) {
+
         LOG(numerics) << "Outer iteration: " << iterations;
 
         //Solve inner iterations
@@ -402,29 +402,24 @@ Equation::solve() {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         } else {
-            LOG(numerics) << "Residual Inf norm error " << cg.error_inf();
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+	        LOG(numerics) << "|Residual|_l2: " << cg.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         }
 
         updateMatrix();
         preconditioner();
 
-        /*IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-
-        MatrixXd dMat( A );
-        std::cout << dMat.format(CleanFmt);
-        std::cout << "-----\n------\n------\n";
-        std::cout << b.format(CleanFmt);*/
-
         iterations++;
     }
 
     if (iterations == IITER) {
-        std::cerr << "Fail in solving matrix with max iterations \n";
+        std::cerr << "Fail in solving matrix with max iterations";
         if (nwt) {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
         } else {
-            LOG(numerics) << "Residual Inf norm error " << cg.error_inf();
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+            LOG(numerics) << "|Residual|_l2: " << cg.error();
         }
     }
 

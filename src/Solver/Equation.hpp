@@ -28,205 +28,217 @@
 
 #include "../../lib/Eigen/Sparse"
 #include "../../lib/Eigen/Core"
+//#include "../../lib/Eigen/PardisoSupport"
 #include "../Model/Node.hpp"
 #include "../Simulation/Options.hpp"
 #include "Numerics.hpp"
 
 namespace GlobalFlow {
-namespace Solver {
-using namespace boost::units;
-using namespace Eigen;
+    namespace Solver {
+        using namespace boost::units;
+        using namespace Eigen;
 
-using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
-using large_num = unsigned long int;
+        using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
+        using large_num = unsigned long int;
+        using long_vector = Matrix<long double, Dynamic, 1>;
 
 /**
  * @class Equation The internal finite difference equation
  * Should only be accessed through the stepper
  */
-class Equation {
-    public:
-        Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options);
+        class Equation {
+        public:
+            Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options);
 
-        ~Equation();
+            ~Equation();
 
-        /**
-         * Solve the current iteration step
-         */
-        void solve();
+            /**
+             * Solve the current iteration step
+             */
+            void solve();
 
-        /**
-         * @return The number of iterations
-         */
-        int getItter();
+            /**
+             * @return The number of iterations
+             */
+            int getItter();
 
-        /**
-         * @return The current residual error
-         */
-        double getError();
+            /**
+             * @return The current residual error
+             */
+            double getError();
 
-        //No copy and copy assign for Equations
-        Equation(const Equation &) = delete;
+            //No copy and copy assign for Equations
+            Equation(const Equation &) = delete;
 
-        Equation &
-        operator=(const Equation &) = delete;
+            Equation &
+            operator=(const Equation &) = delete;
 
-        /**
-         * Helper to write out current residuals
-         * @param os
-         * @param eq
-         * @return
-         */
-        friend std::ostream &
-        operator<<(std::ostream &os, Equation &eq) {
-            IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-            os << eq.getResults().format(CleanFmt);
-            return os;
+            /**
+             * Helper to write out current residuals
+             * @param os
+             * @param eq
+             * @return
+             */
+            friend std::ostream &
+            operator<<(std::ostream &os, Equation &eq) {
+                IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+                os << eq.getResults().format(CleanFmt);
+                return os;
+            };
+
+            long_vector getResults() {
+                return this->x;
+            }
+
+            long_vector getRHS(){
+                return this->b;
+            }
+
+            /**
+             * Toogle the steady-state in all nodes
+             * @return
+             */
+            bool toggleSteadyState() {
+                SteadyState = !SteadyState;
+                bool state = SteadyState;
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [state](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->toggleSteadyState(state);
+                              });
+                return SteadyState;
+            }
+
+            /**
+             * Set the correct stepsize (default is DAY)
+             * @param mod
+             */
+            void updateStepSize(double mod) {
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
+            }
+
+            typedef typename Eigen::Matrix<long double, -1, 1, 0, -1, 1>::Scalar Scalar;
+            typedef Matrix<Scalar, Dynamic, 1> VectorType;
+
+            VectorType getResiduals() const {
+                return cg.getResiduals();
+            }
+
+            void updateClosingCrit(double crit) { cg.setTolerance(crit); }
+
+            /**
+             * @note resests dampening object and counters
+             */
+            void enableDamping() {
+                isAdaptiveDamping = true;
+            }
+
+        private:
+            bool initalized = false;
+
+            large_num numberOfNodes;
+            int initialHead;
+
+            /**
+             * _var_ only used if disabling of cells is required
+             */
+            NodeVector nodes;
+            long_vector x;
+            long_vector _x_;
+            long_vector b;
+            long_vector _b_;
+            SparseMatrix<long double> A;
+            SparseMatrix<long double> _A_;
+
+            const Simulation::Options options;
+
+            bool isAdaptiveDamping{true};
+            AdaptiveDamping adaptiveDamping;
+
+            int IITER{0};
+            double RCLOSE{0};
+
+            //From current run
+            int __itter{0};
+            double __error{0};
+
+            bool isCached{false};
+
+            double maxHeadChange{0.01};
+            double dampMin{0.01};
+            double dampMax{0.01};
+
+            bool disable_dry_cells{false};
+            //Maybe rename me :D
+            std::unordered_set<large_num> disabled_nodes;
+            //Real -> Current
+            std::unordered_map<large_num, long long> index_mapping;
+            bool dry_have_changed{true};
+
+            template<typename Set>
+            bool set_compare(Set const &lhs, Set const &rhs) {
+                return lhs.size() == rhs.size()
+                       && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+            }
+
+            //Need to be at same place as matrix A !!!!
+            //By pointer or rev breaks calculation!!
+            //ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<SparseMatrix<double>::Scalar, Lower | Upper>> cg;
+            //ConjugateGradient<SparseMatrix<double>, Lower | Upper, DiagonalPreconditioner<SparseMatrix<double>::Scalar>> cg;
+            ConjugateGradient<SparseMatrix<long double>, Lower | Upper> cg;
+            //ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
+
+            BiCGSTAB<SparseMatrix<long double>, IncompleteLUT<SparseMatrix<long double>::Scalar>> bicgstab;
+            //Used for NWT
+            bool nwt{false};
+
+            /**
+             * Helper for updating the matrix
+             * @param node
+             * @param cached
+             */
+            void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
+
+            /**
+             * Update the matrix for the current iteration
+             */
+            void inline updateMatrix();
+
+            /**
+             * Reallocate matrix and vectors absed on dried nodes
+             * @bug This is currently missing reenabling of deactivated nodes!
+             * Reenable if:
+             * 1) head in cell below needs to be higher than threshhold
+             * 2) head in one of 4 neighbours higher than threshhold
+             */
+            void inline reallocateMatrix();
+
+            /**
+             * Run the preconditioner
+             */
+            void inline preconditioner();
+
+            /**
+             * Update heads in inner iteration
+             */
+            void inline updateIntermediateHeads();
+
+            /**
+             * Calculate the final budget
+             */
+            void inline updateBudget();
+
+            /**
+             * Write the final head to the nodes
+             */
+            void inline updateFinalHeads();
+
+            bool SteadyState = false;
+            //Only for testin purposes
+            bool simpelHead = true;
         };
-
-        VectorXd getResults() {
-            return this->x;
-        }
-
-        /**
-         * Toogle the steady-state in all nodes
-         * @return
-         */
-        bool toogleSteadyState() {
-            SteadyState = !SteadyState;
-            bool state = SteadyState;
-            std::for_each(nodes->begin(),
-                          nodes->end(),
-                          [state](std::unique_ptr<Model::NodeInterface> const &node) {
-                              node->toogleStadyState(state);
-                          });
-            return SteadyState;
-        }
-
-        /**
-         * Set the correct stepsize (default is DAY)
-         * @param mod
-         */
-        void updateStepSize(size_t mod) {
-            std::for_each(nodes->begin(),
-                          nodes->end(),
-                          [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
-        }
-
-        typedef typename Eigen::MatrixXd::Scalar Scalar;
-        typedef Matrix<Scalar, Dynamic, 1> VectorType;
-
-        VectorType getResiduals() {
-            return cg.getResiduals();
-        }
-
-        void updateClosingCrit(double crit) { cg.setTolerance(crit); }
-
-    private:
-        bool initalized = false;
-
-        large_num numberOfNodes;
-        int initialHead;
-
-        /**
-         * _var_ only used if disabling of cells is required
-         */
-        NodeVector nodes;
-        VectorXd x;
-        VectorXd _x_;
-        VectorXd b;
-        VectorXd _b_;
-        SparseMatrix<double> A;
-        SparseMatrix<double> _A_;
-
-        const Simulation::Options options;
-
-        bool isAdaptiveDamping{true};
-        AdaptiveDamping adaptiveDamping;
-
-        int IITER{0};
-        double RCLOSE{0};
-
-        //From current run
-        int __itter{0};
-        double __error{0};
-
-        bool isCached{false};
-
-        double maxHeadChange{0.01};
-        double dampMin{0.01};
-        double dampMax{0.01};
-
-        bool disable_dry_cells{false};
-        //Maybe rename me :D
-        std::unordered_set<large_num> disabled_nodes;
-        //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping;
-        bool dry_have_changed{true};
-
-        template<typename Set>
-        bool set_compare(Set const &lhs, Set const &rhs) {
-            return lhs.size() == rhs.size()
-                   && std::equal(lhs.begin(), lhs.end(), rhs.begin());
-        }
-
-        //Need to be at same place as matrix A !!!!
-        //By pointer or rev breaks calculation!!
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<SparseMatrix<double>::Scalar, Lower | Upper>> cg;
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper, DiagonalPreconditioner<SparseMatrix<double>::Scalar>> cg;
-        ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteLUT<SparseMatrix<double>::Scalar>> cg;
-        //ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
-
-        BiCGSTAB<SparseMatrix<double>, IncompleteLUT<SparseMatrix<double>::Scalar>> bicgstab;
-        //Used for NWT
-        bool nwt{false};
-
-        /**
-         * Helper for updating the matrix
-         * @param node
-         * @param cached
-         */
-        void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
-
-        /**
-         * Update the matrix for the current iteration
-         */
-        void inline updateMatrix();
-
-        /**
-         * Reallocate matrix and vectors absed on dried nodes
-         * @bug This is currently missing reenabling of deactivated nodes!
-         * Reenable if:
-         * 1) head in cell below needs to be higher than threshhold
-         * 2) head in one of 4 neighbours higher than threshhold
-         */
-        void inline reallocateMatrix();
-
-        /**
-         * Run the preconditioner
-         */
-        void inline preconditioner();
-
-        /**
-         * Update heads in inner iteration
-         */
-        void inline updateIntermediateHeads();
-
-        /**
-         * Calculate the final budget
-         */
-        void inline updateBudget();
-
-        /**
-         * Write the final head to the nodes
-         */
-        void inline updateFinalHeads();
-
-        bool SteadyState = false;
-        //Only for testin purposes
-        bool simpelHead = true;
-};
-
+    }
 }
-}//ns
 #endif

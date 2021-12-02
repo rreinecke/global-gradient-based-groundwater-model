@@ -1,5 +1,9 @@
 #include "Simulation.hpp"
 
+BOOST_CLASS_IMPLEMENTATION(GlobalFlow::Model::NodeInterface, boost::serialization::object_serializable);
+BOOST_CLASS_IMPLEMENTATION(GlobalFlow::Model::StandardNode, boost::serialization::object_serializable);
+BOOST_CLASS_IMPLEMENTATION(GlobalFlow::Model::StaticHeadNode, boost::serialization::object_serializable);
+
 namespace GlobalFlow {
 namespace Simulation {
 
@@ -11,41 +15,28 @@ Simulation::Simulation(Options op, DataReader *reader) : op(op), reader(reader) 
         loadNodes = true;
     }
 
+    //FIXME not pretty could be changed to https://jonasdevlieghere.com/containers-of-unique-pointers/
+    //This might be a hughe memory leak at the end :/
     NodeVector ptr(new vector<unique_ptr<Model::NodeInterface>>);
     nodes = std::move(ptr);
+    int numOfStaticNodes{0};
 
-    int numOfStaticNodes = initNodes();
-    LOG(userinfo) << "Creating Equation.. \n";
-    eq = new Solver::Equation(numOfStaticNodes, nodes, op);
-}
-
-void
-Simulation::save() {
-    //Serialize current node state
-    if (serialize) {
-        cout << "Saving nodes for faster reboot .. \n";
-        {
-            std::ofstream ofs("savedNodes", ios::out | ios::binary);
-            boost::archive::binary_oarchive outStream(ofs);
-            // write class instance to archive
-            outStream << nodes;
+    if(loadNodes){
+        LOG(stateinfo) << "Atempting to load old state";
+        if(boost::filesystem::exists(saveName)){
+            restore();
+            numOfStaticNodes = nodes->size();
+            succefullyRestored = true;
+        }else{
+            LOG(userinfo) << "No existing state to load";
+            LOG(userinfo) << "Starting new run";
+            numOfStaticNodes = initNodes();
         }
-        cout << "Nodes saved\n";
+    } else{
+         numOfStaticNodes = initNodes();
     }
+    LOG(userinfo) << "Creating Equation..";
+    eq = std::make_unique<GlobalFlow::Solver::Equation>(numOfStaticNodes, nodes, op);
 }
-
-int Simulation::initNodes() {
-    LOG(userinfo) << "Starting G³M";
-    nodes->reserve(op.getNumberOfNodes() * op.getNumberOfLayers());
-    reader->initNodes(nodes);
-    reader->readData(op);
-    return op.getNumberOfNodes() * op.getNumberOfLayers();
-}
-
-Solver::Equation *
-Simulation::getEquation() {
-    return eq;
-}
-
 }
 }
