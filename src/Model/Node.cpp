@@ -34,7 +34,7 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<d_time>, StepSize>(1 * day);
     fields.emplace<quantity<CubicMeter>, OUT>(0.0 * si::cubic_meter);
     fields.emplace<quantity<CubicMeter>, IN>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<Meter>, Head>(100 * si::meter);
+    fields.emplace<quantity<Meter>, Head>(1 * si::meter);
     fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
     fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
