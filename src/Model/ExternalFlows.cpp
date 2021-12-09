@@ -28,13 +28,25 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             return -conductance;
         case RIVER_MM:
             //Can happen in transient coupling
-            if (flowHead <= bottom){ return out; }
-            return -calcERC(recharge, eq_head, head, eqFlow);
+            //stil allow gaining conditions!
+            if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
         case WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){
+		    if(head >= bottom){return -conductance;}
+		    return out; }
             return -conductance;
         case GLOBAL_WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return -conductance;}
+		    return out; }
             return -conductance;
         case LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return -conductance;}
+		    return out; }
             return -conductance;
         case DRAIN:
             if (head > flowHead) {
@@ -74,13 +86,25 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case RIVER_MM:
             //Can happen in transient coupling
-            if (flowHead <= bottom){ return out; }
-            return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+		        if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
+		    return out; }
         case WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
             return conductance * flowHead;
         case GLOBAL_WETLAND:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
             return conductance * flowHead;
         case LAKE:
+            //Can happen in transient coupling
+            if (flowHead <= bottom){ 
+		    if(head >= bottom){return conductance * flowHead;}
+		    return out; }
             return conductance * flowHead;
         case DRAIN:
             if (head > flowHead) {

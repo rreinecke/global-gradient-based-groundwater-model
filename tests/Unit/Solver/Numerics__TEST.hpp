@@ -5,8 +5,9 @@
 #include "../../../src/Solver/Numerics.hpp"
 
 //Required due to long double matrix support maybe remove in future
-using dvector = Eigen::Matrix<long double, Dynamic, 1>;
-using longMatrix = Eigen::Matrix<long double, -1, 1, 0, -1, 1>;
+using dvector = Eigen::Matrix<double, Dynamic, 1>;
+using mMatrix = Eigen::Matrix<double, -1, 1, 0, -1, 1>;
+
 
 class NumericsFixture : public ::testing::Test {
 public:
@@ -15,7 +16,7 @@ public:
     dvector x;
 
     NumericsFixture() {
-        longMatrix m = longMatrix::Random(3, 3);
+        mMatrix m = mMatrix::Random(3, 3);
         residuals = Map<dvector>(m.data(), m.cols() * m.rows());
         m.transposeInPlace();
         x = Map<dvector>(m.data(), m.cols() * m.rows());;

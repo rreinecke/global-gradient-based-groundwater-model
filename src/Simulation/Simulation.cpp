@@ -36,7 +36,7 @@ Simulation::Simulation(Options op, DataReader *reader) : op(op), reader(reader) 
          numOfStaticNodes = initNodes();
     }
     LOG(userinfo) << "Creating Equation..";
-    eq = std::make_unique<GlobalFlow::Solver::Equation>(numOfStaticNodes, nodes, op);
+    eq = make_unique<GlobalFlow::Solver::Equation>(numOfStaticNodes, nodes, op);
 }
 }
 }

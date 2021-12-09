@@ -37,10 +37,11 @@ namespace GlobalFlow {
     namespace Solver {
         using namespace boost::units;
         using namespace Eigen;
-
-        using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
-        using large_num = unsigned long int;
-        using long_vector = Matrix<long double, Dynamic, 1>;
+      
+	using pr_t = double; //change here if other precision should be used e.g. long double
+	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
+	using large_num = unsigned long int;
+	using long_vector = Matrix<pr_t, Dynamic, 1>;
 
 /**
  * @class Equation The internal finite difference equation
@@ -119,10 +120,10 @@ namespace GlobalFlow {
                               [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
             }
 
-            typedef typename Eigen::Matrix<long double, -1, 1, 0, -1, 1>::Scalar Scalar;
+            typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;
             typedef Matrix<Scalar, Dynamic, 1> VectorType;
 
-            VectorType getResiduals() const {
+            VectorType& getResiduals() const {
                 return cg.getResiduals();
             }
 
@@ -133,112 +134,110 @@ namespace GlobalFlow {
              */
             void enableDamping() {
                 isAdaptiveDamping = true;
-            }
+            } 
 
-        private:
-            bool initalized = false;
+    private:
+        bool initalized = false;
 
-            large_num numberOfNodes;
-            int initialHead;
+        large_num numberOfNodes;
+        int initialHead;
 
-            /**
-             * _var_ only used if disabling of cells is required
-             */
-            NodeVector nodes;
-            long_vector x;
-            long_vector _x_;
-            long_vector b;
-            long_vector _b_;
-            SparseMatrix<long double> A;
-            SparseMatrix<long double> _A_;
+        /**
+         * _var_ only used if disabling of cells is required
+         */
+        NodeVector nodes;
 
-            const Simulation::Options options;
+        long_vector x;
+        long_vector _x_;
+        long_vector b;
+        long_vector _b_;
+        SparseMatrix<pr_t> A;
+        SparseMatrix<pr_t> _A_;
 
-            bool isAdaptiveDamping{true};
-            AdaptiveDamping adaptiveDamping;
+        const Simulation::Options options;
 
-            int IITER{0};
-            double RCLOSE{0};
+        bool isAdaptiveDamping{true};
+        AdaptiveDamping adaptiveDamping;
 
-            //From current run
-            int __itter{0};
-            double __error{0};
+        int IITER{0};//FIXME this is used as outer iterations
+        pr_t RCLOSE{0};
+	int inner_iterations{0};
 
-            bool isCached{false};
+        //From current run
+        int __itter{0};
+        double __error{0};
 
-            double maxHeadChange{0.01};
-            double dampMin{0.01};
-            double dampMax{0.01};
+        bool isCached{false};
 
-            bool disable_dry_cells{false};
-            //Maybe rename me :D
-            std::unordered_set<large_num> disabled_nodes;
-            //Real -> Current
-            std::unordered_map<large_num, long long> index_mapping;
-            bool dry_have_changed{true};
+        double maxHeadChange{0.01};
+        double dampMin{0.01};
+        double dampMax{0.01};
 
-            template<typename Set>
-            bool set_compare(Set const &lhs, Set const &rhs) {
-                return lhs.size() == rhs.size()
-                       && std::equal(lhs.begin(), lhs.end(), rhs.begin());
-            }
+        bool disable_dry_cells{false};
+        //Maybe rename me :D
+        std::unordered_set<large_num> disabled_nodes;
+        //Real -> Current
+        std::unordered_map<large_num, long long> index_mapping;
+        bool dry_have_changed{true};
 
-            //Need to be at same place as matrix A !!!!
-            //By pointer or rev breaks calculation!!
-            //ConjugateGradient<SparseMatrix<double>, Lower | Upper, IncompleteCholesky<SparseMatrix<double>::Scalar, Lower | Upper>> cg;
-            //ConjugateGradient<SparseMatrix<double>, Lower | Upper, DiagonalPreconditioner<SparseMatrix<double>::Scalar>> cg;
-            ConjugateGradient<SparseMatrix<long double>, Lower | Upper> cg;
-            //ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
+        template<typename Set>
+        bool set_compare(Set const &lhs, Set const &rhs) {
+            return lhs.size() == rhs.size()
+                   && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+        }
 
-            BiCGSTAB<SparseMatrix<long double>, IncompleteLUT<SparseMatrix<long double>::Scalar>> bicgstab;
-            //Used for NWT
-            bool nwt{false};
+        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg; 	
 
-            /**
-             * Helper for updating the matrix
-             * @param node
-             * @param cached
-             */
-            void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
+        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
+        //Used for NWT
+        bool nwt{false};
 
-            /**
-             * Update the matrix for the current iteration
-             */
-            void inline updateMatrix();
+        /**
+         * Helper for updating the matrix
+         * @param node
+         * @param cached
+         */
+        void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-            /**
-             * Reallocate matrix and vectors absed on dried nodes
-             * @bug This is currently missing reenabling of deactivated nodes!
-             * Reenable if:
-             * 1) head in cell below needs to be higher than threshhold
-             * 2) head in one of 4 neighbours higher than threshhold
-             */
-            void inline reallocateMatrix();
+        /**
+         * Update the matrix for the current iteration
+         */
+        void inline updateMatrix();
 
-            /**
-             * Run the preconditioner
-             */
-            void inline preconditioner();
+        /**
+         * Reallocate matrix and vectors absed on dried nodes
+         * @bug This is currently missing reenabling of deactivated nodes!
+         * Reenable if:
+         * 1) head in cell below needs to be higher than threshhold
+         * 2) head in one of 4 neighbours higher than threshhold
+         */
+        void inline reallocateMatrix();
 
-            /**
-             * Update heads in inner iteration
-             */
-            void inline updateIntermediateHeads();
+        /**
+         * Run the preconditioner
+         */
+        void inline preconditioner();
 
-            /**
-             * Calculate the final budget
-             */
-            void inline updateBudget();
+        /**
+         * Update heads in inner iteration
+         */
+        void inline updateIntermediateHeads();
 
-            /**
-             * Write the final head to the nodes
-             */
-            void inline updateFinalHeads();
+        /**
+         * Calculate the final budget
+         */
+        void inline updateBudget();
 
-            bool SteadyState = false;
-            //Only for testin purposes
-            bool simpelHead = true;
-        };
-    }
+        /**
+         * Write the final head to the nodes
+         */
+        void inline updateFinalHeads();
+
+        bool SteadyState = false;
+        //Only for testin purposes
+        bool simpelHead = true;
+};
 }
+}
+
 #endif

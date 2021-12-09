@@ -19,10 +19,15 @@
 namespace GlobalFlow {
     namespace Simulation {
 
+        /** @class Enum for stepsizes
+         *  @bug cannot use double value e.g. for week: 7.5 should be a struct instead
+         */
         enum TimeFrame {
             DAY = 1,
-            MONTH = 30,
-            YEAR = 360
+	          WEEK = 7,
+            FORTNIGHT = 15,
+	          MONTH = 30,
+	          YEAR = 360
         };
 
         typedef std::pair<Solver::Equation *, double> step;
@@ -69,8 +74,13 @@ namespace GlobalFlow {
                     double __delta{0};
                     __delta = _delta_t_n * _p;
                     _delta_t_n = __delta;
-                    _stepper->get(0)->updateStepSize(__delta);
+
+                    LOG(debug) << "Stepsize delta " << __delta;
+                    LOG(debug) << "Stepsize: " << _time *  __delta;
+                    _stepper->get(0)->updateStepSize(_time * __delta);
                     _pos = _pos + __delta;
+                    LOG(debug) << "Current position " << _pos;
+
                 } else {
                     ++_pos;
                 }
@@ -81,7 +91,8 @@ namespace GlobalFlow {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
                 _delta_t_n = __delta;
-                _stepper->get(0)->updateStepSize(__delta);
+                _stepper->get(0)->updateStepSize(_time * __delta);
+		            LOG(debug) << "Stepsize: " << _time * __delta;
                 _pos = _pos + __delta;
             }
 

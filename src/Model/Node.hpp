@@ -502,6 +502,8 @@ Modify Properties
 
         t_vel getK__pure() noexcept { return get<t_vel, K>(); }
 
+	void setSimpleK(){simpleK = true;}
+
         /**
          * @brief Get hydraulic conductivity
          * @return hydraulic conductivity (scaled by e-folding)
@@ -571,17 +573,18 @@ Modify Properties
          */
         t_s_meter getStorageCapacity() noexcept {
             t_meter epsilon = 0.001 * si::meter;
-		//TODO make this an option!
-	    if(get<int, Layer>() == 0){
-		//If this is the first layer always use equation for unconfined storage
-		//if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
-		//else { return getStorageCapacity__Secondary();} 
-		    return getStorageCapacity__Secondary();
-	    }else{
-		//when we are in the second layer check if we are defined as confined
-	    	if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
-	    }
-	    //we are not in the first layer and we are in unconfined conditions as specified by the user
+            //TODO make this an option!
+            if (get<int, Layer>() == 0) {
+                //If this is the first layer always use equation for unconfined storage
+                //if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
+                //else { return getStorageCapacity__Secondary();}
+                return getStorageCapacity__Secondary();
+            } else {
+                //when we are in the second layer check if we are defined as confined
+                if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
+            }
+            //we are not in the first layer and we are in unconfined conditions as specified by the user
+
             if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                 //water-table condition
                 if (nwt) { return getStorageCapacity__SecondaryNWT(); }
@@ -759,7 +762,14 @@ Modify Properties
          * @return Number assigned by cell to flow
          */
         int addExternalFlow(FlowType type, t_meter flowHead, double cond, t_meter bottom) {
-            if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
+            if (hasTypeOfExternalFlow(type)) {
+                    //LOG(debug) << "! adding a flow that is already existing for cell"
+                    //curretly it is assumed that only one external flow is what we want
+                    // FIXME if not we have to replace the enum with something different
+                    removeExternalFlow(type);
+            }   
+	       
+	    if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) { 
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
                                                                  type)));
@@ -775,6 +785,7 @@ Modify Properties
                                                                  * get<t_meter, VerticalSize>(),
                                                                  get<t_meter, EdgeLenght>())));
             } else {
+
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
@@ -783,6 +794,12 @@ Modify Properties
                                                                  bottom)));
             }
             numOfExternalFlows++;
+            if(numOfExternalFlows != externalFlows.size()){
+                LOG(debug) << "Printing flows ";
+                for(auto const& imap: externalFlows)
+                    LOG(debug) << " " << imap.first;
+                throw "Number of external flows don't match";
+            }
             return numOfExternalFlows;
         }
 
@@ -792,9 +809,21 @@ Modify Properties
          */
         void removeExternalFlow(FlowType type) {
             if (externalFlows.erase(type)) {
-                numOfExternalFlows--;
+                numOfExternalFlows = numOfExternalFlows - 1;
+            }
+            if(numOfExternalFlows != externalFlows.size()){
+                LOG(debug) << "Printing flows ";
+                for(auto const& imap: externalFlows)
+                    LOG(debug) << " " << imap.first;
+                throw "Number of external flows don't match";
             }
         }
+
+        /**
+         * @brief The number of external flows
+         */
+        int getNumOfExternalFlows(){return numOfExternalFlows;}
+
 
         /**
          * @brief Check for an external flow by type
@@ -806,7 +835,8 @@ Modify Properties
                 return false;
             }
             return true;
-        }
+	      }
+
 
         /**
          * @brief Updates GW recharge
@@ -828,15 +858,13 @@ Modify Properties
                 }
             }
             if (hasTypeOfExternalFlow(flow)) {
-                //LOG(debug) << "current: " << getExternalFlowByName(RECHARGE).getRecharge().value();
                 removeExternalFlow(flow);
             }
-            if (amount == 0) {
-		        //recharge is 0 no need to add it
-                return;
-            }
+
             addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
-            //LOG(debug) << "new: " << getExternalFlowByName(RECHARGE).getRecharge().value();
+            if(numOfExternalFlows != externalFlows.size()){
+                throw "Number of external flows don't match";
+            }
         }
 
 
@@ -915,6 +943,10 @@ Modify Properties
                 t_vol_t recharge{externalFlow.getLockRecharge()};
                 t_s_meter_t l_cond{externalFlow.getLockConduct()};
                 removeExternalFlow(type);
+                NANChecker(flowHead.value(), "Stage value");
+                NANChecker(l_cond.value(), "Conduct value");
+                NANChecker(bottom.value(), "Bottom value");
+
                 addExternalFlow(type, flowHead, conduct, bottom);
                 if (lock) {
                     getExternalFlowByName(type).setLock();
@@ -1134,12 +1166,12 @@ Modify Properties
          * @brief The right hand side of the equation
          * @return volume per time
          */
-        t_vol_t getRHS() noexcept {
+        t_vol_t getRHS() {
             t_vol_t externalFlows = -getQ();
             t_vol_t dwateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
-                    (getStorageCapacity() * get<t_meter, Head_TZero>()) / (day* get<t_dim, StepModifier>());
+                    getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
             if (steadyState) {
                 storageFlow = 0 * (si::cubic_meter / day);
             }

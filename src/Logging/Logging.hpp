@@ -17,6 +17,7 @@
 #include "Sinks.hpp"
 #include <iostream>
 
+
 // This nasty hack is only necessary because WaterGAP doesn't stick to Macro guidelines :(
 #pragma push_macro("ng")
 #undef ng

@@ -12,7 +12,8 @@ public:
     MockOptions options;
 
     void SetUp() {
-        NodeVector ptr(new std::vector<unique_ptr<GlobalFlow::Model::NodeInterface>>);
+        NodeVector ptr(new vector<unique_ptr<GlobalFlow::Model::NodeInterface>>);
+
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1, 0.2, 0.1, true));

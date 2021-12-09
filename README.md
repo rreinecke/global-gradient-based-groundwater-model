@@ -1,8 +1,8 @@
 [![status](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867/status.svg)](http://joss.theoj.org/papers/5fda5a279db561b6d4c597bbbe574867)
 [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471) 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120)
+[![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120) 
 
 [![Build Status](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model.svg?branch=master)](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model)
 
@@ -13,12 +13,12 @@ G³M is a newly developed gradient-based groundwater model which adapts MODFLOW 
 It is written in C++ and intended to be coupled to the global hydrology model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydrology models.
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
-## Getting Started
-
+## Getting Started  
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
+
 To make the program run, you need:
+
 ```
 clang >= 13 with openMP (currently gcc is not supported)
 cmake >= 3.15.3
@@ -86,16 +86,12 @@ In tests/SimpleModel you'll find an example implementation explained further in 
 class GW_Interface {
     public:
         virtual ~GW_Interface() {}
-
         virtual void
         loadSettings() = 0;
-
         virtual void
         setupSimulation() = 0;
-
         virtual void
         writeData() = 0;
-
         virtual void
         simulate() = 0;
 };
@@ -137,7 +133,6 @@ If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
     }
   }
 }
-
 ```
 
 ### Config model
@@ -245,8 +240,8 @@ Please contact us if you need advice.
 
 ## Running the tests
 Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
+  
 You can run them by executing the test executable.
-
 ```
 runUnitTests
 ```
@@ -262,20 +257,15 @@ make
 cp *.a /usr/lib
 ```
 
-## Built With
-
+## Built With  
 * [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
 * [GTest](https://github.com/google/googletest) - Test framework
 * [libboost](http://www.boost.org) - C++ magic
 * [OpenMP](http://www.openmp.org) - Accelerator und Multi-Core support
 * [GMP](https://gmplib.org) - Large numbers
-
 ## Contributing
-
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
-
 ## Versioning
-
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
 ## Authors and Contributors
@@ -289,12 +279,9 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Alexander Wachholz** - *Documentation review*
 * **Christoph Niemann** - *Spatial IDs* *Developer*
 
-## License
-
+## License  
 This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
 Please note that the code contains a modified version of the Eigen3 library which is published under the [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
-
 ## Acknowledgments
-
 * [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
 * [Eigen3](http://eigen.tuxfamily.org) for their awesome framework

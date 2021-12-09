@@ -19,7 +19,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     if (nwt)
         LOG(userinfo) << "Running with NWT solver" << std::endl;
 
-    int innerItter = options.getInnerItter();
+    inner_iterations = options.getInnerItter();
 
     this->nodes = nodes;
 
@@ -29,7 +29,8 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     x = std::move(__x);
     b = std::move(__b);
 
-    Eigen::SparseMatrix<long double> __A(numberOfNodes, numberOfNodes);
+    Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
+
     A = std::move(__A);
     A.reserve(long_vector::Constant(numberOfNodes, 7));
 
@@ -56,11 +57,11 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     }
 
     if (nwt) {
-        bicgstab.setMaxIterations(innerItter);
+        bicgstab.setMaxIterations(inner_iterations);
         bicgstab.setTolerance(RCLOSE);
     } else {
         //set inner iterrations
-        cg.setMaxIterations(innerItter);
+        cg.setMaxIterations(inner_iterations);
         cg.setTolerance(RCLOSE);
         //cg.preconditioner().setInitialShift(1e-8);
     }
@@ -109,7 +110,8 @@ void inline Equation::reallocateMatrix() {
 
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
-    Matrix<long double, 2, Dynamic> new_matrix(size, size);
+    Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
+
 
     if (dry_have_changed) {
         index_mapping.clear();
@@ -174,7 +176,7 @@ Equation::updateMatrix() {
             NANChecker(rhs, "Right hand side");
         } else {
             rhs = nodes->at(j)->getRHS().value();
-            b[nodes->at(j)->getProperties().get<large_num, Model::ID>()] = std::move(rhs);
+            b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
             NANChecker(rhs, "Right hand side");
         }
     }
@@ -308,8 +310,13 @@ Equation::solve() {
     }
 
     LOG(numerics) << "Running Time Step";
+    
+    double maxHead{0};
+    double oldMaxHead{0};
+    int itterScale{0};
+
     // Returns true if max headchange is greater as defined val
-    auto isHeadChangeGreater = [this]() -> bool {
+    auto isHeadChangeGreater = [this,&maxHead]() -> bool {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
 #pragma omp parallel for
@@ -319,6 +326,7 @@ Equation::solve() {
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (val > changeMax) ? val : changeMax;
         }
+	maxHead = changeMax;
         LOG(numerics) << "MAX Head Change: " << changeMax;
         return changeMax > lowerBound;
     };
@@ -376,12 +384,21 @@ Equation::solve() {
                 headConverged = true;
                 smallHeadChanges++;
 
-                if (smallHeadChanges >= 3) {
+                if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
                     break;
                 }
             }
         }
+
+	if(maxHead == oldMaxHead){
+		//The head change is really the same -> increase inner iterations
+		itterScale = itterScale + 10;
+	}else{
+		itterScale = 0;
+	}
+        cg.setMaxIterations(inner_iterations + itterScale);
+	oldMaxHead = maxHead;
 
         /**
          * @brief residual norm convergance

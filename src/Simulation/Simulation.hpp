@@ -51,7 +51,7 @@ namespace boost { namespace serialization {
         inline void serialize(Archive & ar, NodeVector& foo, const unsigned int file_version){
             LOG(GlobalFlow::debug) << "Serializing called";
         }
-        
+
 
         template<class Archive>
         inline void save_construct_data(Archive & ar, const NodeVector* foo, const unsigned int file_version){
@@ -61,6 +61,7 @@ namespace boost { namespace serialization {
                 ar & *it;
             }
         }
+    }}
 
         template<class Archive>
         inline void load_construct_data(Archive & ar, NodeVector* foo, const unsigned int file_version){
@@ -75,7 +76,6 @@ namespace boost { namespace serialization {
             }
         }
     }}
-
 
 
 namespace GlobalFlow {
@@ -253,6 +253,7 @@ namespace GlobalFlow {
                 mpf_float_1000 out = 0;
                 mpf_float_1000 in = 0;
                 mpf_float_1000 error = 0;
+
                 for (int j = 0; j < nodes->size(); ++j) {
                     out = out + fun1(j);
                     in = in + fun2(j);
@@ -443,7 +444,7 @@ namespace GlobalFlow {
              * @param path
              */
             void writeResiduals(string path) {
-                Eigen::Matrix<long double, Eigen::Dynamic, 1> vector = eq->getResiduals();
+                Eigen::Matrix<double, Eigen::Dynamic, 1> vector = eq->getResiduals();
                 std::ofstream ofs;
                 ofs.open(path, std::ofstream::out | std::ofstream::trunc);
                 ofs << "X,Y,data" << "\n";

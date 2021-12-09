@@ -55,8 +55,8 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   Index n = mat.cols();
 
   VectorType residual = rhs - mat * x; //initial residual
-
   //RealScalar rhsNorm2 = rhs.squaredNorm();
+
   RealScalar rhsNormInf = rhs.template lpNorm<Infinity>();
 
   //rhsNormInf = rhsNormInf * (rhs.template lpNorm<1>() / rhs.size());
