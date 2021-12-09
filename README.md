@@ -13,17 +13,7 @@ G³M is a newly developed gradient-based groundwater model which adapts MODFLOW 
 It is written in C++ and intended to be coupled to the global hydrology model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydrology models.
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
-## Getting Started
-
-    
-        
-          
-    
-
-        
-    
-    @@ -33,52 +25,9 @@ cmake ../
-  
+## Getting Started  
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 ### Prerequisites
 ```
@@ -89,16 +79,6 @@ In tests/SimpleModel you'll find an example implementation explained further in 
 
 ```
 class GW_Interface {
-
-    
-        
-          
-    
-
-        
-    
-    @@ -99,23 +48,8 @@ class GW_Interface {
-  
     public:
         virtual ~GW_Interface() {}
         virtual void
@@ -132,16 +112,6 @@ Write out of data is specified by a JSON file called out.json.
 If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 ```
 {
-
-    
-        
-          
-    
-
-        
-    
-    @@ -138,29 +72,8 @@ If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
-  
   "output": {
     "StaticResult": [
       {
@@ -186,21 +156,6 @@ The following explains the main config parameters.
 ```
 {
   "config": {
-
-    
-          
-            
-    
-
-          
-          
-            
-    
-
-          
-    
-    @@ -227,19 +140,24 @@ The following explains the main config parameters.
-  
     "model_config": {
       "nodes": "grid_simple.csv",
       "row_cols": "true",
@@ -280,15 +235,6 @@ Please contact us if you need advice.
 
 ## Running the tests
 Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
-
-    
-        
-          
-    
-
-        
-    
-    @@ -249,16 +167,15 @@ You can run them by executing the test executable.
   
 You can run them by executing the test executable.
 ```
@@ -306,18 +252,7 @@ make
 cp *.a /usr/lib
 ```
 
-## Built With
-
-
-    
-        
-          
-    
-
-        
-    
-    @@ -278,14 +195,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available,
-  
+## Built With  
 * [Eigen3](http://eigen.tuxfamily.org) - Doing the math magic
 * [GTest](https://github.com/google/googletest) - Test framework
 * [libboost](http://www.boost.org) - C++ magic
@@ -339,18 +274,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Alexander Wachholz** - *Documentation review*
 * **Christoph Niemann** - *Spatial IDs* *Developer*
 
-## License
-
-
-    
-          
-            
-    
-
-          
-    
-    
-  
+## License  
 This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
 Please note that the code contains a modified version of the Eigen3 library which is published under the [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 ## Acknowledgments
