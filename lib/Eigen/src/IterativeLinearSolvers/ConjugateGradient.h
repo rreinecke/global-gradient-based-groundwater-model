@@ -10,6 +10,8 @@
 #ifndef EIGEN_CONJUGATE_GRADIENT_H
 #define EIGEN_CONJUGATE_GRADIENT_H
 
+#include <iostream>
+
 namespace Eigen { 
 
 namespace internal {
