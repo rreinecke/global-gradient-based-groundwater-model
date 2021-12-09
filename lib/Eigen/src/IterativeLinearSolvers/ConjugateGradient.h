@@ -11,6 +11,7 @@
 #define EIGEN_CONJUGATE_GRADIENT_H
 
 #include <iostream>
+#include <fstream>
 
 namespace Eigen { 
 
@@ -57,6 +58,7 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   //RealScalar rhsNorm2 = rhs.squaredNorm();
 
   RealScalar rhsNormInf = rhs.template lpNorm<Infinity>();
+
   //rhsNormInf = rhsNormInf * (rhs.template lpNorm<1>() / rhs.size());
   //if(rhsNorm2 == 0)
   if(rhsNormInf == 0)

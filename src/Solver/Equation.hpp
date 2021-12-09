@@ -37,6 +37,7 @@ namespace GlobalFlow {
     namespace Solver {
         using namespace boost::units;
         using namespace Eigen;
+      
 	using pr_t = double; //change here if other precision should be used e.g. long double
 	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
 	using large_num = unsigned long int;
@@ -238,4 +239,5 @@ namespace GlobalFlow {
 };
 }
 }
+
 #endif

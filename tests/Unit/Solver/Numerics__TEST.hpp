@@ -8,6 +8,7 @@
 using dvector = Eigen::Matrix<double, Dynamic, 1>;
 using mMatrix = Eigen::Matrix<double, -1, 1, 0, -1, 1>;
 
+
 class NumericsFixture : public ::testing::Test {
 public:
     AdaptiveDamping adp;

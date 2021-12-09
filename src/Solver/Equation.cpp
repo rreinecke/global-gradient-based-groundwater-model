@@ -30,6 +30,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     b = std::move(__b);
 
     Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
+
     A = std::move(__A);
     A.reserve(long_vector::Constant(numberOfNodes, 7));
 
@@ -110,6 +111,7 @@ void inline Equation::reallocateMatrix() {
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
     Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
+
 
     if (dry_have_changed) {
         index_mapping.clear();

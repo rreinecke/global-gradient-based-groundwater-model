@@ -317,7 +317,7 @@ class Options {
 
         //Computations are all based on daily
         const int
-        getStepsizeModifier() throw(out_of_range) {
+        getStepsizeModifier() {
             switch (stepsize) {
                 case DAILY:
                     return 1;

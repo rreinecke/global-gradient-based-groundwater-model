@@ -28,11 +28,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             return -conductance;
         case RIVER_MM:
             //Can happen in transient coupling
-            if (flowHead <= bottom){
-		    //stil allow gaining conditions!
-		    if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
-		    return out;}
-            return -calcERC(recharge, eq_head, head, eqFlow);
+            //stil allow gaining conditions!
+            if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom){
@@ -89,10 +86,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case RIVER_MM:
             //Can happen in transient coupling
-            if (flowHead <= bottom){ 
-		    if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
+		        if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
 		    return out; }
-            return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom){ 

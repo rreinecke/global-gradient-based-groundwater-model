@@ -544,6 +544,8 @@ Modify Properties
          */
         void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
+        void setSimpleK(){simpleK = true;}
+
         /**
          * @brief Get all outflow since simulation start
          */
@@ -582,6 +584,7 @@ Modify Properties
                 if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
             }
             //we are not in the first layer and we are in unconfined conditions as specified by the user
+
             if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                 //water-table condition
                 if (nwt) { return getStorageCapacity__SecondaryNWT(); }
@@ -597,7 +600,7 @@ Modify Properties
          * @return Ref to external flow
          * @throw OutOfRangeException
          */
-        ExternalFlow &getExternalFlowByName(FlowType type) throw(out_of_range) {
+        ExternalFlow &getExternalFlowByName(FlowType type) {
             if (externalFlows.find(type) == externalFlows.end())
                 throw out_of_range("No such flow");
             return externalFlows.at(type);
@@ -832,7 +835,8 @@ Modify Properties
                 return false;
             }
             return true;
-	}
+	      }
+
 
         /**
          * @brief Updates GW recharge
@@ -856,6 +860,7 @@ Modify Properties
             if (hasTypeOfExternalFlow(flow)) {
                 removeExternalFlow(flow);
             }
+
             addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
             if(numOfExternalFlows != externalFlows.size()){
                 throw "Number of external flows don't match";
@@ -941,6 +946,7 @@ Modify Properties
                 NANChecker(flowHead.value(), "Stage value");
                 NANChecker(l_cond.value(), "Conduct value");
                 NANChecker(bottom.value(), "Bottom value");
+
                 addExternalFlow(type, flowHead, conduct, bottom);
                 if (lock) {
                     getExternalFlowByName(type).setLock();
