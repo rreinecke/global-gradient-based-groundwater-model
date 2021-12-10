@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15.3)
 if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
-    message(STATUS "You need to upgrade to CMake 3.15.3")
+    message(STATUS "You need to upgrade CMake! Minimum required version is 3.15.3.")
 endif()
 
 set(CMAKE_C_COMPILER "clang")
