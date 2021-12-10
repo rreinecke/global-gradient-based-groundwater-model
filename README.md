@@ -25,6 +25,7 @@ cmake >= 3.15.3
 libboost >= 1.71
 libGMP
 libGtest
+lcov
 ```
 ### Build
 If the current directory is the model folder, enter the following commands in the terminal:
