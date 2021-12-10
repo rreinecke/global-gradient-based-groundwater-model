@@ -65,7 +65,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
         cg.setTolerance(RCLOSE);
         //cg.preconditioner().setInitialShift(1e-8);
     }
-};
+}
 
 Equation::~Equation() {
     LOG(debug) << "Destroying equation\n";
