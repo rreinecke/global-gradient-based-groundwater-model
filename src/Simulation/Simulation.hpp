@@ -61,7 +61,6 @@ namespace boost { namespace serialization {
                 ar & *it;
             }
         }
-    }}
 
         template<class Archive>
         inline void load_construct_data(Archive & ar, NodeVector* foo, const unsigned int file_version){
@@ -419,7 +418,7 @@ namespace GlobalFlow {
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
                               << totalErr.OUT;
                 LOG(level) << "General Head Boundary" << getFlowByName(GENERAL_HEAD_BOUNDARY);
-                LOG(stateinfo) << "Rivers: " << getFlowByName(RIVERS);
+                LOG(level) << "Rivers: " << getFlowByName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
                 LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);
                 LOG(level) << "Lakes: " << getFlowByName(LAKES);
