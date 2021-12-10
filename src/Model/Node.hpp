@@ -502,8 +502,6 @@ Modify Properties
 
         t_vel getK__pure() noexcept { return get<t_vel, K>(); }
 
-	void setSimpleK(){simpleK = true;}
-
         /**
          * @brief Get hydraulic conductivity
          * @return hydraulic conductivity (scaled by e-folding)
