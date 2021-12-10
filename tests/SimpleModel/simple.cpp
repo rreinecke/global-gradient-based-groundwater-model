@@ -28,7 +28,7 @@ void StandaloneRunner::simulate() {
         LOG(userinfo) << "Running a steady state step";
         step.first->toggleSteadyState();
         step.first->solve();
-        sim.printMassBalances(userinfo);
+        sim.printMassBalances(debug);
         step.first->toggleSteadyState();
     }
 
@@ -38,7 +38,7 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper) {
         step.first->solve();
-        sim.printMassBalances(userinfo);
+        sim.printMassBalances(debug);
     }
 
     //Changing stresses
@@ -67,11 +67,11 @@ void StandaloneRunner::simulate() {
             sim.getNodes()->at(j)->updateUniqueFlow(0.5, Model::RECHARGE, false);
     }
 
-    LOG(userinfo) << "Running transient steps with changes stresses";
+    LOG(userinfo) << "Running transient steps with changing stresses";
     Simulation::Stepper transientStepper2 = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper2) {
         step.first->solve();
-        sim.printMassBalances(userinfo);
+        sim.printMassBalances(debug);
     }
 
     DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
