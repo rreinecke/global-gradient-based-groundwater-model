@@ -7,6 +7,7 @@
       "numberofnodes": 50,
       "threads": 1,
       "layers": 1,
+      "one_layer_approach": "true",
       "confinement": [
         "true"
       ],

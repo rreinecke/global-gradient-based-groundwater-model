@@ -25,32 +25,35 @@
 #include "SimpleVDFDataReader.hpp"
 
 namespace GlobalFlow {
-class StandaloneRunner : GW_Interface {
-    public:
 
-        StandaloneRunner();
+    class NotCoupled;
 
-        void
-        loadSettings();
+    class StandaloneRunner : GW_Interface<NotCoupled> {
+        public:
 
-        void
-        setupSimulation();
+            StandaloneRunner();
 
-        void
-        simulate();
+            void
+            loadSettings();
 
-        void
-        getResults();
+            void
+            setupSimulation();
 
-        void
-        writeData();
+            void
+            simulate();
 
-    private:
-        Solver::Equation *_eq;
-        Simulation::Options op;
-        Simulation::Simulation sim;
-        DataProcessing::SimpleVDFDataReader *reader;
-};
+            void
+            getResults();
+
+            void
+            writeData(std::string);
+
+        private:
+            Solver::Equation *_eq;
+            Simulation::Options op;
+            Simulation::Simulation sim;
+            DataProcessing::SimpleVDFDataReader *reader;
+    };
 
 }//ns
 #endif //GROUNDWATER_SOLVER_MAIN_HPP
