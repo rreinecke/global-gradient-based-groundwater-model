@@ -52,7 +52,6 @@ namespace boost { namespace serialization {
             LOG(GlobalFlow::debug) << "Serializing called";
         }
 
-
         template<class Archive>
         inline void save_construct_data(Archive & ar, const NodeVector* foo, const unsigned int file_version){
             LOG(GlobalFlow::debug) << "Serializing vector";

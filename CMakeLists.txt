@@ -6,18 +6,21 @@ endif()
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_CXX_COMPILER "clang")
 
+# CMAKE flags
 set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-################################
-# Simple Demo Model
-################################
-project(simple)
+project(GW)
+
+# Build folder structure
 add_subdirectory(src)
 add_subdirectory(lib)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
+
+################# Libs ################
+# Boost
 set(BOOST_ROOT=/usr/local/lib)
 set(Boost_NO_SYSTEM_PATHS=TRUE)
 
@@ -26,28 +29,47 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 
+# OpenMP
 FIND_PACKAGE(OpenMP)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp")
 
-
+# GMP
 if (GMP_INCLUDE_DIR AND GMP_LIBRARIES)
     # Already in cache, be silent
     set(GMP_FIND_QUIETLY TRUE)
 endif (GMP_INCLUDE_DIR AND GMP_LIBRARIES)
-
 find_path(GMP_INCLUDE_DIR NAMES gmp.h)
 find_library(GMP_LIBRARIES NAMES gmp libgmp)
 find_library(GMPXX_LIBRARIES NAMES gmpxx libgmpxx)
 MESSAGE(STATUS "GMP libs: " ${GMP_LIBRARIES} " " ${GMPXX_LIBRARIES})
-
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 
+################################
+# Simple Demo Model
+################################
+project(simple)
 add_subdirectory(tests/SimpleModel)
 
-add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
+set(simple_src ${SOURCE})
+list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+
+add_executable(simple_model tests/SimpleModel/simple.cpp ${simple_src} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+################################
+# Simple Demo Model for Variable Density Flow (VDF)
+################################
+project(simpleVDF)
+add_subdirectory(tests/SimpleVDFModel)
+
+set(simple_vdf_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+
+add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
+target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Unit Tests
@@ -79,14 +101,16 @@ endif()
 add_subdirectory(tests)
 enable_testing()
 
-set(testing_src ${SOURCE})
 set(testing_hrd ${HEADERS})
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+set(testing_src ${SOURCE})
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)
 add_test(AllTests runUnitTests)
 
+################# Coverage ################
 #project(Coverage)
 #include(cmake/CodeCoverage.cmake)
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")

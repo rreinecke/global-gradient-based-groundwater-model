@@ -18,7 +18,6 @@ These instructions will get you a copy of the project up and running on your loc
 ### Prerequisites
 
 To make the program run, you need:
-
 ```
 clang >= 13 with openMP (currently gcc is not supported)
 cmake >= 3.15.3

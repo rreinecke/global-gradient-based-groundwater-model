@@ -1,5 +1,5 @@
-#ifndef TESTING_SIMPLEDATAREADER_HPP
-#define TESTING_SIMPLEDATAREADER_HPP
+#ifndef TESTING_SIMPLEVDFDATAREADER_HPP
+#define TESTING_SIMPLEVDFDATAREADER_HPP
 
 #include "../../src/DataProcessing/DataReader.hpp"
 
@@ -7,9 +7,9 @@ namespace GlobalFlow {
 namespace DataProcessing {
 
 
-class SimpleDataReader : public DataReader {
+class SimpleVDFDataReader : public DataReader {
     public:
-        SimpleDataReader(int step) { stepMod = step; }
+        SimpleVDFDataReader(int step) { stepMod = step; }
 
         virtual void readData(Simulation::Options op) {
             LOG(userinfo) << "Building the initial model layer";
@@ -24,12 +24,6 @@ class SimpleDataReader : public DataReader {
                             op.getSpecificStorage(),
                             op.isConfined(0));
 
-            LOG(userinfo) << "Building the bottom layers";
-            DataProcessing::buildBottomLayers(nodes,
-                                              op.getNumberOfLayers(),
-                                              op.getConfinements(),
-                                              op.getAquiferDepth());
-
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));
             readElevation(buildDir(op.getElevation()));
@@ -37,13 +31,10 @@ class SimpleDataReader : public DataReader {
             LOG(userinfo) << "Reading the groundwater recharge";
             readGWRecharge(buildDir(op.getRecharge()));
 
-            LOG(userinfo) << "Initializing head";
-            readInitialHeads((buildDir(op.getInitialHeadsDir())));
+            LOG(userinfo) << "Reading the boundary condition";
+            readHeadBoundary(buildDir(op.getKOceanDir()));
 
-            LOG(userinfo) << "Defining rivers";
-            readRiver(buildDir(op.getKRiverDir()));
-
-            LOG(userinfo) << "Connecting the layers";
+            LOG(userinfo) << "Connecting the model cells";
             DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
                                         op.getBoundaryCondition());
         }
@@ -57,7 +48,7 @@ class SimpleDataReader : public DataReader {
                  double anisotropy,
                  double specificYield,
                  double specificStorage, bool confined) {
-            Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
+            Matrix<int> out = Matrix<int>(numberOfNodes, std::vector<int>(numberOfNodes));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "global_ID", "X", "Y", "cell_area", "row", "col");
@@ -109,26 +100,27 @@ class SimpleDataReader : public DataReader {
             });
         };
 
-        void readRiver(std::string path) {
-            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "global_ID", "Head", "Bottom", "Conduct");
+        void readHeadBoundary(std::string path) {
+            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "global_ID", "elevation", "conduct");
             int arcid{0};
             double head{0};
+            double elevation{0};
             double conduct{0};
-            double bottom{0};
 
-            while (in.read_row(arcid, head, bottom, conduct)) {
-                int i = 0;
+            while (in.read_row(arcid, head, conduct)) {
+                int pos = 0;
                 try {
-                    i = lookupglobIDtoID.at(arcid);
+                    pos = lookupglobIDtoID.at(arcid);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                nodes->at(i)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct,
-                                              bottom * Model::si::meter);
-
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                elevation * Model::si::meter,
+                                                conduct,
+                                                elevation * Model::si::meter);
             }
         }
 
@@ -143,14 +135,9 @@ class SimpleDataReader : public DataReader {
             });
         }
 
-    void readInitialHeads(std::string path) {
-        readTwoColumns(path, [this](double data, int pos) {
-            nodes->at(pos)->setHead_direct(data);
-        });
-    }
-
 
 };
 }
 }
-#endif //TESTING_SIMPLEDATAREADER_HPP
+#endif //TESTING_SIMPLEVDFDATAREADER_HPP
+
