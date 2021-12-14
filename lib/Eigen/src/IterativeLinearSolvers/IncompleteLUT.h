@@ -285,6 +285,7 @@ void IncompleteLUT<Scalar,StorageIndex>::factorize(const _MatrixType& amat)
   m_lu.reserve(n * (nnzL + nnzU + 1));
 
   // global loop over the rows of the sparse matrix
+
   for (Index ii = 0; ii < n; ii++)
   {
     // 1 - copy the lower and the upper part of the row i of mat in the working vector u

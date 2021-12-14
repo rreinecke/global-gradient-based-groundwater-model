@@ -38,7 +38,7 @@ class SimpleDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Initializing head";
-            //TODO
+            readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Defining rivers";
             readRiver(buildDir(op.getKRiverDir()));
@@ -142,6 +142,12 @@ class SimpleDataReader : public DataReader {
                                                 0 * Model::si::meter);
             });
         }
+
+    void readInitialHeads(std::string path) {
+        readTwoColumns(path, [this](double data, int pos) {
+            nodes->at(pos)->setHead_direct(data);
+        });
+    }
 
 
 };

@@ -20,6 +20,7 @@
 #include <boost/log/sinks.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+#include <boost/core/null_deleter.hpp>
 #include <fstream>
 
 namespace GlobalFlow {
@@ -32,44 +33,6 @@ namespace attrs = boost::log::attributes;
 namespace keywords = boost::log::keywords;
 
 typedef sinks::synchronous_sink<sinks::text_ostream_backend> text_sink;
-
-/**
- * @deprecated Use methods from DataProcessing
- */
-class InfoSinkInterface :
-        public sinks::basic_sink_backend<
-                sinks::combine_requirements<
-                        sinks::synchronized_feeding,
-                        sinks::flushing
-                >::type
-        > {
-    private:
-        // The file to write the collected information to
-        std::ofstream m_file;
-    public:
-        InfoSinkInterface(std::string file_name) {};
-
-        virtual ~InfoSinkInterface() {};
-
-        // The function consumes the log records that come from the frontend
-        virtual void consume(logboost::record_view const &rec) = 0;
-
-        void flush() {};
-
-        void write_data() {};
-};
-
-/*class CSVWriter : public InfoSinkInterface {
-
-};
-
-class NetCDFWriter : public InfoSinkInterface {
-
-};
-
-class DataBaseWrite : public InfoSinkInterface {
-
-};*/
 
 } //ns Logging
 } //ns GlobalFlow
