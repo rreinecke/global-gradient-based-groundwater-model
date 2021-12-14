@@ -87,16 +87,16 @@ add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)
 add_test(AllTests runUnitTests)
 
-project(Coverage)
-include(cmake/CodeCoverage.cmake)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+#project(Coverage)
+#include(cmake/CodeCoverage.cmake)
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+#SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
 #
-set(COVERAGE_LCOV_EXCLUDES '${PROJECT_SOURCE_DIR}/lib/*' '/usr/include/*' '/usr/local/*' '*asio/*' '*googletest/*')
+#set(COVERAGE_LCOV_EXCLUDES '${PROJECT_SOURCE_DIR}/lib/*' '/usr/include/*' '/usr/local/*' '*asio/*' '*googletest/*')
 
-SETUP_TARGET_FOR_COVERAGE_LCOV(
-                DEPENDENCIES runUnitTests
-                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
-                NAME coverage
-)
+#SETUP_TARGET_FOR_COVERAGE_LCOV(
+#                DEPENDENCIES runUnitTests
+#                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
+#                NAME coverage
+#)
 
