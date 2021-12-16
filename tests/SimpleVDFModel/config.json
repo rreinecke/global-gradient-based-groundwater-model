@@ -31,7 +31,7 @@
   "input": {
     "data_config": {
       "k_from_lith": "true",
-      "k_ocean_from_file": "false",
+      "k_ocean_from_file": "true",
       "specificstorage_from_file": "false",
       "specificyield_from_file": "false",
       "k_river_from_file": "true",
@@ -54,10 +54,8 @@
       "ocean_conductance": "ocean_conductance_simpleVDF.csv",
       "recharge": "recharge_simpleVDF.csv",
       "elevation": "elevation_simpleVDF.csv",
-      "rivers": "rivers_simpleVDF.csv",
       "lithologie": "lithology_simpleVDF.csv",
-      "river_conductance": "rivers_simpleVDF.csv",
-      "initial_head": "heads_simpleVDF.csv"
+      "initial_head": "initial_head_simpleVDF.csv"
     }
   }
   }
