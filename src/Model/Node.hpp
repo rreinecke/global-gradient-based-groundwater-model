@@ -488,7 +488,7 @@ Modify Properties
 
         /**
          * @brief Update the current head change (in comparison to last time step)
-         * @note Should only be caled at end of timestep
+         * @note Should only be called at end of timestep
          */
         void updateHeadChange() noexcept {
             set < t_meter, HeadChange_TZero > (
@@ -762,12 +762,12 @@ Modify Properties
         int addExternalFlow(FlowType type, t_meter flowHead, double cond, t_meter bottom) {
             if (hasTypeOfExternalFlow(type)) {
                     //LOG(debug) << "! adding a flow that is already existing for cell"
-                    //curretly it is assumed that only one external flow is what we want
+                    //currently it is assumed that only one external flow is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
             }   
 	       
-	    if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) { 
+	        if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
                                                                  type)));
@@ -782,8 +782,7 @@ Modify Properties
                                                                  get<t_vel, K>()
                                                                  * get<t_meter, VerticalSize>(),
                                                                  get<t_meter, EdgeLenght>())));
-            } else {
-
+            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
