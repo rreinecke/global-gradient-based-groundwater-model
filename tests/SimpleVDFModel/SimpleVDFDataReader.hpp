@@ -17,6 +17,8 @@ class SimpleVDFDataReader : public DataReader {
             grid = readGrid(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodes(),
+                            op.getNumberOfRows(),
+                            op.getNumberOfCols(),
                             op.getInitialK(),
                             op.getAquiferDepth()[0],
                             op.getAnisotropy(),
@@ -47,11 +49,13 @@ class SimpleVDFDataReader : public DataReader {
         using Matrix = std::vector<std::vector<T>>;
 
         Matrix<int>
-        readGrid(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
+        readGrid(NodeVector nodes, std::string path, int numberOfNodes, int numberOfRows, int numberOfCols,
+                 double defaultK,
+                 double aquiferDepth,
                  double anisotropy,
                  double specificYield,
                  double specificStorage, bool confined) {
-            Matrix<int> out = Matrix<int>(numberOfNodes, std::vector<int>(numberOfNodes));
+            Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "global_ID", "X", "Y", "cell_area", "row", "col");
