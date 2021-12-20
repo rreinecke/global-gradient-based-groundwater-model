@@ -69,6 +69,8 @@ class Options {
 
         //++General configuration++//
         long NUMBER_OF_NODES{0};
+        long NUMBER_OF_ROWS{0};
+        long NUMBER_OF_COLS{0};
         int LAYERS{0};
         int IITER{0};
         int I_ITTER{0};
@@ -176,6 +178,16 @@ class Options {
         long
         getNumberOfNodes() {
             return NUMBER_OF_NODES;
+        };
+
+        long
+        getNumberOfRows() {
+            return NUMBER_OF_ROWS;
+        };
+
+        long
+        getNumberOfCols() {
+            return NUMBER_OF_COLS;
         };
 
         int
