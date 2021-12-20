@@ -26,9 +26,9 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCod
     };
 
     for (int layer = 0; layer < layers; ++layer) {
-
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
+        //id->row,col
+        for (int i = 0; i < cols; ++i) {
+            for (int j = 0; j < rows; ++j) {
                 int id = grid[i][j];
                 int l_mult = layer * (rows * cols);
                 if (check(i + 1, j)) {
