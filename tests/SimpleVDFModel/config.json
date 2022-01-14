@@ -21,9 +21,9 @@
     "numerics": {
       "solver": "PCG",
       "iterations": 50,
-      "inner_itter": 10,
-      "closingcrit": 1e-8,
-      "headchange": 0.0001,
+      "inner_itter": 30,
+      "closingcrit": 9.9999997E-6,
+      "headchange": 9.9999997e-6,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
@@ -48,7 +48,7 @@
       "aquifer_thickness": [
         40
       ],
-      "anisotropy": 10,
+      "anisotropy": 1,
       "specificyield": 0.2,
       "specificstorage": 0.000015
     },
