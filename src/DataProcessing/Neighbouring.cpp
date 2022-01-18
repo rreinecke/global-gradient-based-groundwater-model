@@ -55,7 +55,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCod
  * @param nodes
  * @param numberOfTOPNodes
  * @param layers
- * @param oceanCoduct
+ * @param oceanConduct
  * @param boundaryCondition
  * @return Number of new nodes
  */

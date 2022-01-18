@@ -213,7 +213,8 @@ Equation::updateMatrix() {
     }
 }
 
-void inline Equation::preconditioner() {
+void inline
+Equation::preconditioner() {
     LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
         if (disable_dry_cells) {
@@ -363,7 +364,7 @@ Equation::solve() {
         }
 
         if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergance criterion to small - no iterations";
+            LOG(numerics) << "convergence criterion to small - no iterations";
             break;
         }
 

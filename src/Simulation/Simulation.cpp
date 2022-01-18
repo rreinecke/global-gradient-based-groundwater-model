@@ -16,13 +16,13 @@ Simulation::Simulation(Options op, DataReader *reader) : op(op), reader(reader) 
     }
 
     //FIXME not pretty could be changed to https://jonasdevlieghere.com/containers-of-unique-pointers/
-    //This might be a hughe memory leak at the end :/
+    //This might be a huge memory leak at the end :/
     NodeVector ptr(new vector<unique_ptr<Model::NodeInterface>>);
     nodes = std::move(ptr);
     int numOfStaticNodes{0};
 
     if(loadNodes){
-        LOG(stateinfo) << "Atempting to load old state";
+        LOG(stateinfo) << "Attempting to load old state";
         if(boost::filesystem::exists(saveName)){
             restore();
             numOfStaticNodes = nodes->size();

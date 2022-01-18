@@ -208,8 +208,8 @@ namespace GlobalFlow {
          * Reallocate matrix and vectors absed on dried nodes
          * @bug This is currently missing reenabling of deactivated nodes!
          * Reenable if:
-         * 1) head in cell below needs to be higher than threshhold
-         * 2) head in one of 4 neighbours higher than threshhold
+         * 1) head in cell below needs to be higher than threshold
+         * 2) head in one of 4 neighbours higher than threshold
          */
         void inline reallocateMatrix();
 

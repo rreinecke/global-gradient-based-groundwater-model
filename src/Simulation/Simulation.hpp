@@ -100,7 +100,7 @@ namespace GlobalFlow {
         /**
          * @class Simulation
          * The simulation class which holds the equation, options and data instance
-         * Further contains methods for calulating the mass balance and sensitivity methods
+         * Further contains methods for calculating the mass balance and sensitivity methods
          */
         class Simulation {
             eq_ptr eq;
@@ -205,7 +205,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * Return all external flows seperatly
+             * Return all external flows separately
              */
             std::string NodeFlowsByID(unsigned long nodeID) {
                 long id{0};
@@ -241,7 +241,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * Calulate the mass error
+             * Calculate the mass error
              * @param fun1 Function to get OutFlow
              * @param fun2 Function to get InFlow
              * @return
@@ -416,7 +416,7 @@ namespace GlobalFlow {
                               << currentErr.OUT;
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
                               << totalErr.OUT;
-                LOG(level) << "General Head Boundary" << getFlowByName(GENERAL_HEAD_BOUNDARY);
+                LOG(level) << "General Head Boundary: " << getFlowByName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getFlowByName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
                 LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);

@@ -605,7 +605,7 @@ Modify Properties
         }
 
         /**
-         * @brief Get and external flow volume by its FlowType
+         * @brief Get an external flow volume by its FlowType
          * @param type The flow type
          * @return Flow volume
          */
@@ -1214,7 +1214,7 @@ Modify Properties
         void enableNWT() { nwt = true; }
 
         /**
-         * @brief Caluclate non storage related in and out flow
+         * @brief Calculate non storage related in and out flow
          * @return Flow volume
          */
         template<typename CompareFunction>
@@ -1326,7 +1326,7 @@ class StandardNode : public NodeInterface {
          */
         virtual void __setHead(t_meter delta) {
             NANChecker(delta.value(), "Set Head");
-            t_meter deltaH__old = get<t_meter, HeadChange>();
+            //t_meter deltaH__old = get<t_meter, HeadChange>();
             t_meter current_head = get<t_meter, Head>();
             //t_meter delta = head - current_head;
             set<t_meter, HeadChange>(delta);

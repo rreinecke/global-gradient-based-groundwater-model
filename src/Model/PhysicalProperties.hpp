@@ -81,7 +81,7 @@ namespace GlobalFlow {
         };
 
 /**
- * @class PropertiyRepository
+ * @class PropertyRepository
  * Type repository holding the properties
  */
         template<class... PhysicalProperties>
