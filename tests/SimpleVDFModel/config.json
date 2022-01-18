@@ -23,7 +23,7 @@
       "iterations": 50,
       "inner_itter": 30,
       "closingcrit": 9.9999997E-6,
-      "headchange": 9.9999997e-6,
+      "headchange": 9.9999997E-6,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
