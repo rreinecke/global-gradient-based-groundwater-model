@@ -51,6 +51,8 @@ Options::load(const std::string &filename) {
     NUMBER_OF_NODES = config.get<long>("number_of_nodes");
     NUMBER_OF_ROWS = config.get<long>("number_of_rows");
     NUMBER_OF_COLS = config.get<long>("number_of_cols");
+    EDGE_LENGTH_ROWS = config.get<double>("edge_length_rows");
+    EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
     THREADS = config.get<int>("threads");
     LAYERS = config.get<int>("layers");
     ONE_LAYER = config.get<bool>("one_layer_approach");

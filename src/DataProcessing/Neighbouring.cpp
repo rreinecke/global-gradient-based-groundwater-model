@@ -115,11 +115,14 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
             }
                 break;
             case Simulation::Options::STATIC_HEAD_SEA_LEVEL: {
-                LOG(debug) << "UModel::sing static head boundary";
+                LOG(debug) << "Model::Using static head boundary";
                 //Add a constant head boundary
                 auto staticID = id + numOfStaticHeads;
                 Model::quantity<Model::SquareMeter> area = 1 * Model::si::square_meter;
-                nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area));
+                Model::quantity<Model::Meter> edgeLengthLeftRight = 1 * Model::si::meter;
+                Model::quantity<Model::Meter> edgeLengthFrontBack = 1 * Model::si::meter;
+                nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area, edgeLengthLeftRight,
+                                                              edgeLengthFrontBack));
 
                 switch (positionOfBoundary) {
                     case Model::LEFT:
@@ -148,7 +151,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
     const double epsLon{0.01}; //allow a minimal deviation
     const double epsLat{0.125}; //Allow 5' + 1/2 5', 5 arcmin = 0.08333 in decimal degree
 
-    //FIXME Inifficient
+    //FIXME Inefficient
     //currently does the same work for all layers all over again
     for (int j = 0; j < layers; ++j) {
         previousRow.clear();
@@ -258,6 +261,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double lat, lon;
     int stepMod;
     Model::quantity<Model::SquareMeter> area;
+    Model::quantity<Model::Meter> edgeLengthLeftRight;
+    Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
     double aquiferDepth;
     double anisotropy;
@@ -274,6 +279,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             lat = nodes->at(i)->getProperties().get<double, Model::Lat>();
             lon = nodes->at(i)->getProperties().get<double, Model::Lon>();
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
+            edgeLengthLeftRight = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
+            edgeLengthFrontBack = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = nodes->at(i)->getK__pure();
             stepMod = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                     Model::StepModifier>();
@@ -295,7 +302,13 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     LOG(critical) << "This is not posModel::sible!";
                     exit(9);
                 }
-                nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, arcID, id, K, stepMod, aquiferDepth,
+                nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
+                                                            edgeLengthFrontBack,
+                                                            arcID,
+                                                            id,
+                                                            K,
+                                                            stepMod,
+                                                            aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage, conf[j + 1]));

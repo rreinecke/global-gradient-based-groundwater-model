@@ -144,6 +144,8 @@ namespace GlobalFlow {
         struct Layer;
         struct StepModifier;
         struct Area;
+        struct EdgeLengthLeftRight;
+        struct EdgeLengthFrontBack;
         struct VerticalSize;
         struct Elevation; //Always elevation of upper celll boundary
         struct TopElevation; //Store elevation of TOP layer
@@ -162,8 +164,8 @@ namespace GlobalFlow {
         struct HeadChange_TZero;
         struct SpecificYield;
         struct SpecificStorage;
-        struct EdgeLenght;
-        struct SideSurface;
+        struct SurfaceLeftRight;
+        struct SurfaceFrontBack;
         struct VolumeOfCell;
 
 /**
@@ -195,8 +197,10 @@ namespace GlobalFlow {
         PhysicalProperty<t_meter, HeadChange_TZero>,
         PhysicalProperty<t_dim, SpecificYield>,
         PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-        PhysicalProperty<t_meter, EdgeLenght>,
-        PhysicalProperty<t_s_meter, SideSurface>,
+        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
         PhysicalProperty<t_c_meter, VolumeOfCell>
         >;
 

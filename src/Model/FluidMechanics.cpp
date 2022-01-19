@@ -44,8 +44,10 @@ namespace GlobalFlow {
                                                                                    folding_neig) {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig;
-            t_meter edgeLength_self;
+            t_meter edgeLengthLeftRight_neig;
+            t_meter edgeLengthLeftRight_self;
+            t_meter edgeLengthFrontBack_neig;
+            t_meter edgeLengthFrontBack_self;
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -53,7 +55,8 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, head_neig, head_self, ele_neig, ele_self,
+            std::tie(k_neig, k_self, edgeLengthLeftRight_neig, edgeLengthLeftRight_self, edgeLengthFrontBack_neig,
+                     edgeLengthFrontBack_self, head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined
             ) =
                     flow;
@@ -65,6 +68,9 @@ namespace GlobalFlow {
             quantity<MeterSquaredPerTime> transmissivity_neig =
                     calcEfoldingTrans(k_neig, folding_neig, ele_neig, head_neig);
 
+            // TODO pick up here. Calculate two directions of flow (LeftRight & FrontBack) separately
+            // In this case, there is no need to have both EdgeLengths in this function
+            // TODO first find the location in the code, where flow is passed over to the next node
             out = (2.0 * edgeLength_self) * ((transmissivity_self * transmissivity_neig)
                                              / (transmissivity_self * edgeLength_neig +
                                                 transmissivity_neig * edgeLength_self));

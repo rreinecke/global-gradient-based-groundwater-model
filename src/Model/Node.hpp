@@ -275,6 +275,8 @@ class NodeInterface {
                       double lat,
                       double lon,
                       t_s_meter area,
+                      t_meter edgeLengthLeftRight,
+                      t_meter edgeLengthFrontBack,
                       large_num ArcID,
                       large_num ID,
                       t_vel K,
@@ -374,8 +376,10 @@ Modify Properties
         FlowInputHor createDataTuple(map_itter got) {
             return std::make_tuple(at(got)->getK(),
                                    getK(),
-                                   getAt<t_meter, EdgeLenght>(got),
-                                   get<t_meter, EdgeLenght>(),
+                                   getAt<t_meter, EdgeLengthLeftRight>(got),
+                                   get<t_meter, EdgeLengthLeftRight>(),
+                                   getAt<t_meter, EdgeLengthFrontBack>(got),
+                                   get<t_meter, EdgeLengthFrontBack>(),
                                    getAt<t_meter, HeadType>(got),
                                    get<t_meter, HeadType>(),
                                    getAt<t_meter, Elevation>(got),
@@ -778,10 +782,12 @@ Modify Properties
             } else if (type == FLOODPLAIN_DRAIN) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, type,
-                                                                 get<t_meter, Elevation>(),
-                                                                 get<t_vel, K>()
-                                                                 * get<t_meter, VerticalSize>(),
-                                                                 get<t_meter, EdgeLenght>())));
+                                                                    get<t_meter, Elevation>(),
+                                                                    get<t_vel, K>() * get<t_meter,
+                                                                    VerticalSize>(),
+                                                                 sqrt(get<t_meter, EdgeLengthFrontBack>() *
+                                                                            get<t_meter, EdgeLengthLeftRight>())
+                                                                                 )));
             } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
@@ -1302,6 +1308,8 @@ class StandardNode : public NodeInterface {
                      double lat,
                      double lon,
                      t_s_meter area,
+                     t_meter edgeLengthLeftRight,
+                     t_meter edgeLengthFrontBack,
                      large_num ArcID,
                      large_num ID,
                      t_vel K,
@@ -1310,8 +1318,8 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, ArcID, ID, K, stepmodifier, aquiferDepth,
-                                anisotropy, specificYield, specificStorage, confined) {}
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                                stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:
         // implementation
@@ -1392,7 +1400,7 @@ class StandardNode : public NodeInterface {
 };
 
 /**
- * @class SaticHeadNode
+ * @class StaticHeadNode
  * A node without changing head
  * Can be used as boundary condition
  */
@@ -1400,12 +1408,16 @@ class StaticHeadNode : public NodeInterface {
     public:
         StaticHeadNode(std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes,
                        large_num ID,
-                       t_s_meter area)
+                       t_s_meter area,
+                       t_meter edgeLengthLeftRight,
+                       t_meter edgeLengthFrontBack)
                 : NodeInterface(
                 nodes,
                 0,
                 0,
                 area,
+                edgeLengthLeftRight,
+                edgeLengthFrontBack,
                 ID,
                 ID,
                 0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true) {}

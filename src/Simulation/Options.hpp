@@ -71,6 +71,8 @@ class Options {
         long NUMBER_OF_NODES{0};
         long NUMBER_OF_ROWS{0};
         long NUMBER_OF_COLS{0};
+        double EDGE_LENGTH_ROWS{0.0};
+        double EDGE_LENGTH_COLS{0.0};
         int LAYERS{0};
         int IITER{0};
         int I_ITTER{0};
@@ -188,6 +190,16 @@ class Options {
         long
         getNumberOfCols() {
             return NUMBER_OF_COLS;
+        };
+
+        double
+        getEdgeLengthRows() {
+            return EDGE_LENGTH_ROWS;
+        };
+
+        double
+        getEdgeLengthCols() {
+            return EDGE_LENGTH_COLS;
         };
 
         int
