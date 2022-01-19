@@ -63,6 +63,8 @@ class SimpleVDFDataReader : public DataReader {
             double x{0};
             double y{0};
             double area{0};
+            double edgeLengthLeftRight;
+            double edgeLengthFrontBack;
             int globid{0};
             int i{0};
             int row{0};
@@ -71,11 +73,12 @@ class SimpleVDFDataReader : public DataReader {
 
             while (in.read_row(globid, x, y, area, row, col)) {
                 out[row][col] = i;
-                //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
                                                             y,
                                                             area * Model::si::square_meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),
