@@ -75,11 +75,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
     fields.emplace<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
     fields.emplace<quantity<Dimensionless>, Anisotropy>(anisotropy * si::si_dimensionless);
-
-    // TODO split EdgeLength into EdgeLengthLeftRight & EdgeLengthFrontBack
     fields.emplace<quantity<Meter>, EdgeLengthLeftRight>(edgeLengthLeftRight);
     fields.emplace<quantity<Meter>, EdgeLengthFrontBack>(edgeLengthFrontBack);
-    // TODO split SideSurface into SurfaceLeftRight & SurfaceFrontBack
     fields.emplace<quantity<SquareMeter>, SurfaceLeftRight>(
             fields.get<quantity<Meter>, EdgeLengthLeftRight>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<SquareMeter>, SurfaceFrontBack>(

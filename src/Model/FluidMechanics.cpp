@@ -44,10 +44,8 @@ namespace GlobalFlow {
                                                                                    folding_neig) {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLengthLeftRight_neig;
-            t_meter edgeLengthLeftRight_self;
-            t_meter edgeLengthFrontBack_neig;
-            t_meter edgeLengthFrontBack_self;
+            t_meter edgeLength_neig;
+            t_meter edgeLength_self;
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -55,8 +53,7 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLengthLeftRight_neig, edgeLengthLeftRight_self, edgeLengthFrontBack_neig,
-                     edgeLengthFrontBack_self, head_neig, head_self, ele_neig, ele_self,
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined
             ) =
                     flow;
@@ -91,13 +88,13 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, head_neig, head_self, ele_neig, ele_self,
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self,head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
             //Used if non dry-out approach is used
             // FIXME need to be checked here
-            t_meter threshhold_saturated_thickness{1e-5 * si::meter};
+            t_meter threshold_saturated_thickness{1e-5 * si::meter};
 
             //Cell is not confined layer -> we need to calculate transmissivity dependant on head
             enum e_dry {
@@ -108,11 +105,11 @@ namespace GlobalFlow {
                 deltaV_self = calcDeltaV(head_self, ele_self, deltaV_self);
                 deltaV_neig = calcDeltaV(head_neig, ele_neig, deltaV_neig);
                 if (deltaV_self == 0 * si::meter) {
-                    deltaV_self = threshhold_saturated_thickness;
+                    deltaV_self = threshold_saturated_thickness;
                     dry = SELF;
                 }
                 if (deltaV_neig == 0 * si::meter) {
-                    deltaV_neig = threshhold_saturated_thickness;
+                    deltaV_neig = threshold_saturated_thickness;
                     dry = NEIG;
                 }
                 //TODO One of the cells is "dry" - Upstream weighting instead of harmonic mean

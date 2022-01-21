@@ -30,7 +30,7 @@
 namespace GlobalFlow {
     namespace Model {
 
-        using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
+        using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
         using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
 
         /**

@@ -147,7 +147,7 @@ namespace GlobalFlow {
         struct EdgeLengthLeftRight;
         struct EdgeLengthFrontBack;
         struct VerticalSize;
-        struct Elevation; //Always elevation of upper celll boundary
+        struct Elevation; //Always elevation of upper cell boundary
         struct TopElevation; //Store elevation of TOP layer
         struct Slope;
         struct EFolding;
@@ -169,7 +169,7 @@ namespace GlobalFlow {
         struct VolumeOfCell;
 
 /**
- * Defintion of type and unit for each field
+ * Definition of type and unit for each field
  */
         using PhysicalProperties = PropertyRepository<
                 PhysicalProperty<large_num, ID>,

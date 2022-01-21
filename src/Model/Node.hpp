@@ -374,19 +374,32 @@ Modify Properties
 
         template<class HeadType>
         FlowInputHor createDataTuple(map_itter got) {
-            return std::make_tuple(at(got)->getK(),
-                                   getK(),
-                                   getAt<t_meter, EdgeLengthLeftRight>(got),
-                                   get<t_meter, EdgeLengthLeftRight>(),
-                                   getAt<t_meter, EdgeLengthFrontBack>(got),
-                                   get<t_meter, EdgeLengthFrontBack>(),
-                                   getAt<t_meter, HeadType>(got),
-                                   get<t_meter, HeadType>(),
-                                   getAt<t_meter, Elevation>(got),
-                                   get<t_meter, Elevation>(),
-                                   getAt<t_meter, VerticalSize>(got),
-                                   get<t_meter, VerticalSize>(),
-                                   get<bool, Confinement>());
+            if (got->first == LEFT or got->first == RIGHT){
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthFrontBack>(got), // the width of the left/right side
+                                       get<t_meter, EdgeLengthFrontBack>(), // the width of the left/right side
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            } else { // if (got->first == FRONT or got->first == BACK)
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthLeftRight>(got), // the width of the front/back side
+                                       get<t_meter, EdgeLengthLeftRight>(), // the width of the front/back side
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            }
+
         }
 
         FlowInputVert createDataTuple(map_itter got) {
@@ -405,7 +418,7 @@ Modify Properties
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
-         * Generic function used for calulating equlibrium and current step flow
+         * Generic function used for caluclating equilibrium and current step flow
          * @return
          */
         template<class HeadType>
@@ -779,16 +792,18 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-            } else if (type == FLOODPLAIN_DRAIN) {
+
+            }
+            // TODO Implementation of FLOODPLAIN_DRAIN
+            /* else if (type == FLOODPLAIN_DRAIN) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, type,
                                                                     get<t_meter, Elevation>(),
                                                                     get<t_vel, K>() * get<t_meter,
                                                                     VerticalSize>(),
-                                                                 sqrt(get<t_meter, EdgeLengthFrontBack>() *
-                                                                            get<t_meter, EdgeLengthLeftRight>())
-                                                                                 )));
-            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+                                                                    bottom));
+
+            } */else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,

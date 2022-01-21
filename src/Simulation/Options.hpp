@@ -193,12 +193,12 @@ class Options {
         };
 
         double
-        getEdgeLengthRows() {
+        getEdgeLengthLeftRight() {
             return EDGE_LENGTH_ROWS;
         };
 
         double
-        getEdgeLengthCols() {
+        getEdgeLengthFrontBack() {
             return EDGE_LENGTH_COLS;
         };
 
