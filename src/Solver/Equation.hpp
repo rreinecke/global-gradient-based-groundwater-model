@@ -235,7 +235,7 @@ namespace GlobalFlow {
 
         bool SteadyState = false;
         //Only for testin purposes
-        bool simpelHead = true;
+        bool simpleHead = true;
 };
 }
 }

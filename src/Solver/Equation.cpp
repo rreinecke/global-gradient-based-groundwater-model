@@ -39,12 +39,12 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     //resulting head is the real hydraulic head
 
     double tmp = 0;
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0; i < numberOfNodes; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();
         }
-        if (not simpelHead) {
+        if (not simpleHead) {
             tmp = nodes->at(i)->calcInitialHead(initialHead * si::meter).value();
             nodes->at(i)->setHead_direct(tmp);
             NANChecker(tmp, "Initial Head");

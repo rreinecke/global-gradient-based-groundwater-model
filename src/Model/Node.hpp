@@ -377,8 +377,10 @@ Modify Properties
             if (got->first == LEFT or got->first == RIGHT){
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       getAt<t_meter, EdgeLengthFrontBack>(got), // the width of the left/right side
-                                       get<t_meter, EdgeLengthFrontBack>(), // the width of the left/right side
+                                       getAt<t_meter, EdgeLengthFrontBack>(got), // length in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // length in front/back direction of this node
+                                       //getAt<t_meter, EdgeLengthLeftRight>(got), // width in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // width in left/right direction of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -389,8 +391,10 @@ Modify Properties
             } else { // if (got->first == FRONT or got->first == BACK)
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       getAt<t_meter, EdgeLengthLeftRight>(got), // the width of the front/back side
-                                       get<t_meter, EdgeLengthLeftRight>(), // the width of the front/back side
+                                       getAt<t_meter, EdgeLengthLeftRight>(got), // length in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // length in left/right direction of this node
+                                       //getAt<t_meter, EdgeLengthFrontBack>(got), // width in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // width in front/back direction of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),

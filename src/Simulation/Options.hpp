@@ -91,7 +91,7 @@ class Options {
         double ANISOTROPY{10};
         double SPECIFIC_YIELD{0.15};
         double SPECIFIC_STORAGE{0.000015};
-        string BOUNDARY_CONDITION{"SeaLevel"};
+        string BOUNDARY_CONDITION{"GeneralHeadSeaLevel"};
         bool SENSITIVITY{false};
     	bool ONE_LAYER{false};
         vector<bool> CONFINED{};
@@ -112,8 +112,9 @@ class Options {
     public:
 
         enum BoundaryCondition {
-            CONSTANT_HEAD_SEA_LEVEL,
-            CONSTANT_HEAD_NEIGHBOUR,
+            GENERAL_HEAD_SEA_LEVEL,
+            GENERAL_HEAD_NEIGHBOUR,
+            CONSTANT_HEAD,
             STATIC_HEAD_SEA_LEVEL
         };
 
@@ -136,11 +137,14 @@ class Options {
         vector<bool> getConfinements() { return CONFINED; }
 
         BoundaryCondition getBoundaryCondition() {
-            if (BOUNDARY_CONDITION == "SeaLevel") {
-                return BoundaryCondition::CONSTANT_HEAD_SEA_LEVEL;
+            if (BOUNDARY_CONDITION == "GeneralHeadSeaLevel") {
+                return BoundaryCondition::GENERAL_HEAD_SEA_LEVEL;
             }
-            if (BOUNDARY_CONDITION == "NeighbourHead") {
-                return BoundaryCondition::CONSTANT_HEAD_NEIGHBOUR;
+            if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
+                return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
+            }
+            if (BOUNDARY_CONDITION == "ConstantHead") {
+                return BoundaryCondition::CONSTANT_HEAD;
             }
             return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
         }

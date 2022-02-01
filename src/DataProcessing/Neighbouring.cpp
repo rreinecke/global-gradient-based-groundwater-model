@@ -8,10 +8,10 @@ namespace DataProcessing {
  * @param nodes
  * @param grid
  * @param layers
- * @param oceanCoduct
+ * @param oceanConduct
  * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCoduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanConduct, bool staticHeadBoundary) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
@@ -59,7 +59,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCod
  * @param boundaryCondition
  * @return Number of new nodes
  */
-int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double oceanCoduct,
+int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double oceanConduct,
                       Simulation::Options::BoundaryCondition boundaryCondition) {
     //Key is x-poModel::sition of node, value node ID
     std::unordered_map<double, int> previousRow;
@@ -89,7 +89,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         return nodes->at(pos)->getProperties().get<double, Model::Lon>();
     };
 
-    auto addBoundary = [nodes, oceanCoduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
+    auto addBoundary = [nodes, oceanConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
             large_num pos, int layer,
             Model::NeighbourPosition
             positionOfBoundary) {
@@ -98,22 +98,29 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         }
 
         switch (boundaryCondition) {
-            case Simulation::Options::CONSTANT_HEAD_NEIGHBOUR: {
+            case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
                 Model::quantity<Model::Meter> head =
                         nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 head,
-                                                oceanCoduct,
+                                                oceanConduct,
                                                 head);
             }
                 break;
-            case Simulation::Options::CONSTANT_HEAD_SEA_LEVEL: {
+            case Simulation::Options::GENERAL_HEAD_SEA_LEVEL: {
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 0 * Model::si::meter,
-                                                oceanCoduct,
+                                                oceanConduct,
                                                 0 * Model::si::meter);
             }
                 break;
+            //case Simulation::Options::CONSTANT_HEAD: {
+            //    nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+            //                                    0 * Model::si::meter,
+            //                                    oceanConduct,
+            //                                    0 * Model::si::meter);
+            //}
+            //    break;
             case Simulation::Options::STATIC_HEAD_SEA_LEVEL: {
                 LOG(debug) << "Model::Using static head boundary";
                 //Add a constant head boundary

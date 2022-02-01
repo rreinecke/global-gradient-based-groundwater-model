@@ -44,8 +44,9 @@ namespace GlobalFlow {
                                                                                    folding_neig) {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig;
-            t_meter edgeLength_self;
+            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
+            t_meter edgeLength_self; // edge length in flow direction (of this node)
+            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -53,10 +54,9 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, head_neig, head_self, ele_neig, ele_self,
-                     deltaV_neig, deltaV_self, confined
-            ) =
-                    flow;
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
+                     deltaV_neig, deltaV_self, confined) = flow;
+
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
             quantity<MeterSquaredPerTime> t; //transmissivity
 
@@ -79,8 +79,9 @@ namespace GlobalFlow {
         quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor flow)noexcept {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig;
-            t_meter edgeLength_self;
+            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
+            t_meter edgeLength_self; // edge length in flow direction (of this node)
+            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -88,7 +89,7 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self,head_neig, head_self, ele_neig, ele_self,
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
@@ -120,7 +121,7 @@ namespace GlobalFlow {
             quantity<MeterSquaredPerTime> transmissivity_neig = deltaV_neig * k_neig;
 
             if (transmissivity_neig != out and transmissivity_self != out) {
-                out = (2.0 * edgeLength_self) * ((transmissivity_self * transmissivity_neig)
+                out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
                                                  / (transmissivity_self * edgeLength_neig +
                                                     transmissivity_neig * edgeLength_self));
             }
