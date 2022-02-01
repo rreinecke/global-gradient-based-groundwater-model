@@ -24,6 +24,8 @@ class SimpleVDFDataReader : public DataReader {
                             op.getAnisotropy(),
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.isConfined(0));
 
             LOG(userinfo) << "Reading hydraulic parameters";
@@ -54,7 +56,10 @@ class SimpleVDFDataReader : public DataReader {
                  double aquiferDepth,
                  double anisotropy,
                  double specificYield,
-                 double specificStorage, bool confined) {
+                 double specificStorage,
+                 double edgeLengthLeftRight,
+                 double edgeLengthFrontBack,
+                 bool confined) {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -63,8 +68,6 @@ class SimpleVDFDataReader : public DataReader {
             double x{0};
             double y{0};
             double area{0};
-            double edgeLengthLeftRight;
-            double edgeLengthFrontBack;
             int globid{0};
             int i{0};
             int row{0};

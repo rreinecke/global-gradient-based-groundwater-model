@@ -7,8 +7,8 @@
       "number_of_nodes": 50,
       "number_of_rows": 50,
       "number_of_cols": 1,
-      "edge_length_rows": 1,
-      "edge_length_cols":5,
+      "edge_length_rows": 5,
+      "edge_length_cols": 1,
       "threads": 1,
       "layers": 1,
       "one_layer_approach": "true",
@@ -17,7 +17,7 @@
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
+      "boundarycondition": "GeneralHeadSeaLevel",
       "sensitivity": "false"
     },
     "numerics": {
@@ -56,6 +56,7 @@
     },
     "data": {
       "ocean_conductance": "ocean_conductance_simpleVDF.csv",
+      "constant_head": "constant_head_simpleVDF.csv",
       "recharge": "recharge_simpleVDF.csv",
       "elevation": "elevation_simpleVDF.csv",
       "lithologie": "lithology_simpleVDF.csv",
