@@ -66,7 +66,7 @@ void StandaloneRunner::simulate() {
         if(std::find(ids.begin(), ids.end(), j) != ids.end())
             sim.getNodes()->at(j)->updateUniqueFlow(0.5, Model::RECHARGE, false);
     }
-
+  
     LOG(userinfo) << "Running transient steps with changing stresses";
     Simulation::Stepper transientStepper2 = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper2) {

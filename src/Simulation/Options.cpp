@@ -48,7 +48,11 @@ Options::load(const std::string &filename) {
     pt::ptree config = tree.get_child("model_config");
     NODES = config.get<string>("nodes");
     ROW_COLS = config.get<bool>("row_cols");
-    NUMBER_OF_NODES = config.get<long>("numberofnodes");
+    NUMBER_OF_NODES = config.get<long>("number_of_nodes");
+    NUMBER_OF_ROWS = config.get<long>("number_of_rows");
+    NUMBER_OF_COLS = config.get<long>("number_of_cols");
+    EDGE_LENGTH_ROWS = config.get<double>("edge_length_rows");
+    EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
     THREADS = config.get<int>("threads");
     LAYERS = config.get<int>("layers");
     ONE_LAYER = config.get<bool>("one_layer_approach");
@@ -90,7 +94,7 @@ Options::load(const std::string &filename) {
 
     pt::ptree data_config = input.get_child("data_config");
     k_from_lith = data_config.get<bool>("k_from_lith");
-    k_ocean_from_file = data_config.get<bool>("k_ocean_from_file");
+    k_ghb_from_file = data_config.get<bool>("k_ghb_from_file");
     specificstorage_from_file = data_config.get<bool>("specificstorage_from_file");
     specificyield_from_file = data_config.get<bool>("specificyield_from_file");
     k_river_from_file = data_config.get<bool>("k_river_from_file");
@@ -102,7 +106,7 @@ Options::load(const std::string &filename) {
     pt::ptree default_data = input.get_child("default_data");
     K = default_data.get<double>("K");
     INITAL_HEAD = default_data.get<double>("initial_head");
-    OCEAN_K = default_data.get<double>("oceanK");
+    GHB_K = default_data.get<double>("ghb_K");
     AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
     ANISOTROPY = default_data.get<double>("anisotropy");
     SPECIFIC_YIELD = default_data.get<double>("specificyield");
@@ -126,18 +130,18 @@ Options::load(const std::string &filename) {
     BLUE_ELEVATION = getOptional("blue_cells", data);
 
 
-    LITHOLOGY = getOptional("lithologie", data);
+    LITHOLOGY = getOptional("lithology", data);
     RECHARGE = getOptional("recharge", data);
     RIVERS = getOptional("rivers", data);
-    GLOBAL_WETLANDS = getOptional("globalwettlands", data);
+    GLOBAL_WETLANDS = getOptional("globalwetlands", data);
     GLOBAL_LAKES = getOptional("globallakes", data);
     LOCAL_LAKES = getOptional("lokallakes", data);
-    LOCAL_WETLANDS = getOptional("lokalwettlands", data);
+    LOCAL_WETLANDS = getOptional("lokalwetlands", data);
 
     //Optional
     K_DIR = getOptional("conductance", data);
     RIVER_K_DIR = getOptional("river_conductance", data);
-    OCEAN_K_DIR = getOptional("ocean_conductance", data);
+    GHB_K_DIR = getOptional("ghb_conductance", data);
     SS_FILE = getOptional("specificstorage", data);
     SY_FILE = getOptional("specificyield", data);
     AQ_DEPTH = getOptional("aquiferdepth", data);

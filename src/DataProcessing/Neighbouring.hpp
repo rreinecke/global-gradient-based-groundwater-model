@@ -41,16 +41,16 @@ using large_num = unsigned long int;
  * @param nodes
  * @param grid
  * @param layers
- * @param oceanCoduct
+ * @param ghbConduct
  * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCoduct, bool staticHeadBoundary);
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary);
 
 /**
 * Builds a map of neighbouring nodes based on x and y coordinates
 * Missing neighbours or empty spaces lead to adding of a Generl Head Boundar Flow addition
 */
-int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
+int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double ghbConduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
 /**
 * Extend the current nodes with an arbitrary number of layers

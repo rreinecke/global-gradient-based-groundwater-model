@@ -3,24 +3,29 @@
     "model_config": {
       "nodes": "grid_simpleVDF.csv",
       "row_cols": "true",
-      "stadystate": "true",
-      "numberofnodes": 50,
+      "steadystate": "true",
+      "number_of_nodes": 50,
+      "number_of_rows": 50,
+      "number_of_cols": 1,
+      "edge_length_rows": 5,
+      "edge_length_cols": 1,
       "threads": 1,
       "layers": 1,
+      "one_layer_approach": "true",
       "confinement": [
         "true"
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
+      "boundarycondition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 500,
-      "inner_itter": 10,
-      "closingcrit": 1e-8,
-      "headchange": 0.0001,
+      "iterations": 50,
+      "inner_itter": 30,
+      "closingcrit": 9.9999997E-6,
+      "headchange": 9.9999997E-6,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
@@ -30,7 +35,7 @@
   "input": {
     "data_config": {
       "k_from_lith": "true",
-      "k_ocean_from_file": "false",
+      "k_ghb_from_file": "true",
       "specificstorage_from_file": "false",
       "specificyield_from_file": "false",
       "k_river_from_file": "true",
@@ -41,22 +46,20 @@
     "default_data": {
       "initial_head": 0,
       "K": 2,
-      "oceanK": 800,
+      "ghb_K": 800,
       "aquifer_thickness": [
         40
       ],
-      "anisotropy": 10,
+      "anisotropy": 1,
       "specificyield": 0.2,
       "specificstorage": 0.000015
     },
     "data": {
-      "ocean_conductance": "ocean_conductance_simpleVDF.csv",
+      "ghb_conductance": "ghb_conductance_simpleVDF.csv",
       "recharge": "recharge_simpleVDF.csv",
       "elevation": "elevation_simpleVDF.csv",
-      "rivers": "rivers_simpleVDF.csv",
-      "lithologie": "lithology_simpleVDF.csv",
-      "river_conductance": "rivers_simpleVDF.csv",
-      "initial_head": "heads_simpleVDF.csv"
+      "lithology": "lithology_simpleVDF.csv",
+      "initial_head": "initial_head_simpleVDF.csv"
     }
   }
   }

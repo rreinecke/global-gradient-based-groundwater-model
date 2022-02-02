@@ -17,11 +17,15 @@ class SimpleVDFDataReader : public DataReader {
             grid = readGrid(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodes(),
+                            op.getNumberOfRows(),
+                            op.getNumberOfCols(),
                             op.getInitialK(),
                             op.getAquiferDepth()[0],
                             op.getAnisotropy(),
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.isConfined(0));
 
             LOG(userinfo) << "Reading hydraulic parameters";
@@ -32,10 +36,13 @@ class SimpleVDFDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Reading the boundary condition";
-            readHeadBoundary(buildDir(op.getKOceanDir()));
+            readHeadBoundary(buildDir(op.getKGHBDir()));
+
+            LOG(userinfo) << "Initializing head";
+            readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Connecting the model cells";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 
@@ -44,11 +51,16 @@ class SimpleVDFDataReader : public DataReader {
         using Matrix = std::vector<std::vector<T>>;
 
         Matrix<int>
-        readGrid(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
+        readGrid(NodeVector nodes, std::string path, int numberOfNodes, int numberOfRows, int numberOfCols,
+                 double defaultK,
+                 double aquiferDepth,
                  double anisotropy,
                  double specificYield,
-                 double specificStorage, bool confined) {
-            Matrix<int> out = Matrix<int>(numberOfNodes, std::vector<int>(numberOfNodes));
+                 double specificStorage,
+                 double edgeLengthLeftRight,
+                 double edgeLengthFrontBack,
+                 bool confined) {
+            Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "global_ID", "X", "Y", "cell_area", "row", "col");
@@ -64,11 +76,12 @@ class SimpleVDFDataReader : public DataReader {
 
             while (in.read_row(globid, x, y, area, row, col)) {
                 out[row][col] = i;
-                //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
                                                             y,
                                                             area * Model::si::square_meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),
@@ -104,11 +117,10 @@ class SimpleVDFDataReader : public DataReader {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "global_ID", "elevation", "conduct");
             int arcid{0};
-            double head{0};
             double elevation{0};
             double conduct{0};
 
-            while (in.read_row(arcid, head, conduct)) {
+            while (in.read_row(arcid, elevation, conduct)) {
                 int pos = 0;
                 try {
                     pos = lookupglobIDtoID.at(arcid);
@@ -135,7 +147,11 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
-
+        void readInitialHeads(std::string path) {
+            readTwoColumns(path, [this](double data, int pos) {
+                nodes->at(pos)->setHead_direct(data);
+            });
+        }
 };
 }
 }

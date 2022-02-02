@@ -8,10 +8,10 @@ namespace DataProcessing {
  * @param nodes
  * @param grid
  * @param layers
- * @param oceanCoduct
+ * @param ghbConduct
  * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCoduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
@@ -26,9 +26,9 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCod
     };
 
     for (int layer = 0; layer < layers; ++layer) {
-
-        for (int i = 0; i < rows; ++i) {
-            for (int j = 0; j < cols; ++j) {
+        //id->row,col
+        for (int i = 0; i < cols; ++i) {
+            for (int j = 0; j < rows; ++j) {
                 int id = grid[i][j];
                 int l_mult = layer * (rows * cols);
                 if (check(i + 1, j)) {
@@ -55,11 +55,11 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCod
  * @param nodes
  * @param numberOfTOPNodes
  * @param layers
- * @param oceanCoduct
+ * @param ghbConduct
  * @param boundaryCondition
  * @return Number of new nodes
  */
-int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double oceanCoduct,
+int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double ghbConduct,
                       Simulation::Options::BoundaryCondition boundaryCondition) {
     //Key is x-poModel::sition of node, value node ID
     std::unordered_map<double, int> previousRow;
@@ -89,7 +89,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         return nodes->at(pos)->getProperties().get<double, Model::Lon>();
     };
 
-    auto addBoundary = [nodes, oceanCoduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
+    auto addBoundary = [nodes, ghbConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
             large_num pos, int layer,
             Model::NeighbourPosition
             positionOfBoundary) {
@@ -98,28 +98,31 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         }
 
         switch (boundaryCondition) {
-            case Simulation::Options::CONSTANT_HEAD_NEIGHBOUR: {
+            case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
                 Model::quantity<Model::Meter> head =
                         nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 head,
-                                                oceanCoduct,
+                                                ghbConduct,
                                                 head);
             }
                 break;
-            case Simulation::Options::CONSTANT_HEAD_SEA_LEVEL: {
+            case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 0 * Model::si::meter,
-                                                oceanCoduct,
+                                                ghbConduct,
                                                 0 * Model::si::meter);
             }
                 break;
             case Simulation::Options::STATIC_HEAD_SEA_LEVEL: {
-                LOG(debug) << "UModel::sing static head boundary";
+                LOG(debug) << "Model::Using static head boundary";
                 //Add a constant head boundary
                 auto staticID = id + numOfStaticHeads;
                 Model::quantity<Model::SquareMeter> area = 1 * Model::si::square_meter;
-                nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area));
+                Model::quantity<Model::Meter> edgeLengthLeftRight = 1 * Model::si::meter;
+                Model::quantity<Model::Meter> edgeLengthFrontBack = 1 * Model::si::meter;
+                nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area, edgeLengthLeftRight,
+                                                              edgeLengthFrontBack));
 
                 switch (positionOfBoundary) {
                     case Model::LEFT:
@@ -148,14 +151,14 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
     const double epsLon{0.01}; //allow a minimal deviation
     const double epsLat{0.125}; //Allow 5' + 1/2 5', 5 arcmin = 0.08333 in decimal degree
 
-    //FIXME Inifficient
+    //FIXME Inefficient
     //currently does the same work for all layers all over again
     for (int j = 0; j < layers; ++j) {
         previousRow.clear();
         currentRow.clear();
 
         //First node
-        //-> add left Ocean
+        //-> add left GHB
         addBoundary(0 + (j * numberOfTOPNodes), j, Model::LEFT);
 
         currentRow[getLat(0 + (j * numberOfTOPNodes))] = 0 + (j * numberOfTOPNodes);
@@ -171,32 +174,32 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                     setNeighbouring(i, i - 1, Model::LEFT, Model::RIGHT);
                 } else {
                     //Still in same row
-                    //But x diff > epModel::silon thus add ocean cell
+                    //But x diff > Model::epsilon thus add GHB cell
                     addBoundary(i, j, Model::RIGHT);
                     addBoundary(i + 1, j, Model::LEFT);
                 }
             } else {
                 //New row
 
-                //AsModel::sign an ocean to last in row to the right
+                //AsModel::sign a GHB to last in row to the right
                 addBoundary(i - 1, j, Model::RIGHT);
 
-                //If there are nodes left with no back node asModel::signed -> asModel::sign an ocean
+                //If there are nodes left with no back node asModel::signed -> asModel::sign an GHB
                 for (const auto &node : previousRow) {
-                    //Nodes which were not asModel::signed asModel::sign ocean
+                    //Nodes which were not asModel::signed asModel::sign GHB
                     addBoundary(node.second, j, Model::BACK);
                 }
 
                 previousRow = currentRow;
                 currentRow.clear();
 
-                //First left is always ocean
+                //First left is always GHB
                 addBoundary(i, j, Model::LEFT);
             }
 
             if (previousRow.empty()) {
                 // Should only be at first row
-                //. add top Ocean
+                //. add top GHB
                 addBoundary(i, j, Model::FRONT);
             } else {
                 //Not first Row
@@ -216,7 +219,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                     //Delete already used member
                     previousRow.erase(item->first);
                 } else {
-                    //AsModel::sign ocean to others
+                    //AsModel::sign GHB to others
                     addBoundary(i, j, Model::FRONT);
                 }
             }
@@ -224,12 +227,12 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
             //Store current row
             currentRow[getLat(i)] = i;
         }
-        //That was the last row add ocean nodes to all at BACK
+        //That was the last row add GHB nodes to all at BACK
         for (const auto &item : currentRow) {
             addBoundary(item.second, j, Model::BACK);
         }
 
-        //AsModel::sign a ocean to last in row to the right
+        //AsModel::sign a GHB to last in row to the right
         addBoundary(id + j * id, j, Model::RIGHT);
     }
     return numOfStaticHeads;
@@ -258,6 +261,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double lat, lon;
     int stepMod;
     Model::quantity<Model::SquareMeter> area;
+    Model::quantity<Model::Meter> edgeLengthLeftRight;
+    Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
     double aquiferDepth;
     double anisotropy;
@@ -274,6 +279,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             lat = nodes->at(i)->getProperties().get<double, Model::Lat>();
             lon = nodes->at(i)->getProperties().get<double, Model::Lon>();
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
+            edgeLengthLeftRight = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
+            edgeLengthFrontBack = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = nodes->at(i)->getK__pure();
             stepMod = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                     Model::StepModifier>();
@@ -295,7 +302,13 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     LOG(critical) << "This is not posModel::sible!";
                     exit(9);
                 }
-                nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, arcID, id, K, stepMod, aquiferDepth,
+                nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
+                                                            edgeLengthFrontBack,
+                                                            arcID,
+                                                            id,
+                                                            K,
+                                                            stepMod,
+                                                            aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage, conf[j + 1]));
