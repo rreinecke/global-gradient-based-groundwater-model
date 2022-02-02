@@ -275,6 +275,8 @@ class NodeInterface {
                       double lat,
                       double lon,
                       t_s_meter area,
+                      t_meter edgeLengthLeftRight,
+                      t_meter edgeLengthFrontBack,
                       large_num ArcID,
                       large_num ID,
                       t_vel K,
@@ -372,17 +374,36 @@ Modify Properties
 
         template<class HeadType>
         FlowInputHor createDataTuple(map_itter got) {
-            return std::make_tuple(at(got)->getK(),
-                                   getK(),
-                                   getAt<t_meter, EdgeLenght>(got),
-                                   get<t_meter, EdgeLenght>(),
-                                   getAt<t_meter, HeadType>(got),
-                                   get<t_meter, HeadType>(),
-                                   getAt<t_meter, Elevation>(got),
-                                   get<t_meter, Elevation>(),
-                                   getAt<t_meter, VerticalSize>(got),
-                                   get<t_meter, VerticalSize>(),
-                                   get<bool, Confinement>());
+            if (got->first == LEFT or got->first == RIGHT){
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthFrontBack>(got), // length in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // length in front/back direction of this node
+                                       //getAt<t_meter, EdgeLengthLeftRight>(got), // width in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // width in left/right direction of this node
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            } else { // if (got->first == FRONT or got->first == BACK)
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthLeftRight>(got), // length in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // length in left/right direction of this node
+                                       //getAt<t_meter, EdgeLengthFrontBack>(got), // width in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // width in front/back direction of this node
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            }
+
         }
 
         FlowInputVert createDataTuple(map_itter got) {
@@ -401,7 +422,7 @@ Modify Properties
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
-         * Generic function used for calulating equlibrium and current step flow
+         * Generic function used for caluclating equilibrium and current step flow
          * @return
          */
         template<class HeadType>
@@ -480,7 +501,7 @@ Modify Properties
 
         /**
          * @brief Scales river conduct by 50%
-         * @warning Should only be used in spinn up phase
+         * @warning Should only be used in spin up phase
          */
         void scaleRiverConduct() {
             eq_flow = eq_flow * 1.5;
@@ -488,7 +509,7 @@ Modify Properties
 
         /**
          * @brief Update the current head change (in comparison to last time step)
-         * @note Should only be called at end of timestep
+         * @note Should only be called at end of time step
          */
         void updateHeadChange() noexcept {
             set < t_meter, HeadChange_TZero > (
@@ -775,14 +796,18 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-            } else if (type == FLOODPLAIN_DRAIN) {
+
+            }
+            // TODO Implementation of FLOODPLAIN_DRAIN
+            /* else if (type == FLOODPLAIN_DRAIN) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, type,
-                                                                 get<t_meter, Elevation>(),
-                                                                 get<t_vel, K>()
-                                                                 * get<t_meter, VerticalSize>(),
-                                                                 get<t_meter, EdgeLenght>())));
-            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+                                                                    get<t_meter, Elevation>(),
+                                                                    get<t_vel, K>() * get<t_meter,
+                                                                    VerticalSize>(),
+                                                                    bottom));
+
+            } */else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
@@ -975,10 +1000,10 @@ Modify Properties
         bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
 
         /**
-         * @brief Check for type ocean
+         * @brief Check for type GHB
          * @return bool
          */
-        bool hasOcean() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
+        bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
 
 
         /**
@@ -1302,6 +1327,8 @@ class StandardNode : public NodeInterface {
                      double lat,
                      double lon,
                      t_s_meter area,
+                     t_meter edgeLengthLeftRight,
+                     t_meter edgeLengthFrontBack,
                      large_num ArcID,
                      large_num ID,
                      t_vel K,
@@ -1310,8 +1337,8 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, ArcID, ID, K, stepmodifier, aquiferDepth,
-                                anisotropy, specificYield, specificStorage, confined) {}
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                                stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:
         // implementation
@@ -1392,7 +1419,7 @@ class StandardNode : public NodeInterface {
 };
 
 /**
- * @class SaticHeadNode
+ * @class StaticHeadNode
  * A node without changing head
  * Can be used as boundary condition
  */
@@ -1400,12 +1427,16 @@ class StaticHeadNode : public NodeInterface {
     public:
         StaticHeadNode(std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes,
                        large_num ID,
-                       t_s_meter area)
+                       t_s_meter area,
+                       t_meter edgeLengthLeftRight,
+                       t_meter edgeLengthFrontBack)
                 : NodeInterface(
                 nodes,
                 0,
                 0,
                 area,
+                edgeLengthLeftRight,
+                edgeLengthFrontBack,
                 ID,
                 ID,
                 0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true) {}

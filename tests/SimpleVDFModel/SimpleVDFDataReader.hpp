@@ -24,6 +24,8 @@ class SimpleVDFDataReader : public DataReader {
                             op.getAnisotropy(),
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.isConfined(0));
 
             LOG(userinfo) << "Reading hydraulic parameters";
@@ -34,13 +36,13 @@ class SimpleVDFDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Reading the boundary condition";
-            readHeadBoundary(buildDir(op.getKOceanDir()));
+            readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Connecting the model cells";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 
@@ -54,7 +56,10 @@ class SimpleVDFDataReader : public DataReader {
                  double aquiferDepth,
                  double anisotropy,
                  double specificYield,
-                 double specificStorage, bool confined) {
+                 double specificStorage,
+                 double edgeLengthLeftRight,
+                 double edgeLengthFrontBack,
+                 bool confined) {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -71,11 +76,12 @@ class SimpleVDFDataReader : public DataReader {
 
             while (in.read_row(globid, x, y, area, row, col)) {
                 out[row][col] = i;
-                //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
                                                             y,
                                                             area * Model::si::square_meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),

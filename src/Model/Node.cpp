@@ -47,6 +47,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double lat,
                              double lon,
                              quantity<SquareMeter> area,
+                             quantity<Meter> edgeLengthLeftRight,
+                             quantity<Meter> edgeLengthFrontBack,
                              unsigned long int arcID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
@@ -73,12 +75,12 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
     fields.emplace<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
     fields.emplace<quantity<Dimensionless>, Anisotropy>(anisotropy * si::si_dimensionless);
-
-    // TODO split EdgeLength into XEdgeLength & YEdgeLength
-    fields.emplace<quantity<Meter>, EdgeLenght>(sqrt(fields.get<quantity<SquareMeter>, Area>()));
-    // TODO split SideSurface into XSideSurface & YSideSurface
-    fields.emplace<quantity<SquareMeter>, SideSurface>(
-            fields.get<quantity<Meter>, EdgeLenght>() * fields.get<quantity<Meter>, VerticalSize>());
+    fields.emplace<quantity<Meter>, EdgeLengthLeftRight>(edgeLengthLeftRight);
+    fields.emplace<quantity<Meter>, EdgeLengthFrontBack>(edgeLengthFrontBack);
+    fields.emplace<quantity<SquareMeter>, SurfaceLeftRight>(
+            fields.get<quantity<Meter>, EdgeLengthLeftRight>() * fields.get<quantity<Meter>, VerticalSize>());
+    fields.emplace<quantity<SquareMeter>, SurfaceFrontBack>(
+            fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
 }

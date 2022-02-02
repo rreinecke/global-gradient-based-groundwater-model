@@ -167,7 +167,7 @@ The following explains the main config parameters.
     "model_config": {
       "nodes": "grid_simple.csv",
       "row_cols": "true",
-      "stadystate": "true",
+      "steadystate": "true",
       "numberofnodes": 100,
       "threads": 1,
       "layers": 2,

@@ -55,7 +55,7 @@ G³M support multiple boundary condition types:
 * Different river approaches
 
 New flows can be defined in Model/ExternalFlows.hpp.
-The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as ocean boundary for irregual grids.
+The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as General Head Boundary (GHB) at the ocean boundary for irregular grids.
 This behaviour can be changed in DataProcessing/Neighbouring.hpp.
 
 ## Quick start
@@ -164,8 +164,12 @@ The following explains the main config parameters.
     "model_config": {
       "nodes": "grid_simple.csv",
       "row_cols": "true",
-      "stadystate": "true",
-      "numberofnodes": 100,
+      "steadystate": "true",
+      "number_of_nodes": 100,
+      "number_of_rows": 10,
+      "number_of_cols": 10,
+      "edge_length_rows": 3.162277,
+      "edge_length_cols":3.162277,
       "threads": 1,
       "layers": 2,
       "confinement": [
@@ -174,7 +178,7 @@ The following explains the main config parameters.
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
+      "boundarycondition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
@@ -191,7 +195,7 @@ The following explains the main config parameters.
   "input": {
     "data_config": {
       "k_from_lith": "true",
-      "k_ocean_from_file": "false",
+      "k_ghb_from_file": "false",
       "specificstorage_from_file": "false",
       "specificyield_from_file": "false",
       "k_river_from_file": "true",
@@ -202,7 +206,7 @@ The following explains the main config parameters.
     "default_data": {
       "initial_head": 5,
       "K": 0.008,
-      "oceanK": 800,
+      "ghb_K": 800,
       "aquifer_thickness": [
         10,
         10
@@ -215,7 +219,7 @@ The following explains the main config parameters.
       "recharge": "recharge_simple.csv",
       "elevation": "elevation_simple.csv",
       "rivers": "rivers_simple.csv",
-      "lithologie": "lithology_simple.csv",
+      "lithology": "lithology_simple.csv",
       "river_conductance": "rivers_simple.csv",
       "initial_head": "heads_simple.csv"
     }
