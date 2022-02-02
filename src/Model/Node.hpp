@@ -501,7 +501,7 @@ Modify Properties
 
         /**
          * @brief Scales river conduct by 50%
-         * @warning Should only be used in spinn up phase
+         * @warning Should only be used in spin up phase
          */
         void scaleRiverConduct() {
             eq_flow = eq_flow * 1.5;
@@ -509,7 +509,7 @@ Modify Properties
 
         /**
          * @brief Update the current head change (in comparison to last time step)
-         * @note Should only be called at end of timestep
+         * @note Should only be called at end of time step
          */
         void updateHeadChange() noexcept {
             set < t_meter, HeadChange_TZero > (
@@ -1000,10 +1000,10 @@ Modify Properties
         bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
 
         /**
-         * @brief Check for type ocean
+         * @brief Check for type GHB
          * @return bool
          */
-        bool hasOcean() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
+        bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
 
 
         /**

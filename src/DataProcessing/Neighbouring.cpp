@@ -8,10 +8,10 @@ namespace DataProcessing {
  * @param nodes
  * @param grid
  * @param layers
- * @param oceanConduct
+ * @param ghbConduct
  * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanConduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
@@ -55,11 +55,11 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double oceanCon
  * @param nodes
  * @param numberOfTOPNodes
  * @param layers
- * @param oceanConduct
+ * @param ghbConduct
  * @param boundaryCondition
  * @return Number of new nodes
  */
-int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double oceanConduct,
+int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double ghbConduct,
                       Simulation::Options::BoundaryCondition boundaryCondition) {
     //Key is x-poModel::sition of node, value node ID
     std::unordered_map<double, int> previousRow;
@@ -89,7 +89,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         return nodes->at(pos)->getProperties().get<double, Model::Lon>();
     };
 
-    auto addBoundary = [nodes, oceanConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
+    auto addBoundary = [nodes, ghbConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
             large_num pos, int layer,
             Model::NeighbourPosition
             positionOfBoundary) {
@@ -103,21 +103,21 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                         nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 head,
-                                                oceanConduct,
+                                                ghbConduct,
                                                 head);
             }
                 break;
             case Simulation::Options::GENERAL_HEAD_SEA_LEVEL: {
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 0 * Model::si::meter,
-                                                oceanConduct,
+                                                ghbConduct,
                                                 0 * Model::si::meter);
             }
                 break;
             //case Simulation::Options::CONSTANT_HEAD: {
             //    nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
             //                                    0 * Model::si::meter,
-            //                                    oceanConduct,
+            //                                    ghbConduct,
             //                                    0 * Model::si::meter);
             //}
             //    break;
@@ -165,7 +165,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
         currentRow.clear();
 
         //First node
-        //-> add left Ocean
+        //-> add left GHB
         addBoundary(0 + (j * numberOfTOPNodes), j, Model::LEFT);
 
         currentRow[getLat(0 + (j * numberOfTOPNodes))] = 0 + (j * numberOfTOPNodes);
@@ -181,32 +181,32 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                     setNeighbouring(i, i - 1, Model::LEFT, Model::RIGHT);
                 } else {
                     //Still in same row
-                    //But x diff > epModel::silon thus add ocean cell
+                    //But x diff > Model::epsilon thus add GHB cell
                     addBoundary(i, j, Model::RIGHT);
                     addBoundary(i + 1, j, Model::LEFT);
                 }
             } else {
                 //New row
 
-                //AsModel::sign an ocean to last in row to the right
+                //AsModel::sign a GHB to last in row to the right
                 addBoundary(i - 1, j, Model::RIGHT);
 
-                //If there are nodes left with no back node asModel::signed -> asModel::sign an ocean
+                //If there are nodes left with no back node asModel::signed -> asModel::sign an GHB
                 for (const auto &node : previousRow) {
-                    //Nodes which were not asModel::signed asModel::sign ocean
+                    //Nodes which were not asModel::signed asModel::sign GHB
                     addBoundary(node.second, j, Model::BACK);
                 }
 
                 previousRow = currentRow;
                 currentRow.clear();
 
-                //First left is always ocean
+                //First left is always GHB
                 addBoundary(i, j, Model::LEFT);
             }
 
             if (previousRow.empty()) {
                 // Should only be at first row
-                //. add top Ocean
+                //. add top GHB
                 addBoundary(i, j, Model::FRONT);
             } else {
                 //Not first Row
@@ -226,7 +226,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                     //Delete already used member
                     previousRow.erase(item->first);
                 } else {
-                    //AsModel::sign ocean to others
+                    //AsModel::sign GHB to others
                     addBoundary(i, j, Model::FRONT);
                 }
             }
@@ -234,12 +234,12 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
             //Store current row
             currentRow[getLat(i)] = i;
         }
-        //That was the last row add ocean nodes to all at BACK
+        //That was the last row add GHB nodes to all at BACK
         for (const auto &item : currentRow) {
             addBoundary(item.second, j, Model::BACK);
         }
 
-        //AsModel::sign a ocean to last in row to the right
+        //AsModel::sign a GHB to last in row to the right
         addBoundary(id + j * id, j, Model::RIGHT);
     }
     return numOfStaticHeads;

@@ -58,7 +58,7 @@ class Options {
         string LOCAL_WETLANDS{""};
         string K_DIR{""};
         string RIVER_K_DIR{""};
-        string OCEAN_K_DIR{""};
+        string GHB_K_DIR{""};
         string SS_FILE{""};
         string SY_FILE{""};
         string AQ_DEPTH{""};
@@ -86,7 +86,7 @@ class Options {
         string WETTING_APPROACH{"nwt"};
         int INITAL_HEAD{0};
         double K{0.001};
-        double OCEAN_K{0.1};
+        double GHB_K{0.1};
         vector<int> AQUIFER_DEPTH{100};
         double ANISOTROPY{10};
         double SPECIFIC_YIELD{0.15};
@@ -97,7 +97,7 @@ class Options {
         vector<bool> CONFINED{};
     	string BASE_PATH{"data"};
         bool k_from_lith{true};
-        bool k_ocean_from_file{false};
+        bool k_ghb_from_file{false};
         bool specificstorage_from_file{false};
         bool specificyield_from_file{false};
         bool k_river_from_file{false};
@@ -153,7 +153,7 @@ class Options {
 
         bool isKFromLith() { return k_from_lith; }
 
-        bool isKOceanFile() { return k_ocean_from_file; }
+        bool isKGHBFile() { return k_ghb_from_file; }
 
         bool isSpecificStorageFile() { return specificstorage_from_file; }
 
@@ -167,7 +167,7 @@ class Options {
 
         string getKRiverDir() { return RIVER_K_DIR; }
 
-        string getKOceanDir() { return OCEAN_K_DIR; }
+        string getKGHBDir() { return GHB_K_DIR; }
 
         string getSSDir() { return SS_FILE; }
 
@@ -371,8 +371,8 @@ class Options {
         }
 
         double
-        getOceanConduct() {
-            return OCEAN_K;
+        getGHBConduct() {
+            return GHB_K;
         }
 
         vector<int>
