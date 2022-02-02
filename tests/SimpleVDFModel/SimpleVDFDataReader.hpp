@@ -36,13 +36,13 @@ class SimpleVDFDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Reading the boundary condition";
-            readHeadBoundary(buildDir(op.getKOceanDir()));
+            readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Connecting the model cells";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 

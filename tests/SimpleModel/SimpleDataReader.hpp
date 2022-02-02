@@ -22,6 +22,8 @@ class SimpleDataReader : public DataReader {
                             op.getAnisotropy(),
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.isConfined(0));
 
             LOG(userinfo) << "Building the bottom layers";
@@ -44,7 +46,7 @@ class SimpleDataReader : public DataReader {
             readRiver(buildDir(op.getKRiverDir()));
 
             LOG(userinfo) << "Connecting the layers";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 
@@ -56,7 +58,10 @@ class SimpleDataReader : public DataReader {
         readGrid(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
                  double anisotropy,
                  double specificYield,
-                 double specificStorage, bool confined) {
+                 double specificStorage,
+                 double edgeLengthLeftRight,
+                 double edgeLengthFrontBack,
+                 bool confined) {
             Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -78,6 +83,8 @@ class SimpleDataReader : public DataReader {
                                                             x,
                                                             y,
                                                             area * Model::si::square_meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),
