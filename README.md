@@ -178,7 +178,7 @@ The following explains the main config parameters.
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
+      "boundarycondition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {

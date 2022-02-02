@@ -107,20 +107,13 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                                                 head);
             }
                 break;
-            case Simulation::Options::GENERAL_HEAD_SEA_LEVEL: {
+            case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
                 nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                 0 * Model::si::meter,
                                                 ghbConduct,
                                                 0 * Model::si::meter);
             }
                 break;
-            //case Simulation::Options::CONSTANT_HEAD: {
-            //    nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-            //                                    0 * Model::si::meter,
-            //                                    ghbConduct,
-            //                                    0 * Model::si::meter);
-            //}
-            //    break;
             case Simulation::Options::STATIC_HEAD_SEA_LEVEL: {
                 LOG(debug) << "Model::Using static head boundary";
                 //Add a constant head boundary

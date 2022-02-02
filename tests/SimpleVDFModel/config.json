@@ -17,7 +17,7 @@
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "GeneralHeadSeaLevel",
+      "boundarycondition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
