@@ -796,18 +796,16 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-
-            }
-            // TODO Implementation of FLOODPLAIN_DRAIN
-            /* else if (type == FLOODPLAIN_DRAIN) {
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows, type,
-                                                                    get<t_meter, Elevation>(),
-                                                                    get<t_vel, K>() * get<t_meter,
-                                                                    VerticalSize>(),
-                                                                    bottom));
-
-            } */else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+            /** TODO Implementation of FLOODPLAIN_DRAIN
+            *} else if (type == FLOODPLAIN_DRAIN) {
+            *    externalFlows.insert(std::make_pair(type,
+            *                                        ExternalFlow(numOfExternalFlows, type,
+            *                                                        get<t_meter, Elevation>(),
+            *                                                        get<t_vel, K>() * get<t_meter,
+            *                                                        VerticalSize>(),
+            *                                                        bottom));
+            */
+            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,

@@ -38,7 +38,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     //Initial head should be positive
     //resulting head is the real hydraulic head
     double tmp = 0;
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < numberOfNodes; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();

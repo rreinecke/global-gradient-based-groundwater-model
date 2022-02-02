@@ -56,7 +56,6 @@ namespace GlobalFlow {
             bool confined;
             std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined) = flow;
-
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
             quantity<MeterSquaredPerTime> t; //transmissivity
 
@@ -65,10 +64,7 @@ namespace GlobalFlow {
             quantity<MeterSquaredPerTime> transmissivity_neig =
                     calcEfoldingTrans(k_neig, folding_neig, ele_neig, head_neig);
 
-            // TODO pick up here. Calculate two directions of flow (LeftRight & FrontBack) separately
-            // In this case, there is no need to have both EdgeLengths in this function
-            // TODO first find the location in the code, where flow is passed over to the next node
-            out = (2.0 * edgeLength_self) * ((transmissivity_self * transmissivity_neig)
+            out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
                                              / (transmissivity_self * edgeLength_neig +
                                                 transmissivity_neig * edgeLength_self));
 
