@@ -12,12 +12,8 @@ namespace Model {
  */
 PhysicalProperties initProperties() {
     PhysicalProperties fields;
-    fields.emplace < unsigned
-    long
-    int, ID > (0);
-    fields.emplace < unsigned
-    long
-    int, ArcID > (0);
+    fields.emplace < unsigned long int, ID > (0);
+    fields.emplace < unsigned long int, ArcID > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);

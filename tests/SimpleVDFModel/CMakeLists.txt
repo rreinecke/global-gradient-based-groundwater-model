@@ -15,5 +15,6 @@ configure_file(data/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_simpleV
 configure_file(data/initial_head.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_head_simpleVDF.csv COPYONLY)
 configure_file(data/lithology.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/lithology_simpleVDF.csv COPYONLY)
 configure_file(data/recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_simpleVDF.csv COPYONLY)
+configure_file(data/recharge2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge2_simpleVDF.csv COPYONLY)
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_simpleVDF.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_simpleVDF.json COPYONLY)

@@ -57,6 +57,7 @@
     "data": {
       "ghb_conductance": "ghb_conductance_simpleVDF.csv",
       "recharge": "recharge_simpleVDF.csv",
+      "recharge2": "recharge2_simpleVDF.csv",
       "elevation": "elevation_simpleVDF.csv",
       "lithology": "lithology_simpleVDF.csv",
       "initial_head": "initial_head_simpleVDF.csv"

@@ -67,7 +67,7 @@ namespace GlobalFlow {
             double smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head);
 
             /**
-             * Get the coeffiecients for storage and P components
+             * Get the coefficients for storage and P components
              * @param steadyState
              * @param stepModifier
              * @param storageCapacity
@@ -80,7 +80,7 @@ namespace GlobalFlow {
 
             /**
              * Calculates the vertical flow between two nodes
-             * @param flow a touple of inputs about the aquifer
+             * @param flow a tuple of inputs about the aquifer
              * @return the vertical conductance
              */
             t_s_meter_t calculateVerticalConductance(FlowInputVert flow) noexcept;

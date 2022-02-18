@@ -50,6 +50,7 @@ class Options {
         string BLUE_ELEVATION{""};
 
         string RECHARGE{""};
+        string RECHARGE2{""};
         string LITHOLOGY{""};
         string RIVERS{""};
         string GLOBAL_LAKES{""};
@@ -292,6 +293,11 @@ class Options {
         string
         getRecharge() {
             return RECHARGE;
+        }
+
+        string
+        getRecharge2() {
+            return RECHARGE2;
         }
 
         string
