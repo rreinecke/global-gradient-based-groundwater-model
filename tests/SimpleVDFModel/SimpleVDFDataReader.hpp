@@ -34,7 +34,6 @@ class SimpleVDFDataReader : public DataReader {
 
             LOG(userinfo) << "Reading the groundwater recharge";
             readGWRecharge(buildDir(op.getRecharge()));
-            readGWRecharge(buildDir(op.getRecharge2()));
 
             LOG(userinfo) << "Reading the boundary condition";
             readHeadBoundary(buildDir(op.getKGHBDir()));
