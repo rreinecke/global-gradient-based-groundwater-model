@@ -5,7 +5,7 @@ namespace Model {
 
 t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
                                t_vol_t recharge,
-                               t_dim slope,
+                               t_dim slope, // QUESTION: can we get rid of the slope?
                                t_vol_t eqFlow) const noexcept {
     t_s_meter_t out = 0.0 * (si::square_meter / day);
     switch (type) {
@@ -28,14 +28,17 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             return -conductance;
         case RIVER_MM:
             //Can happen in transient coupling
-            //stil allow gaining conditions!
+            //still allow gaining conditions!
             if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom)
             {
-		        if (head >= bottom) { return -conductance; }
-		        return out;
+		        if (head >= bottom) {
+                    return -conductance;
+                } else {
+                    return out;
+                }
             }
             return -conductance;
         case GLOBAL_WETLAND:
@@ -68,7 +71,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
 
 t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
                            t_vol_t recharge,
-                           t_dim slope,
+                           t_dim slope, // QUESTION: can we get rid of the slope?
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     switch (type) {
@@ -92,29 +95,43 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case RIVER_MM:
             //Can happen in transient coupling
-            if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
-		    return out;
-        case WETLAND:
+            if(head >= bottom){
+                return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+            } else {
+                return out;
+            }
+        case WETLAND: // QUESTION: should we merge the 3 consecutive identical branches of switch?
             //Can happen in transient coupling
             if (flowHead <= bottom){ 
-		        if(head >= bottom){return conductance * flowHead;}
-		        return out;
+		        if(head >= bottom) {
+                    return conductance * flowHead;
+                } else {
+                    return out;
+                }
             }
             return conductance * flowHead;
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom){ 
-		        if(head >= bottom){return conductance * flowHead;}
-		        return out;
+		        if(head >= bottom) {
+                    return conductance * flowHead;
+                } else {
+                    return out;
+                }
+            } else {
+                return conductance * flowHead;
             }
-            return conductance * flowHead;
         case LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom){ 
-		        if(head >= bottom){return conductance * flowHead;}
-		        return out;
+		        if(head >= bottom) {
+                    return conductance * flowHead;
+                } else {
+		            return out;
+                }
+            } else {
+                return conductance * flowHead;
             }
-            return conductance * flowHead;
         case DRAIN:
             if (head > flowHead) {
                 return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
@@ -126,6 +143,19 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
     }
     return out;
 }
+
+t_vol_t ExternalFlow::getR(t_meter eq_head, t_meter head,
+                           t_vol_t recharge,
+                           t_dim slope, // QUESTION: can we get rid of the slope?
+                           t_vol_t eqFlow) const noexcept {
+    quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
+    if (type == PSEUDO_SOURCE_FLOW) {
+
+    } else {
+        return out;
+    }
+}
+
 
 t_vol_t ExternalFlow::calculateFloodplaindDrainage(t_meter head) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);

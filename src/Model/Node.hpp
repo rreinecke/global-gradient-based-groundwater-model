@@ -32,6 +32,7 @@
 #include <future>
 #include <forward_list>
 #include "ExternalFlows.hpp"
+#include "DensitySurfaces.hpp"
 #include "FluidMechanics.hpp"
 #include "PhysicalProperties.hpp"
 #include "../Misc/Helpers.hpp"
@@ -86,9 +87,9 @@ using NodeVector = std::shared_ptr<vector<unique_ptr<GlobalFlow::Model::NodeInte
 
 /**
  * Interface defining required fields for a node.
- * A node is the central comutational and spatial unit.
+ * A node is the central computational and spatial unit.
  * A simulated area is seperated into a discrete raster of cells or nodes
- * (seperate computational units which stay in contact to ech other).
+ * (separate computational units which stay in contact to ech other).
  * Is equal to 'cell'.
  *
  * Nodes can be of different physical property e.g. different size.
@@ -128,7 +129,7 @@ class NodeInterface {
          * @brief Apply function to all layers of the model.
          * @param &&...p A list of functions forwarded to setAttribute.
          *
-         * Apply an atribute to all layers at same position as the node.
+         * Apply an attribute to all layers at same position as the node.
          * A function passed in addition modifies the attribute depending on the layer.
          * Stops on last layer.
          */
@@ -151,6 +152,7 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
+        unordered_map<ZetaID, Zeta, ZetaHash> zetas;
         int numOfExternalFlows{0};
         bool nwt{false};
         bool initial_head{true};
@@ -243,6 +245,7 @@ class NodeInterface {
             ar & neighbours;
             ar & externalFlows;
             ar & numOfExternalFlows;
+            ar & zetas;
             ar & nwt;
             ar & initial_head;
             ar & simpleDistance;
@@ -671,14 +674,13 @@ Modify Properties
                 //ignore me there is no special_flow in this cell
             }
             t_dim slope = get<t_dim, Slope>();
-            t_vol_t eqFlow = getEqFlow();
+            t_vol_t eqFlow = getEqFlow(); // get the equilibrium lateral flows
             if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                 if (flow.flowIsHeadDependant(head)) {
-                    ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head * get<t_dim, StepModifier>()
-                         + flow.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
-                } else {
-                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom()
-                          +
+                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
+                          flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                } else { // QUESTION: is this explanation correct: "flow is not head dependent: when the head is below the bottom of the simulated cell"?
+                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom() +
                           flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
                 }
             } else {
@@ -807,7 +809,11 @@ Modify Properties
                                                                     VerticalSize>(),
                                                                     bottom));
 
-            } */else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+            } */ else if (type == PSEUDO_SOURCE_FLOW) {
+                externalFlows.insert(std::make_pair(type,
+                                                    ExternalFlow(numOfExternalFlows)));
+
+            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
