@@ -50,7 +50,7 @@ class Options {
         string BLUE_ELEVATION{""};
 
         string RECHARGE{""};
-        string RECHARGE2{""};
+        string PSEUDO_SOURCE_FLOW{""};
         string LITHOLOGY{""};
         string RIVERS{""};
         string GLOBAL_LAKES{""};
@@ -296,8 +296,8 @@ class Options {
         }
 
         string
-        getRecharge2() {
-            return RECHARGE2;
+        getPseudoSourceFlow() {
+            return PSEUDO_SOURCE_FLOW;
         }
 
         string

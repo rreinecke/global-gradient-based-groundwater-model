@@ -132,7 +132,7 @@ Options::load(const std::string &filename) {
 
     LITHOLOGY = getOptional("lithology", data);
     RECHARGE = getOptional("recharge", data);
-    RECHARGE2 = getOptional("recharge2", data);
+    PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
     RIVERS = getOptional("rivers", data);
     GLOBAL_WETLANDS = getOptional("globalwetlands", data);
     GLOBAL_LAKES = getOptional("globallakes", data);
