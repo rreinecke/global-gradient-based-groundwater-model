@@ -96,8 +96,10 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case RIVER_MM:
             //Can happen in transient coupling
             if (flowHead <= bottom){ 
-		    if(head >= bottom){return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
-		    return out; }
+		        if(head >= bottom){
+		            return calcERC(recharge, eq_head, head, eqFlow) * flowHead;}
+		        return out;
+            }
             return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
         case WETLAND:
             //Can happen in transient coupling
