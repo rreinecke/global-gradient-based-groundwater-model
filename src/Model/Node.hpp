@@ -32,7 +32,6 @@
 #include <future>
 #include <forward_list>
 #include "ExternalFlows.hpp"
-#include "DensitySurfaces.hpp"
 #include "FluidMechanics.hpp"
 #include "PhysicalProperties.hpp"
 #include "../Misc/Helpers.hpp"
@@ -152,7 +151,7 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-        unordered_map<ZetaID, Zeta, ZetaHash> zetas;
+        unordered_map<int, double> densitySurfaceElevations;
         int numOfExternalFlows{0};
         bool nwt{false};
         bool initial_head{true};

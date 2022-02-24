@@ -65,6 +65,11 @@ Options::load(const std::string &filename) {
     //    LOG(critical) << "Approach only viable with one layer";
     //    exit(3);
     //}
+    DENSITY_VARIABLE = config.get<bool>("density_variable");
+    DENSITY_STRATIFIED = config.get<bool>("density_stratified");
+    NUMBER_OF_DENSITY_ZONES = config.get<int>("number_of_density_zones");
+    MIN_DENSITY = config.get<int>("min_density");
+    MAX_DENSITY = config.get<int>("max_density");
     CACHE = config.get<bool>("cache");
     ADAPTIVE_STEPSIZE = config.get<bool>("adaptivestepsize");
     BOUNDARY_CONDITION = config.get<string>("boundarycondition");

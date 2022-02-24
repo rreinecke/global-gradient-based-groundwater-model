@@ -96,6 +96,10 @@ class Options {
         bool SENSITIVITY{false};
     	bool ONE_LAYER{false};
         vector<bool> CONFINED{};
+        bool DENSITY_VARIABLE{false};
+        bool DENSITY_STRATIFIED{false};
+        int DENSITY_ZONES{0};
+        vector<double> DENSITIES{};
     	string BASE_PATH{"data"};
         bool k_from_lith{true};
         bool k_ghb_from_file{false};
@@ -206,6 +210,20 @@ class Options {
         int
         getNumberOfLayers() {
             return LAYERS;
+        }
+
+        bool isDensityVariable() { return DENSITY_VARIABLE; }
+
+        bool isDensityStratified() { return DENSITY_STRATIFIED; }
+
+        int
+        getDensityZones() {
+            return DENSITY_ZONES;
+        }
+
+        double
+        getDensities() {
+            return DENSITIES;
         }
 
         int
