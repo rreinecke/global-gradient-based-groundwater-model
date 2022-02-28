@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Tutorials
-nav_order: 1
+nav_order: 2
 description: "How to use the model"
 permalink: /tut
 ---
