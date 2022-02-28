@@ -102,7 +102,7 @@ add_subdirectory(tests)
 enable_testing()
 
 set(testing_hrd ${HEADERS})
-set(testing_src ${SOURCE} src/Model/DensitySurfaces.hpp src/Model/DensitySurfaces.cpp)
+set(testing_src ${SOURCE} src/Model/VariableDensityFlow.hpp src/Model/VariableDensityFlow.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
