@@ -6,6 +6,9 @@
 
 [![Build Status](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model.svg?branch=master)](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model)
 
+# Documentation
+The current documentation can be found on [http://globalgroundwatermodel.org](http://globalgroundwatermodel.org)
+
 # The global gradient-based groundwater model framework G³M
 The global gradient-based groundwater model framework G³M-f is an extensible model framework.
 Its main purpose is to be used as a main building block for the global groundwater mode G³M.
