@@ -27,6 +27,8 @@ G³M is a newly developed gradient-based groundwater model which adapts MODFLOW 
 It is written in C++ and intended to be coupled to the global hydrology model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydrology models.
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
+TODO why this model is aswesome and which user groups.....
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
