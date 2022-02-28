@@ -44,7 +44,7 @@ class DiagonalBase : public EigenBase<Derived>
 
     EIGEN_DEVICE_FUNC
     DenseMatrixType toDenseMatrix() const { return derived(); }
-    
+
     EIGEN_DEVICE_FUNC
     inline const DiagonalVectorType& diagonal() const { return derived().diagonal(); }
     EIGEN_DEVICE_FUNC
@@ -71,18 +71,41 @@ class DiagonalBase : public EigenBase<Derived>
       return InverseReturnType(diagonal().cwiseInverse());
     }
     
-    typedef DiagonalWrapper<const CwiseUnaryOp<internal::scalar_multiple_op<Scalar>, const DiagonalVectorType> > ScalarMultipleReturnType;
     EIGEN_DEVICE_FUNC
-    inline const ScalarMultipleReturnType
+    inline const DiagonalWrapper<const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(DiagonalVectorType,Scalar,product) >
     operator*(const Scalar& scalar) const
     {
-      return ScalarMultipleReturnType(diagonal() * scalar);
+      return DiagonalWrapper<const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(DiagonalVectorType,Scalar,product) >(diagonal() * scalar);
     }
     EIGEN_DEVICE_FUNC
-    friend inline const ScalarMultipleReturnType
+    friend inline const DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar,DiagonalVectorType,product) >
     operator*(const Scalar& scalar, const DiagonalBase& other)
     {
-      return ScalarMultipleReturnType(other.diagonal() * scalar);
+      return DiagonalWrapper<const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(Scalar,DiagonalVectorType,product) >(scalar * other.diagonal());
+    }
+
+    template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
+    #ifdef EIGEN_PARSED_BY_DOXYGEN
+    inline unspecified_expression_type
+    #else
+    inline const DiagonalWrapper<const EIGEN_CWISE_BINARY_RETURN_TYPE(DiagonalVectorType,typename OtherDerived::DiagonalVectorType,sum) >
+    #endif
+    operator+(const DiagonalBase<OtherDerived>& other) const
+    {
+      return (diagonal() + other.diagonal()).asDiagonal();
+    }
+
+    template<typename OtherDerived>
+    EIGEN_DEVICE_FUNC
+    #ifdef EIGEN_PARSED_BY_DOXYGEN
+    inline unspecified_expression_type
+    #else
+    inline const DiagonalWrapper<const EIGEN_CWISE_BINARY_RETURN_TYPE(DiagonalVectorType,typename OtherDerived::DiagonalVectorType,difference) >
+    #endif
+    operator-(const DiagonalBase<OtherDerived>& other) const
+    {
+      return (diagonal() - other.diagonal()).asDiagonal();
     }
 };
 
@@ -154,6 +177,30 @@ class DiagonalMatrix
     /** 3D constructor. */
     EIGEN_DEVICE_FUNC
     inline DiagonalMatrix(const Scalar& x, const Scalar& y, const Scalar& z) : m_diagonal(x,y,z) {}
+
+    #if EIGEN_HAS_CXX11
+    /** \brief Construct a diagonal matrix with fixed size from an arbitrary number of coefficients. \cpp11
+      * 
+      * There exists C++98 anologue constructors for fixed-size diagonal matrices having 2 or 3 coefficients.
+      * 
+      * \warning To construct a diagonal matrix of fixed size, the number of values passed to this 
+      * constructor must match the fixed dimension of \c *this.
+      * 
+      * \sa DiagonalMatrix(const Scalar&, const Scalar&)
+      * \sa DiagonalMatrix(const Scalar&, const Scalar&, const Scalar&)
+      */
+    template <typename... ArgTypes>
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    DiagonalMatrix(const Scalar& a0, const Scalar& a1, const Scalar& a2, const ArgTypes&... args)
+      : m_diagonal(a0, a1, a2, args...) {}
+
+    /** \brief Constructs a DiagonalMatrix and initializes it by elements given by an initializer list of initializer
+      * lists \cpp11
+      */
+    EIGEN_DEVICE_FUNC
+    explicit EIGEN_STRONG_INLINE DiagonalMatrix(const std::initializer_list<std::initializer_list<Scalar>>& list)
+      : m_diagonal(list) {}
+    #endif  // EIGEN_HAS_CXX11
 
     /** Copy constructor. */
     template<typename OtherDerived>
@@ -274,7 +321,7 @@ class DiagonalWrapper
   * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), isDiagonal()
   **/
 template<typename Derived>
-inline const DiagonalWrapper<const Derived>
+EIGEN_DEVICE_FUNC inline const DiagonalWrapper<const Derived>
 MatrixBase<Derived>::asDiagonal() const
 {
   return DiagonalWrapper<const Derived>(derived());
@@ -291,12 +338,11 @@ MatrixBase<Derived>::asDiagonal() const
 template<typename Derived>
 bool MatrixBase<Derived>::isDiagonal(const RealScalar& prec) const
 {
-  using std::abs;
   if(cols() != rows()) return false;
   RealScalar maxAbsOnDiagonal = static_cast<RealScalar>(-1);
   for(Index j = 0; j < cols(); ++j)
   {
-    RealScalar absOnDiagonal = abs(coeff(j,j));
+    RealScalar absOnDiagonal = numext::abs(coeff(j,j));
     if(absOnDiagonal > maxAbsOnDiagonal) maxAbsOnDiagonal = absOnDiagonal;
   }
   for(Index j = 0; j < cols(); ++j)
@@ -317,19 +363,24 @@ struct Diagonal2Dense {};
 template<> struct AssignmentKind<DenseShape,DiagonalShape> { typedef Diagonal2Dense Kind; };
 
 // Diagonal matrix to Dense assignment
-template< typename DstXprType, typename SrcXprType, typename Functor, typename Scalar>
-struct Assignment<DstXprType, SrcXprType, Functor, Diagonal2Dense, Scalar>
+template< typename DstXprType, typename SrcXprType, typename Functor>
+struct Assignment<DstXprType, SrcXprType, Functor, Diagonal2Dense>
 {
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
     dst.setZero();
     dst.diagonal() = src.diagonal();
   }
   
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   { dst.diagonal() += src.diagonal(); }
   
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar> &/*func*/)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &/*func*/)
   { dst.diagonal() -= src.diagonal(); }
 };
 

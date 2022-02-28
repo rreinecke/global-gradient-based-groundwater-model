@@ -40,55 +40,46 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
   typedef typename Dest::Scalar Scalar;
   typedef Matrix<Scalar,Dynamic,1> VectorType;
 
-    /**
-     * Modified version for 3GM
-     * Changes iter criterion to inf instead of squared norm.
-     * Old code was only commented out.
-     * TODO Needs to be refactored into a generic way to pass different norms
-     */
+  /**
+  * Modified version for 3GM
+  * Changes iter criterion to inf instead of squared norm.
+  * Old code was only commented out.
+  * TODO Needs to be refactored into a generic way to pass different norms
+  */
 
   RealScalar tol = tol_error;
-  //Get error from input as inf error
-  RealScalar tol_inf = tol_error_inf;
+  RealScalar tol_inf = tol_error_inf; // added for 3GM
   Index maxIters = iters;
   
   Index n = mat.cols();
 
   VectorType residual = rhs - mat * x; //initial residual
-  //RealScalar rhsNorm2 = rhs.squaredNorm();
 
-  RealScalar rhsNormInf = rhs.template lpNorm<Infinity>();
-
-  //rhsNormInf = rhsNormInf * (rhs.template lpNorm<1>() / rhs.size());
-  //if(rhsNorm2 == 0)
-  if(rhsNormInf == 0)
+  // RealScalar rhsNorm2 = rhs.squaredNorm();
+  RealScalar rhsNormInf = rhs.template lpNorm<Infinity>(); // added for 3GM
+  //if(rhsNorm2 == 0) 
+  if(rhsNormInf == 0) // changed for 3GM
   {
     x.setZero();
     iters = 0;
-    tol_error_inf = 0;
+    // tol_error = 0;
+    tol_error_inf = 0; // changed for 3GM
     return;
   }
-  //RealScalar threshold = tol*tol*rhsNorm2;
-  //FIX from Eigen 3.3.6
   const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-  RealScalar threshold = numext::maxi(tol_inf*tol_inf*rhsNormInf,considerAsZero);
-
-  //RealScalar threshold = tol_inf * tol_inf / rhsNormInf;
+  
+  // RealScalar threshold = numext::maxi(RealScalar(tol*tol*rhsNorm2),considerAsZero);
+  RealScalar threshold = numext::maxi(RealScalar(tol_inf*tol_inf*rhsNormInf),considerAsZero); // changed for 3GM
   RealScalar residualNorm2 = residual.squaredNorm();
-  RealScalar residualNormInf = residual.template lpNorm<Infinity>();
+  RealScalar residualNormInf = residual.template lpNorm<Infinity>(); // added for 3GM
 
-  if (residualNormInf < threshold) {
+  // if (residualNorm2 < threshold)
+  if (residualNormInf < threshold) { // changed for 3GM
     iters = 0;
-    tol_error_inf = sqrt(residualNormInf / rhsNormInf);
+    //  tol_error = sqrt(residualNorm2 / rhsNorm2);
+    tol_error_inf = sqrt(residualNormInf / rhsNormInf); // added for 3GM
     return;
   }
-
-  //if (residualNorm2 < threshold)
-  //{
-  //  iters = 0;
-  //  tol_error = sqrt(residualNorm2 / rhsNorm2);
-  //  return;
-  //}
 
   VectorType p(n);
   p = precond.solve(residual);      // initial search direction
@@ -105,13 +96,10 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
     residual -= alpha * tmp;                    // update residual
     
     residualNorm2 = residual.squaredNorm();
-    residualNormInf = residual.template lpNorm<Infinity>();
-
-    if(residualNormInf < threshold)
-      break;
-
+    residualNormInf = residual.template lpNorm<Infinity>(); // added for 3GM
     //if(residualNorm2 < threshold)
-    //  break;
+    if(residualNormInf < threshold) // added for 3GM
+      break;
     
     z = precond.solve(residual);                // approximately solve for "A z = residual"
 
@@ -121,9 +109,10 @@ void conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
     p = z + beta * p;                           // update search direction
     i++;
   }
-  tol_error = residualNorm2;
-  tol_error_inf = residual.template lpNorm<Infinity>() / rhsNormInf;
-  resid = residual;
+  tol_error = residualNorm2; // changed for 3GM
+  // tol_error = sqrt(residualNorm2 / rhsNorm2);
+  tol_error_inf = residual.template lpNorm<Infinity>() / rhsNormInf; // added for 3GM
+  resid = residual; // added for 3GM
 
   iters = i;
 }
@@ -198,7 +187,7 @@ class ConjugateGradient : public IterativeSolverBase<ConjugateGradient<_MatrixTy
   typedef IterativeSolverBase<ConjugateGradient> Base;
   using Base::matrix;
   using Base::m_error;
-  using Base::m_error_inf;
+  using Base::m_error_inf; // added for 3GM
   using Base::resid;
   using Base::m_iterations;
   using Base::m_info;
@@ -235,7 +224,7 @@ public:
 
   /** \internal */
   template<typename Rhs,typename Dest>
-  void _solve_with_guess_impl(const Rhs& b, Dest& x) const
+  void _solve_vector_with_guess_impl(const Rhs& b, Dest& x) const
   {
     typedef typename Base::MatrixWrapper MatrixWrapper;
     typedef typename Base::ActualMatrixType ActualMatrixType;
@@ -251,31 +240,15 @@ public:
                                            RowMajorWrapper,
                                            typename MatrixWrapper::template ConstSelfAdjointViewReturnType<UpLo>::Type
                                           >::type SelfAdjointWrapper;
+
     m_iterations = Base::maxIterations();
-    m_error_inf = Base::m_tolerance;
+    m_error_inf = Base::m_tolerance; // changed for 3GM
+    // m_error = Base::m_tolerance;
 
-    for(Index j=0; j<b.cols(); ++j)
-    {
-      m_iterations = Base::maxIterations();
-      m_error_inf = Base::m_tolerance;
-
-      typename Dest::ColXpr xj(x,j);
-      RowMajorWrapper row_mat(matrix());
-      internal::conjugate_gradient(SelfAdjointWrapper(row_mat), b.col(j), xj, Base::m_preconditioner, m_iterations, m_error, m_error_inf, resid);
-    }
-
-    m_isInitialized = true;
-    //m_info = m_error <= Base::m_tolerance ? Success : NoConvergence;
-    m_info = m_error_inf <= Base::m_tolerance ? Success : NoConvergence;
-  }
-  
-  /** \internal */
-  using Base::_solve_impl;
-  template<typename Rhs,typename Dest>
-  void _solve_impl(const MatrixBase<Rhs>& b, Dest& x) const
-  {
-    x.setZero();
-    _solve_with_guess_impl(b.derived(),x);
+    RowMajorWrapper row_mat(matrix());
+    internal::conjugate_gradient(SelfAdjointWrapper(row_mat), b, x, Base::m_preconditioner, m_iterations, m_error, m_error_inf, resid);
+    m_info = m_error_inf <= Base::m_tolerance ? Success : NoConvergence; // changed for 3GM
+    // m_info = m_error <= Base::m_tolerance ? Success : NoConvergence;
   }
 
 protected:
