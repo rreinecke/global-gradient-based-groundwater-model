@@ -4,12 +4,12 @@
       "recharge": "",
       "elevation": "",
       "openwater": "",
-      "globalwettlands": "",
+      "globalwetlands": "",
       "globallakes": "",
       "lokallakes": "",
-      "lokalwettlands": "",
+      "lokalwetlands": "",
       "rivers": "",
-      "lithologie": ""
+      "lithology": ""
     },
     "mapping": {
       "nodeID-arcID": ""
@@ -17,7 +17,11 @@
     "config": {
       "nodes": "",
       "solver": "PCG",
-      "numberofnodes": 110,
+      "number_of_nodes": 110,
+      "number_of_rows": 10,
+      "number_of_cols": 10,
+      "edge_length_rows": 3.162277,
+      "edge_length_cols":3.162277,
       "iterations": "30",
       "closingcrit": 0.001,
       "initial_head": 0,

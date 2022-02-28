@@ -16,6 +16,7 @@
 namespace GlobalFlow {
 namespace Solver {
 
+
 using pr_t = double;
 using vector = Eigen::Matrix<pr_t, Eigen::Dynamic, 1>;
 using r_vector = Eigen::Matrix<pr_t, 1, Eigen::Dynamic>;
@@ -35,7 +36,9 @@ class AdaptiveDamping {
             Sigma_t0 = sqrt(Sigma_Min * Sigma_Max);
         }
 
+
         vector getDamping(vector &residuals, vector &x, bool apply) {
+            assert(x.rows() == x_t0.rows() && "Damping hasn't been properly initialized");
             vector changes = x - x_t0;
 	    pr_t sigma;
 	    if(apply)
@@ -53,7 +56,6 @@ class AdaptiveDamping {
         bool first{true};
 
         vector x_t0;
-
         pr_t norm_t0;
         pr_t max_headChange_t0;
         pr_t Sigma_t0;
@@ -61,6 +63,7 @@ class AdaptiveDamping {
         pr_t Sigma_MIN;
         pr_t Sigma_MAX;
         pr_t Change_MAX;
+
 
         int cnt{0};
 
@@ -73,9 +76,11 @@ class AdaptiveDamping {
             pr_t res = residuals.transpose() * residuals;
             pr_t ch = changes.transpose() * changes;
             pr_t norm = sqrt(res * ch);
+
             LOG(numerics) << "square root norm of residuals: " << norm;
             return norm;
         }
+
 
         pr_t applyAdaptiveDamping(pr_t max_headChange, pr_t norm) {
             pr_t PHI{0.01};
@@ -83,6 +88,7 @@ class AdaptiveDamping {
 
             pr_t p_n;
             pr_t p_h;
+
             if (first) {
                 p_n = norm;
                 p_h = max_headChange;
@@ -111,6 +117,7 @@ class AdaptiveDamping {
             }
 
             pr_t sig_t{sqrt(sigma * Sigma_t0)};
+
             if (std::abs(max_headChange) > Change_MAX and sig_t > (Change_MAX / std::abs(max_headChange))) {
                 sig_t = Change_MAX / std::abs(max_headChange);
             }

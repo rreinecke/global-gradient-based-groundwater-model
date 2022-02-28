@@ -30,7 +30,7 @@
 namespace GlobalFlow {
     namespace Model {
 
-        using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
+        using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
         using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
 
         /**
@@ -167,7 +167,7 @@ namespace GlobalFlow {
 			std::cout << Daq.value() << "\n";
 			std::cout << G.value() << "\n";
 			std::cout << depth.value() << "\n";
-            std::exit(-1);
+            		std::exit(-1);
 		}
         //        assert(criv.value() <= 0 &&
         //               "Conductance of riverbed is negative or zero - wrong inputs or eqation not fit for this scale");

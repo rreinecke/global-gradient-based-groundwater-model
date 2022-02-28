@@ -340,7 +340,7 @@ class SimulationOutput {
                         }
                         os << out;
                     }
-                    if (field == "ocean_OUT") {
+                    if (field == "ghb_OUT") {
                         double out{0};
                         try {
                             out += simulation.nodes->at(i)->getExternalFlowVolumeByName(

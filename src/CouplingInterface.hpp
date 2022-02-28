@@ -48,13 +48,11 @@ namespace GlobalFlow {
 
         virtual void updateRiversInGW(Container data, short month, int numberOfGridCells) {}
 
-	    virtual void updateGlobalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
+        virtual void updateGlobalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
 
         virtual void updateLocalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void updateGlobalLakesInGW(Container data, short month, int numberOfGridCells) {}
-        
-        virtual void updateLakesInGW(Container data, short month, int numberOfGridCells) {}
+        virtual void updateLakesInGW(Container data1, Container data2, short month, int numberOfGridCells) {}
 
         virtual void writeRiver(Container data, short month, int numberOfGridCells) {}
 
@@ -62,14 +60,9 @@ namespace GlobalFlow {
 
         virtual void writeLocalWetlands(Container data, short month, int numberOfGridCells) {}
 
-        virtual void writeGlobalLakes(Container data, short month, int numberOfGridCells) {}
-
         virtual void writeLakes(Container data, short month, int numberOfGridCells) {}
 
-        virtual void getStorageData(Container data, short month, int numberOfGridCells) {}
-
-	    virtual void writeStorage(Container data, short month, int numberOfGridCells) {}
-
+        virtual void writeStorage(Container data, short month, int numberOfGridCells) {}
 
     protected:
         NodeVector nodes;

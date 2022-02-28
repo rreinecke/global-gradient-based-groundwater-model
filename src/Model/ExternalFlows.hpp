@@ -63,7 +63,6 @@ namespace GlobalFlow {
             WETLAND,
             GLOBAL_WETLAND,
             LAKE,
-            GLOBAL_LAKE,
             GENERAL_HEAD_BOUNDARY
         };
 

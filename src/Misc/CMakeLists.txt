@@ -6,6 +6,6 @@ set(HEADERS
         ${HEADERS}
         ${CMAKE_CURRENT_SOURCE_DIR}/colors.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Helpers.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/serializer.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/serializer.hpp
         PARENT_SCOPE
         )

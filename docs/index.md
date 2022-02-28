@@ -1,8 +1,30 @@
-# The global gradient-based groundwater model framework G³M
-The global gradient-based groundwater model framework G³M-f is an extesible model framework.
-Its main purpose is to be used as a main bilding block for the global groundwater mode G³M.
+---
+layout: default
+title: Home
+nav_order: 1
+description: "Documentation of the global groundwater modeling framework"
+permalink: /
+---
+
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+# Publications
+
+[Global model description in GMD](https://www.geosci-model-dev.net/12/2401/2019/)
+
+[Sensitivity Analysis in HESS](https://www.hydrol-earth-syst-sci.net/23/4561/2019/hess-23-4561-2019.html)
+
+
+# Data and code dois
+[![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
+
+# The global gradient-based groundwater model framework G³M-f
+The global gradient-based groundwater model framework G³M-f is an extensible model framework.
+Its main purpose is to be used as a main building block for the global groundwater mode G³M.
 G³M is a newly developed gradient-based groundwater model which adapts MODFLOW [@harbaugh2005modflow] principles for the globalscale.
-It is written in C++ and intended to be coupled to the global hydraulic model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydraulic models.
+It is written in C++ and intended to be coupled to the global hydrology model WaterGAP (http://watergap.de), but can also be used for regional groundwater models and coupling to other hydrology models.
 While it is intended to be used as a in memory coupled model it is also capable of running a standard standalone groundwater model.
 
 ## Getting Started
@@ -11,169 +33,42 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-What things you need to install the software and how to install them.
-
 ```
-clang > 3.8 (gcc currently not supported)
+clang >= 3.8 with openMP (currently gcc is not supported)
 libboost >= 1.56
-OpenMP
 libGMP
-Gtest
+libGtest
+```
+### Build
+```
+mkdir build
+cd build
+cmake ../
+make
 ```
 
-### How to use
-Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
+### Equations
+The three dimensional flow of water through the porous material between the cells is solved as a partial differential equation.
+Where K is the hydraulic conductivity [L/T] along the three axis, S the specific storage and W is the volumentric flux per unit volume in and out of the groundwater system.
+The hydraulic conductivity between two cells is caluclated b yusing the harmonic mean.
+The equation is solved using a conjugate gradient approach and an Incomplete LUT preconditioner.
+![](https://latex.codecogs.com/gif.latex?\frac{\partial}{\partial&space;x}\left&space;(&space;K_{x}&space;\frac{\partial&space;h}{\partial&space;x}&space;\right&space;)&space;&plus;&space;\frac{\partial}{\partial&space;y}\left&space;(&space;K_{y}&space;\frac{\partial&space;h}{\partial&space;y}&space;\right&space;)&space;&plus;&space;\frac{\partial}{\partial&space;z}\left&space;(&space;K_{z}&space;\frac{\partial&space;h}{\partial&space;z}&space;\right&space;)&space;&plus;&space;W&space;=&space;S_{s}&space;\frac{\partial&space;h}{\partial&space;t} "Main equation")
 
-```
-class GW_Interface {
-    public:
-        virtual ~GW_Interface() {}
+Additonal information on the equations can be found in the very detailed MODFLOW documentation: [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html)
 
-        virtual void
-        loadSettings() = 0;
+### Boundary Conditions
+G³M support multiple boundary condition types:
+* No-flow boundary
+* Static head boundary
+* General head boundary
+* Groundwater recharge
+* Lakes
+* Wetlands
+* Different river approaches
 
-        virtual void
-        setupSimulation() = 0;
-
-        virtual void
-        writeData() = 0;
-
-        virtual void
-        simulate() = 0;
-};
-```
-
-## Write out data
-The framework provides a extensible factory to write out any internal data. The following example writes the resulting depth to watertable as a CSV file with Lat and Lon.
-```
-{
-  "output": {
-    "StaticResult": [
-      {
-        "name": "wtd",
-        "type": "csv",
-        "field": "DepthToWaterTable",
-        "ID": "false",
-        "position": "true"
-      }
-    ],
-    "InnerIteration": {
-    },
-    "OuterIteration": {
-    }
-  }
-}
-
-```
-
-## Config model
-In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
-```
-{
-  "config": {
-    "model_config": {
-      "nodes": "grid_simple.csv",
-      "row_cols": "true",
-      "stadystate": "true",
-      "numberofnodes": 100,
-      "threads": 1,
-      "layers": 2,
-      "confinement": [
-        "false",
-        "true"
-      ],
-      "cache": "false",
-      "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
-      "sensitivity": "false"
-    },
-    "numerics": {
-      "solver": "PCG",
-      "iterations": 500,
-      "inner_itter": 10,
-      "closingcrit": 1e-8,
-      "headchange": 0.0001,
-      "damping": "false",
-      "min_damp": 0.01,
-      "max_damp": 0.5,
-      "stepsize": "daily"
-    },
-  "input": {
-    "data_config": {
-      "k_from_lith": "true",
-      "k_ocean_from_file": "false",
-      "specificstorage_from_file": "false",
-      "specificyield_from_file": "false",
-      "k_river_from_file": "true",
-      "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "true",
-      "data_as_array": "false"
-    },
-    "default_data": {
-      "initial_head": 5,
-      "K": 0.008,
-      "oceanK": 800,
-      "aquifer_thickness": [
-        10,
-        10
-      ],
-      "anisotropy": 10,
-      "specificyield": 0.15,
-      "specificstorage": 0.000015
-    },
-    "data": {
-      "recharge": "recharge_simple.csv",
-      "elevation": "elevation_simple.csv",
-      "rivers": "rivers_simple.csv",
-      "lithologie": "lithology_simple.csv",
-      "river_conductance": "rivers_simple.csv",
-      "initial_head": "heads_simple.csv"
-    }
-  }
-  }
-}
-```
-
-## Running a simple model
-A simple two-layered groundwater model can be implemented rather quickly.
-The following picture shows the conceptual example model:
-![](simple_model.png)
-
-After compilation run:
-```
-simple_model
-```
-It will yield a depth to water table CSV file called wtd.csv for a simple model descriped on the model main page: groundwatermodel.org
-
-If you want to implement your own simple model:
-The main simulation method (as implemented by the GW interface) provides a simple steady-state simulation step.
-In addition you need to implement the [DataReader Interface](repo/blob/master/src/DataProcessing/DataReader.hpp).
-
-```
-void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running a steady state step";
-        step.first->toogleSteadyState();
-        step.first->solve();
-        sim.printMassBalances();
-    }
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
-    //sim.save();
-}
-```
-
-## Deployment in other models
-Just implement the GW_interface and provide a DataReader.
-
-## Running the tests
-
-Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
-You can run them by executing the test executable.
-
-```
-runUnitTests
-```
+New flows can be defined in Model/ExternalFlows.hpp.
+The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as ocean boundary for irregual grids.
+This behaviour can be changed in DataProcessing/Neighbouring.hpp.
 
 ## Built With
 
@@ -185,21 +80,22 @@ runUnitTests
 
 ## Contributing
 
-Please read [CONTRIBUTING.md]() for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
 
-## Authors
+## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work*
-
-See also the list of [contributors]() who participated in this project.
+[ResearchGate](https://www.researchgate.net/profile/Robert_Reinecke2)
+<span id="badgeCont935"><script type="text/javascript" src="https://publons.com/mashlets?el=badgeCont935&rid=K-3693-2019&size=small"></script></span>
 
 ## License
 
-This project is licensed under the GNU General Public License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
+Please note that the code contains a modified version of the Eigen3 library which is published under the [MPL 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
 
 ## Acknowledgments
 

@@ -65,7 +65,7 @@ namespace GlobalFlow {
                 WETLAND_CONDUCT, /*!< Conductance of wetland */
                 GL_WETLAND_CONDUCT, /*!< Conductance of global wetland */
                 LAKE_CONDUCT, /*!< Conductance of lake */
-                OCEAN_OUT, /*!< Boundary condition outflow */
+                GHB_OUT, /*!< General Head Boundary condition outflow */
                 GL_WETLAND_OUT, /*!< Global wetland outflow */
                 WETLAND_OUT, /*!< Wetland outflow */
                 LAKE_OUT, /*!< Lake outflow */
@@ -81,7 +81,7 @@ namespace GlobalFlow {
              */
             const std::unordered_map<std::string, FieldType> fieldMapping{
                     {"ID",                 FieldType::ID},
-                    {"SpatID",              FieldType::ARCID},
+                    {"ArcID",              FieldType::ARCID},
                     {"Area",               FieldType::AREA},
                     {"Conductivity",       FieldType::CONDUCT},
                     {"Elevation",          FieldType::ELEVATION},
@@ -109,7 +109,7 @@ namespace GlobalFlow {
                     {"Wetland_Conduct",    FieldType::WETLAND_CONDUCT},
                     {"Gl_Wetland_Conduct", FieldType::GL_WETLAND_CONDUCT},
                     {"Lake_Conduct",       FieldType::LAKE_CONDUCT},
-                    {"Ocean_Outflow",      FieldType::OCEAN_OUT},
+                    {"GHB_Outflow",      FieldType::GHB_OUT},
                     {"Gl_Wetland_Outflow", FieldType::GL_WETLAND_OUT},
                     {"Wetland_Outflow",    FieldType::WETLAND_OUT},
                     {"Lake_Outflow",       FieldType::LAKE_OUT},
@@ -185,7 +185,7 @@ namespace GlobalFlow {
                  */
                 std::vector<large_num> getIds(Simulation::Simulation &simulation) {
                     return getData<large_num>(simulation, [&simulation](int i) {
-                        return simulation.getNodes()->at(i)->getSpatialID();
+                        return simulation.getNodes()->at(i)->getID();
                     });
                 }
 
@@ -210,7 +210,7 @@ namespace GlobalFlow {
                         case FieldType::ARCID : {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::SpatID>());
+                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::ArcID>());
                             });
                         }
                         case FieldType::AREA : {
@@ -491,7 +491,7 @@ namespace GlobalFlow {
                                 return convert<T>(out);
                             });
                         }
-                        case FieldType::OCEAN_OUT : {
+                        case FieldType::GHB_OUT : {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {

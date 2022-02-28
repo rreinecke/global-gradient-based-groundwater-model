@@ -34,113 +34,107 @@
 #include "Numerics.hpp"
 
 namespace GlobalFlow {
-namespace Solver {
-using namespace boost::units;
-using namespace Eigen;
-
-using pr_t = double; //change here if other precision should be used e.g. long double
-using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
-using large_num = unsigned long int;
-using long_vector = Matrix<pr_t, Dynamic, 1>;
+    namespace Solver {
+        using namespace boost::units;
+        using namespace Eigen;
+      
+	using pr_t = double; //change here if other precision should be used e.g. long double
+	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
+	using large_num = unsigned long int;
+	using long_vector = Matrix<pr_t, Dynamic, 1>;
 
 /**
  * @class Equation The internal finite difference equation
  * Should only be accessed through the stepper
  */
-class Equation {
-    public:
-        Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options);
+        class Equation {
+        public:
+            Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options);
 
-        ~Equation();
+            ~Equation();
 
-        /**
-         * Solve the current iteration step
-         */
-        void solve();
+            /**
+             * Solve the current iteration step
+             */
+            void solve();
 
-        /**
-         * @return The number of iterations
-         */
-        int getItter();
+            /**
+             * @return The number of iterations
+             */
+            int getItter();
 
-        /**
-         * @return The current residual error
-         */
-        double getError();
+            /**
+             * @return The current residual error
+             */
+            double getError();
 
-        //No copy and copy assign for Equations
-        Equation(const Equation &) = delete;
+            //No copy and copy assign for Equations
+            Equation(const Equation &) = delete;
 
-        Equation &
-        operator=(const Equation &) = delete;
+            Equation &
+            operator=(const Equation &) = delete;
 
-        /**
-         * Helper to write out current residuals
-         * @param os
-         * @param eq
-         * @return
-         */
-        friend std::ostream &
-        operator<<(std::ostream &os, Equation &eq) {
-            IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-            os << eq.getResults().format(CleanFmt);
-            return os;
-        };
+            /**
+             * Helper to write out current residuals
+             * @param os
+             * @param eq
+             * @return
+             */
+            friend std::ostream &
+            operator<<(std::ostream &os, Equation &eq) {
+                IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+                os << eq.getResults().format(CleanFmt);
+                return os;
+            };
 
-        long_vector getResults() {
-            return this->x;
-        }
+            long_vector getResults() {
+                return this->x;
+            }
 
-        /**
-         * Toogle the steady-state in all nodes
-         * @return
-         */
-        bool toogleSteadyState() {
-            SteadyState = !SteadyState;
-            bool state = SteadyState;
-            std::for_each(nodes->begin(),
-                          nodes->end(),
-                          [state](std::unique_ptr<Model::NodeInterface> const &node) {
-                              node->toogleStadyState(state);
-                          });
-            return SteadyState;
-        }
+            long_vector getRHS(){
+                return this->b;
+            }
 
-        /**
-         * Set the correct stepsize (default is DAY)
-         * @param mod
-         */
-        void updateStepSize(double mod) {
-            std::for_each(nodes->begin(),
-                          nodes->end(),
-                          [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
-        }
+            /**
+             * Toogle the steady-state in all nodes
+             * @return
+             */
+            bool toggleSteadyState() {
+                SteadyState = !SteadyState;
+                bool state = SteadyState;
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [state](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->toggleSteadyState(state);
+                              });
+                return SteadyState;
+            }
 
-        typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;
-        typedef Matrix<Scalar, Dynamic, 1> VectorType;
+            /**
+             * Set the correct stepsize (default is DAY)
+             * @param mod
+             */
+            void updateStepSize(double mod) {
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
+            }
 
-        VectorType& getResiduals() {
-            return cg.getResiduals();
-        }
+            typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;
+            typedef Matrix<Scalar, Dynamic, 1> VectorType;
 
-        void updateClosingCrit(pr_t crit) {
-		RCLOSE = crit;
-		cg.setTolerance(crit);
-	}
-        void updateMaxHeadChange(double head) {
-	       	maxHeadChange = head;
-	}
-        void updateMaxItter(int itter) {
-		inner_iterations = itter;
-		cg.setMaxIterations(itter);
-	}
+            VectorType& getResiduals() const {
+                return cg.getResiduals();
+            }
 
-    /**
-     * @note resests dampening object and counters
-     */
-    void enableDamping() {
-        isAdaptiveDamping = true;
-    }
+            void updateClosingCrit(double crit) { cg.setTolerance(crit); }
+
+            /**
+             * @note resests dampening object and counters
+             */
+            void enableDamping() {
+                isAdaptiveDamping = true;
+            } 
 
     private:
         bool initalized = false;
@@ -214,8 +208,8 @@ class Equation {
          * Reallocate matrix and vectors absed on dried nodes
          * @bug This is currently missing reenabling of deactivated nodes!
          * Reenable if:
-         * 1) head in cell below needs to be higher than threshhold
-         * 2) head in one of 4 neighbours higher than threshhold
+         * 1) head in cell below needs to be higher than threshold
+         * 2) head in one of 4 neighbours higher than threshold
          */
         void inline reallocateMatrix();
 
@@ -241,9 +235,9 @@ class Equation {
 
         bool SteadyState = false;
         //Only for testin purposes
-        bool simpelHead = true;
+        bool simpleHead = true;
 };
-
 }
-}//ns
+}
+
 #endif

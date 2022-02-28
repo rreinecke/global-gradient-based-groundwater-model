@@ -39,21 +39,21 @@
 namespace GlobalFlow {
 namespace Model {
 /**
- * Neighbouring positions for cells (side-view)
+ * Neighbouring positions for cells
  *     TOP
- * WEST * EAST
+ * LEFT * RIGHT
  *     DOWN
  *
  * In Z (Top view):
- * NORTH (smaller ID) * SOUTH (larger ID)
+ * FRONT (larger ID) * BACK (smaler ID)
  */
 enum NeighbourPosition {
     TOP = 1,
     DOWN,
-    EAST,
-    WEST,
-    NORTH,
-    SOUTH
+    RIGHT,
+    LEFT,
+    FRONT,
+    BACK
 };
 }
 }
@@ -234,6 +234,26 @@ class NodeInterface {
         }
 
     public:
+
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            LOG(debug) << "Serializing abstract node";
+            ar & nodes;
+            ar & neighbours;
+            ar & externalFlows;
+            ar & numOfExternalFlows;
+            ar & nwt;
+            ar & initial_head;
+            ar & simpleDistance;
+            ar & simpleK;
+            ar & steadyState;
+            ar & fields;
+            ar & cached;
+            ar & eq_flow;
+        }
+
+
         /**
          * @brief Constructor of abstract class NodeInterface
          * @param nodes Vector of all other existing nodes
@@ -255,6 +275,8 @@ class NodeInterface {
                       double lat,
                       double lon,
                       t_s_meter area,
+                      t_meter edgeLengthLeftRight,
+                      t_meter edgeLengthFrontBack,
                       large_num ArcID,
                       large_num ID,
                       t_vel K,
@@ -267,16 +289,7 @@ class NodeInterface {
 
         virtual ~NodeInterface() = default;
 
-        /**
-         * @return The spatial ID of the node
-         *
-         */
-        large_num getSpatialID() { return get<large_num, SpatID>(); }
-
-        /**
-         * @return The position in the node vector
-         */
-        large_num getID() { return get<large_num, ID>(); }
+        large_num getID() { return get<large_num, ArcID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -361,17 +374,36 @@ Modify Properties
 
         template<class HeadType>
         FlowInputHor createDataTuple(map_itter got) {
-            return std::make_tuple(at(got)->getK(),
-                                   getK(),
-                                   getAt<t_meter, EdgeLenght>(got),
-                                   get<t_meter, EdgeLenght>(),
-                                   getAt<t_meter, HeadType>(got),
-                                   get<t_meter, HeadType>(),
-                                   getAt<t_meter, Elevation>(got),
-                                   get<t_meter, Elevation>(),
-                                   getAt<t_meter, VerticalSize>(got),
-                                   get<t_meter, VerticalSize>(),
-                                   get<bool, Confinement>());
+            if (got->first == LEFT or got->first == RIGHT){
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthFrontBack>(got), // length in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // length in front/back direction of this node
+                                       //getAt<t_meter, EdgeLengthLeftRight>(got), // width in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // width in left/right direction of this node
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            } else { // if (got->first == FRONT or got->first == BACK)
+                return std::make_tuple(at(got)->getK(),
+                                       getK(),
+                                       getAt<t_meter, EdgeLengthLeftRight>(got), // length in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // length in left/right direction of this node
+                                       //getAt<t_meter, EdgeLengthFrontBack>(got), // width in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // width in front/back direction of this node
+                                       getAt<t_meter, HeadType>(got),
+                                       get<t_meter, HeadType>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, VerticalSize>(),
+                                       get<bool, Confinement>());
+            }
+
         }
 
         FlowInputVert createDataTuple(map_itter got) {
@@ -390,15 +422,15 @@ Modify Properties
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
-         * Generic function used for calulating equlibrium and current step flow
+         * Generic function used for caluclating equilibrium and current step flow
          * @return
          */
         template<class HeadType>
         t_vol_t calcLateralFlows(bool onlyOut) {
             t_vol_t lateral_flow{0 * si::cubic_meter / day};
             std::forward_list<NeighbourPosition> possible_neighbours =
-                    {NeighbourPosition::SOUTH, NeighbourPosition::NORTH, NeighbourPosition::WEST,
-                     NeighbourPosition::EAST};
+                    {NeighbourPosition::BACK, NeighbourPosition::FRONT, NeighbourPosition::LEFT,
+                     NeighbourPosition::RIGHT};
 
             for (const auto &position: possible_neighbours) {
                 std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbours.find(position);
@@ -469,7 +501,7 @@ Modify Properties
 
         /**
          * @brief Scales river conduct by 50%
-         * @warning Should only be used in spinn up phase
+         * @warning Should only be used in spin up phase
          */
         void scaleRiverConduct() {
             eq_flow = eq_flow * 1.5;
@@ -477,7 +509,7 @@ Modify Properties
 
         /**
          * @brief Update the current head change (in comparison to last time step)
-         * @note Should only be caled at end of timestep
+         * @note Should only be called at end of time step
          */
         void updateHeadChange() noexcept {
             set < t_meter, HeadChange_TZero > (
@@ -490,8 +522,6 @@ Modify Properties
         void setHead_direct(double head) noexcept { set < t_meter, Head > (head * si::meter); }
 
         t_vel getK__pure() noexcept { return get<t_vel, K>(); }
-
-	void setSimpleK(){simpleK = true;}
 
         /**
          * @brief Get hydraulic conductivity
@@ -533,6 +563,8 @@ Modify Properties
          */
         void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
+        void setSimpleK(){simpleK = true;}
+
         /**
          * @brief Get all outflow since simulation start
          */
@@ -548,7 +580,7 @@ Modify Properties
          * @param onOFF true=on
          * Turns all storage equations to zero with no timesteps
          */
-        void toogleStadyState(bool onOFF) { this->steadyState = onOFF; }
+        void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
 
         void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
 
@@ -571,6 +603,7 @@ Modify Properties
                 if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
             }
             //we are not in the first layer and we are in unconfined conditions as specified by the user
+
             if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                 //water-table condition
                 if (nwt) { return getStorageCapacity__SecondaryNWT(); }
@@ -593,7 +626,7 @@ Modify Properties
         }
 
         /**
-         * @brief Get and external flow volume by its FlowType
+         * @brief Get an external flow volume by its FlowType
          * @param type The flow type
          * @return Flow volume
          */
@@ -639,7 +672,7 @@ Modify Properties
             }
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
-            if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+            if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                 if (flow.flowIsHeadDependant(head)) {
                     ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head * get<t_dim, StepModifier>()
                          + flow.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
@@ -724,10 +757,6 @@ Modify Properties
                 virtual const char *what() const throw() { return "Node does not exist"; }
         };
 
-        unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
-            return neighbours;
-        }
-
         /**
          * @brief Get a neighbour by position
          * @param neighbour The position relative to the cell
@@ -754,12 +783,12 @@ Modify Properties
         int addExternalFlow(FlowType type, t_meter flowHead, double cond, t_meter bottom) {
             if (hasTypeOfExternalFlow(type)) {
                     //LOG(debug) << "! adding a flow that is already existing for cell"
-                    //curretly it is assumed that only one external flow is what we want
+                    //currently it is assumed that only one external flow is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
             }   
 	       
-	    if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) { 
+	        if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
                                                                  type)));
@@ -767,15 +796,16 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-            } else if (type == FLOODPLAIN_DRAIN) {
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows, type,
-                                                                 get<t_meter, Elevation>(),
-                                                                 get<t_vel, K>()
-                                                                 * get<t_meter, VerticalSize>(),
-                                                                 get<t_meter, EdgeLenght>())));
-            } else {
-
+            /** TODO Implementation of FLOODPLAIN_DRAIN
+            *} else if (type == FLOODPLAIN_DRAIN) {
+            *    externalFlows.insert(std::make_pair(type,
+            *                                        ExternalFlow(numOfExternalFlows, type,
+            *                                                        get<t_meter, Elevation>(),
+            *                                                        get<t_vel, K>() * get<t_meter,
+            *                                                        VerticalSize>(),
+            *                                                        bottom));
+            */
+            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
@@ -825,7 +855,8 @@ Modify Properties
                 return false;
             }
             return true;
-	    }
+	      }
+
 
         /**
          * @brief Updates GW recharge
@@ -849,6 +880,7 @@ Modify Properties
             if (hasTypeOfExternalFlow(flow)) {
                 removeExternalFlow(flow);
             }
+
             addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
             if(numOfExternalFlows != externalFlows.size()){
                 throw "Number of external flows don't match";
@@ -868,7 +900,7 @@ Modify Properties
         }
 
         /**
-         * @brief Update wetlands, lakes (global + local)
+         * @brief Update wetlands, lakes
          * @param amount
          * @param type
          */
@@ -931,6 +963,10 @@ Modify Properties
                 t_vol_t recharge{externalFlow.getLockRecharge()};
                 t_s_meter_t l_cond{externalFlow.getLockConduct()};
                 removeExternalFlow(type);
+                NANChecker(flowHead.value(), "Stage value");
+                NANChecker(l_cond.value(), "Conduct value");
+                NANChecker(bottom.value(), "Bottom value");
+
                 addExternalFlow(type, flowHead, conduct, bottom);
                 if (lock) {
                     getExternalFlowByName(type).setLock();
@@ -941,7 +977,7 @@ Modify Properties
         }
 
         /**
-         * @brief Update (local) lake bottoms
+         * @brief Update lake bottoms
          * Used for sensitivity
          * @param amount
          */
@@ -956,31 +992,16 @@ Modify Properties
         }
 
         /**
-         * @brief Update (global) lake bottoms
-         * Used for sensitivity
-         * @param amount
-         */
-        void updateGlobalLakeBottoms(double amount) {
-            if (hasTypeOfExternalFlow(GLOBAL_LAKE)) {
-                t_meter flowHead = getExternalFlowByName(GLOBAL_LAKE).getFlowHead();
-                double conduct = getExternalFlowByName(GLOBAL_LAKE).getConductance().value();
-                t_meter bottom = getExternalFlowByName(GLOBAL_LAKE).getBottom() * amount;
-                removeExternalFlow(GLOBAL_LAKE);
-                addExternalFlow(GLOBAL_LAKE, flowHead, conduct, bottom);
-            }
-        }
-
-        /**
          * @brief Check for type river
          * @return bool
          */
         bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
 
         /**
-         * @brief Check for type ocean
+         * @brief Check for type GHB
          * @return bool
          */
-        bool hasOcean() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
+        bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
 
 
         /**
@@ -1020,7 +1041,7 @@ Modify Properties
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
                     }
@@ -1050,7 +1071,7 @@ Modify Properties
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             //Q part is already substracted in RHS
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
                                flow.second.getBottom();
@@ -1117,8 +1138,8 @@ Modify Properties
             out.reserve(numC);
             //Get all conductances from neighbouring cells
             std::forward_list<NeighbourPosition> possible_neighbours =
-                    {NeighbourPosition::TOP, NeighbourPosition::SOUTH, NeighbourPosition::DOWN, NeighbourPosition::NORTH,
-                     NeighbourPosition::WEST, NeighbourPosition::EAST};
+                    {NeighbourPosition::TOP, NeighbourPosition::BACK, NeighbourPosition::DOWN, NeighbourPosition::FRONT,
+                     NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
             for (const auto &position: possible_neighbours) {
                 map_itter got = neighbours.find(position);
@@ -1216,7 +1237,7 @@ Modify Properties
         void enableNWT() { nwt = true; }
 
         /**
-         * @brief Caluclate non storage related in and out flow
+         * @brief Calculate non storage related in and out flow
          * @return Flow volume
          */
         template<typename CompareFunction>
@@ -1267,24 +1288,24 @@ Modify Properties
             quantity<Velocity> Vy{0};
 
             std::forward_list<NeighbourPosition> possible_neighbours =
-                    {NeighbourPosition::SOUTH, NeighbourPosition::NORTH,
-                     NeighbourPosition::WEST, NeighbourPosition::EAST};
+                    {NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                     NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
             for (const auto &position: possible_neighbours) {
                 map_itter got = neighbours.find(position);
                 if (got == neighbours.end()) {
                     continue;
                 }
-                if (got->first == NeighbourPosition::WEST) {
+                if (got->first == NeighbourPosition::LEFT) {
                     Vx += -getVelocity(got);
                 }
-                if (got->first == NeighbourPosition::SOUTH) {
+                if (got->first == NeighbourPosition::BACK) {
                     Vy += -getVelocity(got);
                 }
 
-                if (got->first == NeighbourPosition::EAST) {
+                if (got->first == NeighbourPosition::RIGHT) {
                     Vx += getVelocity(got);
                 }
-                if (got->first == NeighbourPosition::NORTH) {
+                if (got->first == NeighbourPosition::FRONT) {
                     Vy += getVelocity(got);
                 }
             }
@@ -1304,6 +1325,8 @@ class StandardNode : public NodeInterface {
                      double lat,
                      double lon,
                      t_s_meter area,
+                     t_meter edgeLengthLeftRight,
+                     t_meter edgeLengthFrontBack,
                      large_num ArcID,
                      large_num ID,
                      t_vel K,
@@ -1312,8 +1335,8 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, ArcID, ID, K, stepmodifier, aquiferDepth,
-                                anisotropy, specificYield, specificStorage, confined) {}
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                                stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:
         // implementation
@@ -1328,7 +1351,7 @@ class StandardNode : public NodeInterface {
          */
         virtual void __setHead(t_meter delta) {
             NANChecker(delta.value(), "Set Head");
-            t_meter deltaH__old = get<t_meter, HeadChange>();
+            //t_meter deltaH__old = get<t_meter, HeadChange>();
             t_meter current_head = get<t_meter, Head>();
             //t_meter delta = head - current_head;
             set<t_meter, HeadChange>(delta);
@@ -1369,10 +1392,32 @@ class StandardNode : public NodeInterface {
 
         virtual bool
         __isStaticNode() { return false; }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+        boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+        boost::serialization::base_object<NodeInterface>(*this);
+        LOG(debug) << "Serializing Standard Node";
+        ar & nodes;
+        ar & neighbours;
+        ar & externalFlows;
+        ar & numOfExternalFlows;
+        ar & nwt;
+        ar & initial_head;
+        ar & simpleDistance;
+        ar & simpleK;
+        ar & steadyState;
+        ar & fields;
+        ar & cached;
+        ar & eq_flow;
+    }
+
 };
 
 /**
- * @class SaticHeadNode
+ * @class StaticHeadNode
  * A node without changing head
  * Can be used as boundary condition
  */
@@ -1380,12 +1425,16 @@ class StaticHeadNode : public NodeInterface {
     public:
         StaticHeadNode(std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes,
                        large_num ID,
-                       t_s_meter area)
+                       t_s_meter area,
+                       t_meter edgeLengthLeftRight,
+                       t_meter edgeLengthFrontBack)
                 : NodeInterface(
                 nodes,
                 0,
                 0,
                 area,
+                edgeLengthLeftRight,
+                edgeLengthFrontBack,
                 ID,
                 ID,
                 0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true) {}
@@ -1400,8 +1449,31 @@ class StaticHeadNode : public NodeInterface {
         virtual t_meter __calcInitialHead(t_meter initialParam) { return 0; }
 
         virtual bool __isStaticNode() { return true; }
+
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        boost::serialization::void_cast_register<NodeInterface, StaticHeadNode>();
+        boost::serialization::void_cast_register<StaticHeadNode, NodeInterface>();
+        boost::serialization::base_object<NodeInterface>(*this);
+        LOG(debug) << "Serializing Static Node";
+        ar & nodes;
+        ar & neighbours;
+        ar & externalFlows;
+        ar & numOfExternalFlows;
+        ar & nwt;
+        ar & initial_head;
+        ar & simpleDistance;
+        ar & simpleK;
+        ar & steadyState;
+        ar & fields;
+        ar & cached;
+        ar & eq_flow;
+    }
+
 };
 
 }
-}//ns
+}
+
 #endif //NODE_HPP

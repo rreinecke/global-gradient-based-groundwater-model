@@ -30,20 +30,20 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     b = std::move(__b);
 
     Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
+
     A = std::move(__A);
     A.reserve(long_vector::Constant(numberOfNodes, 7));
 
-    //Init first result vector
+    //Init first result vector x by writing initial heads
     //Initial head should be positive
     //resulting head is the real hydraulic head
-
     double tmp = 0;
 #pragma omp parallel for
     for (int i = 0; i < numberOfNodes; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();
         }
-        if (not simpelHead) {
+        if (not simpleHead) {
             tmp = nodes->at(i)->calcInitialHead(initialHead * si::meter).value();
             nodes->at(i)->setHead_direct(tmp);
             NANChecker(tmp, "Initial Head");
@@ -64,7 +64,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
         cg.setTolerance(RCLOSE);
         //cg.preconditioner().setInitialShift(1e-8);
     }
-};
+}
 
 Equation::~Equation() {
     LOG(debug) << "Destroying equation\n";
@@ -110,6 +110,7 @@ void inline Equation::reallocateMatrix() {
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
     Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
+
 
     if (dry_have_changed) {
         index_mapping.clear();
@@ -211,7 +212,8 @@ Equation::updateMatrix() {
     }
 }
 
-void inline Equation::preconditioner() {
+void inline
+Equation::preconditioner() {
     LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
         if (disable_dry_cells) {
@@ -284,10 +286,12 @@ Equation::updateBudget() {
 void
 Equation::solve() {
 
+
     LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
-    if (!isCached) {
+
+        if (!isCached) {
         LOG(numerics) << "Compressing matrix";
         if (disable_dry_cells) {
             _A_.makeCompressed();
@@ -311,7 +315,7 @@ Equation::solve() {
     double oldMaxHead{0};
     int itterScale{0};
 
-    // Returns true if max headchange is greater as defined val
+    // Returns true if max headchange is greater than defined val
     auto isHeadChangeGreater = [this,&maxHead]() -> bool {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
@@ -322,7 +326,7 @@ Equation::solve() {
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (val > changeMax) ? val : changeMax;
         }
-	maxHead = changeMax;
+	    maxHead = changeMax;
         LOG(numerics) << "MAX Head Change: " << changeMax;
         return changeMax > lowerBound;
     };
@@ -332,6 +336,7 @@ Equation::solve() {
     char smallHeadChanges{0};
     bool headConverged{false};
     while (iterations < IITER) {
+
         LOG(numerics) << "Outer iteration: " << iterations;
 
         //Solve inner iterations
@@ -358,7 +363,7 @@ Equation::solve() {
         }
 
         if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergance criterion to small - no iterations";
+            LOG(numerics) << "convergence criterion to small - no iterations";
             break;
         }
 
@@ -415,7 +420,7 @@ Equation::solve() {
             LOG(numerics) << "Head change bigger: " << headFail;
         } else {
             LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-	    LOG(numerics) << "|Residual|_inf: " << cg.error();
+	        LOG(numerics) << "|Residual|_l2: " << cg.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         }
 
@@ -431,7 +436,7 @@ Equation::solve() {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
         } else {
             LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-            LOG(numerics) << "|Residual|_inf: " << cg.error();
+            LOG(numerics) << "|Residual|_l2: " << cg.error();
         }
     }
 

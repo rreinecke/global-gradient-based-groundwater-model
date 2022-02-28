@@ -81,7 +81,7 @@ namespace GlobalFlow {
         };
 
 /**
- * @class PropertiyRepository
+ * @class PropertyRepository
  * Type repository holding the properties
  */
         template<class... PhysicalProperties>
@@ -138,14 +138,16 @@ namespace GlobalFlow {
  * Each represents a physical property
  */
         struct ID;
-        struct SpatID;
+        struct ArcID;
         struct Lat;
         struct Lon;
         struct Layer;
         struct StepModifier;
         struct Area;
+        struct EdgeLengthLeftRight;
+        struct EdgeLengthFrontBack;
         struct VerticalSize;
-        struct Elevation; //Always elevation of upper celll boundary
+        struct Elevation; //Always elevation of upper cell boundary
         struct TopElevation; //Store elevation of TOP layer
         struct Slope;
         struct EFolding;
@@ -162,16 +164,16 @@ namespace GlobalFlow {
         struct HeadChange_TZero;
         struct SpecificYield;
         struct SpecificStorage;
-        struct EdgeLenght;
-        struct SideSurface;
+        struct SurfaceLeftRight;
+        struct SurfaceFrontBack;
         struct VolumeOfCell;
 
 /**
- * Defintion of type and unit for each field
+ * Definition of type and unit for each field
  */
         using PhysicalProperties = PropertyRepository<
                 PhysicalProperty<large_num, ID>,
-                PhysicalProperty<large_num, SpatID>,
+                PhysicalProperty<large_num, ArcID>,
                 PhysicalProperty<double, Lat>, //TODO use boost unit
                 PhysicalProperty<double, Lon>,
                 PhysicalProperty<int, Layer>,
@@ -186,18 +188,20 @@ namespace GlobalFlow {
                 PhysicalProperty<t_vel, K>,
                 PhysicalProperty<t_dim, Anisotropy>,
                 PhysicalProperty<quantity < d_time>, StepSize>,
-        	PhysicalProperty<t_c_meter, OUT>,
-        	PhysicalProperty<t_c_meter, IN>,
-        	PhysicalProperty<t_meter, Head>,
-        	PhysicalProperty<t_meter, EQHead>,
-        	PhysicalProperty<t_meter, HeadChange>,
-        	PhysicalProperty<t_meter, Head_TZero>,
-        	PhysicalProperty<t_meter, HeadChange_TZero>,
-        	PhysicalProperty<t_dim, SpecificYield>,
-        	PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-        	PhysicalProperty<t_meter, EdgeLenght>,
-        	PhysicalProperty<t_s_meter, SideSurface>,
-        	PhysicalProperty<t_c_meter, VolumeOfCell>
+        PhysicalProperty<t_c_meter, OUT>,
+        PhysicalProperty<t_c_meter, IN>,
+        PhysicalProperty<t_meter, Head>,
+        PhysicalProperty<t_meter, EQHead>,
+        PhysicalProperty<t_meter, HeadChange>,
+        PhysicalProperty<t_meter, Head_TZero>,
+        PhysicalProperty<t_meter, HeadChange_TZero>,
+        PhysicalProperty<t_dim, SpecificYield>,
+        PhysicalProperty<quantity < perUnit>, SpecificStorage>,
+        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
+        PhysicalProperty<t_c_meter, VolumeOfCell>
         >;
 
     }

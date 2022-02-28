@@ -15,7 +15,8 @@
 #define GLOBAL_FLOW_LOGGING_HPP
 
 #include "Sinks.hpp"
-#include "iostream"
+#include <iostream>
+
 
 // This nasty hack is only necessary because WaterGAP doesn't stick to Macro guidelines :(
 #pragma push_macro("ng")
@@ -98,7 +99,8 @@ namespace GlobalFlow {
         inline void initCoutLog() {
             // create sink to stdout
             boost::shared_ptr<text_sink> sink = boost::make_shared<text_sink>();
-	    sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+            sink->locked_backend()->add_stream(boost::shared_ptr<std::ostream>(&std::clog, boost::null_deleter()));
+
             // flush
             sink->locked_backend()->auto_flush(true);
 
@@ -112,6 +114,7 @@ namespace GlobalFlow {
                             << "> " << expr::smessage
             );
 
+            // filter no logging of debug and numerics messages
             sink->set_filter(severity != custom_severity_level::debug and severity != custom_severity_level::numerics);
 
             // register sink

@@ -24,10 +24,11 @@
 #include "../../src/Misc/colors.hpp"
 #include "SimpleDataReader.hpp"
 
-struct Dummy;
-
 namespace GlobalFlow {
-class StandaloneRunner : GW_Interface<Dummy> {
+
+    class NotCoupled;
+
+    class StandaloneRunner : GW_Interface<NotCoupled> {
     public:
 
         StandaloneRunner();
@@ -45,14 +46,14 @@ class StandaloneRunner : GW_Interface<Dummy> {
         getResults();
 
         void
-        writeData(std::string s);
+        writeData(std::string);
 
     private:
         Solver::Equation *_eq;
         Simulation::Options op;
         Simulation::Simulation sim;
         DataProcessing::SimpleDataReader *reader;
-};
+    };
 
 }//ns
 #endif //GROUNDWATER_SOLVER_MAIN_HPP

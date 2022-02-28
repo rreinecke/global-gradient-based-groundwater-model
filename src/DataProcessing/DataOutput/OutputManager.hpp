@@ -92,6 +92,19 @@ namespace GlobalFlow {
                 void write() {
                     OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
                     oi->write(filePath, printID, printXY, data, p, ids);
+                    delete oi;
+                };
+
+                void write_p() {
+                    OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
+                    //FIXME This will probably be working with Cpp17
+                    //handles.push_back(std::async(std::launch::async,&OutputInterface<T>::write,oi,printID,printXY,data,p,ids));
+                };
+
+                void check(){
+                    for(auto &h : handles){
+                        h.get();
+                    }
                 };
 
                 void write_p() {
@@ -155,7 +168,7 @@ namespace GlobalFlow {
                     {FieldType::WETLAND_CONDUCT,    InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_CONDUCT, InternalType::DOUBLE},
                     {FieldType::LAKE_CONDUCT,       InternalType::DOUBLE},
-                    {FieldType::OCEAN_OUT,          InternalType::DOUBLE},
+                    {FieldType::GHB_OUT,          InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_OUT,     InternalType::DOUBLE},
                     {FieldType::WETLAND_OUT,        InternalType::DOUBLE},
                     {FieldType::LAKE_OUT,           InternalType::DOUBLE},
