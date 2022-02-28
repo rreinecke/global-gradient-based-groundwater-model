@@ -26,7 +26,8 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-#include "boost/variant.hpp"
+#include <boost/variant.hpp>
+#include <future>
 
 #include "FieldCollector.hpp"
 #include "OutputFactory.hpp"
@@ -37,12 +38,29 @@ namespace GlobalFlow {
 
             using path = std::string;
             using pos_v = std::vector<std::pair<double, double>>;
+            using handle_v = std::vector<std::shared_future<void>>;
 
             class Outputvisitor : public boost::static_visitor<> {
             public:
                 template<typename T>
                 void operator()(T &operand) const {
                     operand.write();
+                }
+            };
+
+            class ParallelOutputvisitor : public boost::static_visitor<> {
+            public:
+                template<typename T>
+                void operator()(T &operand) const {
+                    operand.write_p();
+                }
+            };
+
+            class ParallelOutputChecker : public boost::static_visitor<> {
+            public:
+                template<typename T>
+                void operator()(T &operand) const {
+                    operand.check();
                 }
             };
 
@@ -57,11 +75,13 @@ namespace GlobalFlow {
                 const bool printXY;
                 const OutputType outputType;
                 const std::vector<T> data;
-                pos_v p;
-                a_vector ids;
+                const pos_v p;
+                const a_vector ids;
+                handle_v handles;
+
 
             public:
-                OutputField(path filePath, bool printID, bool printXY, Simulation::Simulation const &sim,
+                OutputField(path filePath, bool printID, bool printXY, Simulation::Simulation &sim,
                             OutputType outputType,
                             FieldType fieldType)
                         : filePath(filePath), printID(printID), printXY(printXY),
@@ -72,6 +92,19 @@ namespace GlobalFlow {
                 void write() {
                     OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
                     oi->write(filePath, printID, printXY, data, p, ids);
+                    delete oi;
+                };
+
+                void write_p() {
+                    OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
+                    //FIXME This will probably be working with Cpp17
+                    //handles.push_back(std::async(std::launch::async,&OutputInterface<T>::write,oi,printID,printXY,data,p,ids));
+                };
+
+                void check(){
+                    for(auto &h : handles){
+                        h.get();
+                    }
                 };
             };
 
@@ -123,7 +156,7 @@ namespace GlobalFlow {
                     {FieldType::WETLAND_CONDUCT,    InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_CONDUCT, InternalType::DOUBLE},
                     {FieldType::LAKE_CONDUCT,       InternalType::DOUBLE},
-                    {FieldType::OCEAN_OUT,          InternalType::DOUBLE},
+                    {FieldType::GHB_OUT,          InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_OUT,     InternalType::DOUBLE},
                     {FieldType::WETLAND_OUT,        InternalType::DOUBLE},
                     {FieldType::LAKE_OUT,           InternalType::DOUBLE},
@@ -153,7 +186,7 @@ namespace GlobalFlow {
                  *
                  * @param tree
                  */
-                static field_vector build(boost::property_tree::ptree tree, Simulation::Simulation const &sim) {
+                static field_vector build(boost::property_tree::ptree tree, Simulation::Simulation &sim, const std::string date) {
                     field_vector f;
                     BOOST_FOREACH(const boost::property_tree::ptree::value_type &child, tree) {
                                     assert(child.first.empty());
@@ -162,7 +195,7 @@ namespace GlobalFlow {
                                     auto type = getTemplateOutput(item.get<std::string>("type"));
                                     auto field = getTemplateType(item.get<std::string>("field"));
 
-                                    std::string name = item.get<std::string>("name");
+                                    std::string name = item.get<std::string>("name") + date;
                                     bool id = item.get<bool>("ID");
                                     bool pos = item.get<bool>("position");
                                     switch (typeMapping.at(field)) {
@@ -189,30 +222,33 @@ namespace GlobalFlow {
                 };
             };
 
-/**
- *
- */
-
+            /**
+             * @class OutputManager
+             *
+             */
             class OutputManager {
             private:
                 field_vector fields;
-                const Simulation::Simulation &sim;
+                Simulation::Simulation &sim;
 
                 /**
                  * Read specification
                  */
-                void readJSON(path o_path) {
+                void readJSON(path o_path, std::string date) {
                     boost::property_tree::ptree tree;
                     boost::property_tree::read_json(o_path, tree);
                     tree = tree.get_child("output");
 
                     boost::property_tree::ptree stat = tree.get_child("StaticResult");
-                    fields = FieldFactory().build(stat, sim);
+                    fields = FieldFactory().build(stat, sim, date);
                 }
 
             public:
-                OutputManager(path output_spec_path, Simulation::Simulation const &sim) : sim(sim) {
-                    readJSON(output_spec_path);
+                /**
+                 *
+                 */
+                OutputManager(path output_spec_path, Simulation::Simulation &sim, const std::string date = std::string("")) : sim(sim) {
+                    readJSON(output_spec_path, date);
                 }
 
                 /**
@@ -222,6 +258,23 @@ namespace GlobalFlow {
                     Outputvisitor visitor;
                     std::for_each(
                             fields.begin(), fields.end(), boost::apply_visitor(visitor)
+                    );
+                }
+
+                /**
+                 * @brief parallel version of write
+                 * @bug Currently not working in c++14 (maybe working in 17)
+                 */
+                void write_p(){
+                    ParallelOutputvisitor visitor;
+                    ParallelOutputChecker checker;
+                    std::for_each(
+                            fields.begin(), fields.end(), boost::apply_visitor(visitor)
+                    );
+                    // To this point all tasks have the time to write data to disk
+                    // As the simulation may continues we need to be sure that all data is written to disk
+                    std::for_each(
+                            fields.begin(), fields.end(), boost::apply_visitor(checker)
                     );
                 }
             };

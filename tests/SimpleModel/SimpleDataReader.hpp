@@ -22,6 +22,8 @@ class SimpleDataReader : public DataReader {
                             op.getAnisotropy(),
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.isConfined(0));
 
             LOG(userinfo) << "Building the bottom layers";
@@ -38,13 +40,13 @@ class SimpleDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Initializing head";
-            //TODO
+            readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Defining rivers";
             readRiver(buildDir(op.getKRiverDir()));
 
             LOG(userinfo) << "Connecting the layers";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getOceanConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 
@@ -56,7 +58,10 @@ class SimpleDataReader : public DataReader {
         readGrid(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
                  double anisotropy,
                  double specificYield,
-                 double specificStorage, bool confined) {
+                 double specificStorage,
+                 double edgeLengthLeftRight,
+                 double edgeLengthFrontBack,
+                 bool confined) {
             Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -78,6 +83,8 @@ class SimpleDataReader : public DataReader {
                                                             x,
                                                             y,
                                                             area * Model::si::square_meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),
@@ -95,13 +102,12 @@ class SimpleDataReader : public DataReader {
 
         void readConduct(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
-                if (data > 0.01) {
-                    //possible data error - just not possible
-                    data = 0.01;
+                if (data > 10) {
+                    LOG(debug) << "Very high conductance value at global_ID "<<pos<<". Possible Data Error";
                 }
-                nodes->at(pos)->setK(data * 100 * (Model::si::meter / Model::day));
+                nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
             });
-        }
+        };
 
         void
         readElevation(std::string path) {
@@ -143,6 +149,12 @@ class SimpleDataReader : public DataReader {
                                                 0 * Model::si::meter);
             });
         }
+
+    void readInitialHeads(std::string path) {
+        readTwoColumns(path, [this](double data, int pos) {
+            nodes->at(pos)->setHead_direct(data);
+        });
+    }
 
 
 };

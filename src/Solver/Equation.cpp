@@ -4,7 +4,7 @@ namespace GlobalFlow {
 namespace Solver {
 
 Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes << "\n";
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodes;
 
     this->numberOfNodes = numberOfNodes;
     this->IITER = options.getMaxIterations();
@@ -19,31 +19,31 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     if (nwt)
         LOG(userinfo) << "Running with NWT solver" << std::endl;
 
-    int innerItter = options.getInnerItter();
+    inner_iterations = options.getInnerItter();
 
     this->nodes = nodes;
 
-    VectorXd __x(numberOfNodes);
-    VectorXd __b(numberOfNodes);
+    long_vector __x(numberOfNodes);
+    long_vector __b(numberOfNodes);
 
     x = std::move(__x);
     b = std::move(__b);
 
-    Eigen::SparseMatrix<double> __A(numberOfNodes, numberOfNodes);
-    A = std::move(__A);
-    A.reserve(Eigen::VectorXd::Constant(numberOfNodes, 7));
+    Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
 
-    //Init first result vector
+    A = std::move(__A);
+    A.reserve(long_vector::Constant(numberOfNodes, 7));
+
+    //Init first result vector x by writing initial heads
     //Initial head should be positive
     //resulting head is the real hydraulic head
-
     double tmp = 0;
 #pragma omp parallel for
     for (int i = 0; i < numberOfNodes; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();
         }
-        if (not simpelHead) {
+        if (not simpleHead) {
             tmp = nodes->at(i)->calcInitialHead(initialHead * si::meter).value();
             nodes->at(i)->setHead_direct(tmp);
             NANChecker(tmp, "Initial Head");
@@ -56,15 +56,15 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     }
 
     if (nwt) {
-        bicgstab.setMaxIterations(innerItter);
+        bicgstab.setMaxIterations(inner_iterations);
         bicgstab.setTolerance(RCLOSE);
     } else {
         //set inner iterrations
-        cg.setMaxIterations(innerItter);
+        cg.setMaxIterations(inner_iterations);
         cg.setTolerance(RCLOSE);
         //cg.preconditioner().setInitialShift(1e-8);
     }
-};
+}
 
 Equation::~Equation() {
     LOG(debug) << "Destroying equation\n";
@@ -86,13 +86,11 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
         }
     }
 
-    for (const auto &conductance : map) {
-        double tmp = conductance.second.value();
-        NANChecker(tmp, "Add to A");
+    for (const auto &conductance : map) { 
         if (cached) {
-            A.coeffRef(nodeID, conductance.first) = std::move(tmp);
+            A.coeffRef(nodeID, conductance.first) = conductance.second.value();
         } else {
-            A.insert(nodeID, conductance.first) = std::move(tmp);
+            A.insert(nodeID, conductance.first) = conductance.second.value();
         }
     }
 }
@@ -111,7 +109,8 @@ void inline Equation::reallocateMatrix() {
 
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
-    Matrix2Xd new_matrix(size, size);
+    Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
+
 
     if (dry_have_changed) {
         index_mapping.clear();
@@ -137,8 +136,8 @@ void inline Equation::reallocateMatrix() {
     }
     _A_ = new_matrix.sparseView();
 
-    VectorXd buffer_b;
-    VectorXd buffer_x;
+    long_vector buffer_b;
+    long_vector buffer_x;
     for (int j = 0; j < b.size(); ++j) {
         auto m = index_mapping[j];
         if (m != -1) {
@@ -176,7 +175,7 @@ Equation::updateMatrix() {
             NANChecker(rhs, "Right hand side");
         } else {
             rhs = nodes->at(j)->getRHS().value();
-            b[nodes->at(j)->getProperties().get<large_num, Model::ID>()] = std::move(rhs);
+            b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
             NANChecker(rhs, "Right hand side");
         }
     }
@@ -202,19 +201,20 @@ Equation::updateMatrix() {
     //Check if after iteration former 0 values turned to non-zero
     if (disable_dry_cells) {
         if ((not _A_.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             _A_.makeCompressed();
         }
     } else {
         if ((not A.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix \n";
+            LOG(numerics) << "Recompressing Matrix";
             A.makeCompressed();
         }
     }
 }
 
-void inline Equation::preconditioner() {
-    LOG(numerics) << "Decomposing Matrix\n";
+void inline
+Equation::preconditioner() {
+    LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
         if (disable_dry_cells) {
             bicgstab.compute(_A_);
@@ -222,7 +222,7 @@ void inline Equation::preconditioner() {
             bicgstab.compute(A);
         }
         if (bicgstab.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     } else {
@@ -232,7 +232,7 @@ void inline Equation::preconditioner() {
             cg.compute(A);
         }
         if (cg.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix\n";
+            LOG(numerics) << "Fail in decomposing matrix";
             throw "Fail in decomposing matrix";
         }
     }
@@ -240,12 +240,11 @@ void inline Equation::preconditioner() {
 
 void inline
 Equation::updateIntermediateHeads() {
-    Eigen::VectorXd resid = getResiduals();
-    VectorXd changes;
+    long_vector changes;
     if (disable_dry_cells) {
-        changes = adaptiveDamping.getDamping(resid, _x_, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals(), _x_, isAdaptiveDamping);
     } else {
-        changes = adaptiveDamping.getDamping(resid, x, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
 
     bool reduced = disabled_nodes.empty();
@@ -254,11 +253,11 @@ Equation::updateIntermediateHeads() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
 
         if (reduced) {
-            nodes->at(k)->setHead(changes[id] * si::meter);
+            nodes->at(k)->setHead((double) changes[id] * si::meter);
         } else {
             auto m = index_mapping[id];
             if (m != -1) {
-                nodes->at(k)->setHead(changes[m] * si::meter);
+                nodes->at(k)->setHead((double) changes[m] * si::meter);
             }
         }
     }
@@ -287,17 +286,19 @@ Equation::updateBudget() {
 void
 Equation::solve() {
 
-    LOG(numerics) << "Updating Matrix\n";
+
+    LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
-    if (!isCached) {
-        LOG(numerics) << "Compressing matrix\n";
+
+        if (!isCached) {
+        LOG(numerics) << "Compressing matrix";
         if (disable_dry_cells) {
             _A_.makeCompressed();
         } else {
             A.makeCompressed();
         }
-        LOG(numerics) << "Cached Matrix\n";
+        LOG(numerics) << "Cached Matrix";
         isCached = true;
     }
 
@@ -308,9 +309,14 @@ Equation::solve() {
         adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
     }
 
-    std::cout << "Running Time Step\n";
-    // Returns true if max headchange is greater as defined val
-    auto isHeadChangeGreater = [this]() -> bool {
+    LOG(numerics) << "Running Time Step";
+    
+    double maxHead{0};
+    double oldMaxHead{0};
+    int itterScale{0};
+
+    // Returns true if max headchange is greater than defined val
+    auto isHeadChangeGreater = [this,&maxHead]() -> bool {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
 #pragma omp parallel for
@@ -320,6 +326,7 @@ Equation::solve() {
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (val > changeMax) ? val : changeMax;
         }
+	    maxHead = changeMax;
         LOG(numerics) << "MAX Head Change: " << changeMax;
         return changeMax > lowerBound;
     };
@@ -329,6 +336,7 @@ Equation::solve() {
     char smallHeadChanges{0};
     bool headConverged{false};
     while (iterations < IITER) {
+
         LOG(numerics) << "Outer iteration: " << iterations;
 
         //Solve inner iterations
@@ -355,7 +363,7 @@ Equation::solve() {
         }
 
         if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergance criterion to small - no iterations";
+            LOG(numerics) << "convergence criterion to small - no iterations";
             break;
         }
 
@@ -376,12 +384,21 @@ Equation::solve() {
                 headConverged = true;
                 smallHeadChanges++;
 
-                if (smallHeadChanges >= 3) {
+                if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
                     break;
                 }
             }
         }
+
+	if(maxHead == oldMaxHead){
+		//The head change is really the same -> increase inner iterations
+		itterScale = itterScale + 10;
+	}else{
+		itterScale = 0;
+	}
+        cg.setMaxIterations(inner_iterations + itterScale);
+	oldMaxHead = maxHead;
 
         /**
          * @brief residual norm convergance
@@ -402,29 +419,24 @@ Equation::solve() {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         } else {
-            LOG(numerics) << "Residual Inf norm error " << cg.error_inf();
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+	        LOG(numerics) << "|Residual|_l2: " << cg.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         }
 
         updateMatrix();
         preconditioner();
 
-        /*IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-
-        MatrixXd dMat( A );
-        std::cout << dMat.format(CleanFmt);
-        std::cout << "-----\n------\n------\n";
-        std::cout << b.format(CleanFmt);*/
-
         iterations++;
     }
 
     if (iterations == IITER) {
-        std::cerr << "Fail in solving matrix with max iterations \n";
+        std::cerr << "Fail in solving matrix with max iterations";
         if (nwt) {
             LOG(numerics) << "Residual squared norm error " << bicgstab.error();
         } else {
-            LOG(numerics) << "Residual Inf norm error " << cg.error_inf();
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+            LOG(numerics) << "|Residual|_l2: " << cg.error();
         }
     }
 

@@ -194,7 +194,7 @@ class PardisoImpl : public SparseSolverBase<Derived>
       m_type = type;
       bool symmetric = std::abs(m_type) < 10;
       m_iparm[0] = 1;   // No solver default
-      m_iparm[1] = 2;   // use Metis for the ordering
+      m_iparm[1] = 3;   // use Metis for the ordering
       m_iparm[2] = 0;   // Reserved. Set to zero. (??Numbers of processors, value of OMP_NUM_THREADS??)
       m_iparm[3] = 0;   // No iterative-direct algorithm
       m_iparm[4] = 0;   // No user fill-in reducing permutation
@@ -214,10 +214,12 @@ class PardisoImpl : public SparseSolverBase<Derived>
       m_iparm[17] = -1; // Output: Number of nonzeros in the factor LU
       m_iparm[18] = -1; // Output: Mflops for LU factorization
       m_iparm[19] = 0;  // Output: Numbers of CG Iterations
+      m_iparm[23] = 1; //Paralell? for semetric
       
       m_iparm[20] = 0;  // 1x1 pivoting
       m_iparm[26] = 0;  // No matrix checker
       m_iparm[27] = (sizeof(RealScalar) == 4) ? 1 : 0;
+      m_iparm[33] = 20; //CNR mode
       m_iparm[34] = 1;  // C indexing
       m_iparm[36] = 0;  // CSR
       m_iparm[59] = 0;  // 0 - In-Core ; 1 - Automatic switch between In-Core and Out-of-Core modes ; 2 - Out-of-Core

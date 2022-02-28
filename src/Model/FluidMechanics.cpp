@@ -15,11 +15,38 @@ namespace GlobalFlow {
             return 0.0 * si::meter;
         };
 
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor flow)noexcept {
+        quantity<MeterSquaredPerTime> calcEfoldingTrans(t_vel
+                                                        k,
+                                                        t_meter f, t_meter
+                                                        z,
+                                                        t_meter h
+        ) {
+            quantity<MeterSquaredPerTime> t; //transmissivity
+            const quantity<Meter> d{100 * si::meter};
+            if (f == 0 * si::meter) { f = 1 * si::meter; }
+            if (h >= (z - d)) {
+                //head is above d0
+                t = k * f;
+            } else {
+                //head is below d0
+                t_dim fold = exp(-((z - h - d) / f));
+                if (fold.value() < 1e-50) { fold = 1e-50; }
+                NANChecker(fold.value(), "E-folding problem");
+                t = k * f * fold;
+            }
+            NANChecker(t.value(), "E-folding based transmissivity");
+            return t;
+        }
+
+        quantity<MeterSquaredPerTime> FluidMechanics::calculateEFoldingConductance(FlowInputHor
+                                                                                   flow,
+                                                                                   t_meter folding_self, t_meter
+                                                                                   folding_neig) {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig;
-            t_meter edgeLength_self;
+            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
+            t_meter edgeLength_self; // edge length in flow direction (of this node)
+            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -27,13 +54,44 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, head_neig, head_self, ele_neig, ele_self,
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
+                     deltaV_neig, deltaV_self, confined) = flow;
+            quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
+            quantity<MeterSquaredPerTime> t; //transmissivity
+
+            quantity<MeterSquaredPerTime> transmissivity_self =
+                    calcEfoldingTrans(k_self, folding_self, ele_self, head_self);
+            quantity<MeterSquaredPerTime> transmissivity_neig =
+                    calcEfoldingTrans(k_neig, folding_neig, ele_neig, head_neig);
+
+            out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
+                                             / (transmissivity_self * edgeLength_neig +
+                                                transmissivity_neig * edgeLength_self));
+
+            NANChecker(out.value(), "E-folding based Conductance");
+            return out;
+        }
+
+        quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor flow)noexcept {
+            t_vel k_neig;
+            t_vel k_self;
+            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
+            t_meter edgeLength_self; // edge length in flow direction (of this node)
+            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
+            t_meter head_neig;
+            t_meter head_self;
+            t_meter ele_neig;
+            t_meter ele_self;
+            t_meter deltaV_neig;
+            t_meter deltaV_self;
+            bool confined;
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
             //Used if non dry-out approach is used
             // FIXME need to be checked here
-            t_meter threshhold_saturated_thickness{1e-5 * si::meter};
+            t_meter threshold_saturated_thickness{1e-5 * si::meter};
 
             //Cell is not confined layer -> we need to calculate transmissivity dependant on head
             enum e_dry {
@@ -44,11 +102,11 @@ namespace GlobalFlow {
                 deltaV_self = calcDeltaV(head_self, ele_self, deltaV_self);
                 deltaV_neig = calcDeltaV(head_neig, ele_neig, deltaV_neig);
                 if (deltaV_self == 0 * si::meter) {
-                    deltaV_self = threshhold_saturated_thickness;
+                    deltaV_self = threshold_saturated_thickness;
                     dry = SELF;
                 }
                 if (deltaV_neig == 0 * si::meter) {
-                    deltaV_neig = threshhold_saturated_thickness;
+                    deltaV_neig = threshold_saturated_thickness;
                     dry = NEIG;
                 }
                 //TODO One of the cells is "dry" - Upstream weighting instead of harmonic mean
@@ -59,7 +117,7 @@ namespace GlobalFlow {
             quantity<MeterSquaredPerTime> transmissivity_neig = deltaV_neig * k_neig;
 
             if (transmissivity_neig != out and transmissivity_self != out) {
-                out = (2.0 * edgeLength_self) * ((transmissivity_self * transmissivity_neig)
+                out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
                                                  / (transmissivity_self * edgeLength_neig +
                                                     transmissivity_neig * edgeLength_self));
             }
@@ -153,9 +211,7 @@ namespace GlobalFlow {
                                                               quantity<MeterSquaredPerTime> P) noexcept {
             if (steadyState)
                 return P;
-            quantity<MeterSquaredPerTime> out =
-                    P - (storageCapacity / day);
-            //* stepModifier
+            quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
             NANChecker(out.value(), "HCOF");
             return out;
         }

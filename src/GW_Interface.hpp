@@ -24,59 +24,12 @@
 #ifndef GLOBAL_FLOW_GW_INTERFACE_H
 #define GLOBAL_FLOW_GW_INTERFACE_H
 
-#include <unordered_map>
+#include "CouplingInterface.hpp"
 #include "Simulation/Options.hpp"
 
 namespace GlobalFlow {
 
-/**
- * @class Container
- * @class Field
- * @brief Container for transferring data from GW-modell to WaterGAP
- * Where as get(Field) always returns a map from type <ArcID, value>
- *
- * Rivers:
- *
- * Lakes:
- *
- * Wetlands:
- */
-    enum class Field {
-        RIVER,
-        LAKE,
-        WETLANDS,
-    };
-
     using namespace std;
-
-    class Container {
-    public:
-        Container(unordered_map<int, double> rivers) : rivers(rivers) {}
-
-        const unordered_map<int, double>
-        get(Field field) {
-            switch (field) {
-                case Field::RIVER:
-                    return rivers;
-                default :
-                    throw out_of_range("No such field");
-            }
-        }
-
-    private:
-        const unordered_map<int, double> rivers;
-    };
-
-    /**
-     * @class Callback for container setting
-     */
-    class Callback {
-    public:
-        //default implementation does nothing
-        void call(Container container) {}
-
-        void operator()(Container container) { call(container); };
-    };
 
     /**
      * @interface GW_Interface
@@ -86,6 +39,7 @@ namespace GlobalFlow {
      * Interface to the groundwater simulation
      * Implement me!
      */
+    template<class T>
     class GW_Interface {
     public:
         virtual ~GW_Interface() {}
@@ -102,27 +56,30 @@ namespace GlobalFlow {
         virtual void setupSimulation() = 0;
 
         /**
-         * How should the data be written out
-         * @deprecated
+         * Write data for specific year or month
          */
-        virtual void writeData() = 0;
-
-        /**
-         * Set up the calback for model coupling
-         * Could be inefficient
-         * @param callback a callback function
-         */
-        void setupCallBack(Callback callback) {
-            this->callback = [&](Container container) { callback.call(container); };
-        }
+        virtual void writeData(std::string) = 0;
 
         /**
          * Simulate/Run the model
          */
         virtual void simulate() = 0;
 
-    protected:
-        std::function<void(Container container)> callback;
+        void initInterface(CouplingInterface<T> *intf_ptr) {
+            interface = intf_ptr;
+            intf_set = true;
+        }
+
+        CouplingInterface<T> *getInterface() {
+            if (not intf_set) { throw std::domain_error("Interface is not initalized yet"); }
+            return interface;
+        }
+
+        void deleteInterface() { delete interface; }
+
+    private:
+        CouplingInterface<T> *interface;
+        bool intf_set{false};
     };
 }//ns
 #endif //GW_INTERFACE_H

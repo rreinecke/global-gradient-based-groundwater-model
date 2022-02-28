@@ -58,16 +58,21 @@ class Options {
         string LOCAL_WETLANDS{""};
         string K_DIR{""};
         string RIVER_K_DIR{""};
-        string OCEAN_K_DIR{""};
+        string GHB_K_DIR{""};
         string SS_FILE{""};
         string SY_FILE{""};
         string AQ_DEPTH{""};
+        string INITIAL_HEADS{""};
 
         //++Special mappings++//
         string NODEID_ARCID{""};
 
         //++General configuration++//
         long NUMBER_OF_NODES{0};
+        long NUMBER_OF_ROWS{0};
+        long NUMBER_OF_COLS{0};
+        double EDGE_LENGTH_ROWS{0.0};
+        double EDGE_LENGTH_COLS{0.0};
         int LAYERS{0};
         int IITER{0};
         int I_ITTER{0};
@@ -81,17 +86,18 @@ class Options {
         string WETTING_APPROACH{"nwt"};
         int INITAL_HEAD{0};
         double K{0.001};
-        double OCEAN_K{0.1};
+        double GHB_K{0.1};
         vector<int> AQUIFER_DEPTH{100};
         double ANISOTROPY{10};
         double SPECIFIC_YIELD{0.15};
         double SPECIFIC_STORAGE{0.000015};
-        string BOUNDARY_CONDITION{"SeaLevel"};
+        string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
         bool SENSITIVITY{false};
+    	bool ONE_LAYER{false};
         vector<bool> CONFINED{};
-    string BASE_PATH{"data"};
+    	string BASE_PATH{"data"};
         bool k_from_lith{true};
-        bool k_ocean_from_file{false};
+        bool k_ghb_from_file{false};
         bool specificstorage_from_file{false};
         bool specificyield_from_file{false};
         bool k_river_from_file{false};
@@ -106,8 +112,8 @@ class Options {
     public:
 
         enum BoundaryCondition {
-            CONSTANT_HEAD_SEA_LEVEL,
-            CONSTANT_HEAD_NEIGHBOUR,
+            GENERAL_HEAD_BOUNDARY,
+            GENERAL_HEAD_NEIGHBOUR,
             STATIC_HEAD_SEA_LEVEL
         };
 
@@ -125,14 +131,16 @@ class Options {
 
         bool isConfined(int layer) { return CONFINED[layer]; }
 
+    	bool isOneLayerApproach() { return ONE_LAYER; }
+
         vector<bool> getConfinements() { return CONFINED; }
 
         BoundaryCondition getBoundaryCondition() {
-            if (BOUNDARY_CONDITION == "SeaLevel") {
-                return BoundaryCondition::CONSTANT_HEAD_SEA_LEVEL;
+            if (BOUNDARY_CONDITION == "GeneralHeadBoundary") {
+                return BoundaryCondition::GENERAL_HEAD_BOUNDARY;
             }
-            if (BOUNDARY_CONDITION == "NeighbourHead") {
-                return BoundaryCondition::CONSTANT_HEAD_NEIGHBOUR;
+            if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
+                return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
             }
             return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
         }
@@ -141,7 +149,7 @@ class Options {
 
         bool isKFromLith() { return k_from_lith; }
 
-        bool isKOceanFile() { return k_ocean_from_file; }
+        bool isKGHBFile() { return k_ghb_from_file; }
 
         bool isSpecificStorageFile() { return specificstorage_from_file; }
 
@@ -155,13 +163,15 @@ class Options {
 
         string getKRiverDir() { return RIVER_K_DIR; }
 
-        string getKOceanDir() { return OCEAN_K_DIR; }
+        string getKGHBDir() { return GHB_K_DIR; }
 
         string getSSDir() { return SS_FILE; }
 
         string getSYDir() { return SY_FILE; }
 
         string getAQDepthDir() { return AQ_DEPTH; }
+
+        string getInitialHeadsDir() {return INITIAL_HEADS;}
 
         bool isRowCol() { return ROW_COLS; }
 
@@ -170,6 +180,26 @@ class Options {
         long
         getNumberOfNodes() {
             return NUMBER_OF_NODES;
+        };
+
+        long
+        getNumberOfRows() {
+            return NUMBER_OF_ROWS;
+        };
+
+        long
+        getNumberOfCols() {
+            return NUMBER_OF_COLS;
+        };
+
+        double
+        getEdgeLengthLeftRight() {
+            return EDGE_LENGTH_ROWS;
+        };
+
+        double
+        getEdgeLengthFrontBack() {
+            return EDGE_LENGTH_COLS;
         };
 
         int
@@ -311,7 +341,7 @@ class Options {
 
         //Computations are all based on daily
         const int
-        getStepsizeModifier() throw(out_of_range) {
+        getStepsizeModifier() {
             switch (stepsize) {
                 case DAILY:
                     return 1;
@@ -337,8 +367,8 @@ class Options {
         }
 
         double
-        getOceanConduct() {
-            return OCEAN_K;
+        getGHBConduct() {
+            return GHB_K;
         }
 
         vector<int>
