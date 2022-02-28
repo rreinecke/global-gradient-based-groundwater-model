@@ -1,5 +1,5 @@
 remote_theme: pmarsceill/just-the-docs
 git_branch: master
-title: G³M a flexible groundwater framework
+title: G³M framework
 description: A flexible MODFLOW-like modeling framwork for building complex gradient-based groundwater models (e.g. global models). Extensive coupling capabilities.
 

@@ -33,11 +33,14 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
+To compile the program, you will need:
 ```
-clang >= 3.8 with openMP (currently gcc is not supported)
-libboost >= 1.56
+clang >= 13 with openMP (currently gcc is not supported)
+cmake >= 3.15.3
+libboost >= 1.71
 libGMP
 libGtest
+lcov
 ```
 ### Build
 ```
@@ -88,9 +91,17 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors and Contributors
 
-* **Robert Reinecke** - *Initial work*
-[ResearchGate](https://www.researchgate.net/profile/Robert_Reinecke2)
-<span id="badgeCont935"><script type="text/javascript" src="https://publons.com/mashlets?el=badgeCont935&rid=K-3693-2019&size=small"></script></span>
+
+## Authors and Contributors
+
+* **Robert Reinecke** <span id="badgeCont935"><script type="text/javascript" src="https://publons.com/mashlets?el=badgeCont935&rid=K-3693-2019&size=small"></script></span> - *Initial work* *Maintainer*
+* **Daniel Kretschmer** - *Maintainer*
+* **Sebastian Ackermann** - *Maintainer*
+
+### Past Contributors
+
+* **Alexander Wachholz** - *Documentation review*
+* **Christoph Niemann** - *Spatial IDs* *Developer*
 
 ## License
 

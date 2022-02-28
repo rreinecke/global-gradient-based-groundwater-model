@@ -20,7 +20,7 @@ While it is intended to be used as a in memory coupled model it is also capable 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 ### Prerequisites
 
-To make the program run, you need:
+To compile the program, you will need:
 ```
 clang >= 13 with openMP (currently gcc is not supported)
 cmake >= 3.15.3
