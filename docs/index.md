@@ -53,7 +53,7 @@ libGMP
 libGtest
 lcov
 ```
-### Build
+### How to compile
 ```
 mkdir build
 cd build
