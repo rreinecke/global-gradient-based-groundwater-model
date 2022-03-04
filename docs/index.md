@@ -17,9 +17,12 @@ permalink: /
 
 
 # Data and code dois
-Publication in JOSS: [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
+Code publication in JOSS: [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
 
 Outputs of Reinecke et al 2019 in GMD: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
+
+# Check out the project on GitHub
+[GitHub](https://github.com/rreinecke/global-gradient-based-groundwater-model)
 
 # The framework G³M-f
 The global gradient-based groundwater model framework (G³M-f) is an extensible program to build groundwater models.
