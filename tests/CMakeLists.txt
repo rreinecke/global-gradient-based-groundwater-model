@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.15.3)
+cmake_minimum_required(VERSION 2.8)
 add_subdirectory(Unit)
+add_subdirectory(files)
 #add_subdirectory(Integration)
 set(SOURCE
         ${SOURCE}

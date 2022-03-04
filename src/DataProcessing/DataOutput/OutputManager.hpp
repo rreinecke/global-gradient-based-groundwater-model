@@ -106,6 +106,18 @@ namespace GlobalFlow {
                         h.get();
                     }
                 };
+
+                void write_p() {
+                    OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
+                    //FIXME This will probably be working with Cpp17
+                    //handles.push_back(std::async(std::launch::async,&OutputInterface<T>::write,oi,printID,printXY,data,p,ids));
+                };
+
+                void check(){
+                    for(auto &h : handles){
+                        h.get();
+                    }
+                };
             };
 
             using field_vector = std::vector<boost::variant<

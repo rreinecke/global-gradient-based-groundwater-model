@@ -30,8 +30,7 @@
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
-      "stepsize": "daily",
-      "wetting_approach": "nwt"
+      "stepsize": "daily"
     },
   "input": {
     "data_config": {
