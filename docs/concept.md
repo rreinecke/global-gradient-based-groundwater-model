@@ -3,7 +3,7 @@ layout: default
 title: Model Concept
 nav_order: 2
 description: ""
-permalink: /
+permalink: /concept
 ---
 
 ### Equations
