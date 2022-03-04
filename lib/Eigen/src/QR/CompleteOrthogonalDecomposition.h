@@ -16,6 +16,9 @@ namespace internal {
 template <typename _MatrixType>
 struct traits<CompleteOrthogonalDecomposition<_MatrixType> >
     : traits<_MatrixType> {
+  typedef MatrixXpr XprKind;
+  typedef SolverStorage StorageKind;
+  typedef int StorageIndex;
   enum { Flags = 0 };
 };
 
@@ -29,35 +32,36 @@ struct traits<CompleteOrthogonalDecomposition<_MatrixType> >
   *
   * \param MatrixType the type of the matrix of which we are computing the COD.
   *
-  * This class performs a rank-revealing complete ortogonal decomposition of a
+  * This class performs a rank-revealing complete orthogonal decomposition of a
   * matrix  \b A into matrices \b P, \b Q, \b T, and \b Z such that
   * \f[
-  *  \mathbf{A} \, \mathbf{P} = \mathbf{Q} \, \begin{matrix} \mathbf{T} &
-  *  \mathbf{0} \\ \mathbf{0} & \mathbf{0} \end{matrix} \, \mathbf{Z}
+  *  \mathbf{A} \, \mathbf{P} = \mathbf{Q} \,
+  *                     \begin{bmatrix} \mathbf{T} &  \mathbf{0} \\
+  *                                     \mathbf{0} & \mathbf{0} \end{bmatrix} \, \mathbf{Z}
   * \f]
   * by using Householder transformations. Here, \b P is a permutation matrix,
   * \b Q and \b Z are unitary matrices and \b T an upper triangular matrix of
   * size rank-by-rank. \b A may be rank deficient.
   *
+  * This class supports the \link InplaceDecomposition inplace decomposition \endlink mechanism.
+  * 
   * \sa MatrixBase::completeOrthogonalDecomposition()
   */
-template <typename _MatrixType>
-class CompleteOrthogonalDecomposition {
+template <typename _MatrixType> class CompleteOrthogonalDecomposition
+          : public SolverBase<CompleteOrthogonalDecomposition<_MatrixType> >
+{
  public:
   typedef _MatrixType MatrixType;
+  typedef SolverBase<CompleteOrthogonalDecomposition> Base;
+
+  template<typename Derived>
+  friend struct internal::solve_assertion;
+
+  EIGEN_GENERIC_PUBLIC_INTERFACE(CompleteOrthogonalDecomposition)
   enum {
-    RowsAtCompileTime = MatrixType::RowsAtCompileTime,
-    ColsAtCompileTime = MatrixType::ColsAtCompileTime,
-    Options = MatrixType::Options,
     MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime
   };
-  typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
-  typedef typename MatrixType::StorageIndex StorageIndex;
-  typedef Matrix<Scalar, RowsAtCompileTime, RowsAtCompileTime, Options,
-                 MaxRowsAtCompileTime, MaxRowsAtCompileTime>
-      MatrixQType;
   typedef typename internal::plain_diag_type<MatrixType>::type HCoeffsType;
   typedef PermutationMatrix<ColsAtCompileTime, MaxColsAtCompileTime>
       PermutationType;
@@ -114,26 +118,40 @@ class CompleteOrthogonalDecomposition {
   explicit CompleteOrthogonalDecomposition(const EigenBase<InputType>& matrix)
       : m_cpqr(matrix.rows(), matrix.cols()),
         m_zCoeffs((std::min)(matrix.rows(), matrix.cols())),
-        m_temp(matrix.cols()) {
+        m_temp(matrix.cols())
+  {
     compute(matrix.derived());
   }
 
+  /** \brief Constructs a complete orthogonal decomposition from a given matrix
+    *
+    * This overloaded constructor is provided for \link InplaceDecomposition inplace decomposition \endlink when \c MatrixType is a Eigen::Ref.
+    *
+    * \sa CompleteOrthogonalDecomposition(const EigenBase&)
+    */
+  template<typename InputType>
+  explicit CompleteOrthogonalDecomposition(EigenBase<InputType>& matrix)
+    : m_cpqr(matrix.derived()),
+      m_zCoeffs((std::min)(matrix.rows(), matrix.cols())),
+      m_temp(matrix.cols())
+  {
+    computeInPlace();
+  } 
+
+  #ifdef EIGEN_PARSED_BY_DOXYGEN
   /** This method computes the minimum-norm solution X to a least squares
-   * problem \f[\mathrm{minimize} ||A X - B|| \f], where \b A is the matrix of
+   * problem \f[\mathrm{minimize} \|A X - B\|, \f] where \b A is the matrix of
    * which \c *this is the complete orthogonal decomposition.
    *
-   * \param B the right-hand sides of the problem to solve.
+   * \param b the right-hand sides of the problem to solve.
    *
    * \returns a solution.
    *
    */
   template <typename Rhs>
   inline const Solve<CompleteOrthogonalDecomposition, Rhs> solve(
-      const MatrixBase<Rhs>& b) const {
-    eigen_assert(m_cpqr.m_isInitialized &&
-                 "CompleteOrthogonalDecomposition is not initialized.");
-    return Solve<CompleteOrthogonalDecomposition, Rhs>(*this, b.derived());
-  }
+      const MatrixBase<Rhs>& b) const;
+  #endif
 
   HouseholderSequenceType householderQ(void) const;
   HouseholderSequenceType matrixQ(void) const { return m_cpqr.householderQ(); }
@@ -142,8 +160,8 @@ class CompleteOrthogonalDecomposition {
    */
   MatrixType matrixZ() const {
     MatrixType Z = MatrixType::Identity(m_cpqr.cols(), m_cpqr.cols());
-    applyZAdjointOnTheLeftInPlace(Z);
-    return Z.adjoint();
+    applyZOnTheLeftInPlace<false>(Z);
+    return Z;
   }
 
   /** \returns a reference to the matrix where the complete orthogonal
@@ -165,7 +183,12 @@ class CompleteOrthogonalDecomposition {
   const MatrixType& matrixT() const { return m_cpqr.matrixQR(); }
 
   template <typename InputType>
-  CompleteOrthogonalDecomposition& compute(const EigenBase<InputType>& matrix);
+  CompleteOrthogonalDecomposition& compute(const EigenBase<InputType>& matrix) {
+    // Compute the column pivoted QR factorization A P = Q R.
+    m_cpqr.compute(matrix);
+    computeInPlace();
+    return *this;
+  }
 
   /** \returns a const reference to the column permutation matrix */
   const PermutationType& colsPermutation() const {
@@ -254,6 +277,7 @@ class CompleteOrthogonalDecomposition {
    */
   inline const Inverse<CompleteOrthogonalDecomposition> pseudoInverse() const
   {
+    eigen_assert(m_cpqr.m_isInitialized && "CompleteOrthogonalDecomposition is not initialized.");
     return Inverse<CompleteOrthogonalDecomposition>(*this);
   }
 
@@ -332,7 +356,7 @@ class CompleteOrthogonalDecomposition {
   inline RealScalar maxPivot() const { return m_cpqr.maxPivot(); }
 
   /** \brief Reports whether the complete orthogonal decomposition was
-   * succesful.
+   * successful.
    *
    * \note This function always returns \c Success. It is provided for
    * compatibility
@@ -346,13 +370,32 @@ class CompleteOrthogonalDecomposition {
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
   template <typename RhsType, typename DstType>
-  EIGEN_DEVICE_FUNC void _solve_impl(const RhsType& rhs, DstType& dst) const;
+  void _solve_impl(const RhsType& rhs, DstType& dst) const;
+
+  template<bool Conjugate, typename RhsType, typename DstType>
+  void _solve_impl_transposed(const RhsType &rhs, DstType &dst) const;
 #endif
 
  protected:
   static void check_template_parameters() {
     EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
   }
+
+  template<bool Transpose_, typename Rhs>
+  void _check_solve_assertion(const Rhs& b) const {
+      EIGEN_ONLY_USED_FOR_DEBUG(b);
+      eigen_assert(m_cpqr.m_isInitialized && "CompleteOrthogonalDecomposition is not initialized.");
+      eigen_assert((Transpose_?derived().cols():derived().rows())==b.rows() && "CompleteOrthogonalDecomposition::solve(): invalid number of rows of the right hand side matrix b");
+  }
+
+  void computeInPlace();
+
+  /** Overwrites \b rhs with \f$ \mathbf{Z} * \mathbf{rhs} \f$ or
+   *  \f$ \mathbf{\overline Z} * \mathbf{rhs} \f$ if \c Conjugate 
+   *  is set to \c true.
+   */
+  template <bool Conjugate, typename Rhs>
+  void applyZOnTheLeftInPlace(Rhs& rhs) const;
 
   /** Overwrites \b rhs with \f$ \mathbf{Z}^* * \mathbf{rhs} \f$.
    */
@@ -384,20 +427,16 @@ CompleteOrthogonalDecomposition<MatrixType>::logAbsDeterminant() const {
  * CompleteOrthogonalDecomposition(const MatrixType&)
  */
 template <typename MatrixType>
-template <typename InputType>
-CompleteOrthogonalDecomposition<MatrixType>& CompleteOrthogonalDecomposition<
-    MatrixType>::compute(const EigenBase<InputType>& matrix) {
+void CompleteOrthogonalDecomposition<MatrixType>::computeInPlace()
+{
   check_template_parameters();
 
   // the column permutation is stored as int indices, so just to be sure:
-  eigen_assert(matrix.cols() <= NumTraits<int>::highest());
-
-  // Compute the column pivoted QR factorization A P = Q R.
-  m_cpqr.compute(matrix);
+  eigen_assert(m_cpqr.cols() <= NumTraits<int>::highest());
 
   const Index rank = m_cpqr.rank();
-  const Index cols = matrix.cols();
-  const Index rows = matrix.rows();
+  const Index cols = m_cpqr.cols();
+  const Index rows = m_cpqr.rows();
   m_zCoeffs.resize((std::min)(rows, cols));
   m_temp.resize(cols);
 
@@ -433,7 +472,7 @@ CompleteOrthogonalDecomposition<MatrixType>& CompleteOrthogonalDecomposition<
         // Apply Z(k) to the first k rows of X_k
         m_cpqr.m_qr.topRightCorner(k, cols - rank + 1)
             .applyHouseholderOnTheRight(
-                m_cpqr.m_qr.row(k).tail(cols - rank).transpose(), m_zCoeffs(k),
+                m_cpqr.m_qr.row(k).tail(cols - rank).adjoint(), m_zCoeffs(k),
                 &m_temp(0));
       }
       if (k != rank - 1) {
@@ -443,7 +482,28 @@ CompleteOrthogonalDecomposition<MatrixType>& CompleteOrthogonalDecomposition<
       }
     }
   }
-  return *this;
+}
+
+template <typename MatrixType>
+template <bool Conjugate, typename Rhs>
+void CompleteOrthogonalDecomposition<MatrixType>::applyZOnTheLeftInPlace(
+    Rhs& rhs) const {
+  const Index cols = this->cols();
+  const Index nrhs = rhs.cols();
+  const Index rank = this->rank();
+  Matrix<typename Rhs::Scalar, Dynamic, 1> temp((std::max)(cols, nrhs));
+  for (Index k = rank-1; k >= 0; --k) {
+    if (k != rank - 1) {
+      rhs.row(k).swap(rhs.row(rank - 1));
+    }
+    rhs.middleRows(rank - 1, cols - rank + 1)
+        .applyHouseholderOnTheLeft(
+            matrixQTZ().row(k).tail(cols - rank).transpose().template conjugateIf<!Conjugate>(), zCoeffs().template conjugateIf<Conjugate>()(k),
+            &temp(0));
+    if (k != rank - 1) {
+      rhs.row(k).swap(rhs.row(rank - 1));
+    }
+  }
 }
 
 template <typename MatrixType>
@@ -453,7 +513,7 @@ void CompleteOrthogonalDecomposition<MatrixType>::applyZAdjointOnTheLeftInPlace(
   const Index cols = this->cols();
   const Index nrhs = rhs.cols();
   const Index rank = this->rank();
-  Matrix<typename MatrixType::Scalar, Dynamic, 1> temp((std::max)(cols, nrhs));
+  Matrix<typename Rhs::Scalar, Dynamic, 1> temp((std::max)(cols, nrhs));
   for (Index k = 0; k < rank; ++k) {
     if (k != rank - 1) {
       rhs.row(k).swap(rhs.row(rank - 1));
@@ -473,8 +533,6 @@ template <typename _MatrixType>
 template <typename RhsType, typename DstType>
 void CompleteOrthogonalDecomposition<_MatrixType>::_solve_impl(
     const RhsType& rhs, DstType& dst) const {
-  eigen_assert(rhs.rows() == this->rows());
-
   const Index rank = this->rank();
   if (rank == 0) {
     dst.setZero();
@@ -482,11 +540,8 @@ void CompleteOrthogonalDecomposition<_MatrixType>::_solve_impl(
   }
 
   // Compute c = Q^* * rhs
-  // Note that the matrix Q = H_0^* H_1^*... so its inverse is
-  // Q^* = (H_0 H_1 ...)^T
   typename RhsType::PlainObject c(rhs);
-  c.applyOnTheLeft(
-      householderSequence(matrixQTZ(), hCoeffs()).setLength(rank).transpose());
+  c.applyOnTheLeft(matrixQ().setLength(rank).adjoint());
 
   // Solve T z = c(1:rank, :)
   dst.topRows(rank) = matrixT()
@@ -505,18 +560,54 @@ void CompleteOrthogonalDecomposition<_MatrixType>::_solve_impl(
   // Undo permutation to get x = P^{-1} * y.
   dst = colsPermutation() * dst;
 }
+
+template<typename _MatrixType>
+template<bool Conjugate, typename RhsType, typename DstType>
+void CompleteOrthogonalDecomposition<_MatrixType>::_solve_impl_transposed(const RhsType &rhs, DstType &dst) const
+{
+  const Index rank = this->rank();
+
+  if (rank == 0) {
+    dst.setZero();
+    return;
+  }
+
+  typename RhsType::PlainObject c(colsPermutation().transpose()*rhs);
+
+  if (rank < cols()) {
+    applyZOnTheLeftInPlace<!Conjugate>(c);
+  }
+
+  matrixT().topLeftCorner(rank, rank)
+           .template triangularView<Upper>()
+           .transpose().template conjugateIf<Conjugate>()
+           .solveInPlace(c.topRows(rank));
+
+  dst.topRows(rank) = c.topRows(rank);
+  dst.bottomRows(rows()-rank).setZero();
+
+  dst.applyOnTheLeft(householderQ().setLength(rank).template conjugateIf<!Conjugate>() );
+}
 #endif
 
 namespace internal {
 
-template<typename DstXprType, typename MatrixType, typename Scalar>
-struct Assignment<DstXprType, Inverse<CompleteOrthogonalDecomposition<MatrixType> >, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+template<typename MatrixType>
+struct traits<Inverse<CompleteOrthogonalDecomposition<MatrixType> > >
+  : traits<typename Transpose<typename MatrixType::PlainObject>::PlainObject>
+{
+  enum { Flags = 0 };
+};
+
+template<typename DstXprType, typename MatrixType>
+struct Assignment<DstXprType, Inverse<CompleteOrthogonalDecomposition<MatrixType> >, internal::assign_op<typename DstXprType::Scalar,typename CompleteOrthogonalDecomposition<MatrixType>::Scalar>, Dense2Dense>
 {
   typedef CompleteOrthogonalDecomposition<MatrixType> CodType;
   typedef Inverse<CodType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename CodType::Scalar> &)
   {
-    dst = src.nestedExpression().solve(MatrixType::Identity(src.rows(), src.rows()));
+    typedef Matrix<typename CodType::Scalar, CodType::RowsAtCompileTime, CodType::RowsAtCompileTime, 0, CodType::MaxRowsAtCompileTime, CodType::MaxRowsAtCompileTime> IdentityMatrixType;
+    dst = src.nestedExpression().solve(IdentityMatrixType::Identity(src.cols(), src.cols()));
   }
 };
 
@@ -529,7 +620,6 @@ CompleteOrthogonalDecomposition<MatrixType>::householderQ() const {
   return m_cpqr.householderQ();
 }
 
-#ifndef __CUDACC__
 /** \return the complete orthogonal decomposition of \c *this.
   *
   * \sa class CompleteOrthogonalDecomposition
@@ -539,7 +629,6 @@ const CompleteOrthogonalDecomposition<typename MatrixBase<Derived>::PlainObject>
 MatrixBase<Derived>::completeOrthogonalDecomposition() const {
   return CompleteOrthogonalDecomposition<PlainObject>(eval());
 }
-#endif  // __CUDACC__
 
 }  // end namespace Eigen
 

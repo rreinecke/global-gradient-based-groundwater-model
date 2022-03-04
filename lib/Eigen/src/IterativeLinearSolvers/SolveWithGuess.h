@@ -13,7 +13,7 @@
 namespace Eigen {
 
 template<typename Decomposition, typename RhsType, typename GuessType> class SolveWithGuess;
-  
+
 /** \class SolveWithGuess
   * \ingroup IterativeLinearSolvers_Module
   *
@@ -44,13 +44,16 @@ public:
   typedef typename internal::traits<SolveWithGuess>::Scalar Scalar;
   typedef typename internal::traits<SolveWithGuess>::PlainObject PlainObject;
   typedef typename internal::generic_xpr_base<SolveWithGuess<Decomposition,RhsType,GuessType>, MatrixXpr, typename internal::traits<RhsType>::StorageKind>::type Base;
-  
+  typedef typename internal::ref_selector<SolveWithGuess>::type Nested;
+
   SolveWithGuess(const Decomposition &dec, const RhsType &rhs, const GuessType &guess)
     : m_dec(dec), m_rhs(rhs), m_guess(guess)
   {}
-  
-  EIGEN_DEVICE_FUNC Index rows() const { return m_dec.cols(); }
-  EIGEN_DEVICE_FUNC Index cols() const { return m_rhs.cols(); }
+
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  Index rows() const EIGEN_NOEXCEPT { return m_dec.cols(); }
+  EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR
+  Index cols() const EIGEN_NOEXCEPT { return m_rhs.cols(); }
 
   EIGEN_DEVICE_FUNC const Decomposition& dec()   const { return m_dec; }
   EIGEN_DEVICE_FUNC const RhsType&       rhs()   const { return m_rhs; }
@@ -60,7 +63,7 @@ protected:
   const Decomposition &m_dec;
   const RhsType       &m_rhs;
   const GuessType     &m_guess;
-  
+
 private:
   Scalar coeff(Index row, Index col) const;
   Scalar coeff(Index i) const;
@@ -81,28 +84,33 @@ struct evaluator<SolveWithGuess<Decomposition,RhsType, GuessType> >
     : m_result(solve.rows(), solve.cols())
   {
     ::new (static_cast<Base*>(this)) Base(m_result);
-    solve.dec()._solve_with_guess_impl(solve.rhs(), m_result, solve().guess());
+    m_result = solve.guess();
+    solve.dec()._solve_with_guess_impl(solve.rhs(), m_result);
   }
-  
-protected:  
+
+protected:
   PlainObject m_result;
 };
 
 // Specialization for "dst = dec.solveWithGuess(rhs)"
 // NOTE we need to specialize it for Dense2Dense to avoid ambiguous specialization error and a Sparse2Sparse specialization must exist somewhere
 template<typename DstXprType, typename DecType, typename RhsType, typename GuessType, typename Scalar>
-struct Assignment<DstXprType, SolveWithGuess<DecType,RhsType,GuessType>, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+struct Assignment<DstXprType, SolveWithGuess<DecType,RhsType,GuessType>, internal::assign_op<Scalar,Scalar>, Dense2Dense>
 {
   typedef SolveWithGuess<DecType,RhsType,GuessType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar,Scalar> &)
   {
-    // FIXME shall we resize dst here?
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+
     dst = src.guess();
     src.dec()._solve_with_guess_impl(src.rhs(), dst/*, src.guess()*/);
   }
 };
 
-} // end namepsace internal
+} // end namespace internal
 
 } // end namespace Eigen
 

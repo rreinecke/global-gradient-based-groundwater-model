@@ -74,13 +74,35 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
     };
   public:
     SPQR() 
-      : m_ordering(SPQR_ORDERING_DEFAULT), m_allow_tol(SPQR_DEFAULT_TOL), m_tolerance (NumTraits<Scalar>::epsilon()), m_useDefaultThreshold(true)
+      : m_analysisIsOk(false),
+        m_factorizationIsOk(false),
+        m_isRUpToDate(false),
+        m_ordering(SPQR_ORDERING_DEFAULT),
+        m_allow_tol(SPQR_DEFAULT_TOL),
+        m_tolerance (NumTraits<Scalar>::epsilon()),
+        m_cR(0),
+        m_E(0),
+        m_H(0),
+        m_HPinv(0),
+        m_HTau(0),
+        m_useDefaultThreshold(true)
     { 
       cholmod_l_start(&m_cc);
     }
     
     explicit SPQR(const _MatrixType& matrix)
-    : m_ordering(SPQR_ORDERING_DEFAULT), m_allow_tol(SPQR_DEFAULT_TOL), m_tolerance (NumTraits<Scalar>::epsilon()), m_useDefaultThreshold(true)
+      : m_analysisIsOk(false),
+        m_factorizationIsOk(false),
+        m_isRUpToDate(false),
+        m_ordering(SPQR_ORDERING_DEFAULT),
+        m_allow_tol(SPQR_DEFAULT_TOL),
+        m_tolerance (NumTraits<Scalar>::epsilon()),
+        m_cR(0),
+        m_E(0),
+        m_H(0),
+        m_HPinv(0),
+        m_HTau(0),
+        m_useDefaultThreshold(true)
     {
       cholmod_l_start(&m_cc);
       compute(matrix);
@@ -119,16 +141,16 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
           max2Norm = RealScalar(1);
         pivotThreshold = 20 * (mat.rows() + mat.cols()) * max2Norm * NumTraits<RealScalar>::epsilon();
       }
-      
       cholmod_sparse A; 
       A = viewAsCholmod(mat);
+      m_rows = matrix.rows();
       Index col = matrix.cols();
       m_rank = SuiteSparseQR<Scalar>(m_ordering, pivotThreshold, col, &A, 
                              &m_cR, &m_E, &m_H, &m_HPinv, &m_HTau, &m_cc);
 
       if (!m_cR)
       {
-        m_info = NumericalIssue; 
+        m_info = NumericalIssue;
         m_isInitialized = false;
         return;
       }
@@ -139,7 +161,7 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
     /** 
      * Get the number of rows of the input matrix and the Q matrix
      */
-    inline Index rows() const {return m_cR->nrow; }
+    inline Index rows() const {return m_rows; }
     
     /** 
      * Get the number of columns of the input matrix. 
@@ -220,7 +242,7 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
     
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was succesful,
+      * \returns \c Success if computation was successful,
       *          \c NumericalIssue if the sparse QR can not be computed
       */
     ComputationInfo info() const
@@ -245,6 +267,7 @@ class SPQR : public SparseSolverBase<SPQR<_MatrixType> >
     mutable Index m_rank; // The rank of the matrix
     mutable cholmod_common m_cc; // Workspace and parameters
     bool m_useDefaultThreshold;     // Use default threshold
+    Index m_rows;
     template<typename ,typename > friend struct SPQR_QProduct;
 };
 

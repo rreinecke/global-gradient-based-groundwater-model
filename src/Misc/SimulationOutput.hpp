@@ -91,8 +91,8 @@ class SimulationOutput {
                     if (field == "ID") {
                         os << simulation.nodes->at(i)->getProperties().get<long, Model::ID>();
                     }
-                    if (field == "ArcID") {
-                        os << simulation.nodes->at(i)->getProperties().get<long, Model::ArcID>();
+                    if (field == "SpatID") {
+                        os << simulation.nodes->at(i)->getProperties().get<long, Model::SpatID>();
                     }
                     if (field == "Area") {
                         os << simulation.nodes->at(i)->getProperties().get < Model::quantity < Model::SquareMeter > ,

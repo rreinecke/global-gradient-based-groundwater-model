@@ -151,7 +151,7 @@ Options::load(const std::string &filename) {
 
     boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
     if (mappings) {
-        NODEID_ARCID = mappings.value().get<string>("nodeID-arcID");
+        NODEID_SPATID = mappings.value().get<string>("nodeID-spatID");
     }
 }
 
