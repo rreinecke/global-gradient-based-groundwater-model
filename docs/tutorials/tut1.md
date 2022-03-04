@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Turotial 1
+title: Tutorial 1
 parent: Tutorials
 nav_order: 1
 ---

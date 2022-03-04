@@ -1,4 +1,4 @@
-﻿---
+---
 layout: default
 title: Home
 nav_order: 1
@@ -123,4 +123,3 @@ Please note that the code contains a modified version of the Eigen3 library whic
 
 * [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html) for their great documentation
 * [Eigen3](http://eigen.tuxfamily.org) for their awesome framework
-
