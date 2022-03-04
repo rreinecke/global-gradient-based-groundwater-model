@@ -49,7 +49,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              quantity<SquareMeter> area,
                              quantity<Meter> edgeLengthLeftRight,
                              quantity<Meter> edgeLengthFrontBack,
-                             unsigned long int arcID,
+                             unsigned long int spatID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
                              int stepModifier,
@@ -64,7 +64,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<SquareMeter>, Area>(area);
     fields.set < unsigned
     long
-    int, SpatID > (arcID);
+    int, SpatID > (spatID);
     fields.set < unsigned
     long
     int, ID > (identifier);

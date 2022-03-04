@@ -132,7 +132,8 @@ typename Decomposition::RealScalar rcond_invmatrix_L1_norm_estimate(const Decomp
   // Hager's algorithm to vastly underestimate ||matrix||_1.
   Scalar alternating_sign(RealScalar(1));
   for (Index i = 0; i < n; ++i) {
-    v[i] = alternating_sign * (RealScalar(1) + (RealScalar(i) / (RealScalar(n - 1))));
+    // The static_cast is needed when Scalar is a complex and RealScalar implements expression templates
+    v[i] = alternating_sign * static_cast<RealScalar>(RealScalar(1) + (RealScalar(i) / (RealScalar(n - 1))));
     alternating_sign = -alternating_sign;
   }
   v = dec.solve(v);
@@ -159,7 +160,7 @@ rcond_estimate_helper(typename Decomposition::RealScalar matrix_norm, const Deco
 {
   typedef typename Decomposition::RealScalar RealScalar;
   eigen_assert(dec.rows() == dec.cols());
-  if (dec.rows() == 0)              return RealScalar(1);
+  if (dec.rows() == 0)              return NumTraits<RealScalar>::infinity();
   if (matrix_norm == RealScalar(0)) return RealScalar(0);
   if (dec.rows() == 1)              return RealScalar(1);
   const RealScalar inverse_matrix_norm = rcond_invmatrix_L1_norm_estimate(dec);

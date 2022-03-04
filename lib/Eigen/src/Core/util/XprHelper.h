@@ -24,16 +24,6 @@
 
 namespace Eigen {
 
-typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
-
-/**
- * \brief The Index type as used for the API.
- * \details To change this, \c \#define the preprocessor symbol \c EIGEN_DEFAULT_DENSE_INDEX_TYPE.
- * \sa \blank \ref TopicPreprocessorDirectives, StorageIndex.
- */
-
-typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE Index;
-
 namespace internal {
 
 template<typename IndexDest, typename IndexSrc>
@@ -44,12 +34,85 @@ inline IndexDest convert_index(const IndexSrc& idx) {
   return IndexDest(idx);
 }
 
+// true if T can be considered as an integral index (i.e., and integral type or enum)
+template<typename T> struct is_valid_index_type
+{
+  enum { value =
+#if EIGEN_HAS_TYPE_TRAITS
+    internal::is_integral<T>::value || std::is_enum<T>::value
+#elif EIGEN_COMP_MSVC
+    internal::is_integral<T>::value || __is_enum(T)
+#else
+    // without C++11, we use is_convertible to Index instead of is_integral in order to treat enums as Index.
+    internal::is_convertible<T,Index>::value && !internal::is_same<T,float>::value && !is_same<T,double>::value
+#endif
+  };
+};
+
+// true if both types are not valid index types
+template<typename RowIndices, typename ColIndices>
+struct valid_indexed_view_overload {
+  enum { value = !(internal::is_valid_index_type<RowIndices>::value && internal::is_valid_index_type<ColIndices>::value) };
+};
+
+// promote_scalar_arg is an helper used in operation between an expression and a scalar, like:
+//    expression * scalar
+// Its role is to determine how the type T of the scalar operand should be promoted given the scalar type ExprScalar of the given expression.
+// The IsSupported template parameter must be provided by the caller as: internal::has_ReturnType<ScalarBinaryOpTraits<ExprScalar,T,op> >::value using the proper order for ExprScalar and T.
+// Then the logic is as follows:
+//  - if the operation is natively supported as defined by IsSupported, then the scalar type is not promoted, and T is returned.
+//  - otherwise, NumTraits<ExprScalar>::Literal is returned if T is implicitly convertible to NumTraits<ExprScalar>::Literal AND that this does not imply a float to integer conversion.
+//  - otherwise, ExprScalar is returned if T is implicitly convertible to ExprScalar AND that this does not imply a float to integer conversion.
+//  - In all other cases, the promoted type is not defined, and the respective operation is thus invalid and not available (SFINAE).
+template<typename ExprScalar,typename T, bool IsSupported>
+struct promote_scalar_arg;
+
+template<typename S,typename T>
+struct promote_scalar_arg<S,T,true>
+{
+  typedef T type;
+};
+
+// Recursively check safe conversion to PromotedType, and then ExprScalar if they are different.
+template<typename ExprScalar,typename T,typename PromotedType,
+  bool ConvertibleToLiteral = internal::is_convertible<T,PromotedType>::value,
+  bool IsSafe = NumTraits<T>::IsInteger || !NumTraits<PromotedType>::IsInteger>
+struct promote_scalar_arg_unsupported;
+
+// Start recursion with NumTraits<ExprScalar>::Literal
+template<typename S,typename T>
+struct promote_scalar_arg<S,T,false> : promote_scalar_arg_unsupported<S,T,typename NumTraits<S>::Literal> {};
+
+// We found a match!
+template<typename S,typename T, typename PromotedType>
+struct promote_scalar_arg_unsupported<S,T,PromotedType,true,true>
+{
+  typedef PromotedType type;
+};
+
+// No match, but no real-to-integer issues, and ExprScalar and current PromotedType are different,
+// so let's try to promote to ExprScalar
+template<typename ExprScalar,typename T, typename PromotedType>
+struct promote_scalar_arg_unsupported<ExprScalar,T,PromotedType,false,true>
+   : promote_scalar_arg_unsupported<ExprScalar,T,ExprScalar>
+{};
+
+// Unsafe real-to-integer, let's stop.
+template<typename S,typename T, typename PromotedType, bool ConvertibleToLiteral>
+struct promote_scalar_arg_unsupported<S,T,PromotedType,ConvertibleToLiteral,false> {};
+
+// T is not even convertible to ExprScalar, let's stop.
+template<typename S,typename T>
+struct promote_scalar_arg_unsupported<S,T,S,false,true> {};
 
 //classes inheriting no_assignment_operator don't generate a default operator=.
 class no_assignment_operator
 {
   private:
     no_assignment_operator& operator=(const no_assignment_operator&);
+  protected:
+    EIGEN_DEFAULT_COPY_CONSTRUCTOR(no_assignment_operator)
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(no_assignment_operator)
 };
 
 /** \internal return the index type with the largest number of bits */
@@ -66,19 +129,23 @@ struct promote_index_type
 template<typename T, int Value> class variable_if_dynamic
 {
   public:
-    EIGEN_EMPTY_STRUCT_CTOR(variable_if_dynamic)
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(variable_if_dynamic)
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
-    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE T value() { return T(Value); }
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T) {}
+    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    T value() { return T(Value); }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    operator T() const { return T(Value); }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    void setValue(T v) const { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
 };
 
 template<typename T> class variable_if_dynamic<T, Dynamic>
 {
     T m_value;
-    EIGEN_DEVICE_FUNC variable_if_dynamic() { eigen_assert(false); }
   public:
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value) : m_value(value) {}
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamic(T value = 0) EIGEN_NO_THROW : m_value(value) {}
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE T value() const { return m_value; }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE operator T() const { return m_value; }
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T value) { m_value = value; }
 };
 
@@ -89,8 +156,10 @@ template<typename T, int Value> class variable_if_dynamicindex
   public:
     EIGEN_EMPTY_STRUCT_CTOR(variable_if_dynamicindex)
     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE explicit variable_if_dynamicindex(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); eigen_assert(v == T(Value)); }
-    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE T value() { return T(Value); }
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void setValue(T) {}
+    EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE EIGEN_CONSTEXPR
+    T value() { return T(Value); }
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+    void setValue(T) {}
 };
 
 template<typename T> class variable_if_dynamicindex<T, DynamicIndex>
@@ -115,16 +184,7 @@ template<typename T> struct functor_traits
 
 template<typename T> struct packet_traits;
 
-template<typename T> struct unpacket_traits
-{
-  typedef T type;
-  typedef T half;
-  enum
-  {
-    size = 1,
-    alignment = 1
-  };
-};
+template<typename T> struct unpacket_traits;
 
 template<int Size, typename PacketType,
          bool Stop = Size==Dynamic || (Size%unpacket_traits<PacketType>::size)==0 || is_same<PacketType,typename unpacket_traits<PacketType>::half>::value>
@@ -151,7 +211,7 @@ struct find_best_packet
 #if EIGEN_MAX_STATIC_ALIGN_BYTES>0
 template<int ArrayBytes, int AlignmentBytes,
          bool Match     =  bool((ArrayBytes%AlignmentBytes)==0),
-         bool TryHalf   =  bool(AlignmentBytes>EIGEN_MIN_ALIGN_BYTES) >
+         bool TryHalf   =  bool(EIGEN_MIN_ALIGN_BYTES<AlignmentBytes) >
 struct compute_default_alignment_helper
 {
   enum { value = 0 };
@@ -343,7 +403,7 @@ template<typename T> struct plain_matrix_type_row_major
   typedef Matrix<typename traits<T>::Scalar,
                 Rows,
                 Cols,
-                (MaxCols==1&&MaxRows!=1) ? RowMajor : ColMajor,
+                (MaxCols==1&&MaxRows!=1) ? ColMajor : RowMajor,
                 MaxRows,
                 MaxCols
           > type;
@@ -360,7 +420,7 @@ struct ref_selector
     T const&,
     const T
   >::type type;
-  
+
   typedef typename conditional<
     bool(traits<T>::Flags & NestByRefBit),
     T &,
@@ -398,22 +458,18 @@ template<typename T, int n, typename PlainObject = typename plain_object_eval<T>
 {
   enum {
     ScalarReadCost = NumTraits<typename traits<T>::Scalar>::ReadCost,
-    CoeffReadCost = evaluator<T>::CoeffReadCost,  // NOTE What if an evaluator evaluate itself into a tempory?
+    CoeffReadCost = evaluator<T>::CoeffReadCost,  // NOTE What if an evaluator evaluate itself into a temporary?
                                                   //      Then CoeffReadCost will be small (e.g., 1) but we still have to evaluate, especially if n>1.
                                                   //      This situation is already taken care by the EvalBeforeNestingBit flag, which is turned ON
                                                   //      for all evaluator creating a temporary. This flag is then propagated by the parent evaluators.
                                                   //      Another solution could be to count the number of temps?
     NAsInteger = n == Dynamic ? HugeCost : n,
     CostEval   = (NAsInteger+1) * ScalarReadCost + CoeffReadCost,
-    CostNoEval = NAsInteger * CoeffReadCost
+    CostNoEval = NAsInteger * CoeffReadCost,
+    Evaluate = (int(evaluator<T>::Flags) & EvalBeforeNestingBit) || (int(CostEval) < int(CostNoEval))
   };
 
-  typedef typename conditional<
-        ( (int(evaluator<T>::Flags) & EvalBeforeNestingBit) ||
-          (int(CostEval) < int(CostNoEval)) ),
-        PlainObject,
-        typename ref_selector<T>::type
-  >::type type;
+  typedef typename conditional<Evaluate, PlainObject, typename ref_selector<T>::type>::type type;
 };
 
 template<typename T>
@@ -496,6 +552,15 @@ template <typename B, typename Functor>                   struct cwise_promote_s
 template <typename Functor>                               struct cwise_promote_storage_type<Sparse,Dense,Functor>                             { typedef Sparse ret; };
 template <typename Functor>                               struct cwise_promote_storage_type<Dense,Sparse,Functor>                             { typedef Sparse ret; };
 
+template <typename LhsKind, typename RhsKind, int LhsOrder, int RhsOrder> struct cwise_promote_storage_order {
+  enum { value = LhsOrder };
+};
+
+template <typename LhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<LhsKind,Sparse,LhsOrder,RhsOrder>                { enum { value = RhsOrder }; };
+template <typename RhsKind, int LhsOrder, int RhsOrder>   struct cwise_promote_storage_order<Sparse,RhsKind,LhsOrder,RhsOrder>                { enum { value = LhsOrder }; };
+template <int Order>                                      struct cwise_promote_storage_order<Sparse,Sparse,Order,Order>                       { enum { value = Order }; };
+
+
 /** \internal Specify the "storage kind" of multiplying an expression of kind A with kind B.
   * The template parameter ProductTag permits to specialize the resulting storage kind wrt to
   * some compile-time properties of the product: GemmProduct, GemvProduct, OuterProduct, InnerProduct.
@@ -534,14 +599,14 @@ template<typename ExpressionType, typename Scalar = typename ExpressionType::Sca
 struct plain_row_type
 {
   typedef Matrix<Scalar, 1, ExpressionType::ColsAtCompileTime,
-                 ExpressionType::PlainObject::Options | RowMajor, 1, ExpressionType::MaxColsAtCompileTime> MatrixRowType;
+                 int(ExpressionType::PlainObject::Options) | int(RowMajor), 1, ExpressionType::MaxColsAtCompileTime> MatrixRowType;
   typedef Array<Scalar, 1, ExpressionType::ColsAtCompileTime,
-                 ExpressionType::PlainObject::Options | RowMajor, 1, ExpressionType::MaxColsAtCompileTime> ArrayRowType;
+                 int(ExpressionType::PlainObject::Options) | int(RowMajor), 1, ExpressionType::MaxColsAtCompileTime> ArrayRowType;
 
   typedef typename conditional<
     is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
     MatrixRowType,
-    ArrayRowType 
+    ArrayRowType
   >::type type;
 };
 
@@ -556,7 +621,7 @@ struct plain_col_type
   typedef typename conditional<
     is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
     MatrixColType,
-    ArrayColType 
+    ArrayColType
   >::type type;
 };
 
@@ -572,14 +637,28 @@ struct plain_diag_type
   typedef typename conditional<
     is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
     MatrixDiagType,
-    ArrayDiagType 
+    ArrayDiagType
   >::type type;
+};
+
+template<typename Expr,typename Scalar = typename Expr::Scalar>
+struct plain_constant_type
+{
+  enum { Options = (traits<Expr>::Flags&RowMajorBit)?RowMajor:0 };
+
+  typedef Array<Scalar,  traits<Expr>::RowsAtCompileTime,   traits<Expr>::ColsAtCompileTime,
+                Options, traits<Expr>::MaxRowsAtCompileTime,traits<Expr>::MaxColsAtCompileTime> array_type;
+
+  typedef Matrix<Scalar,  traits<Expr>::RowsAtCompileTime,   traits<Expr>::ColsAtCompileTime,
+                 Options, traits<Expr>::MaxRowsAtCompileTime,traits<Expr>::MaxColsAtCompileTime> matrix_type;
+
+  typedef CwiseNullaryOp<scalar_constant_op<Scalar>, const typename conditional<is_same< typename traits<Expr>::XprKind, MatrixXpr >::value, matrix_type, array_type>::type > type;
 };
 
 template<typename ExpressionType>
 struct is_lvalue
 {
-  enum { value = !bool(is_const<ExpressionType>::value) &&
+  enum { value = (!bool(is_const<ExpressionType>::value)) &&
                  bool(traits<ExpressionType>::Flags & LvalueBit) };
 };
 
@@ -595,25 +674,57 @@ template<typename T> struct is_diagonal<DiagonalWrapper<T> >
 template<typename T, int S> struct is_diagonal<DiagonalMatrix<T,S> >
 { enum { ret = true }; };
 
+
+template<typename T> struct is_identity
+{ enum { value = false }; };
+
+template<typename T> struct is_identity<CwiseNullaryOp<internal::scalar_identity_op<typename T::Scalar>, T> >
+{ enum { value = true }; };
+
+
 template<typename S1, typename S2> struct glue_shapes;
 template<> struct glue_shapes<DenseShape,TriangularShape> { typedef TriangularShape type;  };
 
 template<typename T1, typename T2>
-bool is_same_dense(const T1 &mat1, const T2 &mat2, typename enable_if<has_direct_access<T1>::ret&&has_direct_access<T2>::ret, T1>::type * = 0)
+struct possibly_same_dense {
+  enum { value = has_direct_access<T1>::ret && has_direct_access<T2>::ret && is_same<typename T1::Scalar,typename T2::Scalar>::value };
+};
+
+template<typename T1, typename T2>
+EIGEN_DEVICE_FUNC
+bool is_same_dense(const T1 &mat1, const T2 &mat2, typename enable_if<possibly_same_dense<T1,T2>::value>::type * = 0)
 {
   return (mat1.data()==mat2.data()) && (mat1.innerStride()==mat2.innerStride()) && (mat1.outerStride()==mat2.outerStride());
 }
 
 template<typename T1, typename T2>
-bool is_same_dense(const T1 &, const T2 &, typename enable_if<!(has_direct_access<T1>::ret&&has_direct_access<T2>::ret), T1>::type * = 0)
+EIGEN_DEVICE_FUNC
+bool is_same_dense(const T1 &, const T2 &, typename enable_if<!possibly_same_dense<T1,T2>::value>::type * = 0)
 {
   return false;
 }
 
-template<typename T, typename U> struct is_same_or_void { enum { value = is_same<T,U>::value }; };
-template<typename T> struct is_same_or_void<void,T>     { enum { value = 1 }; };
-template<typename T> struct is_same_or_void<T,void>     { enum { value = 1 }; };
-template<>           struct is_same_or_void<void,void>  { enum { value = 1 }; };
+// Internal helper defining the cost of a scalar division for the type T.
+// The default heuristic can be specialized for each scalar type and architecture.
+template<typename T,bool Vectorized=false,typename EnableIf = void>
+struct scalar_div_cost {
+  enum { value = 8*NumTraits<T>::MulCost };
+};
+
+template<typename T,bool Vectorized>
+struct scalar_div_cost<std::complex<T>, Vectorized> {
+  enum { value = 2*scalar_div_cost<T>::value
+               + 6*NumTraits<T>::MulCost
+               + 3*NumTraits<T>::AddCost
+  };
+};
+
+
+template<bool Vectorized>
+struct scalar_div_cost<signed long,Vectorized,typename conditional<sizeof(long)==8,void,false_type>::type> { enum { value = 24 }; };
+template<bool Vectorized>
+struct scalar_div_cost<unsigned long,Vectorized,typename conditional<sizeof(long)==8,void,false_type>::type> { enum { value = 21 }; };
+
 
 #ifdef EIGEN_DEBUG_ASSIGN
 std::string demangle_traversal(int t)
@@ -642,26 +753,104 @@ std::string demangle_flags(int f)
   if(f&DirectAccessBit)             res += " | Direct";
   if(f&NestByRefBit)                res += " | NestByRef";
   if(f&NoPreferredStorageOrderBit)  res += " | NoPreferredStorageOrderBit";
-  
+
   return res;
 }
 #endif
 
 } // end namespace internal
 
-// we require Lhs and Rhs to have the same scalar type. Currently there is no example of a binary functor
-// that would take two operands of different types. If there were such an example, then this check should be
-// moved to the BinaryOp functors, on a per-case basis. This would however require a change in the BinaryOp functors, as
-// currently they take only one typename Scalar template parameter.
+
+/** \class ScalarBinaryOpTraits
+  * \ingroup Core_Module
+  *
+  * \brief Determines whether the given binary operation of two numeric types is allowed and what the scalar return type is.
+  *
+  * This class permits to control the scalar return type of any binary operation performed on two different scalar types through (partial) template specializations.
+  *
+  * For instance, let \c U1, \c U2 and \c U3 be three user defined scalar types for which most operations between instances of \c U1 and \c U2 returns an \c U3.
+  * You can let %Eigen knows that by defining:
+    \code
+    template<typename BinaryOp>
+    struct ScalarBinaryOpTraits<U1,U2,BinaryOp> { typedef U3 ReturnType;  };
+    template<typename BinaryOp>
+    struct ScalarBinaryOpTraits<U2,U1,BinaryOp> { typedef U3 ReturnType;  };
+    \endcode
+  * You can then explicitly disable some particular operations to get more explicit error messages:
+    \code
+    template<>
+    struct ScalarBinaryOpTraits<U1,U2,internal::scalar_max_op<U1,U2> > {};
+    \endcode
+  * Or customize the return type for individual operation:
+    \code
+    template<>
+    struct ScalarBinaryOpTraits<U1,U2,internal::scalar_sum_op<U1,U2> > { typedef U1 ReturnType; };
+    \endcode
+  *
+  * By default, the following generic combinations are supported:
+  <table class="manual">
+  <tr><th>ScalarA</th><th>ScalarB</th><th>BinaryOp</th><th>ReturnType</th><th>Note</th></tr>
+  <tr            ><td>\c T </td><td>\c T </td><td>\c * </td><td>\c T </td><td></td></tr>
+  <tr class="alt"><td>\c NumTraits<T>::Real </td><td>\c T </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+  <tr            ><td>\c T </td><td>\c NumTraits<T>::Real </td><td>\c * </td><td>\c T </td><td>Only if \c NumTraits<T>::IsComplex </td></tr>
+  </table>
+  *
+  * \sa CwiseBinaryOp
+  */
+template<typename ScalarA, typename ScalarB, typename BinaryOp=internal::scalar_product_op<ScalarA,ScalarB> >
+struct ScalarBinaryOpTraits
+#ifndef EIGEN_PARSED_BY_DOXYGEN
+  // for backward compatibility, use the hints given by the (deprecated) internal::scalar_product_traits class.
+  : internal::scalar_product_traits<ScalarA,ScalarB>
+#endif // EIGEN_PARSED_BY_DOXYGEN
+{};
+
+template<typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<T,T,BinaryOp>
+{
+  typedef T ReturnType;
+};
+
+template <typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<T, typename NumTraits<typename internal::enable_if<NumTraits<T>::IsComplex,T>::type>::Real, BinaryOp>
+{
+  typedef T ReturnType;
+};
+template <typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<typename NumTraits<typename internal::enable_if<NumTraits<T>::IsComplex,T>::type>::Real, T, BinaryOp>
+{
+  typedef T ReturnType;
+};
+
+// For Matrix * Permutation
+template<typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<T,void,BinaryOp>
+{
+  typedef T ReturnType;
+};
+
+// For Permutation * Matrix
+template<typename T, typename BinaryOp>
+struct ScalarBinaryOpTraits<void,T,BinaryOp>
+{
+  typedef T ReturnType;
+};
+
+// for Permutation*Permutation
+template<typename BinaryOp>
+struct ScalarBinaryOpTraits<void,void,BinaryOp>
+{
+  typedef void ReturnType;
+};
+
+// We require Lhs and Rhs to have "compatible" scalar types.
 // It is tempting to always allow mixing different types but remember that this is often impossible in the vectorized paths.
 // So allowing mixing different types gives very unexpected errors when enabling vectorization, when the user tries to
 // add together a float matrix and a double matrix.
 #define EIGEN_CHECK_BINARY_COMPATIBILIY(BINOP,LHS,RHS) \
-  EIGEN_STATIC_ASSERT((internal::functor_is_product_like<BINOP>::ret \
-                        ? int(internal::scalar_product_traits<LHS, RHS>::Defined) \
-                        : int(internal::is_same_or_void<LHS, RHS>::value)), \
+  EIGEN_STATIC_ASSERT((Eigen::internal::has_ReturnType<ScalarBinaryOpTraits<LHS, RHS,BINOP> >::value), \
     YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
-    
+
 } // end namespace Eigen
 
 #endif // EIGEN_XPRHELPER_H
