@@ -18,6 +18,7 @@ permalink: /
 
 # Data and code dois
 Publication in JOSS: [![DOI](https://zenodo.org/badge/109667597.svg)](https://zenodo.org/badge/latestdoi/109667597)
+
 Outputs of Reinecke et al 2019 in GMD: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
 
 # The framework G³M-f
