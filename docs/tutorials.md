@@ -11,7 +11,7 @@ permalink: /tut
 The following picture shows the conceptual example model:
 ![](simple_model.png)
 
-After compilation (see [Home](http://globalgroundwatermodel.org/) -> "How to compile"):
+After compilation (see [here](http://globalgroundwatermodel.org/#how-to-compile)):
 ```
 simple_model
 ```
