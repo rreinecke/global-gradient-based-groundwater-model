@@ -33,6 +33,8 @@ struct CommaInitializer
   inline CommaInitializer(XprType& xpr, const Scalar& s)
     : m_xpr(xpr), m_row(0), m_col(1), m_currentBlockRows(1)
   {
+    eigen_assert(m_xpr.rows() > 0 && m_xpr.cols() > 0
+      && "Cannot comma-initialize a 0x0 matrix (operator<<)");
     m_xpr.coeffRef(0,0) = s;
   }
 
@@ -41,6 +43,8 @@ struct CommaInitializer
   inline CommaInitializer(XprType& xpr, const DenseBase<OtherDerived>& other)
     : m_xpr(xpr), m_row(0), m_col(other.cols()), m_currentBlockRows(other.rows())
   {
+    eigen_assert(m_xpr.rows() >= other.rows() && m_xpr.cols() >= other.cols()
+      && "Cannot comma-initialize a 0x0 matrix (operator<<)");
     m_xpr.block(0, 0, other.rows(), other.cols()) = other;
   }
 
@@ -80,9 +84,7 @@ struct CommaInitializer
   EIGEN_DEVICE_FUNC
   CommaInitializer& operator,(const DenseBase<OtherDerived>& other)
   {
-    if(other.cols()==0 || other.rows()==0)
-      return *this;
-    if (m_col==m_xpr.cols())
+    if (m_col==m_xpr.cols() && (other.cols()!=0 || other.rows()!=m_currentBlockRows))
     {
       m_row+=m_currentBlockRows;
       m_col = 0;
@@ -90,15 +92,11 @@ struct CommaInitializer
       eigen_assert(m_row+m_currentBlockRows<=m_xpr.rows()
         && "Too many rows passed to comma initializer (operator<<)");
     }
-    eigen_assert(m_col<m_xpr.cols()
+    eigen_assert((m_col + other.cols() <= m_xpr.cols())
       && "Too many coefficients passed to comma initializer (operator<<)");
     eigen_assert(m_currentBlockRows==other.rows());
-    if (OtherDerived::SizeAtCompileTime != Dynamic)
-      m_xpr.template block<OtherDerived::RowsAtCompileTime != Dynamic ? OtherDerived::RowsAtCompileTime : 1,
-                              OtherDerived::ColsAtCompileTime != Dynamic ? OtherDerived::ColsAtCompileTime : 1>
-                    (m_row, m_col) = other;
-    else
-      m_xpr.block(m_row, m_col, other.rows(), other.cols()) = other;
+    m_xpr.template block<OtherDerived::RowsAtCompileTime, OtherDerived::ColsAtCompileTime>
+                    (m_row, m_col, other.rows(), other.cols()) = other;
     m_col += other.cols();
     return *this;
   }
@@ -109,9 +107,7 @@ struct CommaInitializer
   EIGEN_EXCEPTION_SPEC(Eigen::eigen_assert_exception)
 #endif
   {
-    eigen_assert((m_row+m_currentBlockRows) == m_xpr.rows()
-         && m_col == m_xpr.cols()
-         && "Too few coefficients passed to comma initializer (operator<<)");
+    finished();
   }
 
   /** \returns the built matrix once all its coefficients have been set.
@@ -122,7 +118,12 @@ struct CommaInitializer
     * \endcode
     */
   EIGEN_DEVICE_FUNC
-  inline XprType& finished() { return m_xpr; }
+  inline XprType& finished() {
+      eigen_assert(((m_row+m_currentBlockRows) == m_xpr.rows() || m_xpr.cols() == 0)
+           && m_col == m_xpr.cols()
+           && "Too few coefficients passed to comma initializer (operator<<)");
+      return m_xpr;
+  }
 
   XprType& m_xpr;           // target expression
   Index m_row;              // current row id
@@ -144,7 +145,7 @@ struct CommaInitializer
   * \sa CommaInitializer::finished(), class CommaInitializer
   */
 template<typename Derived>
-inline CommaInitializer<Derived> DenseBase<Derived>::operator<< (const Scalar& s)
+EIGEN_DEVICE_FUNC inline CommaInitializer<Derived> DenseBase<Derived>::operator<< (const Scalar& s)
 {
   return CommaInitializer<Derived>(*static_cast<Derived*>(this), s);
 }
@@ -152,7 +153,7 @@ inline CommaInitializer<Derived> DenseBase<Derived>::operator<< (const Scalar& s
 /** \sa operator<<(const Scalar&) */
 template<typename Derived>
 template<typename OtherDerived>
-inline CommaInitializer<Derived>
+EIGEN_DEVICE_FUNC inline CommaInitializer<Derived>
 DenseBase<Derived>::operator<<(const DenseBase<OtherDerived>& other)
 {
   return CommaInitializer<Derived>(*static_cast<Derived *>(this), other);
