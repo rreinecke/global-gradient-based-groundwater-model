@@ -114,8 +114,10 @@ public:
     MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime,
     Options = MatrixType::Options
   };
-  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime>
-          TransposeTypeWithSameStorageOrder;
+
+  typedef typename internal::make_proper_matrix_type<
+    Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime
+  >::type TransposeTypeWithSameStorageOrder;
 
   void allocate(const JacobiSVD<MatrixType, FullPivHouseholderQRPreconditioner>& svd)
   {
@@ -203,8 +205,9 @@ public:
     Options = MatrixType::Options
   };
 
-  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime>
-          TransposeTypeWithSameStorageOrder;
+  typedef typename internal::make_proper_matrix_type<
+    Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime
+  >::type TransposeTypeWithSameStorageOrder;
 
   void allocate(const JacobiSVD<MatrixType, ColPivHouseholderQRPreconditioner>& svd)
   {
@@ -299,8 +302,9 @@ public:
     Options = MatrixType::Options
   };
 
-  typedef Matrix<Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime>
-          TransposeTypeWithSameStorageOrder;
+  typedef typename internal::make_proper_matrix_type<
+    Scalar, ColsAtCompileTime, RowsAtCompileTime, Options, MaxColsAtCompileTime, MaxRowsAtCompileTime
+  >::type TransposeTypeWithSameStorageOrder;
 
   void allocate(const JacobiSVD<MatrixType, HouseholderQRPreconditioner>& svd)
   {
@@ -412,7 +416,7 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
     }
 
     // update largest diagonal entry
-    maxDiagEntry = numext::maxi(maxDiagEntry,numext::maxi(abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
+    maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(work_matrix.coeff(p,p)), abs(work_matrix.coeff(q,q))));
     // and check whether the 2x2 block is already diagonal
     RealScalar threshold = numext::maxi<RealScalar>(considerAsZero, precision * maxDiagEntry);
     return abs(work_matrix.coeff(p,q))>threshold || abs(work_matrix.coeff(q,p)) > threshold;
@@ -421,6 +425,7 @@ struct svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner, true>
 
 template<typename _MatrixType, int QRPreconditioner> 
 struct traits<JacobiSVD<_MatrixType,QRPreconditioner> >
+        : traits<_MatrixType>
 {
   typedef _MatrixType MatrixType;
 };
@@ -580,6 +585,7 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
     using Base::m_matrixU;
     using Base::m_matrixV;
     using Base::m_singularValues;
+    using Base::m_info;
     using Base::m_isInitialized;
     using Base::m_isAllocated;
     using Base::m_usePrescribedThreshold;
@@ -606,7 +612,7 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
 };
 
 template<typename MatrixType, int QRPreconditioner>
-void JacobiSVD<MatrixType, QRPreconditioner>::allocate(Index rows, Index cols, unsigned int computationOptions)
+void JacobiSVD<MatrixType, QRPreconditioner>::allocate(Eigen::Index rows, Eigen::Index cols, unsigned int computationOptions)
 {
   eigen_assert(rows >= 0 && cols >= 0);
 
@@ -620,6 +626,7 @@ void JacobiSVD<MatrixType, QRPreconditioner>::allocate(Index rows, Index cols, u
 
   m_rows = rows;
   m_cols = cols;
+  m_info = Success;
   m_isInitialized = false;
   m_isAllocated = true;
   m_computationOptions = computationOptions;
@@ -665,13 +672,16 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   // only worsening the precision of U and V as we accumulate more rotations
   const RealScalar precision = RealScalar(2) * NumTraits<Scalar>::epsilon();
 
-  // limit for very small denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
-  // FIXME What about considerering any denormal numbers as zero, using:
-  // const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
-  const RealScalar considerAsZero = RealScalar(2) * std::numeric_limits<RealScalar>::denorm_min();
+  // limit for denormal numbers to be considered zero in order to avoid infinite loops (see bug 286)
+  const RealScalar considerAsZero = (std::numeric_limits<RealScalar>::min)();
 
   // Scaling factor to reduce over/under-flows
-  RealScalar scale = matrix.cwiseAbs().maxCoeff();
+  RealScalar scale = matrix.cwiseAbs().template maxCoeff<PropagateNaN>();
+  if (!(numext::isfinite)(scale)) {
+    m_isInitialized = true;
+    m_info = InvalidInput;
+    return *this;
+  }
   if(scale==RealScalar(0)) scale = RealScalar(1);
   
   /*** step 1. The R-SVD step: we use a QR decomposition to reduce to the case of a square matrix */
@@ -713,7 +723,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
         {
           finished = false;
           // perform SVD decomposition of 2x2 sub-matrix corresponding to indices p,q to make it diagonal
-          // the complex to real operation returns true is the updated 2x2 block is not already diagonal
+          // the complex to real operation returns true if the updated 2x2 block is not already diagonal
           if(internal::svd_precondition_2x2_block_to_be_real<MatrixType, QRPreconditioner>::run(m_workMatrix, *this, p, q, maxDiagEntry))
           {
             JacobiRotation<RealScalar> j_left, j_right;
@@ -727,7 +737,7 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
             if(computeV()) m_matrixV.applyOnTheRight(p,q,j_right);
 
             // keep track of the largest diagonal coefficient
-            maxDiagEntry = numext::maxi(maxDiagEntry,numext::maxi(abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
+            maxDiagEntry = numext::maxi<RealScalar>(maxDiagEntry,numext::maxi<RealScalar>(abs(m_workMatrix.coeff(p,p)), abs(m_workMatrix.coeff(q,q))));
           }
         }
       }
@@ -738,9 +748,22 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
 
   for(Index i = 0; i < m_diagSize; ++i)
   {
-    RealScalar a = abs(m_workMatrix.coeff(i,i));
-    m_singularValues.coeffRef(i) = a;
-    if(computeU() && (a!=RealScalar(0))) m_matrixU.col(i) *= m_workMatrix.coeff(i,i)/a;
+    // For a complex matrix, some diagonal coefficients might note have been
+    // treated by svd_precondition_2x2_block_to_be_real, and the imaginary part
+    // of some diagonal entry might not be null.
+    if(NumTraits<Scalar>::IsComplex && abs(numext::imag(m_workMatrix.coeff(i,i)))>considerAsZero)
+    {
+      RealScalar a = abs(m_workMatrix.coeff(i,i));
+      m_singularValues.coeffRef(i) = abs(a);
+      if(computeU()) m_matrixU.col(i) *= m_workMatrix.coeff(i,i)/a;
+    }
+    else
+    {
+      // m_workMatrix.coeff(i,i) is already real, no difficulty:
+      RealScalar a = numext::real(m_workMatrix.coeff(i,i));
+      m_singularValues.coeffRef(i) = abs(a);
+      if(computeU() && (a<RealScalar(0))) m_matrixU.col(i) = -m_matrixU.col(i);
+    }
   }
   
   m_singularValues *= scale;
@@ -770,7 +793,6 @@ JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsig
   return *this;
 }
 
-#ifndef __CUDACC__
 /** \svd_module
   *
   * \return the singular value decomposition of \c *this computed by two-sided
@@ -784,7 +806,6 @@ MatrixBase<Derived>::jacobiSvd(unsigned int computationOptions) const
 {
   return JacobiSVD<PlainObject>(*this, computationOptions);
 }
-#endif // __CUDACC__
 
 } // end namespace Eigen
 

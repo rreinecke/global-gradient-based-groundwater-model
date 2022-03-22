@@ -22,7 +22,7 @@ namespace Eigen {
   * See http://www.netlib.org/linalg/html_templates/node91.html for details on the storage scheme.
   *
   * This class can be extended with the help of the plugin mechanism described on the page
-  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_SPARSEVECTOR_PLUGIN.
+  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_SPARSEVECTOR_PLUGIN.
   */
 
 namespace internal {
@@ -281,12 +281,20 @@ class SparseVector
     }
 
     /** Swaps the values of \c *this and \a other.
-      * Overloaded for performance: this version performs a \em shallow swap by swaping pointers and attributes only.
+      * Overloaded for performance: this version performs a \em shallow swap by swapping pointers and attributes only.
       * \sa SparseMatrixBase::swap()
       */
     inline void swap(SparseVector& other)
     {
       std::swap(m_size, other.m_size);
+      m_data.swap(other.m_data);
+    }
+
+    template<int OtherOptions>
+    inline void swap(SparseMatrix<Scalar,OtherOptions,StorageIndex>& other)
+    {
+      eigen_assert(other.outerSize()==1);
+      std::swap(m_size, other.m_innerSize);
       m_data.swap(other.m_data);
     }
 
@@ -403,6 +411,7 @@ struct evaluator<SparseVector<_Scalar,_Options,_Index> >
   : evaluator_base<SparseVector<_Scalar,_Options,_Index> >
 {
   typedef SparseVector<_Scalar,_Options,_Index> SparseVectorType;
+  typedef evaluator_base<SparseVectorType> Base;
   typedef typename SparseVectorType::InnerIterator InnerIterator;
   typedef typename SparseVectorType::ReverseInnerIterator ReverseInnerIterator;
   
@@ -410,20 +419,22 @@ struct evaluator<SparseVector<_Scalar,_Options,_Index> >
     CoeffReadCost = NumTraits<_Scalar>::ReadCost,
     Flags = SparseVectorType::Flags
   };
+
+  evaluator() : Base() {}
   
-  explicit evaluator(const SparseVectorType &mat) : m_matrix(mat)
+  explicit evaluator(const SparseVectorType &mat) : m_matrix(&mat)
   {
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
   
   inline Index nonZerosEstimate() const {
-    return m_matrix.nonZeros();
+    return m_matrix->nonZeros();
   }
   
-  operator SparseVectorType&() { return m_matrix.const_cast_derived(); }
-  operator const SparseVectorType&() const { return m_matrix; }
+  operator SparseVectorType&() { return m_matrix->const_cast_derived(); }
+  operator const SparseVectorType&() const { return *m_matrix; }
   
-  const SparseVectorType &m_matrix;
+  const SparseVectorType *m_matrix;
 };
 
 template< typename Dest, typename Src>

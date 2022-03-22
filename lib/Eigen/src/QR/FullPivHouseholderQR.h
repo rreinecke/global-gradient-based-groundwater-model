@@ -18,6 +18,9 @@ namespace internal {
 template<typename _MatrixType> struct traits<FullPivHouseholderQR<_MatrixType> >
  : traits<_MatrixType>
 {
+  typedef MatrixXpr XprKind;
+  typedef SolverStorage StorageKind;
+  typedef int StorageIndex;
   enum { Flags = 0 };
 };
 
@@ -50,24 +53,24 @@ struct traits<FullPivHouseholderQRMatrixQReturnType<MatrixType> >
   * This decomposition performs a very prudent full pivoting in order to be rank-revealing and achieve optimal
   * numerical stability. The trade-off is that it is slower than HouseholderQR and ColPivHouseholderQR.
   *
+  * This class supports the \link InplaceDecomposition inplace decomposition \endlink mechanism.
+  * 
   * \sa MatrixBase::fullPivHouseholderQr()
   */
 template<typename _MatrixType> class FullPivHouseholderQR
+        : public SolverBase<FullPivHouseholderQR<_MatrixType> >
 {
   public:
 
     typedef _MatrixType MatrixType;
+    typedef SolverBase<FullPivHouseholderQR> Base;
+    friend class SolverBase<FullPivHouseholderQR>;
+
+    EIGEN_GENERIC_PUBLIC_INTERFACE(FullPivHouseholderQR)
     enum {
-      RowsAtCompileTime = MatrixType::RowsAtCompileTime,
-      ColsAtCompileTime = MatrixType::ColsAtCompileTime,
-      Options = MatrixType::Options,
       MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
       MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime
     };
-    typedef typename MatrixType::Scalar Scalar;
-    typedef typename MatrixType::RealScalar RealScalar;
-    // FIXME should be int
-    typedef typename MatrixType::StorageIndex StorageIndex;
     typedef internal::FullPivHouseholderQRMatrixQReturnType<MatrixType> MatrixQReturnType;
     typedef typename internal::plain_diag_type<MatrixType>::type HCoeffsType;
     typedef Matrix<StorageIndex, 1,
@@ -135,6 +138,27 @@ template<typename _MatrixType> class FullPivHouseholderQR
       compute(matrix.derived());
     }
 
+    /** \brief Constructs a QR factorization from a given matrix
+      *
+      * This overloaded constructor is provided for \link InplaceDecomposition inplace decomposition \endlink when \c MatrixType is a Eigen::Ref.
+      *
+      * \sa FullPivHouseholderQR(const EigenBase&)
+      */
+    template<typename InputType>
+    explicit FullPivHouseholderQR(EigenBase<InputType>& matrix)
+      : m_qr(matrix.derived()),
+        m_hCoeffs((std::min)(matrix.rows(), matrix.cols())),
+        m_rows_transpositions((std::min)(matrix.rows(), matrix.cols())),
+        m_cols_transpositions((std::min)(matrix.rows(), matrix.cols())),
+        m_cols_permutation(matrix.cols()),
+        m_temp(matrix.cols()),
+        m_isInitialized(false),
+        m_usePrescribedThreshold(false)
+    {
+      computeInPlace();
+    }
+
+    #ifdef EIGEN_PARSED_BY_DOXYGEN
     /** This method finds a solution x to the equation Ax=b, where A is the matrix of which
       * \c *this is the QR decomposition.
       *
@@ -142,9 +166,6 @@ template<typename _MatrixType> class FullPivHouseholderQR
       *
       * \returns the exact or least-square solution if the rank is greater or equal to the number of columns of A,
       * and an arbitrary solution otherwise.
-      *
-      * \note The case where b is a matrix is not yet implemented. Also, this
-      *       code is space inefficient.
       *
       * \note_about_checking_solutions
       *
@@ -155,11 +176,8 @@ template<typename _MatrixType> class FullPivHouseholderQR
       */
     template<typename Rhs>
     inline const Solve<FullPivHouseholderQR, Rhs>
-    solve(const MatrixBase<Rhs>& b) const
-    {
-      eigen_assert(m_isInitialized && "FullPivHouseholderQR is not initialized.");
-      return Solve<FullPivHouseholderQR, Rhs>(*this, b.derived());
-    }
+    solve(const MatrixBase<Rhs>& b) const;
+    #endif
 
     /** \returns Expression object representing the matrix Q
       */
@@ -374,22 +392,24 @@ template<typename _MatrixType> class FullPivHouseholderQR
       *          diagonal coefficient of U.
       */
     RealScalar maxPivot() const { return m_maxpivot; }
-    
+
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     template<typename RhsType, typename DstType>
-    EIGEN_DEVICE_FUNC
     void _solve_impl(const RhsType &rhs, DstType &dst) const;
+
+    template<bool Conjugate, typename RhsType, typename DstType>
+    void _solve_impl_transposed(const RhsType &rhs, DstType &dst) const;
     #endif
 
   protected:
-    
+
     static void check_template_parameters()
     {
       EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
     }
-    
+
     void computeInPlace();
-    
+
     MatrixType m_qr;
     HCoeffsType m_hCoeffs;
     IntDiagSizeVectorType m_rows_transpositions;
@@ -430,18 +450,16 @@ template<typename MatrixType>
 template<typename InputType>
 FullPivHouseholderQR<MatrixType>& FullPivHouseholderQR<MatrixType>::compute(const EigenBase<InputType>& matrix)
 {
-  check_template_parameters();
-  
   m_qr = matrix.derived();
-  
   computeInPlace();
-  
   return *this;
 }
 
 template<typename MatrixType>
 void FullPivHouseholderQR<MatrixType>::computeInPlace()
 {
+  check_template_parameters();
+
   using std::abs;
   Index rows = m_qr.rows();
   Index cols = m_qr.cols();
@@ -483,15 +501,15 @@ void FullPivHouseholderQR<MatrixType>::computeInPlace()
       m_nonzero_pivots = k;
       for(Index i = k; i < size; i++)
       {
-        m_rows_transpositions.coeffRef(i) = i;
-        m_cols_transpositions.coeffRef(i) = i;
+        m_rows_transpositions.coeffRef(i) = internal::convert_index<StorageIndex>(i);
+        m_cols_transpositions.coeffRef(i) = internal::convert_index<StorageIndex>(i);
         m_hCoeffs.coeffRef(i) = Scalar(0);
       }
       break;
     }
 
-    m_rows_transpositions.coeffRef(k) = row_of_biggest_in_corner;
-    m_cols_transpositions.coeffRef(k) = col_of_biggest_in_corner;
+    m_rows_transpositions.coeffRef(k) = internal::convert_index<StorageIndex>(row_of_biggest_in_corner);
+    m_cols_transpositions.coeffRef(k) = internal::convert_index<StorageIndex>(col_of_biggest_in_corner);
     if(k != row_of_biggest_in_corner) {
       m_qr.row(k).tail(cols-k).swap(m_qr.row(row_of_biggest_in_corner).tail(cols-k));
       ++number_of_transpositions;
@@ -525,7 +543,6 @@ template<typename _MatrixType>
 template<typename RhsType, typename DstType>
 void FullPivHouseholderQR<_MatrixType>::_solve_impl(const RhsType &rhs, DstType &dst) const
 {
-  eigen_assert(rhs.rows() == rows());
   const Index l_rank = rank();
 
   // FIXME introduce nonzeroPivots() and use it here. and more generally,
@@ -538,7 +555,7 @@ void FullPivHouseholderQR<_MatrixType>::_solve_impl(const RhsType &rhs, DstType 
 
   typename RhsType::PlainObject c(rhs);
 
-  Matrix<Scalar,1,RhsType::ColsAtCompileTime> temp(rhs.cols());
+  Matrix<typename RhsType::Scalar,1,RhsType::ColsAtCompileTime> temp(rhs.cols());
   for (Index k = 0; k < l_rank; ++k)
   {
     Index remainingSize = rows()-k;
@@ -555,16 +572,52 @@ void FullPivHouseholderQR<_MatrixType>::_solve_impl(const RhsType &rhs, DstType 
   for(Index i = 0; i < l_rank; ++i) dst.row(m_cols_permutation.indices().coeff(i)) = c.row(i);
   for(Index i = l_rank; i < cols(); ++i) dst.row(m_cols_permutation.indices().coeff(i)).setZero();
 }
+
+template<typename _MatrixType>
+template<bool Conjugate, typename RhsType, typename DstType>
+void FullPivHouseholderQR<_MatrixType>::_solve_impl_transposed(const RhsType &rhs, DstType &dst) const
+{
+  const Index l_rank = rank();
+
+  if(l_rank == 0)
+  {
+    dst.setZero();
+    return;
+  }
+
+  typename RhsType::PlainObject c(m_cols_permutation.transpose()*rhs);
+
+  m_qr.topLeftCorner(l_rank, l_rank)
+         .template triangularView<Upper>()
+         .transpose().template conjugateIf<Conjugate>()
+         .solveInPlace(c.topRows(l_rank));
+
+  dst.topRows(l_rank) = c.topRows(l_rank);
+  dst.bottomRows(rows()-l_rank).setZero();
+
+  Matrix<Scalar, 1, DstType::ColsAtCompileTime> temp(dst.cols());
+  const Index size = (std::min)(rows(), cols());
+  for (Index k = size-1; k >= 0; --k)
+  {
+    Index remainingSize = rows()-k;
+
+    dst.bottomRightCorner(remainingSize, dst.cols())
+       .applyHouseholderOnTheLeft(m_qr.col(k).tail(remainingSize-1).template conjugateIf<!Conjugate>(),
+                                  m_hCoeffs.template conjugateIf<Conjugate>().coeff(k), &temp.coeffRef(0));
+
+    dst.row(k).swap(dst.row(m_rows_transpositions.coeff(k)));
+  }
+}
 #endif
 
 namespace internal {
   
-template<typename DstXprType, typename MatrixType, typename Scalar>
-struct Assignment<DstXprType, Inverse<FullPivHouseholderQR<MatrixType> >, internal::assign_op<Scalar>, Dense2Dense, Scalar>
+template<typename DstXprType, typename MatrixType>
+struct Assignment<DstXprType, Inverse<FullPivHouseholderQR<MatrixType> >, internal::assign_op<typename DstXprType::Scalar,typename FullPivHouseholderQR<MatrixType>::Scalar>, Dense2Dense>
 {
   typedef FullPivHouseholderQR<MatrixType> QrType;
   typedef Inverse<QrType> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename QrType::Scalar> &)
   {    
     dst = src.nestedExpression().solve(MatrixType::Identity(src.rows(), src.cols()));
   }
@@ -644,7 +697,6 @@ inline typename FullPivHouseholderQR<MatrixType>::MatrixQReturnType FullPivHouse
   return MatrixQReturnType(m_qr, m_hCoeffs, m_rows_transpositions);
 }
 
-#ifndef __CUDACC__
 /** \return the full-pivoting Householder QR decomposition of \c *this.
   *
   * \sa class FullPivHouseholderQR
@@ -655,7 +707,6 @@ MatrixBase<Derived>::fullPivHouseholderQr() const
 {
   return FullPivHouseholderQR<PlainObject>(eval());
 }
-#endif // __CUDACC__
 
 } // end namespace Eigen
 

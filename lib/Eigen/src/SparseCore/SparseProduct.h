@@ -17,7 +17,7 @@ namespace Eigen {
   * The automatic pruning of the small values can be achieved by calling the pruned() function
   * in which case a totally different product algorithm is employed:
   * \code
-  * C = (A*B).pruned();             // supress numerical zeros (exact)
+  * C = (A*B).pruned();             // suppress numerical zeros (exact)
   * C = (A*B).pruned(ref);
   * C = (A*B).pruned(ref,epsilon);
   * \endcode
@@ -45,7 +45,7 @@ struct generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
 
   // dense += sparse * sparse
   template<typename Dest,typename ActualLhs>
-  static void addTo(Dest& dst, const ActualLhs& lhs, const Rhs& rhs, int* = typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type(0) )
+  static void addTo(Dest& dst, const ActualLhs& lhs, const Rhs& rhs, typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type* = 0)
   {
     typedef typename nested_eval<ActualLhs,Dynamic>::type LhsNested;
     typedef typename nested_eval<Rhs,Dynamic>::type RhsNested;
@@ -57,7 +57,7 @@ struct generic_product_impl<Lhs, Rhs, SparseShape, SparseShape, ProductType>
 
   // dense -= sparse * sparse
   template<typename Dest>
-  static void subTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, int* = typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type(0) )
+  static void subTo(Dest& dst, const Lhs& lhs, const Rhs& rhs, typename enable_if<is_same<typename evaluator_traits<Dest>::Shape,DenseShape>::value,int*>::type* = 0)
   {
     addTo(dst, -lhs, rhs);
   }
@@ -99,21 +99,26 @@ struct generic_product_impl<Lhs, Rhs, SparseTriangularShape, SparseShape, Produc
 
 // dense = sparse-product (can be sparse*sparse, sparse*perm, etc.)
 template< typename DstXprType, typename Lhs, typename Rhs>
-struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::assign_op<typename DstXprType::Scalar>, Sparse2Dense>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
 {
   typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
   {
+    Index dstRows = src.rows();
+    Index dstCols = src.cols();
+    if((dst.rows()!=dstRows) || (dst.cols()!=dstCols))
+      dst.resize(dstRows, dstCols);
+    
     generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
   }
 };
 
 // dense += sparse-product (can be sparse*sparse, sparse*perm, etc.)
 template< typename DstXprType, typename Lhs, typename Rhs>
-struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::add_assign_op<typename DstXprType::Scalar>, Sparse2Dense>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::add_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
 {
   typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::add_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
   {
     generic_product_impl<Lhs, Rhs>::addTo(dst,src.lhs(),src.rhs());
   }
@@ -121,10 +126,10 @@ struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::add_a
 
 // dense -= sparse-product (can be sparse*sparse, sparse*perm, etc.)
 template< typename DstXprType, typename Lhs, typename Rhs>
-struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::sub_assign_op<typename DstXprType::Scalar>, Sparse2Dense>
+struct Assignment<DstXprType, Product<Lhs,Rhs,AliasFreeProduct>, internal::sub_assign_op<typename DstXprType::Scalar,typename Product<Lhs,Rhs,AliasFreeProduct>::Scalar>, Sparse2Dense>
 {
   typedef Product<Lhs,Rhs,AliasFreeProduct> SrcXprType;
-  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar> &)
+  static void run(DstXprType &dst, const SrcXprType &src, const internal::sub_assign_op<typename DstXprType::Scalar,typename SrcXprType::Scalar> &)
   {
     generic_product_impl<Lhs, Rhs>::subTo(dst,src.lhs(),src.rhs());
   }
@@ -158,6 +163,18 @@ protected:
 };
 
 } // end namespace internal
+
+// sparse matrix = sparse-product (can be sparse*sparse, sparse*perm, etc.)
+template<typename Scalar, int _Options, typename _StorageIndex>
+template<typename Lhs, typename Rhs>
+SparseMatrix<Scalar,_Options,_StorageIndex>& SparseMatrix<Scalar,_Options,_StorageIndex>::operator=(const Product<Lhs,Rhs,AliasFreeProduct>& src)
+{
+  // std::cout << "in Assignment : " << DstOptions << "\n";
+  SparseMatrix dst(src.rows(),src.cols());
+  internal::generic_product_impl<Lhs, Rhs>::evalTo(dst,src.lhs(),src.rhs());
+  this->swap(dst);
+  return *this;
+}
 
 } // end namespace Eigen
 

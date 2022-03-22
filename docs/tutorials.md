@@ -11,14 +11,14 @@ permalink: /tut
 The following picture shows the conceptual example model:
 ![](simple_model.png)
 
-After compilation run:
+After compilation (see [here](http://globalgroundwatermodel.org/#how-to-compile)):
 ```
 simple_model
 ```
-It will yield a depth to water table CSV file called wtd.csv for a simple model.
+It will yield a depth to water table CSV file called wtd.csv for a simple model. The output can be changed (see "Write out data" below)
 
 ## How to use
-The follwing will guide you through the building blocks of the simple model shipped along with the code.
+The following will guide you through the building blocks of the simple model shipped along with the code.
 It assumes that you've constructed your model domain and have input data for the following
 * Groundwater recharge (recharge_simple.csv)
 * Surface elevation (elevation_simple.csv)
@@ -66,8 +66,13 @@ void StandaloneRunner::simulate() {
 ```
 
 ### Write out data
-Write out of data is specified by a JSON file called out.json.
-If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
+Data is written into a file depending on the settings in build/data/out_simple.json:
+* "name": name of the created  output file
+* "type": file type (current options are "csv" and "gfs-json", help for netCDF output implementation is appreciated)
+* "field": name of the field (the list of field options can be found in src/DataProcessing/DataOutput/FieldCollector.hpp, e.g., "Velocity")
+* "ID": if true, the node ID is written into the output file
+* "position": if true, node positions (Y and X, or latitude and longitude) are written into the file
+
 ```
 {
   "output": {
@@ -88,16 +93,19 @@ If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 }
 
 ```
+The output file (here "wtd.csv") is written into the build directory.
 
-### Config model
-In order to configure the model variables you can simply change the .json file. Allowing you to change the convergence criteria and the location for your input files.
+For advanced users: If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 
-### Parameters
-The following explains the main config parameters.
+### Model configuration
+
+The model parameters (e.g. aquifer settings, convergence criteria, location of input files) can be configured by changing tests/SimpleModel/config.json.
+
+#### Main config parameters
 
 * model_config
   * nodes: A file describing the input grid
-  * row_cols: true: neighbouring is determined by their position in an evenly grid, false: neighbouring is determined by their lat and lon position (currently only supports 5' resolution)
+  * row_cols: if true, neighbouring is determined by their position in an even grid; if false, neighbouring is determined by their lat and lon position (currently only supports 5' resolution)
   * threads: How many computation threads to use to solve the equation
   * layers: Number of layers of the model domain
   * confinement: Define which of the layers is a confined layer
@@ -112,40 +120,47 @@ The following explains the main config parameters.
   * default_data: specifiy default parameters
   * data: Inputdata - can be modified according to the users need. The shown inputs are the supported defaults
 
+#### The config.json file
 ```
 {
   "config": {
     "model_config": {
       "nodes": "grid_simple.csv",
       "row_cols": "true",
-      "stadystate": "true",
-      "numberofnodes": 100,
+      "steadystate": "true",
+      "number_of_nodes": 100,
+      "number_of_rows": 10,
+      "number_of_cols": 10,
+      "edge_length_rows": 3.162277,
+      "edge_length_cols":3.162277,
       "threads": 1,
       "layers": 2,
+      "one_layer_approach": "false",
       "confinement": [
-        "false",
+        "true",
         "true"
       ],
       "cache": "false",
       "adaptivestepsize": "false",
-      "boundarycondition": "SeaLevel",
+      "boundarycondition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 500,
+      "iterations": 100,
       "inner_itter": 10,
-      "closingcrit": 1e-8,
-      "headchange": 0.0001,
+      "closingcrit": 1e-90,
+      "headchange": 0.000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
-      "stepsize": "daily"
+      "stepsize": "daily",
+      "wetting_approach": "nwt"
     },
   "input": {
     "data_config": {
       "k_from_lith": "true",
-      "k_ocean_from_file": "false",
+      "k_ghb_from_file": "false",
       "specificstorage_from_file": "false",
       "specificyield_from_file": "false",
       "k_river_from_file": "true",
@@ -154,9 +169,9 @@ The following explains the main config parameters.
       "data_as_array": "false"
     },
     "default_data": {
-      "initial_head": 5,
+      "initial_head": 100,
       "K": 0.008,
-      "oceanK": 800,
+      "ghb_K": 800,
       "aquifer_thickness": [
         10,
         10
@@ -169,7 +184,7 @@ The following explains the main config parameters.
       "recharge": "recharge_simple.csv",
       "elevation": "elevation_simple.csv",
       "rivers": "rivers_simple.csv",
-      "lithologie": "lithology_simple.csv",
+      "lithology": "lithology_simple.csv",
       "river_conductance": "rivers_simple.csv",
       "initial_head": "heads_simple.csv"
     }
@@ -180,18 +195,18 @@ The following explains the main config parameters.
 
 ## Deployment in other models
 The main steps towards your own model is to implement the GW_interface and provide a DataReader.
-A standlone version can be easily implemented by extending the simple example provided above.
+A standalone version can be easily implemented by extending the simple example provided above.
 
 ### In memory coupling
 G³M-f is written with the coupling to other models in mind.
 In contrast to other model coupling efforts, it is not necessary to write out files in one model and read them in in another model.
-You can diretly link G³M-f with your existing executable and by providing a class in your already existing model code that implements the gw_interface, you are free to call the simulate() function at any timestep you like.
+You can directly link G³M-f with your existing executable and by providing a class in your already existing model code that implements the gw_interface, you are free to call the simulate() function at any timestep you like.
 Furthermore, the interface provides pointer containers and callbacks to transfer data in memory without the need to waste time on I/O.
 
 Please contact us if you need advice.
 
 ## Running the tests
-Automated tests consits of gunit test which are compiled automatically with the attached cmake file.
+Automated tests consists of gunit test which are compiled automatically with the attached cmake file.
 You can run them by executing the test executable.
 
 ```

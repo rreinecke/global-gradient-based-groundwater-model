@@ -65,7 +65,7 @@ class SimpleDataReader : public DataReader {
             Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "global_ID", "X", "Y", "cell_area", "row", "col");
+            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "row", "col");
 
             double x{0};
             double y{0};
@@ -103,7 +103,7 @@ class SimpleDataReader : public DataReader {
         void readConduct(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
                 if (data > 10) {
-                    LOG(debug) << "Very high conductance value at global_ID "<<pos<<". Possible Data Error";
+                    LOG(debug) << "Very high conductance value at spatID "<<pos<<". Possible Data Error";
                 }
                 nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
             });
@@ -118,7 +118,7 @@ class SimpleDataReader : public DataReader {
 
         void readRiver(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "global_ID", "Head", "Bottom", "Conduct");
+            in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
             int arcid{0};
             double head{0};
             double conduct{0};

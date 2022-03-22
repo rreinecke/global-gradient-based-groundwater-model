@@ -27,9 +27,10 @@ namespace Eigen {
 template<typename Derived>
 template<typename OtherDerived>
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-inline typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+typename MatrixBase<Derived>::template cross_product_return_type<OtherDerived>::type
 #else
-inline typename MatrixBase<Derived>::PlainObject
+typename MatrixBase<Derived>::PlainObject
 #endif
 MatrixBase<Derived>::cross(const MatrixBase<OtherDerived>& other) const
 {
@@ -53,7 +54,7 @@ template< int Arch,typename VectorLhs,typename VectorRhs,
           typename Scalar = typename VectorLhs::Scalar,
           bool Vectorizable = bool((VectorLhs::Flags&VectorRhs::Flags)&PacketAccessBit)>
 struct cross3_impl {
-  static inline typename internal::plain_matrix_type<VectorLhs>::type
+  EIGEN_DEVICE_FUNC static inline typename internal::plain_matrix_type<VectorLhs>::type
   run(const VectorLhs& lhs, const VectorRhs& rhs)
   {
     return typename internal::plain_matrix_type<VectorLhs>::type(
@@ -78,7 +79,7 @@ struct cross3_impl {
   */
 template<typename Derived>
 template<typename OtherDerived>
-inline typename MatrixBase<Derived>::PlainObject
+EIGEN_DEVICE_FUNC inline typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::cross3(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Derived,4)
@@ -105,6 +106,7 @@ MatrixBase<Derived>::cross3(const MatrixBase<OtherDerived>& other) const
   * \sa MatrixBase::cross() */
 template<typename ExpressionType, int Direction>
 template<typename OtherDerived>
+EIGEN_DEVICE_FUNC 
 const typename VectorwiseOp<ExpressionType,Direction>::CrossReturnType
 VectorwiseOp<ExpressionType,Direction>::cross(const MatrixBase<OtherDerived>& other) const
 {
@@ -221,7 +223,7 @@ struct unitOrthogonal_selector<Derived,2>
   * \sa cross()
   */
 template<typename Derived>
-typename MatrixBase<Derived>::PlainObject
+EIGEN_DEVICE_FUNC typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::unitOrthogonal() const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
