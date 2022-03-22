@@ -1,0 +1,8 @@
+theme: jekyll-theme-minimal
+show_downloads: true
+git_branch: master
+title: G³M a flexible groundwater framework
+description: Written in C++, with openMP support, developed at the working group hydrolgy (http://www.uni-frankfurt.de/45217668/dl), Goethe University Frankfurt, Germany
+
+google_analytics: UA-109358361-1
+show_downloads: true

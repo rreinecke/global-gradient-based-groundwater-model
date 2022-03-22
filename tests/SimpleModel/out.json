@@ -1,0 +1,17 @@
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "wtd",
+        "type": "csv",
+        "field": "DepthToWaterTable",
+        "ID": "false",
+        "position": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}

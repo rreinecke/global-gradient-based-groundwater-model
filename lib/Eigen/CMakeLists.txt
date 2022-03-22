@@ -1,0 +1,34 @@
+set(HEADERS
+        ${HEADERS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/Cholesky
+        ${CMAKE_CURRENT_SOURCE_DIR}/CholomodSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/Core
+        ${CMAKE_CURRENT_SOURCE_DIR}/Dense
+        ${CMAKE_CURRENT_SOURCE_DIR}/Eigen
+        ${CMAKE_CURRENT_SOURCE_DIR}/Eigenvalues
+        ${CMAKE_CURRENT_SOURCE_DIR}/Geometry
+        ${CMAKE_CURRENT_SOURCE_DIR}/Householder
+        ${CMAKE_CURRENT_SOURCE_DIR}/IterativeLinearSolvers
+        ${CMAKE_CURRENT_SOURCE_DIR}/Jacobi
+        ${CMAKE_CURRENT_SOURCE_DIR}/LU
+        ${CMAKE_CURRENT_SOURCE_DIR}/MetisSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/OrderingMethods
+        ${CMAKE_CURRENT_SOURCE_DIR}/ParadisoSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/PaStiXSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/QR
+        ${CMAKE_CURRENT_SOURCE_DIR}/QtAlignedMalloc
+        ${CMAKE_CURRENT_SOURCE_DIR}/Sparse
+        ${CMAKE_CURRENT_SOURCE_DIR}/SparseCholesky
+        ${CMAKE_CURRENT_SOURCE_DIR}/SparseCore
+        ${CMAKE_CURRENT_SOURCE_DIR}/SparseLU
+        ${CMAKE_CURRENT_SOURCE_DIR}/SparseQR
+        ${CMAKE_CURRENT_SOURCE_DIR}/SPQRSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/StdDeque
+        ${CMAKE_CURRENT_SOURCE_DIR}/StdList
+        ${CMAKE_CURRENT_SOURCE_DIR}/StdVector
+        ${CMAKE_CURRENT_SOURCE_DIR}/SuperLUSupport
+        ${CMAKE_CURRENT_SOURCE_DIR}/SVD
+        ${CMAKE_CURRENT_SOURCE_DIR}/UmfPackSupport
+        PARENT_SCOPE
+        )
+add_subdirectory(src)

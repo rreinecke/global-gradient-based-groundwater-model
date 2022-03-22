@@ -1,0 +1,10 @@
+add_subdirectory(lib)
+add_subdirectory(src)
+set(SOURCE
+   ${SOURCE}
+   PARENT_SCOPE
+)
+set(HEADERS
+   ${HEADERS}
+   PARENT_SCOPE
+)

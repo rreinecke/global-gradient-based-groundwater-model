@@ -1,0 +1,10 @@
+set(SOURCE
+   ${SOURCE}
+   PARENT_SCOPE
+)
+set(HEADERS
+   ${HEADERS}
+   ${CMAKE_CURRENT_SOURCE_DIR}/Simulation__TEST.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/Stepper__TEST.hpp
+   PARENT_SCOPE
+)

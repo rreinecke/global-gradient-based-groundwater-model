@@ -1,0 +1,3 @@
+[submodule "lib/netcdf-cxx4"]
+	path = lib/netcdf-cxx4
+	url = https://github.com/Unidata/netcdf-cxx4.git

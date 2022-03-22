@@ -1,0 +1,23 @@
+{
+  "@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+  "@type": "Code",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0001-5699-8584",
+      "@type": "Person",
+      "email": "reinecke@em.uni-frnakfurt.de",
+      "name": "Robert Reinecke",
+      "affiliation": "Goethe University Frankfurt"
+    }
+  ],
+  "identifier": "",
+  "codeRepository": "http://globalgroundwatermodel.org/",
+  "datePublished": "2018-01-02",
+  "dateModified": "2018-01-02",
+  "dateCreated": "2018-01-02",
+  "description": "The global gradient-based groundwater model framework G3M",
+  "keywords": "groundwater, gradient-based, global, conjugate-gradient",
+  "license": "GPL v3.0",
+  "title": "G3M-f",
+  "version": "v1.0.0"
+}
