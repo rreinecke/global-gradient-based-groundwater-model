@@ -48,11 +48,11 @@ using n_array = std::array<int,4>;
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary);
 
 /**
-* Builds a map of neighbouring nodes based spatial Id's and resolution
+* Builds a map of neighbouring nodes based spatial Id's and resoltion
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
 void buildBySpatID(NodeVector nodes, std::unordered_map<int, int> id_mapping, int resolution, int layers,
-                   double oceanConduct, Simulation::Options::BoundaryCondition boundaryCondition);
+                   double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
