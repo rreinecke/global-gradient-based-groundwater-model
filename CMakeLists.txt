@@ -4,7 +4,7 @@ if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
 endif()
 
 set(CMAKE_C_COMPILER "clang")
-set(CMAKE_CXX_COMPILER "clang")
+set(CMAKE_CXX_COMPILER "clang++")
 
 # CMAKE flags
 set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
@@ -17,13 +17,11 @@ project(GW)
 add_subdirectory(src)
 add_subdirectory(lib)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")  
 
 ################# Libs ################
-# Boost
-set(BOOST_ROOT=/usr/local/lib)
-set(Boost_NO_SYSTEM_PATHS=TRUE)
 
+# Boost
 find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
@@ -31,8 +29,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 
 # OpenMP
 FIND_PACKAGE(OpenMP)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS} -fopenmp=libomp")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp=libomp")
 
 # GMP
 if (GMP_INCLUDE_DIR AND GMP_LIBRARIES)
@@ -49,14 +47,14 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 ################################
 # Simple Demo Model
 ################################
-project(simple)
-add_subdirectory(tests/SimpleModel)
-
-set(simple_src ${SOURCE})
-list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-
-add_executable(simple_model tests/SimpleModel/simple.cpp ${simple_src} ${HEADERS})
-target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+#project(simple)
+#add_subdirectory(tests/SimpleModel)
+#
+#set(simple_src ${SOURCE})
+#list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+#
+#add_executable(simple_model tests/SimpleModel/simple.cpp ${simple_src} ${HEADERS})
+#target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Simple Demo Model for Variable Density Flow (VDF)
@@ -66,7 +64,7 @@ add_subdirectory(tests/SimpleVDFModel)
 
 set(simple_vdf_src ${SOURCE})
 list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+# list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 
 add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
 target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
