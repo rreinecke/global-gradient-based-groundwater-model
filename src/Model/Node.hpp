@@ -260,7 +260,7 @@ class NodeInterface {
          * @param lat The latitude
          * @param lon The Longitude
          * @param area Area in m²
-         * @param ArcID Unique ARC-ID specified by Kassel
+         * @param SpatID Unique ARC-ID specified by Kassel
          * @param ID Internal ID = Position in vector
          * @param K Hydraulic conductivity in meter/day (default)
          * @param stepModifier Modfies default step size of day (default=1)
@@ -277,7 +277,7 @@ class NodeInterface {
                       t_s_meter area,
                       t_meter edgeLengthLeftRight,
                       t_meter edgeLengthFrontBack,
-                      large_num ArcID,
+                      large_num SpatID,
                       large_num ID,
                       t_vel K,
                       int stepModifier,
@@ -289,7 +289,7 @@ class NodeInterface {
 
         virtual ~NodeInterface() = default;
 
-        large_num getID() { return get<large_num, ArcID>(); }
+        large_num getID() { return get<large_num, SpatID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -757,6 +757,9 @@ Modify Properties
                 virtual const char *what() const throw() { return "Node does not exist"; }
         };
 
+        unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
+            return neighbours;
+        }
         /**
          * @brief Get a neighbour by position
          * @param neighbour The position relative to the cell
@@ -1327,7 +1330,7 @@ class StandardNode : public NodeInterface {
                      t_s_meter area,
                      t_meter edgeLengthLeftRight,
                      t_meter edgeLengthFrontBack,
-                     large_num ArcID,
+                     large_num SpatID,
                      large_num ID,
                      t_vel K,
                      int stepmodifier,
@@ -1335,7 +1338,7 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                 stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:

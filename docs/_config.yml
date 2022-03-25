@@ -1,8 +1,5 @@
-theme: jekyll-theme-minimal
-show_downloads: true
+remote_theme: pmarsceill/just-the-docs
 git_branch: master
-title: G³M a flexible groundwater framework
-description: Written in C++, with openMP support, developed at the working group hydrolgy (http://www.uni-frankfurt.de/45217668/dl), Goethe University Frankfurt, Germany
+title: G³M framework
+description: A flexible MODFLOW-like modeling framwork for building complex gradient-based groundwater models (e.g. global models). Extensive coupling capabilities.
 
-google_analytics: UA-109358361-1
-show_downloads: true

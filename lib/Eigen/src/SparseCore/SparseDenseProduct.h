@@ -74,7 +74,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, t
 // FIXME: what is the purpose of the following specialization? Is it for the BlockedSparse format?
 // -> let's disable it for now as it is conflicting with generic scalar*matrix and matrix*scalar operators
 // template<typename T1, typename T2/*, int _Options, typename _StrideType*/>
-// struct scalar_product_traits<T1, Ref<T2/*, _Options, _StrideType*/> >
+// struct ScalarBinaryOpTraits<T1, Ref<T2/*, _Options, _StrideType*/> >
 // {
 //   enum {
 //     Defined = 1
@@ -88,16 +88,17 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, A
   typedef typename internal::remove_all<SparseLhsType>::type Lhs;
   typedef typename internal::remove_all<DenseRhsType>::type Rhs;
   typedef typename internal::remove_all<DenseResType>::type Res;
-  typedef typename evaluator<Lhs>::InnerIterator LhsInnerIterator;
+  typedef evaluator<Lhs> LhsEval;
+  typedef typename LhsEval::InnerIterator LhsInnerIterator;
   static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const AlphaType& alpha)
   {
-    evaluator<Lhs> lhsEval(lhs);
+    LhsEval lhsEval(lhs);
     for(Index c=0; c<rhs.cols(); ++c)
     {
       for(Index j=0; j<lhs.outerSize(); ++j)
       {
 //        typename Res::Scalar rhs_j = alpha * rhs.coeff(j,c);
-        typename internal::scalar_product_traits<AlphaType, typename Rhs::Scalar>::ReturnType rhs_j(alpha * rhs.coeff(j,c));
+        typename ScalarBinaryOpTraits<AlphaType, typename Rhs::Scalar>::ReturnType rhs_j(alpha * rhs.coeff(j,c));
         for(LhsInnerIterator it(lhsEval,j); it ;++it)
           res.coeffRef(it.index(),c) += it.value() * rhs_j;
       }
@@ -111,16 +112,37 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, t
   typedef typename internal::remove_all<SparseLhsType>::type Lhs;
   typedef typename internal::remove_all<DenseRhsType>::type Rhs;
   typedef typename internal::remove_all<DenseResType>::type Res;
-  typedef typename evaluator<Lhs>::InnerIterator LhsInnerIterator;
+  typedef evaluator<Lhs> LhsEval;
+  typedef typename LhsEval::InnerIterator LhsInnerIterator;
   static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
-    evaluator<Lhs> lhsEval(lhs);
-    for(Index j=0; j<lhs.outerSize(); ++j)
+    Index n = lhs.rows();
+    LhsEval lhsEval(lhs);
+
+#ifdef EIGEN_HAS_OPENMP
+    Eigen::initParallel();
+    Index threads = Eigen::nbThreads();
+    // This 20000 threshold has been found experimentally on 2D and 3D Poisson problems.
+    // It basically represents the minimal amount of work to be done to be worth it.
+    if(threads>1 && lhsEval.nonZerosEstimate()*rhs.cols() > 20000)
     {
-      typename Res::RowXpr res_j(res.row(j));
-      for(LhsInnerIterator it(lhsEval,j); it ;++it)
-        res_j += (alpha*it.value()) * rhs.row(it.index());
+      #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+      for(Index i=0; i<n; ++i)
+        processRow(lhsEval,rhs,res,alpha,i);
     }
+    else
+#endif
+    {
+      for(Index i=0; i<n; ++i)
+        processRow(lhsEval, rhs, res, alpha, i);
+    }
+  }
+
+  static void processRow(const LhsEval& lhsEval, const DenseRhsType& rhs, Res& res, const typename Res::Scalar& alpha, Index i)
+  {
+    typename Res::RowXpr res_i(res.row(i));
+    for(LhsInnerIterator it(lhsEval,i); it ;++it)
+      res_i += (alpha*it.value()) * rhs.row(it.index());
   }
 };
 
