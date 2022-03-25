@@ -5,7 +5,7 @@ namespace Model {
 
 t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
                                t_vol_t recharge,
-                               t_dim slope,
+                               t_dim slope, // QUESTION: can we get rid of the slope?
                                t_vol_t eqFlow) const noexcept {
     t_s_meter_t out = 0.0 * (si::square_meter / day);
     switch (type) {
@@ -90,7 +90,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
 
 t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
                            t_vol_t recharge,
-                           t_dim slope,
+                           t_dim slope, // QUESTION: can we get rid of the slope?
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     switch (type) {
@@ -138,7 +138,6 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
                     return out;
                 }
             }
-            return conductance * flowHead;
         case LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
@@ -158,7 +157,6 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
                     return out;
                 }
             }
-            return conductance * flowHead;
         case DRAIN:
             if (head > flowHead) {
                 return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
@@ -170,6 +168,19 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
     }
     return out;
 }
+
+t_vol_t ExternalFlow::getR(t_meter eq_head, t_meter head,
+                           t_vol_t recharge,
+                           t_dim slope, // QUESTION: can we get rid of the slope?
+                           t_vol_t eqFlow) const noexcept {
+    quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
+    if (type == PSEUDO_SOURCE_FLOW) {
+
+    } else {
+        return out;
+    }
+}
+
 
 t_vol_t ExternalFlow::calculateFloodplaindDrainage(t_meter head) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);

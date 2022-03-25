@@ -86,9 +86,9 @@ using NodeVector = std::shared_ptr<vector<unique_ptr<GlobalFlow::Model::NodeInte
 
 /**
  * Interface defining required fields for a node.
- * A node is the central comutational and spatial unit.
+ * A node is the central computational and spatial unit.
  * A simulated area is seperated into a discrete raster of cells or nodes
- * (seperate computational units which stay in contact to ech other).
+ * (separate computational units which stay in contact to ech other).
  * Is equal to 'cell'.
  *
  * Nodes can be of different physical property e.g. different size.
@@ -128,7 +128,7 @@ class NodeInterface {
          * @brief Apply function to all layers of the model.
          * @param &&...p A list of functions forwarded to setAttribute.
          *
-         * Apply an atribute to all layers at same position as the node.
+         * Apply an attribute to all layers at same position as the node.
          * A function passed in addition modifies the attribute depending on the layer.
          * Stops on last layer.
          */
@@ -151,6 +151,7 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
+        unordered_map<int, double> densitySurfaceElevations;
         int numOfExternalFlows{0};
         bool nwt{false};
         bool initial_head{true};
@@ -187,7 +188,7 @@ class NodeInterface {
         }
 
         /**
-         * @brief Uses specific storage to caluclate storativity
+         * @brief Uses specific storage to calculate storativity
          * @return Flow budget for cell depending on head change
          */
         t_s_meter getStorageCapacity__Primary() noexcept {
@@ -197,7 +198,7 @@ class NodeInterface {
         }
 
         /**
-         * @brief Uses specific yield to caluclate storativity
+         * @brief Uses specific yield to calculate storativity
          * @return Flow budget for cell depending on head change
          */
         t_s_meter getStorageCapacity__Secondary() noexcept {
@@ -243,6 +244,7 @@ class NodeInterface {
             ar & neighbours;
             ar & externalFlows;
             ar & numOfExternalFlows;
+            ar & zetas;
             ar & nwt;
             ar & initial_head;
             ar & simpleDistance;
@@ -263,7 +265,7 @@ class NodeInterface {
          * @param SpatID Unique ARC-ID specified by Kassel
          * @param ID Internal ID = Position in vector
          * @param K Hydraulic conductivity in meter/day (default)
-         * @param stepModifier Modfies default step size of day (default=1)
+         * @param stepModifier Modifies default step size of day (default=1)
          * @param aquiferDepth Vertical size of the cell
          * @param anisotropy Modifier for vertical conductivity based on horizontal
          * @param specificYield Yield of storage for dewatered conditions
@@ -315,7 +317,7 @@ Modify Properties
         /**
          * @brief Set slope from data on all layers
          * Slope input is in % but is required as absolut
-         * thus: slope = sloper_percent / 100
+         * thus: slope = slope_percent / 100
          * @param slope
          */
         void
@@ -455,7 +457,7 @@ Modify Properties
         }
 
         /**
-         * Calculate the equlibrium lateral flows
+         * Calculate the equilibrium lateral flows
          * @return eq lateral flow
          */
         t_vol_t getEqFlow() noexcept {
@@ -487,7 +489,7 @@ Modify Properties
 
         /**
          * @brief Cuts off all heads above surface elevation
-         * @warning Should only be used in spinn up phase!
+         * @warning Should only be used in spin up phase!
          * @return Bool if node was reset
          */
         bool resetFloodingHead() noexcept {
@@ -578,7 +580,7 @@ Modify Properties
         /**
          * @brief Toogle steady state simulation
          * @param onOFF true=on
-         * Turns all storage equations to zero with no timesteps
+         * Turns all storage equations to zero with no time steps
          */
         void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
 
@@ -614,7 +616,7 @@ Modify Properties
         }
 
         /**
-         * @brief Get and external flow by its FlowType
+         * @brief Get an external flow by its FlowType
          * @param type The flow type
          * @return Ref to external flow
          * @throw OutOfRangeException
@@ -671,14 +673,13 @@ Modify Properties
                 //ignore me there is no special_flow in this cell
             }
             t_dim slope = get<t_dim, Slope>();
-            t_vol_t eqFlow = getEqFlow();
+            t_vol_t eqFlow = getEqFlow(); // get the equilibrium lateral flows
             if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                 if (flow.flowIsHeadDependant(head)) {
-                    ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head * get<t_dim, StepModifier>()
-                         + flow.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
-                } else {
-                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom()
-                          +
+                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
+                          flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                } else { // QUESTION: is this explanation correct: "flow is not head dependent: when the head is below the bottom of the simulated cell"?
+                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom() +
                           flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
                 }
             } else {
@@ -689,7 +690,7 @@ Modify Properties
         }
 
         /**
-         * @brief Caluclate dewatered flow
+         * @brief Calculate dewatered flow
          * @return Flow volume per time
          * If a cell is dewatered but below a saturated or partly saturated cell:
          * this calculates the needed additional exchange volume
@@ -799,15 +800,20 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-            /** TODO Implementation of FLOODPLAIN_DRAIN
-            *} else if (type == FLOODPLAIN_DRAIN) {
-            *    externalFlows.insert(std::make_pair(type,
-            *                                        ExternalFlow(numOfExternalFlows, type,
-            *                                                        get<t_meter, Elevation>(),
-            *                                                        get<t_vel, K>() * get<t_meter,
-            *                                                        VerticalSize>(),
-            *                                                        bottom));
-            */
+            }
+            // TODO Implementation of FLOODPLAIN_DRAIN
+            /* else if (type == FLOODPLAIN_DRAIN) {
+                externalFlows.insert(std::make_pair(type,
+                                                    ExternalFlow(numOfExternalFlows, type,
+                                                                    get<t_meter, Elevation>(),
+                                                                    get<t_vel, K>() * get<t_meter,
+                                                                    VerticalSize>(),
+                                                                    bottom));
+
+            } */ else if (type == PSEUDO_SOURCE_FLOW) {
+                externalFlows.insert(std::make_pair(type,
+                                                    ExternalFlow(numOfExternalFlows)));
+
             } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
@@ -863,7 +869,7 @@ Modify Properties
 
         /**
          * @brief Updates GW recharge
-         * Curently assumes only one recharge as external flow!
+         * Currently assumes only one recharge as external flow!
          * @param amount The new flow amount
          * @param Should the recharge in the dynamic rivers be locked or updated by this change?
          */
@@ -1072,7 +1078,7 @@ Modify Properties
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
             t_vol_t out = 0.0 * (si::cubic_meter / day);
-            //Q part is already substracted in RHS
+            //Q part is already subtracted in RHS
             for (const auto &flow : externalFlows) {
                 if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
@@ -1191,14 +1197,15 @@ Modify Properties
          */
         t_vol_t getRHS() {
             t_vol_t externalFlows = -getQ();
-            t_vol_t dwateredFlow = calculateDewateredFlow();
+            t_vol_t dewateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
                     getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
             if (steadyState) {
                 storageFlow = 0 * (si::cubic_meter / day);
             }
-            t_vol_t out = externalFlows + dwateredFlow - rivers - storageFlow;
+            // TODO calculate ZETA
+            t_vol_t out = externalFlows + dewateredFlow - rivers - storageFlow;
             NANChecker(out.value(), "RHS");
             return out;
         }

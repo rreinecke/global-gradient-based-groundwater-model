@@ -31,9 +31,9 @@ namespace GlobalFlow {
 
 /**
  * This container holds physical properties of the groundwater nodes
- * It is intended to be a strogly typed container without flooding the node class with fields
+ * It is intended to be a strongly typed container without flooding the node class with fields
  *
- * Inpired by https://jguegant.github.io/blogs/tech/thread-safe-multi-type-map.html
+ * Inspired by https://jguegant.github.io/blogs/tech/thread-safe-multi-type-map.html
  */
 
 
@@ -41,7 +41,7 @@ namespace GlobalFlow {
 
 /**
  * @class PhysicalProperty
- * Actual container holding the physical propertie
+ * Actual container holding the physical properties
  */
         template<class Type, class Key = DefaultProperty>
         class PhysicalProperty {
@@ -134,7 +134,7 @@ namespace GlobalFlow {
         };
 
 /**
- * Dummmy structs - only needed during compile time to determine type
+ * Dummy structs - only needed during compile time to determine type
  * Each represents a physical property
  */
         struct ID;
@@ -172,36 +172,38 @@ namespace GlobalFlow {
  * Definition of type and unit for each field
  */
         using PhysicalProperties = PropertyRepository<
-                PhysicalProperty<large_num, ID>,
-                PhysicalProperty<large_num, SpatID>,
-                PhysicalProperty<double, Lat>, //TODO use boost unit
-                PhysicalProperty<double, Lon>,
-                PhysicalProperty<int, Layer>,
-                PhysicalProperty<t_dim, StepModifier>,
-                PhysicalProperty<t_s_meter, Area>,
-                PhysicalProperty<t_meter, VerticalSize>,
-                PhysicalProperty<t_meter, Elevation>,
-                PhysicalProperty<t_meter, TopElevation>,
-                PhysicalProperty<t_dim, Slope>,
-                PhysicalProperty<t_meter, EFolding>,
-                PhysicalProperty<bool, Confinement>,
-                PhysicalProperty<t_vel, K>,
-                PhysicalProperty<t_dim, Anisotropy>,
-                PhysicalProperty<quantity < d_time>, StepSize>,
-        PhysicalProperty<t_c_meter, OUT>,
-        PhysicalProperty<t_c_meter, IN>,
-        PhysicalProperty<t_meter, Head>,
-        PhysicalProperty<t_meter, EQHead>,
-        PhysicalProperty<t_meter, HeadChange>,
-        PhysicalProperty<t_meter, Head_TZero>,
-        PhysicalProperty<t_meter, HeadChange_TZero>,
-        PhysicalProperty<t_dim, SpecificYield>,
-        PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
-        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
-        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
-        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
-        PhysicalProperty<t_c_meter, VolumeOfCell>
+            PhysicalProperty<large_num, ID>,
+            PhysicalProperty<large_num, ArcID>,
+            PhysicalProperty<double, Lat>, //TODO use boost unit
+            PhysicalProperty<double, Lon>,
+            PhysicalProperty<int, Layer>,
+            PhysicalProperty<t_dim, StepModifier>,
+            PhysicalProperty<t_s_meter, Area>,
+            PhysicalProperty<t_meter, VerticalSize>,
+            PhysicalProperty<t_meter, Elevation>,
+            PhysicalProperty<t_meter, TopElevation>,
+            PhysicalProperty<t_dim, Slope>,
+            PhysicalProperty<t_meter, EFolding>,
+            PhysicalProperty<bool, Confinement>,
+            PhysicalProperty<t_vel, K>,
+            PhysicalProperty<t_dim, Anisotropy>,
+            PhysicalProperty<quantity < d_time>, StepSize>,
+            PhysicalProperty<t_c_meter, OUT>,
+            PhysicalProperty<t_c_meter, IN>,
+            PhysicalProperty<t_meter, Head>,
+            PhysicalProperty<t_meter, EQHead>,
+            PhysicalProperty<t_meter, HeadChange>,
+            PhysicalProperty<t_meter, Head_TZero>,
+            PhysicalProperty<t_meter, HeadChange_TZero>,
+            PhysicalProperty<t_dim, SpecificYield>,
+            PhysicalProperty<quantity < perUnit>, SpecificStorage>,
+            PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+            PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+            PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+            PhysicalProperty<t_s_meter, SurfaceFrontBack>,
+            PhysicalProperty<t_c_meter, VolumeOfCell>
+
+            // TODO list of PhysicalProperty<t_meter, ZETA>,
         >;
 
     }

@@ -46,7 +46,6 @@ using n_array = std::array<int,4>;
  * @param staticHeadBoundary
  */
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary);
-
 /**
 * Builds a map of neighbouring nodes based spatial Id's and resoltion
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
@@ -57,6 +56,7 @@ void buildBySpatID(NodeVector nodes, std::unordered_map<int, int> id_mapping, in
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
 n_array getNeighbourBySpatialID(int id, int res);
+
 
 /**
 * Builds a map of neighbouring nodes based on x and y coordinates

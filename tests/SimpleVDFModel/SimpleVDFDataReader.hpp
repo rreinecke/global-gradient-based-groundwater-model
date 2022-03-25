@@ -38,6 +38,10 @@ class SimpleVDFDataReader : public DataReader {
             LOG(userinfo) << "Reading the boundary condition";
             readHeadBoundary(buildDir(op.getKGHBDir()));
 
+            LOG(userinfo) << "Reading variable density information";
+            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(), op.getMaxDensity(), op.getMinDensity(),
+                                op.getNumberOfDensityZones());
+
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
@@ -147,11 +151,47 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
+        void readVariableDensity(bool densityVariable, bool densityStratified, vector<double> densities,
+                                 int densityZones) {
+
+            if (densityVariable){
+                vector<double> delnusZone;
+                vector<double> epsZone;
+                vector<double> nusZeta;
+                vector<double> nusZone;
+                // TODO make variables Model::si::si_dimensionless
+                double densityFresh = 1000;
+
+                for (int n = 1; n <= densityZones+1; n++) {
+                    nusZeta[n] = ( densities[n] - densityFresh ) / densityFresh;
+                }
+
+                for (int n = 1; n <= densityZones; n++) {
+                    if (densityStratified) {
+                        nusZone[n] = nusZeta[n+1];
+                        epsZone[n] = 0;
+                    } else { // if continuous
+                        nusZone[n] = 0.5 * ( nusZeta[n] + nusZeta[n+1] );
+                        epsZone[n] = ( nusZeta[n+1] - nusZeta[n] ) / 6;
+                    }
+
+                    if (n == 1) {
+                        delnusZone[n] = nusZone[n];
+                    } else {
+                        delnusZone[n] = nusZone[n] - nusZone[n-1];
+                    }
+                }
+            }
+        }
+
         void readInitialHeads(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
                 nodes->at(pos)->setHead_direct(data);
             });
         }
+
+
+
 };
 }
 }

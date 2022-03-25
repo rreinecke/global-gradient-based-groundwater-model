@@ -99,6 +99,7 @@ enable_testing()
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
