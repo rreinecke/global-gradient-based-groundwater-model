@@ -185,7 +185,7 @@ namespace GlobalFlow {
                  */
                 std::vector<large_num> getIds(Simulation::Simulation &simulation) {
                     return getData<large_num>(simulation, [&simulation](int i) {
-                        return simulation.getNodes()->at(i)->getID();
+                        return simulation.getNodes()->at(i)->getSpatialID();
                     });
                 }
 

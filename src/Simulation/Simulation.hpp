@@ -118,13 +118,13 @@ namespace GlobalFlow {
              */
             void save() {
                 if (serialize) {
-                    LOG(stateinfo) << "Saving state for faster reboot..";
+                    cout << "Saving state for faster reboot..\n";
                     {
-                        std::ofstream ofs(saveName, ios::out | ios::binary);
+                        std::ofstream ofs("savedNodes", ios::out | ios::binary);
                         boost::archive::binary_oarchive outStream(ofs);
                         outStream << nodes;
                     }
-                    LOG(stateinfo) << "Nodes saved";
+                    cout << "Nodes saved\n";
                 }
             };
 
@@ -192,7 +192,7 @@ namespace GlobalFlow {
                 double in{0};
                 double out{0};
                 for (int j = 0; j < nodes->size(); ++j) {
-                    auto id = std::find(std::begin(ids), std::end(ids), nodes->at(j)->getID());
+                    auto id = std::find(std::begin(ids), std::end(ids), nodes->at(j)->getSpatialID());
                     if (id != std::end(ids)) {
                         in += nodes->at(j)->getIN().value();
                         out += nodes->at(j)->getOUT().value();
@@ -210,7 +210,7 @@ namespace GlobalFlow {
             std::string NodeFlowsByID(unsigned long nodeID) {
                 long id{0};
                 for (int j = 0; j < nodes->size(); ++j) {
-                    if (nodes->at(j)->getID() == nodeID) {
+                    if (nodes->at(j)->getSpatialID() == nodeID) {
                         id = j;
                     }
                 }
@@ -345,59 +345,60 @@ namespace GlobalFlow {
                 switch (flow) {
                     case GENERAL_HEAD_BOUNDARY:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();} catch(...){return 0.0;}
                         });
                         break;
                     case RECHARGE:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();} catch(...){return 0.0;}
                         });
                         break;
                     case FASTSURFACE:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value();} catch(...){return 0.0;}
                         });
                         break;
                     case NAG:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value();} catch(...){return 0.0;}
                         });
                         break;
                     case RIVERS:
-                        tmp = getError(
-                                [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
+                        tmp = getError([this](int i) {
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case DRAINS:
                         tmp = getError(
                                 [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value();
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case RIVER_MM:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();} catch(...){return 0.0;}
                         });
                         break;
                     case LAKES:
                         tmp = getError(
                                 [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();} catch(...){return 0.0;}
                         });
                         break;
                     case GLOBAL_WETLANDS:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();} catch(...){return 0.0;}
                         });
                         break;
                     case STORAGE:
-                        tmp = getError([this](int i) { return nodes->at(i)->getTotalStorageFlow().value(); });
+                        tmp = getError([this](int i) {
+                            try{return nodes->at(i)->getTotalStorageFlow().value();} catch(...){return 0.0;}
+                        });
                         break;
                 }
 

@@ -39,7 +39,7 @@
 namespace GlobalFlow {
 namespace Model {
 /**
- * Neighbouring positions for cells
+ * Neighbouring positions for cells (side-view)
  *     TOP
  * LEFT * RIGHT
  *     DOWN
@@ -50,10 +50,10 @@ namespace Model {
 enum NeighbourPosition {
     TOP = 1,
     DOWN,
-    RIGHT,
-    LEFT,
-    FRONT,
-    BACK
+    RIGHT,//EAST
+    LEFT,//WEST
+    FRONT,//NORTH
+    BACK//SOUTH
 };
 }
 }
@@ -289,6 +289,14 @@ class NodeInterface {
 
         virtual ~NodeInterface() = default;
 
+        /**
+        * @return The spatial ID of the node
+        *
+        */
+        large_num getSpatialID() { return get<large_num, SpatID>(); }
+        /**
+        * @return The position in the node vector
+        */
         large_num getID() { return get<large_num, SpatID>(); }
 
 /*****************************************************************
@@ -672,7 +680,7 @@ Modify Properties
             }
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
-            if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
+            if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                 if (flow.flowIsHeadDependant(head)) {
                     ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head * get<t_dim, StepModifier>()
                          + flow.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
@@ -756,7 +764,9 @@ Modify Properties
         class NodeNotFoundException : public std::exception {
                 virtual const char *what() const throw() { return "Node does not exist"; }
         };
-
+        unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
+            return neighbours;
+        }
         /**
          * @brief Get a neighbour by position
          * @param neighbour The position relative to the cell
@@ -900,7 +910,7 @@ Modify Properties
         }
 
         /**
-         * @brief Update wetlands, lakes
+         * @brief Update wetlands, lakes (global + local)
          * @param amount
          * @param type
          */
@@ -977,7 +987,7 @@ Modify Properties
         }
 
         /**
-         * @brief Update lake bottoms
+         * @brief Update (local) lake bottoms
          * Used for sensitivity
          * @param amount
          */
@@ -988,6 +998,21 @@ Modify Properties
                 t_meter bottom = getExternalFlowByName(LAKE).getBottom() * amount;
                 removeExternalFlow(LAKE);
                 addExternalFlow(LAKE, flowHead, conduct, bottom);
+            }
+        }
+
+        /**
+        * @brief Update (global) lake bottoms
+        * Used for sensitivity
+        * @param amount
+        */
+        void updateGlobalLakeBottoms(double amount) {
+            if (hasTypeOfExternalFlow(GLOBAL_LAKE)) {
+                t_meter flowHead = getExternalFlowByName(GLOBAL_LAKE).getFlowHead();
+                double conduct = getExternalFlowByName(GLOBAL_LAKE).getConductance().value();
+                t_meter bottom = getExternalFlowByName(GLOBAL_LAKE).getBottom() * amount;
+                removeExternalFlow(GLOBAL_LAKE);
+                addExternalFlow(GLOBAL_LAKE, flowHead, conduct, bottom);
             }
         }
 
@@ -1041,7 +1066,7 @@ Modify Properties
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
                     }
@@ -1071,7 +1096,7 @@ Modify Properties
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             //Q part is already substracted in RHS
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
                                flow.second.getBottom();

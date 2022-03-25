@@ -55,6 +55,7 @@ Options::load(const std::string &filename) {
     EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
     THREADS = config.get<int>("threads");
     LAYERS = config.get<int>("layers");
+    SPATIAL_RESOLUTION_MINUTE = config.get<double>("spatial_resolution_minute");
     ONE_LAYER = config.get<bool>("one_layer_approach");
     CONFINED = getTypeArray<bool>("confinement", config);
     if (LAYERS != CONFINED.size()) {

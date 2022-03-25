@@ -69,6 +69,7 @@ class Options {
 
         //++General configuration++//
         long NUMBER_OF_NODES{0};
+        double SPATIAL_RESOLUTION_MINUTE{600};
         long NUMBER_OF_ROWS{0};
         long NUMBER_OF_COLS{0};
         double EDGE_LENGTH_ROWS{0.0};
@@ -91,6 +92,7 @@ class Options {
         double ANISOTROPY{10};
         double SPECIFIC_YIELD{0.15};
         double SPECIFIC_STORAGE{0.000015};
+
         string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
         bool SENSITIVITY{false};
     	bool ONE_LAYER{false};
@@ -181,6 +183,14 @@ class Options {
         getNumberOfNodes() {
             return NUMBER_OF_NODES;
         };
+
+        double getSpatialResolutionMinute() const {
+            return SPATIAL_RESOLUTION_MINUTE;
+        }
+
+        void setSpatialResolutionMinute(double spatialResolutionMinute) {
+            SPATIAL_RESOLUTION_MINUTE = spatialResolutionMinute;
+        }
 
         long
         getNumberOfRows() {
