@@ -51,6 +51,100 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
 }
 
 /**
+ * @brief
+ * @param nodes
+ * @param id_mapping
+ * @param resolution
+ * @param layers
+ * @param oceanCoduct
+ * @param boundaryCondition
+ */
+void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mapping, int resolution, int layers,
+                   double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
+    int nodes_per_layer = nodes->size() / layers;
+
+    auto addBoundary = [nodes, boundaryConduct, boundaryCondition](
+            large_num pos, int layer,
+            Model::NeighbourPosition
+            positionOfBoundary) {
+        if (layer > 0) {
+            return;
+        }
+
+        switch (boundaryCondition) {
+            case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
+                Model::quantity<Model::Meter> head =
+                        nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                head,
+                                                boundaryConduct,
+                                                head);
+            }
+                break;
+            case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                0 * Model::si::meter,
+                                                boundaryConduct,
+                                                0 * Model::si::meter);
+            }
+            default:
+                break;
+        }
+    };
+
+    std::unordered_map<int, Model::NeighbourPosition> lu;
+    lu[0] = Model::FRONT; // formerly NORTH
+    lu[1] = Model::BACK; // formerly SOUTH
+    lu[2] = Model::RIGHT; // formerly EAST
+    lu[3] = Model::LEFT; // formerly WEST
+
+    for (int i = 0; i < nodes_per_layer; ++i) {
+        n_array nei = getNeighbourBySpatialID((int) nodes->at(i)->getID(), resolution);
+        for (int j = 0; j < 4; ++j) {
+            if (id_mapping.count(nei[j]) > 0) {
+                //Neighbour id exists in landmask
+                nodes->at(i)->setNeighbour(id_mapping.at(nei[j]), lu[j]);
+            } else {
+                addBoundary(i, 0, lu[j]);
+            }
+        }
+    }
+
+}
+
+/**
+ * @brief calculates all neighbours based on a spatial ID
+ * Assumes no landmask and caclulates all possible neighbours
+ * @param id
+ * @param res
+ * @return
+ */
+n_array getNeighbourBySpatialID(int id, int res) {
+    n_array neighbours{-1, -1, -1, -1};
+    int row_l{360 * 60 * 60 / res};
+    assert(row_l % 2 == 0 && "resolution is impossible");
+
+    if (id > row_l) {
+        //NORTH
+        neighbours[0] = id - row_l;
+    }
+    if (id < (row_l / 2) * row_l - row_l) {
+        //SOUTH
+        neighbours[1] = id + row_l;
+    }
+    if (id % row_l == 0) {
+        //EAST
+        neighbours[2] = id - row_l + 1;
+    } else { neighbours[2] = id + 1; }
+    if ((id - 1) % row_l == 0) {
+        //WEST
+        neighbours[3] = id + row_l - 1;
+    } else { neighbours[3] = id - 1; }
+    return neighbours;
+}
+
+
+/**
  * @brief Connects neighbouring nodes
  * @param nodes
  * @param numberOfTOPNodes
@@ -239,6 +333,42 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 };
 
 /**
+ * @brief
+ * @param from is position in vector of top layer node
+ * @param to is position in vector of node that recieve neighbouring information
+ */
+void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
+    auto neighbours = nodes->at(from)->getListOfNeighbours();
+    for(const auto &n : neighbours){
+        if(n.first == Model::DOWN or n.first == Model::TOP){
+            continue;
+        }
+        nodes->at(to)->setNeighbour(n.second + layer_shift ,n.first);
+    }
+}
+
+/**
+ * @brief Copies cardinal points of top layer to all bottom layers
+ * @param nodes
+ * @param layers
+ */
+void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
+    assert(layers && "AsModel::signing 0 layers does not make any sense");
+    if (layers == 1) {
+        return;
+    }
+    size_t top_layer_size = nodes->size() / layers;
+    for (int i = 0; i < top_layer_size; ++i) {
+        for (int j = 0; j < layers - 1; ++j) {
+            copyNeighbour(i ,i + (top_layer_size * j), nodes, top_layer_size  * j);
+        }
+    }
+}
+
+
+
+
+/**
  * Adds additional layers and connects nodes
  * @param nodes
  * @param layers
@@ -257,7 +387,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     LOG(debug) << "Building additional layers with node count: " << layersize << " for " << layers << " layers";
 
     size_t id = layersize;
-    large_num arcID;
+    large_num spatID;
     double lat, lon;
     int stepMod;
     Model::quantity<Model::SquareMeter> area;
@@ -275,7 +405,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
         for (int i = 0; i < layersize; ++i) {
             //for each node in top layer
 
-            arcID = nodes->at(i)->getProperties().get<large_num, Model::ArcID>();
+            spatID = nodes->at(i)->getProperties().get<large_num, Model::SpatID>();
             lat = nodes->at(i)->getProperties().get<double, Model::Lat>();
             lon = nodes->at(i)->getProperties().get<double, Model::Lon>();
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
@@ -304,7 +434,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                 }
                 nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
                                                             edgeLengthFrontBack,
-                                                            arcID,
+                                                            spatID,
                                                             id,
                                                             K,
                                                             stepMod,

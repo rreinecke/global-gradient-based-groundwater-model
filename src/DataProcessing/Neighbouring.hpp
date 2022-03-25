@@ -35,6 +35,7 @@ namespace DataProcessing
 template<class T>
 using Matrix = std::vector<std::vector<T>>;
 using large_num = unsigned long int;
+using n_array = std::array<int,4>;
 
 /**
  * Modflow like grid file
@@ -45,10 +46,21 @@ using large_num = unsigned long int;
  * @param staticHeadBoundary
  */
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary);
+/**
+* Builds a map of neighbouring nodes based spatial Id's and resoltion
+* Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
+*/
+void buildBySpatID(NodeVector nodes, std::unordered_map<int, int> id_mapping, int resolution, int layers,
+                   double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
+
+void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
+
+n_array getNeighbourBySpatialID(int id, int res);
+
 
 /**
 * Builds a map of neighbouring nodes based on x and y coordinates
-* Missing neighbours or empty spaces lead to adding of a Generl Head Boundar Flow addition
+* Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
 int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double ghbConduct, Simulation::Options::BoundaryCondition boundaryCondition);
 

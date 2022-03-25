@@ -12,8 +12,12 @@ namespace Model {
  */
 PhysicalProperties initProperties() {
     PhysicalProperties fields;
-    fields.emplace < unsigned long int, ID > (0);
-    fields.emplace < unsigned long int, ArcID > (0);
+    fields.emplace < unsigned
+    long
+    int, ID > (0);
+    fields.emplace < unsigned
+    long
+    int, SpatID > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
@@ -45,7 +49,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              quantity<SquareMeter> area,
                              quantity<Meter> edgeLengthLeftRight,
                              quantity<Meter> edgeLengthFrontBack,
-                             unsigned long int arcID,
+                             unsigned long int spatID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
                              int stepModifier,
@@ -60,7 +64,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<SquareMeter>, Area>(area);
     fields.set < unsigned
     long
-    int, ArcID > (arcID);
+    int, SpatID > (spatID);
     fields.set < unsigned
     long
     int, ID > (identifier);

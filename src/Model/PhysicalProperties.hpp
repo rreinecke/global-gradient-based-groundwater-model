@@ -138,7 +138,7 @@ namespace GlobalFlow {
  * Each represents a physical property
  */
         struct ID;
-        struct ArcID;
+        struct SpatID;
         struct Lat;
         struct Lon;
         struct Layer;

@@ -32,7 +32,7 @@ template<typename ExpressionType> class MatrixWrapper;
   * \tparam Derived is the derived type, e.g., an array or an expression type.
   *
   * This class can be extended with the help of the plugin mechanism described on the page
-  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_ARRAYBASE_PLUGIN.
+  * \ref TopicCustomizing_Plugins by defining the preprocessor symbol \c EIGEN_ARRAYBASE_PLUGIN.
   *
   * \sa class MatrixBase, \ref TopicClassHierarchy
   */
@@ -69,6 +69,7 @@ template<typename Derived> class ArrayBase
     using Base::coeff;
     using Base::coeffRef;
     using Base::lazyAssign;
+    using Base::operator-;
     using Base::operator=;
     using Base::operator+=;
     using Base::operator-=;
@@ -87,7 +88,7 @@ template<typename Derived> class ArrayBase
 #endif // not EIGEN_PARSED_BY_DOXYGEN
 
 #define EIGEN_CURRENT_STORAGE_BASE_CLASS Eigen::ArrayBase
-#   include "../plugins/CommonCwiseUnaryOps.h"
+#define EIGEN_DOC_UNARY_ADDONS(X,Y)
 #   include "../plugins/MatrixCwiseUnaryOps.h"
 #   include "../plugins/ArrayCwiseUnaryOps.h"
 #   include "../plugins/CommonCwiseBinaryOps.h"
@@ -97,6 +98,7 @@ template<typename Derived> class ArrayBase
 #     include EIGEN_ARRAYBASE_PLUGIN
 #   endif
 #undef EIGEN_CURRENT_STORAGE_BASE_CLASS
+#undef EIGEN_DOC_UNARY_ADDONS
 
     /** Special case of the template operator=, in order to prevent the compiler
       * from generating a default operator= (issue hit with g++ 4.1)
@@ -151,8 +153,8 @@ template<typename Derived> class ArrayBase
 //     inline void evalTo(Dest& dst) const { dst = matrix(); }
 
   protected:
-    EIGEN_DEVICE_FUNC
-    ArrayBase() : Base() {}
+    EIGEN_DEFAULT_COPY_CONSTRUCTOR(ArrayBase)
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(ArrayBase)
 
   private:
     explicit ArrayBase(Index);
@@ -173,10 +175,10 @@ template<typename Derived> class ArrayBase
   */
 template<typename Derived>
 template<typename OtherDerived>
-EIGEN_STRONG_INLINE Derived &
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator-=(const ArrayBase<OtherDerived> &other)
 {
-  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
@@ -186,10 +188,10 @@ ArrayBase<Derived>::operator-=(const ArrayBase<OtherDerived> &other)
   */
 template<typename Derived>
 template<typename OtherDerived>
-EIGEN_STRONG_INLINE Derived &
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator+=(const ArrayBase<OtherDerived>& other)
 {
-  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar>());
+  call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar,typename OtherDerived::Scalar>());
   return derived();
 }
 
@@ -199,7 +201,7 @@ ArrayBase<Derived>::operator+=(const ArrayBase<OtherDerived>& other)
   */
 template<typename Derived>
 template<typename OtherDerived>
-EIGEN_STRONG_INLINE Derived &
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator*=(const ArrayBase<OtherDerived>& other)
 {
   call_assignment(derived(), other.derived(), internal::mul_assign_op<Scalar,typename OtherDerived::Scalar>());
@@ -212,7 +214,7 @@ ArrayBase<Derived>::operator*=(const ArrayBase<OtherDerived>& other)
   */
 template<typename Derived>
 template<typename OtherDerived>
-EIGEN_STRONG_INLINE Derived &
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Derived &
 ArrayBase<Derived>::operator/=(const ArrayBase<OtherDerived>& other)
 {
   call_assignment(derived(), other.derived(), internal::div_assign_op<Scalar,typename OtherDerived::Scalar>());

@@ -66,7 +66,7 @@ class Options {
         string INITIAL_HEADS{""};
 
         //++Special mappings++//
-        string NODEID_ARCID{""};
+        string NODEID_SPATID{""};
 
         //++General configuration++//
         long NUMBER_OF_NODES{0};
@@ -350,7 +350,7 @@ class Options {
 
         string
         getMapping() {
-            return NODEID_ARCID;
+            return NODEID_SPATID;
         }
 
         int

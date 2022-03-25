@@ -63,8 +63,8 @@ namespace GlobalFlow {
             WETLAND,
             GLOBAL_WETLAND,
             LAKE,
-            GENERAL_HEAD_BOUNDARY,
-            PSEUDO_SOURCE_FLOW
+            GLOBAL_LAKE,
+            GENERAL_HEAD_BOUNDARY
         };
 
         struct FlowTypeHash {

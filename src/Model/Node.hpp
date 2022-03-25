@@ -262,7 +262,7 @@ class NodeInterface {
          * @param lat The latitude
          * @param lon The Longitude
          * @param area Area in m²
-         * @param ArcID Unique ARC-ID specified by Kassel
+         * @param SpatID Unique ARC-ID specified by Kassel
          * @param ID Internal ID = Position in vector
          * @param K Hydraulic conductivity in meter/day (default)
          * @param stepModifier Modifies default step size of day (default=1)
@@ -279,7 +279,7 @@ class NodeInterface {
                       t_s_meter area,
                       t_meter edgeLengthLeftRight,
                       t_meter edgeLengthFrontBack,
-                      large_num ArcID,
+                      large_num SpatID,
                       large_num ID,
                       t_vel K,
                       int stepModifier,
@@ -291,7 +291,7 @@ class NodeInterface {
 
         virtual ~NodeInterface() = default;
 
-        large_num getID() { return get<large_num, ArcID>(); }
+        large_num getID() { return get<large_num, SpatID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -379,10 +379,10 @@ Modify Properties
             if (got->first == LEFT or got->first == RIGHT){
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       getAt<t_meter, EdgeLengthFrontBack>(got), // length of neighbour node in front/back direction
-                                       get<t_meter, EdgeLengthFrontBack>(), // length of this node in front/back direction
-                                       //getAt<t_meter, EdgeLengthLeftRight>(got), // width of neighbour node in left/right direction
-                                       get<t_meter, EdgeLengthLeftRight>(), // width of this node in left/right direction
+                                       getAt<t_meter, EdgeLengthFrontBack>(got), // length in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // length in front/back direction of this node
+                                       //getAt<t_meter, EdgeLengthLeftRight>(got), // width in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // width in left/right direction of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -393,10 +393,10 @@ Modify Properties
             } else { // if (got->first == FRONT or got->first == BACK)
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       getAt<t_meter, EdgeLengthLeftRight>(got), // length of neighbour node in left/right direction
-                                       get<t_meter, EdgeLengthLeftRight>(), // length of this node in left/right direction
-                                       //getAt<t_meter, EdgeLengthFrontBack>(got), // width of neighbour node in front/back direction
-                                       get<t_meter, EdgeLengthFrontBack>(), // width of this node in front/back direction
+                                       getAt<t_meter, EdgeLengthLeftRight>(got), // length in left/right direction of neighbour node
+                                       get<t_meter, EdgeLengthLeftRight>(), // length in left/right direction of this node
+                                       //getAt<t_meter, EdgeLengthFrontBack>(got), // width in front/back direction of neighbour node
+                                       get<t_meter, EdgeLengthFrontBack>(), // width in front/back direction of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -424,7 +424,7 @@ Modify Properties
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
-         * Generic function used for calculating equilibrium and current step flow
+         * Generic function used for caluclating equilibrium and current step flow
          * @return
          */
         template<class HeadType>
@@ -758,6 +758,9 @@ Modify Properties
                 virtual const char *what() const throw() { return "Node does not exist"; }
         };
 
+        unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
+            return neighbours;
+        }
         /**
          * @brief Get a neighbour by position
          * @param neighbour The position relative to the cell
@@ -797,7 +800,6 @@ Modify Properties
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                  cond * (si::cubic_meter / day))));
-
             }
             // TODO Implementation of FLOODPLAIN_DRAIN
             /* else if (type == FLOODPLAIN_DRAIN) {
@@ -1335,7 +1337,7 @@ class StandardNode : public NodeInterface {
                      t_s_meter area,
                      t_meter edgeLengthLeftRight,
                      t_meter edgeLengthFrontBack,
-                     large_num ArcID,
+                     large_num SpatID,
                      large_num ID,
                      t_vel K,
                      int stepmodifier,
@@ -1343,7 +1345,7 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                 stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:

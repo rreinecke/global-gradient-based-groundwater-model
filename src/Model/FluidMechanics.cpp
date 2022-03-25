@@ -56,7 +56,6 @@ namespace GlobalFlow {
             bool confined;
             std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
                      deltaV_neig, deltaV_self, confined) = flow;
-
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
             quantity<MeterSquaredPerTime> t; //transmissivity
 

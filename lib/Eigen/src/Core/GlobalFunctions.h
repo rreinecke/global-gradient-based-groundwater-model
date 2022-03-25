@@ -66,20 +66,31 @@ namespace Eigen
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sinh,scalar_sinh_op,hyperbolic sine,\sa ArrayBase::sinh)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(cosh,scalar_cosh_op,hyperbolic cosine,\sa ArrayBase::cosh)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(tanh,scalar_tanh_op,hyperbolic tangent,\sa ArrayBase::tanh)
+#if EIGEN_HAS_CXX11_MATH
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(asinh,scalar_asinh_op,inverse hyperbolic sine,\sa ArrayBase::asinh)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(acosh,scalar_acosh_op,inverse hyperbolic cosine,\sa ArrayBase::acosh)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(atanh,scalar_atanh_op,inverse hyperbolic tangent,\sa ArrayBase::atanh)
+#endif
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(logistic,scalar_logistic_op,logistic function,\sa ArrayBase::logistic)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(lgamma,scalar_lgamma_op,natural logarithm of the gamma function,\sa ArrayBase::lgamma)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(digamma,scalar_digamma_op,derivative of lgamma,\sa ArrayBase::digamma)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erf,scalar_erf_op,error function,\sa ArrayBase::erf)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(erfc,scalar_erfc_op,complement error function,\sa ArrayBase::erfc)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(ndtri,scalar_ndtri_op,inverse normal distribution function,\sa ArrayBase::ndtri)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(exp,scalar_exp_op,exponential,\sa ArrayBase::exp)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(expm1,scalar_expm1_op,exponential of a value minus 1,\sa ArrayBase::expm1)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log,scalar_log_op,natural logarithm,\sa Eigen::log10 DOXCOMMA ArrayBase::log)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log1p,scalar_log1p_op,natural logarithm of 1 plus the value,\sa ArrayBase::log1p)
-  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log10,scalar_log10_op,base 10 logarithm,\sa Eigen::log DOXCOMMA ArrayBase::log)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log10,scalar_log10_op,base 10 logarithm,\sa Eigen::log DOXCOMMA ArrayBase::log10)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(log2,scalar_log2_op,base 2 logarithm,\sa Eigen::log DOXCOMMA ArrayBase::log2)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(abs,scalar_abs_op,absolute value,\sa ArrayBase::abs DOXCOMMA MatrixBase::cwiseAbs)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(abs2,scalar_abs2_op,squared absolute value,\sa ArrayBase::abs2 DOXCOMMA MatrixBase::cwiseAbs2)
-  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(arg,scalar_arg_op,complex argument,\sa ArrayBase::arg)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(arg,scalar_arg_op,complex argument,\sa ArrayBase::arg DOXCOMMA MatrixBase::cwiseArg)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sqrt,scalar_sqrt_op,square root,\sa ArrayBase::sqrt DOXCOMMA MatrixBase::cwiseSqrt)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(rsqrt,scalar_rsqrt_op,reciprocal square root,\sa ArrayBase::rsqrt)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(square,scalar_square_op,square (power 2),\sa Eigen::abs2 DOXCOMMA Eigen::pow DOXCOMMA ArrayBase::square)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(cube,scalar_cube_op,cube (power 3),\sa Eigen::pow DOXCOMMA ArrayBase::cube)
+  EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(rint,scalar_rint_op,nearest integer,\sa Eigen::floor DOXCOMMA Eigen::ceil DOXCOMMA ArrayBase::round)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(round,scalar_round_op,nearest integer,\sa Eigen::floor DOXCOMMA Eigen::ceil DOXCOMMA ArrayBase::round)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(floor,scalar_floor_op,nearest integer not greater than the giben value,\sa Eigen::ceil DOXCOMMA ArrayBase::floor)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(ceil,scalar_ceil_op,nearest integer not less than the giben value,\sa Eigen::floor DOXCOMMA ArrayBase::ceil)
@@ -87,16 +98,34 @@ namespace Eigen
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(isinf,scalar_isinf_op,infinite value test,\sa Eigen::isnan DOXCOMMA Eigen::isfinite DOXCOMMA ArrayBase::isinf)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(isfinite,scalar_isfinite_op,finite value test,\sa Eigen::isinf DOXCOMMA Eigen::isnan DOXCOMMA ArrayBase::isfinite)
   EIGEN_ARRAY_DECLARE_GLOBAL_UNARY(sign,scalar_sign_op,sign (or 0),\sa ArrayBase::sign)
-  
+
   /** \returns an expression of the coefficient-wise power of \a x to the given constant \a exponent.
     *
+    * \tparam ScalarExponent is the scalar type of \a exponent. It must be compatible with the scalar type of the given expression (\c Derived::Scalar).
+    *
     * \sa ArrayBase::pow()
+    *
+    * \relates ArrayBase
     */
-  template<typename Derived>
-  inline const Eigen::CwiseUnaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar>, const Derived>
-  pow(const Eigen::ArrayBase<Derived>& x, const typename Derived::Scalar& exponent) {
-    return x.derived().pow(exponent);
+#ifdef EIGEN_PARSED_BY_DOXYGEN
+  template<typename Derived,typename ScalarExponent>
+  inline const CwiseBinaryOp<internal::scalar_pow_op<Derived::Scalar,ScalarExponent>,Derived,Constant<ScalarExponent> >
+  pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent);
+#else
+  template <typename Derived,typename ScalarExponent>
+  EIGEN_DEVICE_FUNC inline
+  EIGEN_MSVC10_WORKAROUND_BINARYOP_RETURN_TYPE(
+    const EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(Derived,typename internal::promote_scalar_arg<typename Derived::Scalar
+                                                 EIGEN_COMMA ScalarExponent EIGEN_COMMA
+                                                 EIGEN_SCALAR_BINARY_SUPPORTED(pow,typename Derived::Scalar,ScalarExponent)>::type,pow))
+  pow(const Eigen::ArrayBase<Derived>& x, const ScalarExponent& exponent)
+  {
+    typedef typename internal::promote_scalar_arg<typename Derived::Scalar,ScalarExponent,
+                                                  EIGEN_SCALAR_BINARY_SUPPORTED(pow,typename Derived::Scalar,ScalarExponent)>::type PromotedExponent;
+    return EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(Derived,PromotedExponent,pow)(x.derived(),
+           typename internal::plain_constant_type<Derived,PromotedExponent>::type(x.derived().rows(), x.derived().cols(), internal::scalar_constant_op<PromotedExponent>(exponent)));
   }
+#endif
 
   /** \returns an expression of the coefficient-wise power of \a x to the given array of \a exponents.
     *
@@ -104,158 +133,53 @@ namespace Eigen
     *
     * Example: \include Cwise_array_power_array.cpp
     * Output: \verbinclude Cwise_array_power_array.out
-    * 
+    *
     * \sa ArrayBase::pow()
+    *
+    * \relates ArrayBase
     */
   template<typename Derived,typename ExponentDerived>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_binary_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>
-  pow(const Eigen::ArrayBase<Derived>& x, const Eigen::ArrayBase<ExponentDerived>& exponents) 
+  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>
+  pow(const Eigen::ArrayBase<Derived>& x, const Eigen::ArrayBase<ExponentDerived>& exponents)
   {
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_binary_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>(
+    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar, typename ExponentDerived::Scalar>, const Derived, const ExponentDerived>(
       x.derived(),
       exponents.derived()
     );
   }
-  
+
   /** \returns an expression of the coefficient-wise power of the scalar \a x to the given array of \a exponents.
     *
     * This function computes the coefficient-wise power between a scalar and an array of exponents.
-    * Beaware that the scalar type of the input scalar \a x and the exponents \a exponents must be the same.
+    *
+    * \tparam Scalar is the scalar type of \a x. It must be compatible with the scalar type of the given array expression (\c Derived::Scalar).
     *
     * Example: \include Cwise_scalar_power_array.cpp
     * Output: \verbinclude Cwise_scalar_power_array.out
-    * 
+    *
     * \sa ArrayBase::pow()
+    *
+    * \relates ArrayBase
     */
-  template<typename Derived>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_binary_pow_op<typename Derived::Scalar, typename Derived::Scalar>, const typename Derived::ConstantReturnType, const Derived>
-  pow(const typename Derived::Scalar& x, const Eigen::ArrayBase<Derived>& exponents) 
-  {
-    typename Derived::ConstantReturnType constant_x(exponents.rows(), exponents.cols(), x);
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_binary_pow_op<typename Derived::Scalar, typename Derived::Scalar>, const typename Derived::ConstantReturnType, const Derived>(
-      constant_x,
-      exponents.derived()
-    );
+#ifdef EIGEN_PARSED_BY_DOXYGEN
+  template<typename Scalar,typename Derived>
+  inline const CwiseBinaryOp<internal::scalar_pow_op<Scalar,Derived::Scalar>,Constant<Scalar>,Derived>
+  pow(const Scalar& x,const Eigen::ArrayBase<Derived>& x);
+#else
+  template <typename Scalar, typename Derived>
+  EIGEN_DEVICE_FUNC inline
+  EIGEN_MSVC10_WORKAROUND_BINARYOP_RETURN_TYPE(
+    const EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(typename internal::promote_scalar_arg<typename Derived::Scalar
+                                                 EIGEN_COMMA Scalar EIGEN_COMMA
+                                                 EIGEN_SCALAR_BINARY_SUPPORTED(pow,Scalar,typename Derived::Scalar)>::type,Derived,pow))
+  pow(const Scalar& x, const Eigen::ArrayBase<Derived>& exponents) {
+    typedef typename internal::promote_scalar_arg<typename Derived::Scalar,Scalar,
+                                                  EIGEN_SCALAR_BINARY_SUPPORTED(pow,Scalar,typename Derived::Scalar)>::type PromotedScalar;
+    return EIGEN_SCALAR_BINARYOP_EXPR_RETURN_TYPE(PromotedScalar,Derived,pow)(
+           typename internal::plain_constant_type<Derived,PromotedScalar>::type(exponents.derived().rows(), exponents.derived().cols(), internal::scalar_constant_op<PromotedScalar>(x)), exponents.derived());
   }
-  
-  /**
-    * \brief Component-wise division of a scalar by array elements.
-    **/
-  template <typename Derived>
-  inline const Eigen::CwiseUnaryOp<Eigen::internal::scalar_inverse_mult_op<typename Derived::Scalar>, const Derived>
-    operator/(const typename Derived::Scalar& s, const Eigen::ArrayBase<Derived>& a)
-  {
-    return Eigen::CwiseUnaryOp<Eigen::internal::scalar_inverse_mult_op<typename Derived::Scalar>, const Derived>(
-      a.derived(),
-      Eigen::internal::scalar_inverse_mult_op<typename Derived::Scalar>(s)  
-    );
-  }
+#endif
 
-  /** \cpp11 \returns an expression of the coefficient-wise igamma(\a a, \a x) to the given arrays.
-    *
-    * This function computes the coefficient-wise incomplete gamma function.
-    *
-    * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
-    * or float/double in non c++11 mode, the user has to provide implementations of igammac(T,T) for any scalar
-    * type T to be supported.
-    *
-    * \sa Eigen::igammac(), Eigen::lgamma()
-    */
-  template<typename Derived,typename ExponentDerived>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_igamma_op<typename Derived::Scalar>, const Derived, const ExponentDerived>
-  igamma(const Eigen::ArrayBase<Derived>& a, const Eigen::ArrayBase<ExponentDerived>& x) 
-  {
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_igamma_op<typename Derived::Scalar>, const Derived, const ExponentDerived>(
-      a.derived(),
-      x.derived()
-    );
-  }
-
-  /** \cpp11 \returns an expression of the coefficient-wise igammac(\a a, \a x) to the given arrays.
-    *
-    * This function computes the coefficient-wise complementary incomplete gamma function.
-    *
-    * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
-    * or float/double in non c++11 mode, the user has to provide implementations of igammac(T,T) for any scalar
-    * type T to be supported.
-    *
-    * \sa Eigen::igamma(), Eigen::lgamma()
-    */
-  template<typename Derived,typename ExponentDerived>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_igammac_op<typename Derived::Scalar>, const Derived, const ExponentDerived>
-  igammac(const Eigen::ArrayBase<Derived>& a, const Eigen::ArrayBase<ExponentDerived>& x) 
-  {
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_igammac_op<typename Derived::Scalar>, const Derived, const ExponentDerived>(
-      a.derived(),
-      x.derived()
-    );
-  }
-
-  /** \cpp11 \returns an expression of the coefficient-wise polygamma(\a n, \a x) to the given arrays.
-    *
-    * It returns the \a n -th derivative of the digamma(psi) evaluated at \c x.
-    *
-    * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
-    * or float/double in non c++11 mode, the user has to provide implementations of polygamma(T,T) for any scalar
-    * type T to be supported.
-    *
-    * \sa Eigen::digamma()
-    */
-  // * \warning Be careful with the order of the parameters: x.polygamma(n) is equivalent to polygamma(n,x)
-  // * \sa ArrayBase::polygamma()
-  template<typename DerivedN,typename DerivedX>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_polygamma_op<typename DerivedX::Scalar>, const DerivedN, const DerivedX>
-  polygamma(const Eigen::ArrayBase<DerivedN>& n, const Eigen::ArrayBase<DerivedX>& x)
-  {
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_polygamma_op<typename DerivedX::Scalar>, const DerivedN, const DerivedX>(
-      n.derived(),
-      x.derived()
-    );
-  }
-
-  /** \cpp11 \returns an expression of the coefficient-wise betainc(\a x, \a a, \a b) to the given arrays.
-    *
-    * This function computes the regularized incomplete beta function (integral).
-    *
-    * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
-    * or float/double in non c++11 mode, the user has to provide implementations of betainc(T,T,T) for any scalar
-    * type T to be supported.
-    *
-    * \sa Eigen::betainc(), Eigen::lgamma()
-    */
-  template<typename ArgADerived, typename ArgBDerived, typename ArgXDerived>
-  inline const Eigen::CwiseTernaryOp<Eigen::internal::scalar_betainc_op<typename ArgXDerived::Scalar>, const ArgADerived, const ArgBDerived, const ArgXDerived>
-  betainc(const Eigen::ArrayBase<ArgADerived>& a, const Eigen::ArrayBase<ArgBDerived>& b, const Eigen::ArrayBase<ArgXDerived>& x)
-  {
-    return Eigen::CwiseTernaryOp<Eigen::internal::scalar_betainc_op<typename ArgXDerived::Scalar>, const ArgADerived, const ArgBDerived, const ArgXDerived>(
-      a.derived(),
-      b.derived(),
-      x.derived()
-    );
-  }
-
-
-  /** \returns an expression of the coefficient-wise zeta(\a x, \a q) to the given arrays.
-    *
-    * It returns the Riemann zeta function of two arguments \a x and \a q:
-    *
-    * \param x is the exposent, it must be > 1
-    * \param q is the shift, it must be > 0
-    *
-    * \note This function supports only float and double scalar types. To support other scalar types, the user has
-    * to provide implementations of zeta(T,T) for any scalar type T to be supported.
-    *
-    * \sa ArrayBase::zeta()
-    */
-  template<typename DerivedX,typename DerivedQ>
-  inline const Eigen::CwiseBinaryOp<Eigen::internal::scalar_zeta_op<typename DerivedX::Scalar>, const DerivedX, const DerivedQ>
-  zeta(const Eigen::ArrayBase<DerivedX>& x, const Eigen::ArrayBase<DerivedQ>& q)
-  {
-    return Eigen::CwiseBinaryOp<Eigen::internal::scalar_zeta_op<typename DerivedX::Scalar>, const DerivedX, const DerivedQ>(
-      x.derived(),
-      q.derived()
-    );
-  }
 
   namespace internal
   {
