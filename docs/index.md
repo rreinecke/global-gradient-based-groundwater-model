@@ -81,8 +81,10 @@ G³M support multiple boundary condition types:
 * Different river approaches
 
 New flows can be defined in Model/ExternalFlows.hpp.
+
 The domain boundary is currently defined implicitly through the input grid as no-flow for grid files and as ocean boundary for irregular grids.
 This behavior can be changed in DataProcessing/Neighbouring.hpp.
+
 
 ## Built With
 
