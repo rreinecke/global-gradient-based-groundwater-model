@@ -47,26 +47,23 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 ################################
 # Simple Demo Model
 ################################
-#project(simple)
-#add_subdirectory(tests/SimpleModel)
-#
-#set(simple_src ${SOURCE})
-#list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-#
-#add_executable(simple_model tests/SimpleModel/simple.cpp ${simple_src} ${HEADERS})
-#target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+project(simple)
+
+add_subdirectory(tests/SimpleModel)
+add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
+target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Simple Demo Model for Variable Density Flow (VDF)
 ################################
 project(simpleVDF)
-add_subdirectory(tests/SimpleVDFModel)
 
+set(simple_vdf_hrd ${HEADERS})
 set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
-# list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 
-add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
+add_subdirectory(tests/SimpleVDFModel)
+add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${simple_vdf_hrd})
 target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
@@ -101,7 +98,7 @@ enable_testing()
 
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
