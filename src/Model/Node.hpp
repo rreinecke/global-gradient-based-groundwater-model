@@ -757,6 +757,9 @@ Modify Properties
                 virtual const char *what() const throw() { return "Node does not exist"; }
         };
 
+        unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
+            return neighbours;
+        }
         /**
          * @brief Get a neighbour by position
          * @param neighbour The position relative to the cell
