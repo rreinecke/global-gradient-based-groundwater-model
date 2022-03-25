@@ -4,8 +4,6 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![DOI:110.5194/gmd-2018-120](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.5194/gmd-2018-120) 
 
-[![Build Status](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model.svg?branch=master)](https://travis-ci.org/rreinecke/global-gradient-based-groundwater-model)
-
 # Documentation
 The current documentation can be found on [http://globalgroundwatermodel.org](http://globalgroundwatermodel.org)
 
@@ -20,7 +18,7 @@ While it is intended to be used as a in memory coupled model it is also capable 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 ### Prerequisites
 
-To make the program run, you need:
+To compile the program, you will need:
 ```
 clang >= 13 with openMP (currently gcc is not supported)
 cmake >= 3.15.3
