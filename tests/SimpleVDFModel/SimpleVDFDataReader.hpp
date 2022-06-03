@@ -39,7 +39,7 @@ class SimpleVDFDataReader : public DataReader {
             readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Reading variable density information";
-            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(), op.getMaxDensity(), op.getMinDensity(),
+            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(), op.getDensities(),
                                 op.getNumberOfDensityZones());
 
             LOG(userinfo) << "Initializing head";
@@ -67,7 +67,7 @@ class SimpleVDFDataReader : public DataReader {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "row", "col");
+            in.read_header(io::ignore_no_column, "arcID", "X", "Y", "cell_area", "row", "col");
 
             double x{0};
             double y{0};
@@ -104,7 +104,7 @@ class SimpleVDFDataReader : public DataReader {
         void readConduct(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
                 if (data > 10) {
-                    LOG(debug) << "Very high conductance value at spatID "<<pos<<". Possible Data Error";
+                    LOG(debug) << "Very high conductance value at arcID "<<pos<<". Possible Data Error";
                 }
                 nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
             });
@@ -119,7 +119,7 @@ class SimpleVDFDataReader : public DataReader {
 
         void readHeadBoundary(std::string path) {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
+            in.read_header(io::ignore_no_column, "arcID", "elevation", "conduct");
             int arcid{0};
             double elevation{0};
             double conduct{0};
@@ -152,33 +152,33 @@ class SimpleVDFDataReader : public DataReader {
         }
 
         void readVariableDensity(bool densityVariable, bool densityStratified, vector<double> densities,
-                                 int densityZones) {
+                                 int numberOfDensityZones) {
 
             if (densityVariable){
-                vector<double> delnusZone;
-                vector<double> epsZone;
-                vector<double> nusZeta;
-                vector<double> nusZone;
+                vector<double> delnusZone; // difference in dimensionless density between successive zeta surfaces
+                vector<double> epsZone; // variation of dimensionless density over a density zone
+                vector<double> nusZeta; // dimensionless density on the zeta surfaces
+                vector<double> nusZone; // dimensionless density in the density zones between successive zeta surfaces
                 // TODO make variables Model::si::si_dimensionless
                 double densityFresh = 1000;
 
-                for (int n = 1; n <= densityZones+1; n++) {
-                    nusZeta[n] = ( densities[n] - densityFresh ) / densityFresh;
+                for (int n = 0; n <= numberOfDensityZones; n++) {
+                    nusZeta.push_back(( densities[n] - densityFresh ) / densityFresh);
                 }
 
-                for (int n = 1; n <= densityZones; n++) {
+                for (int n = 0; n <= numberOfDensityZones-1; n++) {
                     if (densityStratified) {
-                        nusZone[n] = nusZeta[n+1];
-                        epsZone[n] = 0;
+                        nusZone.push_back(nusZeta[n+1]); // nus of zones is equal to nus of zeta surface below
+                        epsZone.push_back(0);
                     } else { // if continuous
-                        nusZone[n] = 0.5 * ( nusZeta[n] + nusZeta[n+1] );
-                        epsZone[n] = ( nusZeta[n+1] - nusZeta[n] ) / 6;
+                        nusZone.push_back(0.5 * ( nusZeta[n] + nusZeta[n+1] )); // nus of zones is mean of zeta surfaces above and below
+                        epsZone.push_back(( nusZeta[n+1] - nusZeta[n] ) / 6);
                     }
 
-                    if (n == 1) {
-                        delnusZone[n] = nusZone[n];
+                    if (n == 0) {
+                        delnusZone.push_back(nusZone[n]); // by density difference in top zone
                     } else {
-                        delnusZone[n] = nusZone[n] - nusZone[n-1];
+                        delnusZone.push_back(nusZone[n] - nusZone[n-1]);
                     }
                 }
             }
