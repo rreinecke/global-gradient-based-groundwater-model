@@ -84,6 +84,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             }
         case GENERAL_HEAD_BOUNDARY:
             return -conductance;
+        case PSEUDO_SOURCE_FLOW:
+            return out;
     }
     return out;
 }
@@ -165,6 +167,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             }
         case GENERAL_HEAD_BOUNDARY:
             return conductance * flowHead;
+        case PSEUDO_SOURCE_FLOW:
+            return this->special_flow; // Question: special flow correct?
     }
     return out;
 }
@@ -175,7 +179,7 @@ t_vol_t ExternalFlow::getR(t_meter eq_head, t_meter head,
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     if (type == PSEUDO_SOURCE_FLOW) {
-
+        // todo: what to do if pseudo source flow?
     } else {
         return out;
     }

@@ -39,7 +39,7 @@ namespace GlobalFlow {
              */
             enum class FieldType {
                 ID, /*!< Internal position */
-                SPATID, /*!< Data ID */
+                ARCID, /*!< Data ID */
                 AREA, /*!< Area of the node */
                 CONDUCT, /*!< Hydraulic conductivity of the node */
                 ELEVATION, /*!< Elevation of the node */
@@ -81,7 +81,7 @@ namespace GlobalFlow {
              */
             const std::unordered_map<std::string, FieldType> fieldMapping{
                     {"ID",                 FieldType::ID},
-                    {"SpatID",              FieldType::SPATID},
+                    {"ArcID",              FieldType::ARCID},
                     {"Area",               FieldType::AREA},
                     {"Conductivity",       FieldType::CONDUCT},
                     {"Elevation",          FieldType::ELEVATION},
@@ -207,10 +207,10 @@ namespace GlobalFlow {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties().get<large_num, Model::ID>());
                             });
                         }
-                        case FieldType::SPATID : {
+                        case FieldType::ARCID : {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::SpatID>());
+                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::ArcID>());
                             });
                         }
                         case FieldType::AREA : {

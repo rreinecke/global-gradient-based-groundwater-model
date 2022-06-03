@@ -50,6 +50,9 @@ namespace GlobalFlow {
          *
          * LAKE, WETLAND
          *  similar to modflow river definition
+         *
+         * PSEUDO_SOURCE_FLOW
+         *  similar to modflow pseudo source term for flow (see package SWI2)
          */
         enum FlowType : int {
             RECHARGE = 1,
@@ -64,7 +67,8 @@ namespace GlobalFlow {
             GLOBAL_WETLAND,
             LAKE,
             GLOBAL_LAKE,
-            GENERAL_HEAD_BOUNDARY
+            GENERAL_HEAD_BOUNDARY,
+            PSEUDO_SOURCE_FLOW
         };
 
         struct FlowTypeHash {
@@ -82,7 +86,7 @@ namespace GlobalFlow {
         class ExternalFlow {
         public:
             /**
-             * @brief Constructor for RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+             * @brief Constructor for RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY, PSEUDO_SOURCE_FLOW
              * @param id
              * @param type
              * @param flowHead
@@ -114,7 +118,7 @@ namespace GlobalFlow {
              * @return
              */
             ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
-                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0), // QUESTION: why EVAPOTRANSPIRATION and not type?
+                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
                       special_flow(evapotrans) {}
 
             /**
@@ -122,8 +126,9 @@ namespace GlobalFlow {
              * @param id
              * @return
              */
-            ExternalFlow(int id)
-                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(0) {}
+            ExternalFlow(int id, t_vol_t pseudo_source_flow) // todo: should flowHead, conductance and bottom be something?
+                    : ID(id), type(PSEUDO_SOURCE_FLOW), flowHead(0), conductance(0), bottom(0),
+                      special_flow(pseudo_source_flow) {}
 
 
             /**

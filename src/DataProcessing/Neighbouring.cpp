@@ -387,7 +387,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     LOG(debug) << "Building additional layers with node count: " << layersize << " for " << layers << " layers";
 
     size_t id = layersize;
-    large_num spatID;
+    large_num arcID;
     double lat, lon;
     int stepMod;
     Model::quantity<Model::SquareMeter> area;
@@ -405,7 +405,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
         for (int i = 0; i < layersize; ++i) {
             //for each node in top layer
 
-            spatID = nodes->at(i)->getProperties().get<large_num, Model::SpatID>();
+            arcID = nodes->at(i)->getProperties().get<large_num, Model::ArcID>();
             lat = nodes->at(i)->getProperties().get<double, Model::Lat>();
             lon = nodes->at(i)->getProperties().get<double, Model::Lon>();
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
@@ -434,7 +434,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                 }
                 nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
                                                             edgeLengthFrontBack,
-                                                            spatID,
+                                                            arcID,
                                                             id,
                                                             K,
                                                             stepMod,

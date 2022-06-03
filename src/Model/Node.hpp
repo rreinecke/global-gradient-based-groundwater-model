@@ -151,7 +151,7 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-        unordered_map<int, double> densitySurfaceElevations;
+        unordered_map<int, double> zetas;
         int numOfExternalFlows{0};
         bool nwt{false};
         bool initial_head{true};
@@ -262,7 +262,7 @@ class NodeInterface {
          * @param lat The latitude
          * @param lon The Longitude
          * @param area Area in m²
-         * @param SpatID Unique ARC-ID specified by Kassel
+         * @param ArcID Unique ARC-ID specified by Kassel
          * @param ID Internal ID = Position in vector
          * @param K Hydraulic conductivity in meter/day (default)
          * @param stepModifier Modifies default step size of day (default=1)
@@ -279,7 +279,7 @@ class NodeInterface {
                       t_s_meter area,
                       t_meter edgeLengthLeftRight,
                       t_meter edgeLengthFrontBack,
-                      large_num SpatID,
+                      large_num ArcID,
                       large_num ID,
                       t_vel K,
                       int stepModifier,
@@ -291,7 +291,7 @@ class NodeInterface {
 
         virtual ~NodeInterface() = default;
 
-        large_num getID() { return get<large_num, SpatID>(); }
+        large_num getID() { return get<large_num, ArcID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -678,7 +678,7 @@ Modify Properties
                 if (flow.flowIsHeadDependant(head)) {
                     ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
                           flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
-                } else { // QUESTION: is this explanation correct: "flow is not head dependent: when the head is below the bottom of the simulated cell"?
+                } else { // flow is not head dependent when the head is below the bottom of the simulated cell
                     ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom() +
                           flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
                 }
@@ -787,7 +787,7 @@ Modify Properties
         int addExternalFlow(FlowType type, t_meter flowHead, double cond, t_meter bottom) {
             if (hasTypeOfExternalFlow(type)) {
                     //LOG(debug) << "! adding a flow that is already existing for cell"
-                    //currently it is assumed that only one external flow is what we want
+                    //currently it is assumed that only one external flow of one type is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
             }   
@@ -812,7 +812,8 @@ Modify Properties
 
             } */ else if (type == PSEUDO_SOURCE_FLOW) {
                 externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows)));
+                                                    ExternalFlow(numOfExternalFlows,
+                                                                 cond * (si::cubic_meter / day), type)));
 
             } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
@@ -1014,7 +1015,7 @@ Modify Properties
 
 
         /**
-         * @brief Get Q part of flow equations
+         * @brief Get Q part (external sources) of flow equations
          * @return volume over time
          */
         t_vol_t getQ() noexcept {
@@ -1145,6 +1146,7 @@ Modify Properties
             size_t numC = 7;
             std::unordered_map<large_num, t_s_meter_t> out;
             out.reserve(numC);
+
             //Get all conductances from neighbouring cells
             std::forward_list<NeighbourPosition> possible_neighbours =
                     {NeighbourPosition::TOP, NeighbourPosition::BACK, NeighbourPosition::DOWN, NeighbourPosition::FRONT,
@@ -1196,7 +1198,7 @@ Modify Properties
          * @return volume per time
          */
         t_vol_t getRHS() {
-            t_vol_t externalFlows = -getQ();
+            t_vol_t externalFlows = -getQ(); // todo: currently this includes pseudo source term
             t_vol_t dewateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
@@ -1204,7 +1206,6 @@ Modify Properties
             if (steadyState) {
                 storageFlow = 0 * (si::cubic_meter / day);
             }
-            // TODO calculate ZETA
             t_vol_t out = externalFlows + dewateredFlow - rivers - storageFlow;
             NANChecker(out.value(), "RHS");
             return out;
@@ -1337,7 +1338,7 @@ class StandardNode : public NodeInterface {
                      t_s_meter area,
                      t_meter edgeLengthLeftRight,
                      t_meter edgeLengthFrontBack,
-                     large_num SpatID,
+                     large_num ArcID,
                      large_num ID,
                      t_vel K,
                      int stepmodifier,
@@ -1345,7 +1346,7 @@ class StandardNode : public NodeInterface {
                      double anisotropy,
                      double specificYield,
                      double specificStorage, bool confined)
-                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
+                : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
                                 stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
 
     private:

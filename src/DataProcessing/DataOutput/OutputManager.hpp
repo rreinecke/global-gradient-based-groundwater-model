@@ -128,7 +128,7 @@ namespace GlobalFlow {
 
             const std::unordered_map<FieldType, InternalType, InternalTypeHash> typeMapping{
                     {FieldType::ID,                 InternalType::DOUBLE},
-                    {FieldType::SPATID,              InternalType::DOUBLE},
+                    {FieldType::ARCID,              InternalType::DOUBLE},
                     {FieldType::AREA,               InternalType::DOUBLE},
                     {FieldType::CONDUCT,            InternalType::DOUBLE},
                     {FieldType::ELEVATION,          InternalType::DOUBLE},

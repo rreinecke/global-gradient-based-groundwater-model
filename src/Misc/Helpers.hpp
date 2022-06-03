@@ -23,7 +23,7 @@
 #ifndef GLOBAL_FLOW_HELPERS_HPP
 #define GLOBAL_FLOW_HELPERS_HPP
 
-#include <boost/progress.hpp>
+#include <boost/timer/timer.hpp>
 
 #include "colors.hpp"
 

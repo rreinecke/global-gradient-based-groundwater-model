@@ -98,8 +98,8 @@ class Options {
         vector<bool> CONFINED{};
         bool DENSITY_VARIABLE{false};
         bool DENSITY_STRATIFIED{false};
-        int DENSITY_ZONES{0};
-        vector<double> DENSITIES{};
+        vector<double> DENSITIES{1000};
+        int NUMBER_OF_DENSITY_ZONES{0};
     	string BASE_PATH{"data"};
         bool k_from_lith{true};
         bool k_ghb_from_file{false};
@@ -162,7 +162,7 @@ class Options {
 
         bool isKRiverFile() { return k_river_from_file; }
 
-        bool isAquiferDepthDile() { return aquifer_depth_from_file; }
+        bool isAquiferDepthFile() { return aquifer_depth_from_file; }
 
         string getKDir() { return K_DIR; }
 
@@ -216,14 +216,14 @@ class Options {
 
         bool isDensityStratified() { return DENSITY_STRATIFIED; }
 
-        int
-        getDensityZones() {
-            return DENSITY_ZONES;
-        }
-
-        double
+        vector<double>
         getDensities() {
             return DENSITIES;
+        }
+
+        int
+        getNumberOfDensityZones() {
+            return NUMBER_OF_DENSITY_ZONES;
         }
 
         int
