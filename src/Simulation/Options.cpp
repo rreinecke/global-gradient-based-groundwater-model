@@ -154,6 +154,7 @@ Options::load(const std::string &filename) {
 
     INITIAL_HEADS = getOptional("initial_head", data);
 
+    INITIAL_ZETAS = getOptional("initial_zetas", data);
 
     boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
     if (mappings) {

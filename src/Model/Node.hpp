@@ -151,8 +151,9 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-        unordered_map<int, double> zetas;
+        unordered_map<int, t_meter> zetas;
         int numOfExternalFlows{0};
+        int numOfZetas{0};
         bool nwt{false};
         bool initial_head{true};
         bool simpleDistance{false};
@@ -245,6 +246,7 @@ class NodeInterface {
             ar & externalFlows;
             ar & numOfExternalFlows;
             ar & zetas;
+            ar & numOfZetas;
             ar & nwt;
             ar & initial_head;
             ar & simpleDistance;
@@ -777,7 +779,7 @@ Modify Properties
         }
 
         /**
-         * @brief At an external flow to the cell
+         * @brief Add an external flow to the cell
          * @param type The flow type
          * @param flowHead The flow head
          * @param cond The conductance
@@ -867,6 +869,39 @@ Modify Properties
             return true;
 	      }
 
+          /**
+           * @brief Add a zeta surface to the cell
+           * @param zetaID The zeta ID
+           * @param zetaHeight the zeta surface height in meters
+           * @return number of zeta surfaces in the cell
+           */
+          int addZeta(int zetaID, t_meter zetaHeight){
+              std::pair<int,t_meter> zeta (zetaID, zetaHeight);
+              zetas.insert (zeta); // Question: or zetas[zeta] = zeta_ID; ?
+              numOfZetas++;
+              return numOfZetas;
+          }
+
+          /**
+           * @brief Remove a zeta surface of the cell by zeta id
+           * @param zeta_ID The zeta id
+           */
+          void removeZeta(int zetaID) {
+              if (zetas.erase(zetaID)) { // Question: what exactly happens when erase goes through and returns 0? If clause does not get executed and we throw an error?
+                  numOfZetas = numOfZetas - 1;
+              }
+              if(numOfZetas != zetas.size()){
+                  LOG(debug) << "Printing zetas ";
+                  for(auto const& imap: zetas)
+                      LOG(debug) << " " << imap.first;
+                  throw "Number of zetas don't match";
+              }
+          }
+
+          /**
+          * @brief The number of zeta surfaces
+          */
+          int getNumOfZetas() { return (int) zetas.size();}
 
         /**
          * @brief Updates GW recharge

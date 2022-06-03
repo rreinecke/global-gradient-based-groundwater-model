@@ -64,6 +64,7 @@ class Options {
         string SY_FILE{""};
         string AQ_DEPTH{""};
         string INITIAL_HEADS{""};
+        string INITIAL_ZETAS{""};
 
         //++Special mappings++//
         string NODEID_SPATID{""};
@@ -177,6 +178,8 @@ class Options {
         string getAQDepthDir() { return AQ_DEPTH; }
 
         string getInitialHeadsDir() {return INITIAL_HEADS;}
+
+        string getInitialZetasDir() {return INITIAL_ZETAS;}
 
         bool isRowCol() { return ROW_COLS; }
 
