@@ -3,8 +3,8 @@ if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
     message(STATUS "You need to upgrade CMake! Minimum required version is 3.15.3.")
 endif()
 
-set(CMAKE_C_COMPILER "clang")
-set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang") # !!! should be able to compile with clang-13, but it is not
+set(CMAKE_CXX_COMPILER "clang++") # !!! should be able to compile with clang++-13, but it is not
 
 # CMAKE flags
 set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
@@ -17,15 +17,20 @@ project(GW)
 add_subdirectory(src)
 add_subdirectory(lib)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")  
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 
 ################# Libs ################
 
 # Boost
 find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
+IF (Boost_FOUND)
+    message(STATUS "Boost found")
+    set(Boost_INCLUDE_DIR /usr/include/boost/) # !!!  should not be necessary
+    # set(Boost_LIBRARY_DIR /usr/include/boost/libs/)
+    include_directories(${Boost_INCLUDE_DIR})
+    link_directories(${Boost_LIBRARY_DIR})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
+ENDIF()
 
 # OpenMP
 FIND_PACKAGE(OpenMP)
@@ -75,22 +80,22 @@ project(Testing)
 # Download and unpack googletest at configure time
 configure_file(CMakeLists_GTest.txt googletest-download/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
 
 # Add googletest directly to our build. This adds
 # the following targets: gtest, gtest_main, gmock
 # and gmock_main
 add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
-                 "${CMAKE_BINARY_DIR}/googletest-build")
+        "${CMAKE_BINARY_DIR}/googletest-build")
 
 # The gtest/gmock targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
 # later. Otherwise we have to add them here ourselves.
 if(CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include"
-                        "${gmock_SOURCE_DIR}/include")
+            "${gmock_SOURCE_DIR}/include")
 endif()
 
 add_subdirectory(tests)
@@ -99,7 +104,6 @@ enable_testing()
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
@@ -119,4 +123,3 @@ add_test(AllTests runUnitTests)
 #                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
 #                NAME coverage
 #)
-
