@@ -40,7 +40,7 @@ class SimpleVDFDataReader : public DataReader {
 
             LOG(userinfo) << "Reading variable density information";
             readVariableDensity(op.isDensityVariable(), op.isDensityStratified(), op.getDensities(),
-                                op.getNumberOfDensityZones());
+                                op.getNumberOfDensityZones(), buildDir(op.getInitialZetasDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -152,7 +152,7 @@ class SimpleVDFDataReader : public DataReader {
         }
 
         void readVariableDensity(bool densityVariable, bool densityStratified, vector<double> densities,
-                                 int numberOfDensityZones) {
+                                 int numberOfDensityZones, std::string path) {
 
             if (densityVariable){
                 vector<double> delnusZone; // difference in dimensionless density between successive zeta surfaces
@@ -181,6 +181,24 @@ class SimpleVDFDataReader : public DataReader {
                         delnusZone.push_back(nusZone[n] - nusZone[n-1]);
                     }
                 }
+            }
+
+            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "arcID", "zetaID", "zetaHeight");
+            int arcid{0};
+            int zetaID{0};
+            double zetaHeight{0};
+
+            while (in.read_row(arcid, zetaID, zetaHeight)) {
+                int pos = 0;
+                try {
+                    pos = lookupglobIDtoID.at(arcid);
+                }
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+                nodes->at(pos)->addZeta(zetaID, zetaHeight * Model::si::meter);
             }
         }
 
