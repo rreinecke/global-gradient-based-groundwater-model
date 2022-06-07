@@ -2,6 +2,7 @@
 #define TESTING_SIMPLEVDFDATAREADER_HPP
 
 #include "../../src/DataProcessing/DataReader.hpp"
+#include "../../src/Model/Node.hpp"
 
 namespace GlobalFlow {
 namespace DataProcessing {
@@ -39,8 +40,9 @@ class SimpleVDFDataReader : public DataReader {
             readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Reading variable density information";
-            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(), op.getDensities(),
-                                op.getNumberOfDensityZones(), buildDir(op.getInitialZetasDir()));
+            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(),
+                                op.getDensityFresh(), op.getDensityOcean(), op.getDensityZetas(),
+                                buildDir(op.getInitialZetasDir()), buildDir(op.getInitialZonesDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -151,54 +153,47 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
-        void readVariableDensity(bool densityVariable, bool densityStratified, vector<double> densities,
-                                 int numberOfDensityZones, std::string path) {
-
+        void readVariableDensity(bool densityVariable, bool densityStratified, double densityFresh, double densityOcean,
+                                 vector<double> densityZetas, std::string pathZetas, std::string pathZones) {
             if (densityVariable){
-                vector<double> delnusZone; // difference in dimensionless density between successive zeta surfaces
-                vector<double> epsZone; // variation of dimensionless density over a density zone
-                vector<double> nusZeta; // dimensionless density on the zeta surfaces
-                vector<double> nusZone; // dimensionless density in the density zones between successive zeta surfaces
-                // TODO make variables Model::si::si_dimensionless
-                double densityFresh = 1000;
+                int arcid{0};
+                double density{0};
+                double height{0};
 
-                for (int n = 0; n <= numberOfDensityZones; n++) {
-                    nusZeta.push_back(( densities[n] - densityFresh ) / densityFresh);
-                }
+                Model::VariableDensityFlow::addZoneProperties(densityStratified, densityFresh, densityOcean,
+                                                              densityZetas)
 
-                for (int n = 0; n <= numberOfDensityZones-1; n++) {
-                    if (densityStratified) {
-                        nusZone.push_back(nusZeta[n+1]); // nus of zones is equal to nus of zeta surface below
-                        epsZone.push_back(0);
-                    } else { // if continuous
-                        nusZone.push_back(0.5 * ( nusZeta[n] + nusZeta[n+1] )); // nus of zones is mean of zeta surfaces above and below
-                        epsZone.push_back(( nusZeta[n+1] - nusZeta[n] ) / 6);
+                // read initial data for density surfaces
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                inZetas.read_header(io::ignore_no_column, "arcID", "density", "height");
+                while (inZetas.read_row(arcid, density, height)) {
+                    int pos = 0;
+                    try {
+                        pos = lookupglobIDtoID.at(arcid);
                     }
-
-                    if (n == 0) {
-                        delnusZone.push_back(nusZone[n]); // by density difference in top zone
-                    } else {
-                        delnusZone.push_back(nusZone[n] - nusZone[n-1]);
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
                     }
+                    double nus = ( density - densityFresh ) / densityFresh;
+                    nodes->at(pos)->addZeta(nus * Model::si::si_dimensionless, height * Model::si::meter);
                 }
-            }
 
-            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "arcID", "zetaID", "zetaHeight");
-            int arcid{0};
-            int zetaID{0};
-            double zetaHeight{0};
-
-            while (in.read_row(arcid, zetaID, zetaHeight)) {
-                int pos = 0;
-                try {
-                    pos = lookupglobIDtoID.at(arcid);
+                // read initial data for density zones
+                io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZones(pathZones);
+                inZones.read_header(io::ignore_no_column, "arcID", "density");
+                while (inZones.read_row(arcid, density)) {
+                    int pos = 0;
+                    try {
+                        pos = lookupglobIDtoID.at(arcid);
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    double nus = ( density - densityFresh ) / densityFresh;
+                    nodes->at(pos)->addZone(nus * Model::si::si_dimensionless);
                 }
-                catch (const std::out_of_range &ex) {
-                    //if Node does not exist ignore entry
-                    continue;
-                }
-                nodes->at(pos)->addZeta(zetaID, zetaHeight * Model::si::meter);
             }
         }
 

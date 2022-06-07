@@ -152,8 +152,10 @@ class NodeInterface {
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
         unordered_map<int, t_meter> zetas;
+        unordered_map<int, t_meter> zones;
         int numOfExternalFlows{0};
         int numOfZetas{0};
+        int numOfZones{0};
         bool nwt{false};
         bool initial_head{true};
         bool simpleDistance{false};
@@ -247,6 +249,8 @@ class NodeInterface {
             ar & numOfExternalFlows;
             ar & zetas;
             ar & numOfZetas;
+            ar & zones;
+            ar & numOfZones;
             ar & nwt;
             ar & initial_head;
             ar & simpleDistance;
@@ -326,8 +330,9 @@ Modify Properties
         setSlope(double slope_percent) {
             set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
             applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
-                try {
-                    nodeInterface->setSlope(slope_percent);
+                try { // todo: should slope be added to the nodeInterace? currently only in PhyscalProperties
+                    //nodeInterface->
+                    //Slope(slope_percent);
                 }
                 catch (...) {}
             });
@@ -867,41 +872,70 @@ Modify Properties
                 return false;
             }
             return true;
-	      }
+	    }
 
-          /**
-           * @brief Add a zeta surface to the cell
-           * @param zetaID The zeta ID
-           * @param zetaHeight the zeta surface height in meters
-           * @return number of zeta surfaces in the cell
-           */
-          int addZeta(int zetaID, t_meter zetaHeight){
-              std::pair<int,t_meter> zeta (zetaID, zetaHeight);
-              zetas.insert (zeta); // Question: or zetas[zeta] = zeta_ID; ?
-              numOfZetas++;
-              return numOfZetas;
-          }
+        /**
+        * @brief Add a zeta surface to the cell
+        * @param zetaID The zeta ID
+        * @param zetaHeight the zeta surface height in meters
+        * @return number of zeta surfaces in the cell
+        */
+        int addZeta(t_dim nus, t_meter height){
+            std::pair<double,t_meter> zeta (nus, height);
+            // todo: what to do if there is already a value at that id?
+            zetas.insert (zeta);
+            numOfZetas++;
+            return numOfZetas;
+        }
 
-          /**
-           * @brief Remove a zeta surface of the cell by zeta id
-           * @param zeta_ID The zeta id
-           */
-          void removeZeta(int zetaID) {
-              if (zetas.erase(zetaID)) { // Question: what exactly happens when erase goes through and returns 0? If clause does not get executed and we throw an error?
-                  numOfZetas = numOfZetas - 1;
-              }
-              if(numOfZetas != zetas.size()){
-                  LOG(debug) << "Printing zetas ";
-                  for(auto const& imap: zetas)
-                      LOG(debug) << " " << imap.first;
-                  throw "Number of zetas don't match";
-              }
-          }
+        /**
+        * @brief Add a zeta surface to the cell
+        * @param zetaID The zeta ID
+        * @param zetaHeight the zeta surface height in meters
+        * @return number of zeta surfaces in the cell
+        */
+        int addZone(t_dim nus){
+            // todo: what to do if there is already a zone with that nus?
+            zones.pushback (nus); // question: sort the zones vector by nus values?
+            numOfZones++;
+            return numOfZones;
+        }
 
-          /**
-          * @brief The number of zeta surfaces
-          */
-          int getNumOfZetas() { return (int) zetas.size();}
+        // todo: removeZone like removeZeta below
+
+        /**
+        * @brief Remove a zeta surface of the cell by zeta id
+        * @param zeta_ID The zeta id
+        */
+        void removeZeta(t_dim nus) {
+            // Todo: caution! this may delete a surface between two surface
+            if (zetas.erase(nus)) { // Question: what exactly happens when erase goes through and returns 0? If clause does not get executed and we throw an error?
+                numOfZetas = numOfZetas - 1;
+            }
+            if(numOfZetas != zetas.size()){
+                LOG(debug) << "Printing zetas ";
+                for(auto const& imap: zetas)
+                    LOG(debug) << " " << imap.first;
+                throw "Number of zetas don't match";
+            }
+        }
+        /**
+        * @brief The number of zeta surfaces
+        */
+        int getNumOfZetas() { return (int) zetas.size();}
+
+        // Todo: add tips and toes to the nodes
+        //void setTip(int id, bool tip){
+        //    set <std::vector<t_dim>, NusZeta>(tip);
+        //}
+
+        //void setToe(int id, bool toe){
+        //    set <std::vector<t_dim>, NusZeta>(toe);
+        //}
+
+        //void setAngleTipToe(int id, t_dim angleTipToe){
+        //    set<std::vector<t_dim>, NusZeta>(angleTipToe);
+        //}
 
         /**
          * @brief Updates GW recharge

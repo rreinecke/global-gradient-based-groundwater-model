@@ -115,7 +115,7 @@ Options::load(const std::string &filename) {
     DENSITY_VARIABLE = config.get<bool>("density_variable");
     DENSITY_STRATIFIED = config.get<bool>("density_stratified");
     NUMBER_OF_DENSITY_ZONES = config.get<int>("number_of_density_zones");
-    DENSITIES = getTypeArray<double>("densities", config);
+    DENSITY_ZETAS = getTypeArray<double>("density_zetas", config);
 
     pt::ptree data = input.get_child("data");
 
@@ -155,6 +155,8 @@ Options::load(const std::string &filename) {
     INITIAL_HEADS = getOptional("initial_head", data);
 
     INITIAL_ZETAS = getOptional("initial_zetas", data);
+
+    INITIAL_ZETAS = getOptional("initial_zones", data);
 
     boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
     if (mappings) {

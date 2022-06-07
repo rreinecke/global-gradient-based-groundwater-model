@@ -2,62 +2,107 @@
 // Created by dk on 23.02.22.
 //
 
-#ifndef TESTING_VARIABLEDENSITYFLOW_HPP
-#define TESTING_VARIABLEDENSITYFLOW_HPP
+#ifndef VARIABLEDENSITYFLOW_HPP
+#define VARIABLEDENSITYFLOW_HPP
 
 #include "Units.hpp"
-#include "../Misc/Helpers.hpp"
+#include <unordered_map>
+
+// #include "../Misc/Helpers.hpp"
+using namespace std;
 
 namespace GlobalFlow {
     namespace Model {
-
-
-
-        // Density zone properties:
-        t_dim getNusZone(int nZone, bool stratified){ // returns dimensionless density of the zone n (which reaches from surface n up to surface n-1, or if n=1 up to top of aquifer)
-
-        }
-
-        t_dim getDelnus(int zetaN, bool stratified) { // returns the difference in dimensionless density between surface zetaIdTop and zetaIdTop-1
-            if (zetaIdTop == 1) {
-                return getNusZone(zetaN, stratified);
-            } else {
-                return getNusZone(zetaN, stratified) -getNusZone(zetaN - 1, stratified);
+        class VariableDensityFlow{
+        protected:
+            unordered_map<int, t_dim> nusZeta; // dimensionless density on the zeta surfaces
+            vector<t_dim> nusZone; // dimensionless density in the density zones between successive zeta surfaces
+            vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
+            vector<t_dim> eps; // variation of dimensionless density over a density zone
+        public:
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version) {
+                LOG(debug) << "Serializing node-independent density properties";
+                ar & delnus;
+                ar & eps;
+                ar & nusZeta;
+                ar & nusZone;
             }
-        }
 
-        t_dim getEps(int zetaN, bool stratified){
-            if (stratified) {
-                return 0;
-            } else { // if continuous
-                return (getNus(zetaN + 1, true) - getNus(zetaN, true)) / 6;
+            // todo add density properties
+            void addZoneProperties(bool densityStratified, double densityFresh, vector<double> densityZetas,
+                                   int numberOfDensityZones){
+                pair<int,t_dim> tmp;
+                vector<double> densities = densityZetas;
+                densities.insert(densities.begin(),densityFresh);
+                densities.push_back(densityFresh);
+
+                for (int id = 0; id <= numberOfDensityZones; id++) {
+                    pair<int,t_dim> tmp (id, (densities[id] - densityFresh ) / densityFresh * Model::si::si_dimensionless);
+                    nusZeta.insert(tmp);
+                }
+
+                for (int id = 0; id <= numberOfDensityZones-1; id++) {
+                    if (densityStratified) {
+                        pair<int,t_dim> tmp (id,  nusZeta[id+1] * Model::si::si_dimensionless);
+                        nusZone.insert(tmp); // nus of zones is equal to nus of zeta surface below
+
+                        pair<int,t_dim> tmp (id,  0 * Model::si::si_dimensionless);
+                        eps.insert(tmp);
+                    } else { // if continuous
+                        pair<int,t_dim> tmp (id, 0.5 * ( nusZeta[id] + nusZeta[id+1] ) * Model::si::si_dimensionless);
+                        nusZone.insert(tmp); // nus of zones is mean of zeta surfaces above and below
+
+                        pair<int,t_dim> tmp (id, (( nusZeta[id+1] - nusZeta[id] ) / 6) * Model::si::si_dimensionless)
+                        eps.insert(id, tmp);
+                    }
+
+                    if (id == 0) {
+                        pair<int,t_dim> tmp (id, nusZone[id] * Model::si::si_dimensionless)
+                        delnus.insert(tmp); // by density difference in top zone
+                    } else {
+                        pair<int,t_dim> tmp (id, (nusZone[id] - nusZone[id-1]) * Model::si::si_dimensionless);
+                        delnus.insert(tmp);
+                    }
+                }
             }
-        }
 
-        // TODO: t_dim getSourceType() {} // returns the type of source (in SWI2:
-        // sourceTypeZone = >0: sources and sinks are of the same type as water in this sourceTypeZone
-        //                    =0: sources and sinks are of the same type of water as the water at the top of the aquifer
-        //                    <0: (for SGD!) sources are of the same type as the water in this sourceTypeZone, sinks are the same type as water at the top of the aquifer
+            /*void addNusZone(int id, t_dim value){
+                std::pair<int,t_dim> newEntry (id, value);
+                // todo: what to do if there is already a value at that id?
+                nusZone.insert (newEntry); // Question: or zetas[id] = zetaHeight; ?
+            }
 
+            void addDelnus(int id, t_dim value){
+                std::pair<int,t_dim> newEntry (id, value);
+                // todo: what to do if there is already a value at that id?
+                delnus.insert (newEntry); // Question: or zetas[id] = zetaHeight; ?
+            }
 
-        // Density surface properties:
-        // TODO: t_meter getZetaPosition(int zetaId) {} // returns position relative to top and bottom of the cell (in SWI2: zetaPosition = 0: between, 1: at top, 2: at bottom, 3: cell inactive)
-        // TODO: t_dim getToeAngle(int zetaId)
-        // TODO: t_dim getTipAngle(int zetaId)
+            void addEps(int id, t_dim value){
+                std::pair<int,t_dim> newEntry (id, value);
+                // todo: what to do if there is already a value at that id?
+                eps.insert (newEntry); // Question: or zetas[id] = zetaHeight; ?
+            }*/
 
+            /* todo remove density properties
+            void removeNusZeta(int id){
+                set<vector<t_dim>, NusZeta>(nusZeta);
+            }
 
-        /**
-         * @param n : density zone identifier n (n=1 at top of aquifer, n=numberDensityZones+1 at bottom of aquifer)
-         * @param elevation : elevation of density surface n (located at the top of the density zone n)
-         * @param nus : difference in the dimensionless density between density surface n (above) & n+1 (below)
-         */
+            void removeNusZone(int id){
+                set<vector<t_dim>, NusZeta>(nusZone);
+            }
 
+            void removeDelnus(int id){
+                set<vector<t_dim>, Delnus>(delnus);
+            }
 
-
-
-
-
+            void removeEps(int id){
+                set<vector<t_dim>, Eps>(eps);
+            }*/
+        };
     }
 }
-
-#endif //TESTING_VARIABLEDENSITYFLOW_HPP
+#endif //VARIABLEDENSITYFLOW_HPP

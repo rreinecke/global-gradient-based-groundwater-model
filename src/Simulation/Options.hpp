@@ -65,6 +65,7 @@ class Options {
         string AQ_DEPTH{""};
         string INITIAL_HEADS{""};
         string INITIAL_ZETAS{""};
+        string INITIAL_ZONES{""};
 
         //++Special mappings++//
         string NODEID_SPATID{""};
@@ -97,10 +98,14 @@ class Options {
         bool SENSITIVITY{false};
     	bool ONE_LAYER{false};
         vector<bool> CONFINED{};
+        // density information
         bool DENSITY_VARIABLE{false};
         bool DENSITY_STRATIFIED{false};
-        vector<double> DENSITIES{1000};
+        double DENSITY_FRESH{1000.0};
+        double DENSITY_OCEAN{1025.0};
+        vector<double> DENSITY_ZETAS{1012.5};
         int NUMBER_OF_DENSITY_ZONES{0};
+
     	string BASE_PATH{"data"};
         bool k_from_lith{true};
         bool k_ghb_from_file{false};
@@ -181,6 +186,8 @@ class Options {
 
         string getInitialZetasDir() {return INITIAL_ZETAS;}
 
+        string getInitialZonesDir() {return INITIAL_ZONES;}
+
         bool isRowCol() { return ROW_COLS; }
 
         int getInnerItter() { return I_ITTER; }
@@ -219,9 +226,19 @@ class Options {
 
         bool isDensityStratified() { return DENSITY_STRATIFIED; }
 
+        double
+        getDensityFresh() {
+            return DENSITY_FRESH;
+        }
+
+        double
+        getDensityOcean() {
+            return DENSITY_OCEAN;
+        }
+
         vector<double>
-        getDensities() {
-            return DENSITIES;
+        getDensityZetas() {
+            return DENSITY_ZETAS;
         }
 
         int

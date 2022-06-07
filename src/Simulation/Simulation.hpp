@@ -314,7 +314,9 @@ namespace GlobalFlow {
                 FASTSURFACE,
                 NAG,
                 STORAGE,
-                GENERAL_HEAD_BOUNDARY
+                GENERAL_HEAD_BOUNDARY,
+                PSEUDO_SOURCE_FLOW
+                // todo add global lake and wetland
             };
 
             /**

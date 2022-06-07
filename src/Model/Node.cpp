@@ -39,7 +39,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
     fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
-
     return fields;
 }
 

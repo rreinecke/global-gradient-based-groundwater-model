@@ -18,10 +18,10 @@
       "density_variable": "true",
       "density_stratified": "true",
       "number_of_density_zones": 2,
-      "densities": [
-        1000.0,
-        1012.5,
-        1025.0
+      "density_fresh": 1000,
+      "density_ocean": 1025,
+      "density_zetas": [
+        1012.5
       ],
       "cache": "false",
       "adaptivestepsize": "false",
@@ -68,7 +68,8 @@
       "elevation": "elevation_simpleVDF.csv",
       "lithology": "lithology_simpleVDF.csv",
       "initial_head": "initial_head_simpleVDF.csv",
-      "initial_zetas": "initial_zetas_simpleVDF.csv"
+      "initial_zetas": "initial_zetas_simpleVDF.csv",
+      "initial_zones": "initial_zones_simpleVDF.csv"
     }
   }
   }

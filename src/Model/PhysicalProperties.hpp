@@ -25,6 +25,7 @@
 #define GLOBAL_FLOW_PHYSICALPROPERTIES_HPP
 
 #include "Units.hpp"
+#include "VariableDensityFlow.hpp"
 
 namespace GlobalFlow {
     namespace Model {
@@ -167,6 +168,7 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;
         struct SurfaceFrontBack;
         struct VolumeOfCell;
+        struct VariableDensityProps;
 
 /**
  * Definition of type and unit for each field
@@ -201,9 +203,9 @@ namespace GlobalFlow {
             PhysicalProperty<t_meter, EdgeLengthFrontBack>,
             PhysicalProperty<t_s_meter, SurfaceLeftRight>,
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
-            PhysicalProperty<t_c_meter, VolumeOfCell>
-
-            // TODO list of PhysicalProperty<t_meter, ZETA>,
+            PhysicalProperty<t_c_meter, VolumeOfCell>,
+            // variable density properties
+            PhysicalProperty<std::unique_ptr<VariableDensityFlow>, VariableDensityProps>
         >;
 
     }
