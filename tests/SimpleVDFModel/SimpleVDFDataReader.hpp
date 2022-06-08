@@ -3,6 +3,7 @@
 
 #include "../../src/DataProcessing/DataReader.hpp"
 #include "../../src/Model/Node.hpp"
+#include "../../src/Model/Units.hpp"
 
 namespace GlobalFlow {
 namespace DataProcessing {
@@ -27,7 +28,12 @@ class SimpleVDFDataReader : public DataReader {
                             op.getSpecificStorage(),
                             op.getEdgeLengthLeftRight(),
                             op.getEdgeLengthFrontBack(),
-                            op.isConfined(0));
+                            op.isConfined(0),
+                            op.isDensityVariable(),
+                            op.isDensityStratified(),
+                            op.getDensityFresh(),
+                            op.getDensityZones(),
+                            op.getNumberOfDensityZones());
 
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));
@@ -40,9 +46,8 @@ class SimpleVDFDataReader : public DataReader {
             readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Reading variable density information";
-            readVariableDensity(op.isDensityVariable(), op.isDensityStratified(),
-                                op.getDensityFresh(), op.getDensityOcean(), op.getDensityZetas(),
-                                buildDir(op.getInitialZetasDir()), buildDir(op.getInitialZonesDir()));
+            readVariableDensity(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()),
+                                buildDir(op.getInitialZonesDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -65,7 +70,12 @@ class SimpleVDFDataReader : public DataReader {
                  double specificStorage,
                  double edgeLengthLeftRight,
                  double edgeLengthFrontBack,
-                 bool confined) {
+                 bool confined,
+                 bool isDensityVariable, // todo: not needed?
+                 bool densityStratified,
+                 double densityFresh,
+                 vector<double> densityZones,
+                 int numberOfDensityZones) {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -79,6 +89,12 @@ class SimpleVDFDataReader : public DataReader {
             int row{0};
             int col{0};
             lookupglobIDtoID.reserve(numberOfNodes);
+
+            Model::DensityProperties densityProps =
+                    Model::DensityProperties::setDensityProperties(densityStratified,
+                                                                   densityFresh,
+                                                                   densityZones,
+                                                                   numberOfDensityZones);
 
             while (in.read_row(globid, x, y, area, row, col)) {
                 out[row][col] = i;
@@ -95,7 +111,9 @@ class SimpleVDFDataReader : public DataReader {
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, confined));
+                                                            specificStorage,
+                                                            confined,
+                                                            densityProps));
                 lookupglobIDtoID[globid] = i;
                 i++;
             }
@@ -153,15 +171,11 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
-        void readVariableDensity(bool densityVariable, bool densityStratified, double densityFresh, double densityOcean,
-                                 vector<double> densityZetas, std::string pathZetas, std::string pathZones) {
+        void readVariableDensity(bool densityVariable, double densityFresh, std::string pathZetas, std::string pathZones) {
             if (densityVariable){
                 int arcid{0};
                 double density{0};
                 double height{0};
-
-                Model::VariableDensityFlow::addZoneProperties(densityStratified, densityFresh, densityOcean,
-                                                              densityZetas)
 
                 // read initial data for density surfaces
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
@@ -176,7 +190,8 @@ class SimpleVDFDataReader : public DataReader {
                         continue;
                     }
                     double nus = ( density - densityFresh ) / densityFresh;
-                    nodes->at(pos)->addZeta(nus * Model::si::si_dimensionless, height * Model::si::meter);
+                    // todo: nus * Model::si::si_dimensionless
+                    nodes->at(pos)->addZeta(nus, height * Model::si::meter);
                 }
 
                 // read initial data for density zones

@@ -401,6 +401,11 @@ namespace GlobalFlow {
                     case STORAGE:
                         tmp = getError([this](int i) { return nodes->at(i)->getTotalStorageFlow().value(); });
                         break;
+                    case PSEUDO_SOURCE_FLOW:
+                        tmp = getError([this](int i) {
+                            return nodes->at(i)->getExternalFlowVolumeByName(Model::PSEUDO_SOURCE_FLOW).value();
+                        });
+                        break;
                 }
 
                 stream << "IN :" << tmp.IN << "  OUT :" << tmp.OUT;

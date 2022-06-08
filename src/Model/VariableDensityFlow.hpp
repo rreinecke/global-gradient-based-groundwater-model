@@ -6,20 +6,22 @@
 #define VARIABLEDENSITYFLOW_HPP
 
 #include "Units.hpp"
-#include <unordered_map>
 
-// #include "../Misc/Helpers.hpp"
 using namespace std;
 
 namespace GlobalFlow {
     namespace Model {
-        class VariableDensityFlow{
+        class DensityProperties{
         protected:
-            unordered_map<int, t_dim> nusZeta; // dimensionless density on the zeta surfaces
+            vector<t_dim> nusZeta; // dimensionless density on the zeta surfaces
             vector<t_dim> nusZone; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
             vector<t_dim> eps; // variation of dimensionless density over a density zone
-        public:
+
+        private:
+
+
+            /*// Question: what is this good for?
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version) {
@@ -28,44 +30,55 @@ namespace GlobalFlow {
                 ar & eps;
                 ar & nusZeta;
                 ar & nusZone;
-            }
+                }*/
+        public:
 
-            // todo add density properties
-            void addZoneProperties(bool densityStratified, double densityFresh, vector<double> densityZetas,
-                                   int numberOfDensityZones){
-                pair<int,t_dim> tmp;
-                vector<double> densities = densityZetas;
-                densities.insert(densities.begin(),densityFresh);
-                densities.push_back(densityFresh);
+
+            static DensityProperties setDensityProperties(bool densityStratified, double densityFresh,
+                                                          vector<double> densityZones,
+                                                          int numberOfDensityZones){
+                DensityProperties densityProps;
+
+                vector<t_dim> nusZetaVec;
+                vector<t_dim> nusZoneVec;
+                vector<t_dim> delnusVec;
+                vector<t_dim> epsVec;
+                double densityZeta;
 
                 for (int id = 0; id <= numberOfDensityZones; id++) {
-                    pair<int,t_dim> tmp (id, (densities[id] - densityFresh ) / densityFresh * Model::si::si_dimensionless);
-                    nusZeta.insert(tmp);
+                    if (id == 0) {
+                        densityZeta = densityZones[id];
+                    } else if (id == numberOfDensityZones) {
+                        densityZeta = densityZones[id-1];
+                    } else {
+                        densityZeta = (densityZones[id-1] + densityZones[id]) * 0.5;
+                    }
+                    nusZetaVec.push_back((densityZeta - densityFresh ) / densityFresh * Model::si::si_dimensionless);
                 }
 
                 for (int id = 0; id <= numberOfDensityZones-1; id++) {
+
                     if (densityStratified) {
-                        pair<int,t_dim> tmp (id,  nusZeta[id+1] * Model::si::si_dimensionless);
-                        nusZone.insert(tmp); // nus of zones is equal to nus of zeta surface below
-
-                        pair<int,t_dim> tmp (id,  0 * Model::si::si_dimensionless);
-                        eps.insert(tmp);
-                    } else { // if continuous
-                        pair<int,t_dim> tmp (id, 0.5 * ( nusZeta[id] + nusZeta[id+1] ) * Model::si::si_dimensionless);
-                        nusZone.insert(tmp); // nus of zones is mean of zeta surfaces above and below
-
-                        pair<int,t_dim> tmp (id, (( nusZeta[id+1] - nusZeta[id] ) / 6) * Model::si::si_dimensionless)
-                        eps.insert(id, tmp);
+                        nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
+                        epsVec.push_back(0 * Model::si::si_dimensionless);
+                    } else { // if continuous todo: test for continuous case whether the results are correct
+                        nusZoneVec.push_back(((densityZones[id] - densityFresh) * 0.5 +
+                                              (densityZones[id+1] - densityFresh) * 0.5)
+                                              * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces above and below
+                        epsVec.push_back((( nusZetaVec[id+1] - nusZetaVec[id] ) / 6));
                     }
 
                     if (id == 0) {
-                        pair<int,t_dim> tmp (id, nusZone[id] * Model::si::si_dimensionless)
-                        delnus.insert(tmp); // by density difference in top zone
+                        delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
                     } else {
-                        pair<int,t_dim> tmp (id, (nusZone[id] - nusZone[id-1]) * Model::si::si_dimensionless);
-                        delnus.insert(tmp);
+                        delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id-1]));
                     }
                 }
+                densityProps.nusZeta = nusZetaVec;
+                densityProps.nusZone = nusZoneVec;
+                densityProps.delnus = delnusVec;
+                densityProps.eps = epsVec;
+                return densityProps;
             }
 
             /*void addNusZone(int id, t_dim value){

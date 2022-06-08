@@ -151,8 +151,8 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-        unordered_map<int, t_meter> zetas;
-        unordered_map<int, t_meter> zones;
+        unordered_map<double, t_meter> zetas;
+        vector<t_dim> zones;
         int numOfExternalFlows{0};
         int numOfZetas{0};
         int numOfZones{0};
@@ -293,7 +293,8 @@ class NodeInterface {
                       double anisotropy,
                       double specificYield,
                       double specificStorage,
-                      bool confined);
+                      bool confined,
+                      Model::DensityProperties densityProps);
 
         virtual ~NodeInterface() = default;
 
@@ -880,10 +881,15 @@ Modify Properties
         * @param zetaHeight the zeta surface height in meters
         * @return number of zeta surfaces in the cell
         */
-        int addZeta(t_dim nus, t_meter height){
-            std::pair<double,t_meter> zeta (nus, height);
+        int addZeta(double nus, t_meter height){
             // todo: what to do if there is already a value at that id?
-            zetas.insert (zeta);
+            if (!zetas.empty()){
+                if (zetas.count(nus) > 0){
+                    LOG(debug) << "Printing dimensionless density you are trying to add to zeta surfaces: " << nus;
+                    throw "Cannot add a zeta surface with this dimensionless density as it already exists";
+                }
+            }
+            zetas.insert (std::make_pair(nus, height));
             numOfZetas++;
             return numOfZetas;
         }
@@ -896,7 +902,19 @@ Modify Properties
         */
         int addZone(t_dim nus){
             // todo: what to do if there is already a zone with that nus?
-            zones.pushback (nus); // question: sort the zones vector by nus values?
+            if (!zones.empty()) {
+                if (nus > zones[zones.size()]) {
+                    zones.push_back(nus); // question: sort the zones vector by nus values?
+                } else if (nus < zones[0]) {
+                    zones.insert(zones.begin(), nus);
+                } else {
+                    LOG(debug) << "Printing dimensionless densities of zones";
+                    for (auto const &imap: zones)
+                        LOG(debug) << " " << imap;
+                    LOG(debug) << "Dimensionless density of new zone: " << nus;
+                    throw "Unclear where to add the dimensionless density of new zone (end or beginning?)";
+                }
+            }
             numOfZones++;
             return numOfZones;
         }
@@ -907,13 +925,13 @@ Modify Properties
         * @brief Remove a zeta surface of the cell by zeta id
         * @param zeta_ID The zeta id
         */
-        void removeZeta(t_dim nus) {
+        void removeZeta(double nus) {
             // Todo: caution! this may delete a surface between two surface
             if (zetas.erase(nus)) { // Question: what exactly happens when erase goes through and returns 0? If clause does not get executed and we throw an error?
                 numOfZetas = numOfZetas - 1;
             }
             if(numOfZetas != zetas.size()){
-                LOG(debug) << "Printing zetas ";
+                LOG(debug) << "Printing dimensionless densities of zeta surfaces";
                 for(auto const& imap: zetas)
                     LOG(debug) << " " << imap.first;
                 throw "Number of zetas don't match";
@@ -1414,9 +1432,11 @@ class StandardNode : public NodeInterface {
                      double aquiferDepth,
                      double anisotropy,
                      double specificYield,
-                     double specificStorage, bool confined)
+                     double specificStorage,
+                     bool confined,
+                     DensityProperties densityProps)
                 : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
-                                stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined) {}
+                                stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityProps) {}
 
     private:
         // implementation
@@ -1473,26 +1493,26 @@ class StandardNode : public NodeInterface {
         virtual bool
         __isStaticNode() { return false; }
 
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-        boost::serialization::void_cast_register<NodeInterface, StandardNode>();
-        boost::serialization::void_cast_register<StandardNode, NodeInterface>();
-        boost::serialization::base_object<NodeInterface>(*this);
-        LOG(debug) << "Serializing Standard Node";
-        ar & nodes;
-        ar & neighbours;
-        ar & externalFlows;
-        ar & numOfExternalFlows;
-        ar & nwt;
-        ar & initial_head;
-        ar & simpleDistance;
-        ar & simpleK;
-        ar & steadyState;
-        ar & fields;
-        ar & cached;
-        ar & eq_flow;
-    }
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+            boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+            boost::serialization::base_object<NodeInterface>(*this);
+            LOG(debug) << "Serializing Standard Node";
+            ar & nodes;
+            ar & neighbours;
+            ar & externalFlows;
+            ar & numOfExternalFlows;
+            ar & nwt;
+            ar & initial_head;
+            ar & simpleDistance;
+            ar & simpleK;
+            ar & steadyState;
+            ar & fields;
+            ar & cached;
+            ar & eq_flow;
+        }
 
 };
 
@@ -1507,7 +1527,8 @@ class StaticHeadNode : public NodeInterface {
                        large_num ID,
                        t_s_meter area,
                        t_meter edgeLengthLeftRight,
-                       t_meter edgeLengthFrontBack)
+                       t_meter edgeLengthFrontBack,
+                       DensityProperties densityProps) // Question: densityProps required here? If yes: what values?
                 : NodeInterface(
                 nodes,
                 0,
@@ -1517,7 +1538,7 @@ class StaticHeadNode : public NodeInterface {
                 edgeLengthFrontBack,
                 ID,
                 ID,
-                0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true) {}
+                0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, densityProps) {}
 
     private:
         friend class NodeInterface;

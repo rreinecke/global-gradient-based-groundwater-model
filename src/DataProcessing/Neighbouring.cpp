@@ -215,8 +215,10 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                 Model::quantity<Model::SquareMeter> area = 1 * Model::si::square_meter;
                 Model::quantity<Model::Meter> edgeLengthLeftRight = 1 * Model::si::meter;
                 Model::quantity<Model::Meter> edgeLengthFrontBack = 1 * Model::si::meter;
+                vector<double> densityZetas{1012.5};
+                Model::DensityProperties densityProps = Model::DensityProperties::setDensityProperties(false, 1000.0, densityZetas, 2);
                 nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area, edgeLengthLeftRight,
-                                                              edgeLengthFrontBack));
+                                                              edgeLengthFrontBack, densityProps));
 
                 switch (positionOfBoundary) {
                     case Model::LEFT:
@@ -398,6 +400,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double anisotropy;
     double specificYield;
     double specificStorage;
+    Model::DensityProperties densityProps;
 
     for (int j = 0; j < layers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
@@ -423,13 +426,15 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             specificStorage =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
+            densityProps =
+                    nodes->at(i)->getProperties().get<Model::DensityProperties, Model::DensityProps>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
                 continue;
             } else {
                 if (id > layersize * layers) {
-                    LOG(critical) << "This is not posModel::sible!";
+                    LOG(critical) << "This is not possible!";
                     exit(9);
                 }
                 nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
@@ -441,7 +446,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, conf[j + 1]));
+                                                            specificStorage, conf[j + 1], densityProps));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(j + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()

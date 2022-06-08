@@ -36,8 +36,6 @@ namespace GlobalFlow {
  *
  * Inspired by https://jguegant.github.io/blogs/tech/thread-safe-multi-type-map.html
  */
-
-
         struct DefaultProperty;
 
 /**
@@ -168,7 +166,7 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;
         struct SurfaceFrontBack;
         struct VolumeOfCell;
-        struct VariableDensityProps;
+        struct DensityProps;
 
 /**
  * Definition of type and unit for each field
@@ -205,7 +203,7 @@ namespace GlobalFlow {
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
             PhysicalProperty<t_c_meter, VolumeOfCell>,
             // variable density properties
-            PhysicalProperty<std::unique_ptr<VariableDensityFlow>, VariableDensityProps>
+            PhysicalProperty<DensityProperties, DensityProps>
         >;
 
     }

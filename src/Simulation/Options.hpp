@@ -102,9 +102,8 @@ class Options {
         bool DENSITY_VARIABLE{false};
         bool DENSITY_STRATIFIED{false};
         double DENSITY_FRESH{1000.0};
-        double DENSITY_OCEAN{1025.0};
-        vector<double> DENSITY_ZETAS{1012.5};
-        int NUMBER_OF_DENSITY_ZONES{0};
+        vector<double> DENSITY_ZONES{1000.0};
+        int NUMBER_OF_DENSITY_ZONES{1};
 
     	string BASE_PATH{"data"};
         bool k_from_lith{true};
@@ -231,14 +230,9 @@ class Options {
             return DENSITY_FRESH;
         }
 
-        double
-        getDensityOcean() {
-            return DENSITY_OCEAN;
-        }
-
         vector<double>
-        getDensityZetas() {
-            return DENSITY_ZETAS;
+        getDensityZones() {
+            return DENSITY_ZONES;
         }
 
         int

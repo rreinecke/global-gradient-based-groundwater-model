@@ -50,12 +50,33 @@ namespace GlobalFlow {
 
             /**
              * @brief Calculates the horizontal flow between two nodes
-             * @param flow a touple of inputs about the aquifer
+             * @param flow a tuple of inputs about the aquifer
              * @return A weighted conductance value for the flow between two nodes
              * Calculates the harmonic mean conductance between two nodes.
              * $C = 2 \times EdgeLenght_1 \times \frac{ (TR_1 \times TR_2)}{(TR_1 \times EdgeLenght_1 + TR_2 \times EdgeLenght_2)}$
              */
             t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
+
+            // todo: add brief
+
+            t_meter calculateZoneThickness() noexcept;
+
+            /**
+             * @brief Calculates the conductance in column/row direction for a density zone n
+             * @param n the density zone
+             * @param zoneThicknesses all zone thicknesses at interface between columns/rows
+             * @param conductance conductance in column/row direction
+             * @return
+             */
+            t_s_meter_t calculateDensityZoneConductance(int n, std::vector<t_meter> zoneThicknesses, t_s_meter_t conductance) noexcept;
+
+            /**
+             * @brief Calculates the cumulative conductance in column/row direction below a density surface n
+             * @param n the density surface under which the cumulative density zone conductance shall be calculated
+             * @param densityZoneConductances all density zone conductances
+             * @return the sum of density zone conductances below density suface n
+             */
+            t_s_meter_t calculateCumulativeDensityZoneConductance(int n, std::vector<t_s_meter_t> densityZoneConductances) noexcept;
 
             /**
              * Simple smoother function to buffer iteration steps in NWT approach

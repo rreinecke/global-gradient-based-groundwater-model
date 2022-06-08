@@ -12,12 +12,8 @@ namespace Model {
  */
 PhysicalProperties initProperties() {
     PhysicalProperties fields;
-    fields.emplace < unsigned
-    long
-    int, ID > (0);
-    fields.emplace < unsigned
-    long
-    int, ArcID > (0);
+    fields.emplace < unsigned long int, ID > (0);
+    fields.emplace < unsigned long int, ArcID > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
@@ -56,17 +52,14 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double anisotropy,
                              double specificYield,
                              double specificStorage,
-                             bool confined) : nodes(nodes) {
+                             bool confined,
+                             Model::DensityProperties densityProps) : nodes(nodes) {
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
     fields.set<quantity<SquareMeter>, Area>(area);
-    fields.set < unsigned
-    long
-    int, ArcID > (arcID);
-    fields.set < unsigned
-    long
-    int, ID > (identifier);
+    fields.set < unsigned long int, ArcID > (arcID);
+    fields.set < unsigned long int, ID > (identifier);
     fields.set<quantity<Velocity>, K>(conduct);
     fields.set<bool, Confinement>(confined);
     fields.set<quantity<Dimensionless>, StepModifier>(stepModifier * si::si_dimensionless);
@@ -82,6 +75,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
+    fields.emplace<DensityProperties, DensityProps>(densityProps);
 }
 }
 }//ns

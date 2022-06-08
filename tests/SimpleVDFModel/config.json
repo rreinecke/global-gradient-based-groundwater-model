@@ -19,9 +19,9 @@
       "density_stratified": "true",
       "number_of_density_zones": 2,
       "density_fresh": 1000,
-      "density_ocean": 1025,
-      "density_zetas": [
-        1012.5
+      "density_zones": [
+        1000,
+        1025
       ],
       "cache": "false",
       "adaptivestepsize": "false",
