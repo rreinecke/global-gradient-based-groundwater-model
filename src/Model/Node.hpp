@@ -429,6 +429,17 @@ Modify Properties
                                    get<bool, Confinement>());
         }
 
+        ZetaInput createDataTuple (map_itter got) {
+            if (got->first == LEFT or got->first == RIGHT){
+                return std:make_tuple(at(got)->getZetas(), // todo: zeta surface heights
+                                      getZetasNeig(), // todo: zeta surface heights of neighbour
+                                      get<t_meter, EdgeLengthLeftRight>(got),
+                                      getAt<t_meter, EdgeLengthLeftRight>(got),
+                                      )
+            } else { // if (got->first == FRONT or got->first == BACK)
+
+            }
+
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes

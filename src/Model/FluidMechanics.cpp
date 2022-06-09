@@ -76,43 +76,57 @@ namespace GlobalFlow {
         }
 
         // todo: add THICKRF, THICKFF (lineraly interpolated zone thickness at the interface between columns/rows)
-        quantity<Meter> FluidMechanics::calculateZoneThickness()noexcept {
+        std::vector<quantity<Meter>> FluidMechanics::calculateZoneThicknesses(ZetaInput zetaIn)noexcept {
             // Question: how to adapt this or the definition of zetas so we can track across multiple layers?
+            // unwrap variables in tuple
+            std::vector<t_meter> zetas; // zeta surface height (zeta[p+1]: surface below)
+            std::vector<t_meter> zetas_neig; // zeta surface height in neighbouring cell (zeta_neig[p+1]: surface below)
             t_meter edgeLength_neig; // edge width/length of neighbouring column/row
             t_meter edgeLength_self; // edge width/length of this column/row
-            t_meter zeta_below; // zeta surface height of zeta surface below
-            t_meter zeta; // zeta surface height
-            t_meter zeta_neig; // zeta surface height in neighbouring cell
-            t_meter zeta_neig_below; // zeta surface height of zeta surface below in neighbouring cell
-
-
-            quantity<Meter> out = ((edgeLength_neig*(zeta - zeta_below))/(edgeLength_neig+ edgeLength_self)) +
-                                  ((edgeLength_self*(zeta_neig - zeta_neig_below))/(edgeLength_neig + edgeLength_self));
+            std::tie(zetas,  zetas_neig, edgeLength_self, edgeLength_neig) = zetaIn;
+            // calculate zone thicknesses
+            std::vector<quantity<Meter>> out;
+            for (int p; p <= zetas.size() - 1; p++){
+                out.push_back((edgeLength_neig*(zetas[p] - zetas[p+1]))/(edgeLength_neig+ edgeLength_self)) +
+                              ((edgeLength_self*(zetas_neig[p] - zetas_neig[p+1]))/(edgeLength_neig + edgeLength_self));
+            } // todo: check if this works correctly
             return out;
         }
 
         // todo: add SWICR, SWICC (conductance in the column/row direction for a zone)
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateDensityZoneConductance(int n, std::vector<t_meter> zoneThicknesses, t_s_meter_t conductance)noexcept {
+        std::vector<quantity<MeterSquaredPerTime>> FluidMechanics::calculateDensityZoneConductances(ZetaInput zetaIn, t_s_meter_t conductance)noexcept {
+            // calculate the zone thicknesses
+            std::vector<t_meter> zoneThicknesses = calculateZoneThicknesses(ZetaInput zetaIn);
+            // calculate the sum of the zone thicknesses
             quantity<Meter> sumOfZoneThicknesses = 0 * si::meter;
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(),[&] (t_meter zoneThickness) {
                               sumOfZoneThicknesses += zoneThickness;
-                          });
-            quantity<MeterSquaredPerTime> out = conductance * (zoneThicknesses[n] / sumOfZoneThicknesses);
+                          }); // todo: check if this works correctly
+            // calculate the density zone conductances
+            std::vector<quantity<MeterSquaredPerTime>> out;
+            for (int n; n <= zoneThicknesses.size(); n++){
+                out.push_back(conductance * (zoneThicknesses[n] / sumOfZoneThicknesses));
+            } // todo: check if this works correctly
             return out;
         }
 
         // todo: add SWICUMCR, SWICUMCC (cumulative conductance in column/row direction below a density surface n)
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateCumulativeDensityZoneConductance(int n, std::vector<t_s_meter_t> densityZoneConductances)noexcept {
-            std::vector<t_s_meter_t> densityZoneConductancesBelow {densityZoneConductances.begin()+n,  // todo: check whether this works correct
-                                                                   densityZoneConductances.end()}; // all density zone conductances below density surface id
-            quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
-            std::for_each(densityZoneConductancesBelow.begin(), densityZoneConductancesBelow.end(),
-                          [&] (t_s_meter_t densityZoneConductance) {
-                out += densityZoneConductance;
-            });
+        std::vector<quantity<MeterSquaredPerTime>> FluidMechanics::calculateCumulativeDensityZoneConductances(ZetaInput zetaIn)noexcept {
+            // calculate the density zone conductances
+            std::vector<t_s_meter_t> densityZoneConductances = calculateDensityZoneConductances(zetaIn, conductance);
+            // calculate the sum of density zone conductances below a zeta surface n and add to vector out
+            std::vector<quantity<MeterSquaredPerTime>> out;
+            quantity<MeterSquaredPerTime> sumDensityZoneConductanceBelow = 0 * si::square_meter / day;
+            for (int n; n <= densityZoneConductances.size(); n++){
+                std::for_each(densityZoneConductances.begin()+n, densityZoneConductances.end(),
+                              [&] (t_s_meter_t densityZoneConductanceBelow) {
+                                  sumDensityZoneConductanceBelow += densityZoneConductanceBelow;
+                              });
+                out.push_back(sumDensityZoneConductanceBelow);
+                sumDensityZoneConductanceBelow = 0;
+            } // todo: check if this works correctly
             return out;
         }
-
 
         quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor flow)noexcept {
             t_vel k_neig;
