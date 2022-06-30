@@ -429,6 +429,7 @@ Modify Properties
                                    get<bool, Confinement>());
         }
 
+<<<<<<< HEAD
         ZetaInput createZetaInput(map_itter got) {  // needed for calculateZoneThicknesses in FluidMechanics.cpp
 
             if (got->first == LEFT) {
@@ -488,6 +489,19 @@ Modify Properties
                 }
             }
         }*/
+=======
+        ZetaInput createDataTuple (map_itter got) {
+            if (got->first == LEFT or got->first == RIGHT){
+                return std:make_tuple(at(got)->getZetas(), // todo: zeta surface heights
+                                      getZetasNeig(), // todo: zeta surface heights of neighbour
+                                      get<t_meter, EdgeLengthLeftRight>(got),
+                                      getAt<t_meter, EdgeLengthLeftRight>(got),
+                                      )
+            } else { // if (got->first == FRONT or got->first == BACK)
+
+            }
+
+>>>>>>> e0ee59c3704f810858ec55c41245f9a0689837b6
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
