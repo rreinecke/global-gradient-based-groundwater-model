@@ -116,18 +116,60 @@ namespace GlobalFlow {
             }*/
         };
 
-        class Zetas{
-        protected:
-            vector<double> nus;
-            vector<t_meter> height;
-        public:
-            static Zetas setZetas(vector<double> nus, vector<t_meter> height) {
-                Zetas zetas;
-                zetas.nus = nus;
-                zetas.height = height;
-                return zetas;
-            }
-        };
+        // todo: add THICKRF, THICKFF (lineraly interpolated zone thickness at the interface between columns/rows)
+        /**
+         * Calculates the density zone thicknesses between the density surfaces
+         * @param zetas zeta surface height (zeta[p+1]: surface below)
+         * @param zetas_neig zeta surface height in neighbouring cell (zeta_neig[p+1]: surface below)
+         * @param edgeLength_neig edge width/length of neighbouring column/row
+         * @param edgeLength_self edge width/length of this column/row
+         * @return zone thickness
+         */
+        //
+        std::vector<quantity<Meter>> VariableDensityFlow::calculateZoneThicknesses(
+                std::unordered_map<t_dim, t_meter> zetas,
+                std::unordered_map<t_dim, t_meter> zetas_neig,
+                t_meter edgeLength_neig,
+                t_meter edgeLength_self)noexcept {
+            // Question: how to adapt this or the definition of zetas so we can track across multiple layers?
+            // calculate zone thicknesses
+            std::vector<quantity<Meter>> out;
+            for (int p; p <= zetas.size() - 1; p++){
+                out.push_back((edgeLength_neig*(zetas[p] - zetas[p+1]))/(edgeLength_neig+ edgeLength_self)) +
+                ((edgeLength_self*(zetas_neig[p] - zetas_neig[p+1]))/(edgeLength_neig + edgeLength_self));
+            } // todo: check if this works correctly (e.g by summing up all zone thicknesses. Expected result: aquifer thickness
+            return out;
+        }
+
+        // todo: add SWICR, SWICC (conductance in the column/row direction for a zone)
+        std::vector<quantity<MeterSquaredPerTime>> VariableDensityFlow::calculateDensityZoneConductances(std::vector<t_meter> zoneThickness, t_s_meter_t conductance)noexcept {
+        // calculate the sum of the zone thicknesses
+        quantity<Meter> sumOfZoneThicknesses = 0 * si::meter;
+        std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(),[&] (t_meter zoneThickness) {
+        sumOfZoneThicknesses += zoneThickness;
+        }); // todo: check if this works correctly
+        // calculate the density zone conductances
+        std::vector<quantity<MeterSquaredPerTime>> out;
+        for (int n; n <= zoneThicknesses.size(); n++){
+        out.push_back(conductance * (zoneThicknesses[n] / sumOfZoneThicknesses));
+        } // todo: check if this works correctly
+        return out;
+        }
+
+        // todo: add SWICUMCR, SWICUMCC (cumulative conductance in column/row direction below a density surface n)
+        std::vector<quantity<MeterSquaredPerTime>> VariableDensityFlow::calculateCumulativeDensityZoneConductances(std::vector<t_s_meter_t> densityZoneCond, conductance)noexcept {
+        // calculate the sum of density zone conductances below a zeta surface n and add to vector out
+        std::vector<quantity<MeterSquaredPerTime>> out;
+        quantity<MeterSquaredPerTime> sumDensityZoneCondBelow = 0 * si::square_meter / day;
+        for (int n; n <= densityZoneCond.size(); n++){
+        std::for_each(densityZoneCond.begin()+n, densityZoneCond.end(), [&] (t_s_meter_t densityZoneCondBelow) {
+        sumDensityZoneCondBelow += densityZoneCondBelow;
+        });
+        out.push_back(sumDensityZoneCondBelow);
+        sumDensityZoneCondBelow = 0;
+        } // todo: check if this works correctly
+        return out;
+        }
     }
 }
 #endif //VARIABLEDENSITYFLOW_HPP

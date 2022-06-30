@@ -97,9 +97,6 @@ class SimpleVDFDataReader : public DataReader {
                                                                    numberOfDensityZones);
 
             while (in.read_row(globid, x, y, area, row, col)) {
-
-                // Question read initial_zetas.csv, check whether globid has one or more zetas and make an unordered map of them?
-
                 out[row][col] = i;
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
@@ -116,7 +113,8 @@ class SimpleVDFDataReader : public DataReader {
                                                             specificYield,
                                                             specificStorage,
                                                             confined,
-                                                            densityProps));
+                                                            densityProps
+                                                            ));
                 lookupglobIDtoID[globid] = i;
                 i++;
             }
@@ -193,8 +191,7 @@ class SimpleVDFDataReader : public DataReader {
                         continue;
                     }
                     double nus = ( density - densityFresh ) / densityFresh;
-                    // todo: nus * Model::si::si_dimensionless
-                    nodes->at(pos)->addZeta(nus, height * Model::si::meter);
+                    nodes->at(pos)->addZetaSurface(nus * Model::si::si_dimensionless, height * Model::si::meter);
                 }
             }
         }

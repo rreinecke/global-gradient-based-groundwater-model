@@ -180,10 +180,11 @@ t_vol_t ExternalFlow::getR(t_meter eq_head, t_meter head,
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     if (type == PSEUDO_SOURCE_FLOW) {
         // todo: what to do if pseudo source flow?
-        t_s_meter_t zoneConductance = calculateDensityZoneConductance;
-        t_s_meter_t zoneConductanceNeig = calculateDensityZoneConductance;
-        t_s_meter_t zoneConductanceCum = calculateCumulativeDensityZoneConductance;
-        t_s_meter_t zoneConductanceCumNeig = calculateCumulativeDensityZoneConductance;
+
+        t_s_meter_t zoneConductance = calculateDensityZoneConductance();
+        t_s_meter_t zoneConductanceNeig = calculateDensityZoneConductance();
+        t_s_meter_t zoneConductanceCum = calculateCumulativeDensityZoneConductance();
+        t_s_meter_t zoneConductanceCumNeig = calculateCumulativeDensityZoneConductance();
         // i: row, j: column, k: layer, n: density zone, m: time step
         t_meter zeta; // at i, j-1, k, n, m-1
         t_meter zetaBelow; // at i, j, k, n+1, m-1
@@ -193,9 +194,9 @@ t_vol_t ExternalFlow::getR(t_meter eq_head, t_meter head,
         //t_meter zetaOtherNeigBelow; // at i+1, j, k, n+1, m-1 OR i, j+1, k, n+1, m-1
 
         quantity<VolumePerTime, double> rRight = calculateRInDirection();
-        quantity<VolumePerTime, double> rLeft =;
-        quantity<VolumePerTime, double> frontRight=;
-        quantity<VolumePerTime, double> rBack=;
+        quantity<VolumePerTime, double> rLeft = calculateRInDirection();
+        quantity<VolumePerTime, double> rFront= calculateRInDirection();
+        quantity<VolumePerTime, double> rBack= calculateRInDirection();
         out =
     } else {
         return out;

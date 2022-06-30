@@ -35,7 +35,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
     fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
-    fields.emplace<Zetas, zetas>({make_pair(0.025, 0 * si::meter)}); // todo reading zetas std::unordered_map<double, quantity<Meter>>
     return fields;
 }
 
@@ -54,7 +53,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificYield,
                              double specificStorage,
                              bool confined,
-                             Model::DensityProperties densityProps) : nodes(nodes) { // unordered_map<double, quantity<Meter>> zetas
+                             Model::DensityProperties densityProps): nodes(nodes) { // unordered_map<quantity<Dimensionless>, quantity<Meter>> zetas)
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
@@ -77,6 +76,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<DensityProperties, DensityProps>(densityProps);
+    //fields.emplace<unordered_map<quantity<Dimensionless>, quantity<Meter>>, Zetas>(zetas);
 }
 }
 }//ns
