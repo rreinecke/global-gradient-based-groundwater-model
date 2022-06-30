@@ -151,8 +151,8 @@ class NodeInterface {
         const std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes;
         unordered_map<NeighbourPosition, large_num> neighbours;
         unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-        unordered_map<double, t_meter> zetas;
-        vector<t_dim> zones;
+        Zetas zetas; // zeta surfaces (dimensionless density and elevation) of current node
+        vector<t_dim> zones; // dimensionless density zones in current node | todo: do we need this or is it enough to access generally with densityProps.nusZones?
         int numOfExternalFlows{0};
         int numOfZetas{0};
         int numOfZones{0};
@@ -429,10 +429,69 @@ Modify Properties
                                    get<bool, Confinement>());
         }
 
+        ZetaInput createZetaInput(map_itter got) {  // needed for calculateZoneThicknesses in FluidMechanics.cpp
+
+            if (got->first == LEFT) {
+                return std::make_tuple(at(got)->get<DensityProperties, DensityProps>(), // unordered_map<double, t_meter> // todo: reading zetas
+                                       getAt<Zetas, zetas>(got), // todo: reading zetas of neighbour
+                                       get<t_meter, EdgeLengthLeftRight>(),  // todo really left right?
+                                       getAt<t_meter, EdgeLengthLeftRight>(got) // todo really left right?
+                )
+            } else if (got->first == RIGHT) {
+
+
+            } else if (got->first == FRONT) { // if (got->first == FRONT or got->first == BACK)
+                return std::make_tuple(at(got)-> get<Zetas, zetas>() // getZetas(), // todo: zeta surface heights
+                                       getAt<Zetas, zetas>(got) // getZetasNeig(), // todo: zeta surface heights of neighbour
+                                       get<t_meter, EdgeLengthFrontBack>(),  // todo really front back?
+                                       getAt<t_meter, EdgeLengthFrontBack>(got) // todo really front back?
+                )
+            } else if (got->first == BACK) {
+
+            }
+        }
+
+        /*t_meter calculateFluxCorrection(){
+            std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbours.find(NeighbourPosition::TOP);
+            vector<t_dim> nusZones = densityProps.nusZones; // todo how does this work
+            vector<t_dim> delnus = densityProps.delnus;
+
+            if (got == neighbours.end()) {//No neighbouring node
+            } else {//Current node has an overlying node (TOP)
+                // calculate dimensionless density at the bottom of the overlying node (TOP)
+                t_dim nusBottomOfTopNode; // in SWI2: NUBOT_i,j,k-1
+                nusBottomOfTopNode = nusZones.back(); // initial value: dimensionless density at bottom of aquifer
+
+
+                for(int i = 1; i <= nusZetas.size(); i++) {
+                    // todo check whether there is a ZETA surface at the bottom of the overlying node
+                    bool isZetaAtBottomOfTopNode;
+                    isZetaAtBottomOfTopNode = ;
+                    // todo check whether hydraulic head is below the bottom of the node
+
+                    if (isZetaAtBottomOfTopNode){// if there is a ZETA surface at the bottom of the overlying node or the hydraulic head is below the bottom of the node
+                        nusBottomOfTopNode = nusBottomOfTopNode - delnus[i];
+                    }
+                }
+            }
+            // calculate dimensionless density at the top of current node
+            t_dim nusTopOfThisNode; // in SWI2: NUTOP_i,j,k
+            nusTopOfThisNode = nusZones.front();  // initial value: dimensionless density at top of aquifer
+
+            for(int i = 1; i <= nusZetas.size(); i++) {
+                // todo check whether there is a ZETA surface at the top of this node
+                bool isZetaAtBottomOfTopNode;
+                isZetaAtBottomOfTopNode = ;
+
+                if (isZetaAtBottomOfTopNode){// if there is a ZETA surface at the top of this node
+                    nusTopOfThisNode = nusTopOfThisNode + delnus[i];
+                }
+            }
+        }*/
 
         /**
          * Calculate the lateral groundwater flow to the neighbouring nodes
-         * Generic function used for caluclating equilibrium and current step flow
+         * Generic function used for calculating equilibrium and current step flow
          * @return
          */
         template<class HeadType>
@@ -455,7 +514,15 @@ Modify Properties
                     conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
                     //}
 
-                    t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
+                    /*if (op.isDensityVariable()) {
+                        t_meter fluxCorrection;
+                        fluxCorrection = calculateFluxCorrection();
+
+                        t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got) -
+                                                      fluxCorrection);
+                    } else {*/
+                        t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
+                    //}
                     if (onlyOut) {
                         if (flow.value() > 0) { lateral_flow = lateral_flow - flow; }
                     } else { lateral_flow = lateral_flow - flow; }
@@ -881,15 +948,17 @@ Modify Properties
         * @param zetaHeight the zeta surface height in meters
         * @return number of zeta surfaces in the cell
         */
-        int addZeta(double nus, t_meter height){
+        int addZeta(double nus, t_meter height){ // todo change nus type to t_dim
             // todo: what to do if there is already a value at that id?
             if (!zetas.empty()){
                 if (zetas.count(nus) > 0){
-                    LOG(debug) << "Printing dimensionless density you are trying to add to zeta surfaces: " << nus;
+                    LOG(debug) << "Dimensionless density you are trying to add to zeta surfaces: " << nus;
                     throw "Cannot add a zeta surface with this dimensionless density as it already exists";
                 }
             }
-            zetas.insert (std::make_pair(nus, height));
+            zetas.nus.push_back(nus);
+            zetas.height.pushback(height);
+            //zetas.insert (std::make_pair(nus, height));
             numOfZetas++;
             return numOfZetas;
         }
@@ -937,10 +1006,15 @@ Modify Properties
                 throw "Number of zetas don't match";
             }
         }
+
         /**
         * @brief The number of zeta surfaces
         */
         int getNumOfZetas() { return (int) zetas.size();}
+
+        Zetas getZetas(){ // unordered_map<double, t_meter>
+            return zetas;
+        }
 
         // Todo: add tips and toes to the nodes
         //void setTip(int id, bool tip){
@@ -986,7 +1060,7 @@ Modify Properties
 
 
         /**
-         * Scale dyn rivers for sensitivity
+         * Scale dynamic rivers for sensitivity
          * @param mult
          */
         void scaleDynamicRivers(double mult) {

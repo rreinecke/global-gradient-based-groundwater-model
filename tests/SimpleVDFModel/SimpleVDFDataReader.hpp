@@ -46,8 +46,8 @@ class SimpleVDFDataReader : public DataReader {
             readHeadBoundary(buildDir(op.getKGHBDir()));
 
             LOG(userinfo) << "Reading variable density information";
-            readVariableDensity(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()),
-                                buildDir(op.getInitialZonesDir()));
+            readInitialZetas(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()));
+            readInitialZones(op.isDensityVariable(), op.getDensityFresh(), buildDir(op.getInitialZonesDir()));
 
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -97,6 +97,9 @@ class SimpleVDFDataReader : public DataReader {
                                                                    numberOfDensityZones);
 
             while (in.read_row(globid, x, y, area, row, col)) {
+
+                // Question read initial_zetas.csv, check whether globid has one or more zetas and make an unordered map of them?
+
                 out[row][col] = i;
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
@@ -171,7 +174,7 @@ class SimpleVDFDataReader : public DataReader {
             });
         }
 
-        void readVariableDensity(bool densityVariable, double densityFresh, std::string pathZetas, std::string pathZones) {
+        void readInitialZetas(bool densityVariable, double densityFresh, std::string pathZetas) {
             if (densityVariable){
                 int arcid{0};
                 double density{0};
@@ -193,6 +196,15 @@ class SimpleVDFDataReader : public DataReader {
                     // todo: nus * Model::si::si_dimensionless
                     nodes->at(pos)->addZeta(nus, height * Model::si::meter);
                 }
+            }
+        }
+
+
+        void readInitialZones(bool densityVariable, double densityFresh, std::string pathZones) {
+            if (densityVariable){
+                int arcid{0};
+                double density{0};
+                double height{0};
 
                 // read initial data for density zones
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZones(pathZones);

@@ -175,7 +175,6 @@ namespace GlobalFlow {
             /**
              * The pseudo source term for the flow equation, only used if variable density flow is active:
              * This accounts for the effects of variable density flow
-             * This is the total specified external source term
              * @param head
              * @param eq_head
              * @param recharge
@@ -188,6 +187,7 @@ namespace GlobalFlow {
                          t_vol_t recharge,
                          t_dim slope,
                          t_vol_t eqFlow) const noexcept;
+
 
             FlowType getType() const noexcept { return type; }
 

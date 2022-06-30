@@ -13,15 +13,13 @@ namespace GlobalFlow {
     namespace Model {
         class DensityProperties{
         protected:
-            vector<t_dim> nusZeta; // dimensionless density on the zeta surfaces
-            vector<t_dim> nusZone; // dimensionless density in the density zones between successive zeta surfaces
+            vector<t_dim> nusZetas; // dimensionless density on the zeta surfaces
+            vector<t_dim> nusZones; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
             vector<t_dim> eps; // variation of dimensionless density over a density zone
 
-        private:
-
-
-            /*// Question: what is this good for?
+        /*private:
+            // Question: what is this good for?
             friend class boost::serialization::access;
             template<class Archive>
             void serialize(Archive & ar, const unsigned int version) {
@@ -74,8 +72,9 @@ namespace GlobalFlow {
                         delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id-1]));
                     }
                 }
-                densityProps.nusZeta = nusZetaVec;
-                densityProps.nusZone = nusZoneVec;
+                // todo sort nusZetas and nusZones ascending or throw error if not ascending
+                densityProps.nusZetas = nusZetaVec;
+                densityProps.nusZones = nusZoneVec;
                 densityProps.delnus = delnusVec;
                 densityProps.eps = epsVec;
                 return densityProps;
@@ -115,6 +114,19 @@ namespace GlobalFlow {
             void removeEps(int id){
                 set<vector<t_dim>, Eps>(eps);
             }*/
+        };
+
+        class Zetas{
+        protected:
+            vector<double> nus;
+            vector<t_meter> height;
+        public:
+            static Zetas setZetas(vector<double> nus, vector<t_meter> height) {
+                Zetas zetas;
+                zetas.nus = nus;
+                zetas.height = height;
+                return zetas;
+            }
         };
     }
 }
