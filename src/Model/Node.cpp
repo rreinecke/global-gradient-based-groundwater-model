@@ -75,8 +75,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.emplace<DensityProperties, DensityProps>(densityProps);
-    //fields.emplace<unordered_map<quantity<Dimensionless>, quantity<Meter>>, Zetas>(zetas);
+    fields.emplace<DensityProperties, densityProperties>(densityProps);
 }
 }
 }//ns

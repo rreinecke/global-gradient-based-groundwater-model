@@ -24,7 +24,6 @@
 #define GLOBAL_FLOW_FLUID_MECHANICS_HPP
 
 #include "Units.hpp"
-#include <unordered_map>
 #include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {
@@ -32,8 +31,6 @@ namespace GlobalFlow {
 
         using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
         using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
-
-        using ZetaInput = std::tuple<t_meter, t_meter, t_meter, t_meter, t_meter, t_meter>;
 
         /**
          * @class FluidMechanics
@@ -58,30 +55,6 @@ namespace GlobalFlow {
              * $C = 2 \times EdgeLenght_1 \times \frac{ (TR_1 \times TR_2)}{(TR_1 \times EdgeLenght_1 + TR_2 \times EdgeLenght_2)}$
              */
             t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
-
-            // todo: add brief
-            /**
-             * @brief Calculates the zone thicknesses in column/row direction for all density zones in node
-             * @param zetaIn contains both zeta surface heights and edge length of this and neighbouring node
-             * @return thicknesses of the density zones in this node
-             */
-            std::vector<t_meter> calculateZoneThicknesses(ZetaInput zetaIn) noexcept;
-
-            /**
-             * @brief Calculates the conductances in column/row direction for all density zones in node
-             * @param zetaIn contains both zeta surface heights and edge length of this and neighbouring node
-             * @param conductance conductance in column/row direction
-             * @return conductances of the density zones
-             */
-            std::vector<t_s_meter_t> calculateDensityZoneConductances(ZetaInput zetaIn, t_s_meter_t conductance) noexcept;
-
-            /**
-             * @brief Calculates the cumulative conductances in column/row direction below each density surface
-             * @param n the density surface under which the cumulative density zone conductance shall be calculated
-             * @param densityZoneConductances all density zone conductances
-             * @return the sum of density zone conductances below density suface n
-             */
-            std::vector<t_s_meter_t> calculateCumulativeDensityZoneConductances(ZetaInput zetaIn) noexcept;
 
             /**
              * Simple smoother function to buffer iteration steps in NWT approach

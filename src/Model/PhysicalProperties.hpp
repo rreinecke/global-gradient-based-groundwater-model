@@ -166,8 +166,7 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;
         struct SurfaceFrontBack;
         struct VolumeOfCell;
-        struct DensityProps;
-        //struct Zetas;
+        struct densityProperties;
 
 /**
  * Definition of type and unit for each field
@@ -204,8 +203,7 @@ namespace GlobalFlow {
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
             PhysicalProperty<t_c_meter, VolumeOfCell>,
             // variable density properties
-            PhysicalProperty<DensityProperties, DensityProps>
-            //PhysicalProperty<ZetaSurfaces, Zetas>
+            PhysicalProperty<DensityProperties, densityProperties>
         >;
 
     }

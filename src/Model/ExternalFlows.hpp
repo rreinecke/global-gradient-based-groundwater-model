@@ -25,6 +25,7 @@
 #define GLOBAL_FLOW_EXTERNALFLOWS_HPP
 
 #include "Units.hpp"
+#include "VariableDensityFlow.hpp"
 #include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {
@@ -182,11 +183,11 @@ namespace GlobalFlow {
              * @param eqFlow
              * @return
              */
-            t_vol_t getR(t_meter head,
+            /*t_vol_t getR(t_meter head,
                          t_meter eq_head,
                          t_vol_t recharge,
                          t_dim slope,
-                         t_vol_t eqFlow) const noexcept;
+                         t_vol_t eqFlow) const noexcept;*/
 
 
             FlowType getType() const noexcept { return type; }
@@ -248,7 +249,7 @@ namespace GlobalFlow {
             bool lock_recharge{false};
 
             t_vol_t
-            calculateFloodplaindDrainage(t_meter head) const noexcept;
+            calculateFloodplainDrainage(t_meter head) const noexcept;
 
             /**
             * Calculate river conductance as in Miguez-Macho 2007

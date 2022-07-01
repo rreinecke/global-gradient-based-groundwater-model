@@ -427,7 +427,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
             densityProps =
-                    nodes->at(i)->getProperties().get<Model::DensityProperties, Model::DensityProps>();
+                    nodes->at(i)->getProperties().get<Model::DensityProperties, Model::densityProperties>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm

@@ -90,7 +90,7 @@ class SimpleVDFDataReader : public DataReader {
             int col{0};
             lookupglobIDtoID.reserve(numberOfNodes);
 
-            Model::DensityProperties densityProps =
+            Model::DensityProperties densityProperties =
                     Model::DensityProperties::setDensityProperties(densityStratified,
                                                                    densityFresh,
                                                                    densityZones,
@@ -113,7 +113,7 @@ class SimpleVDFDataReader : public DataReader {
                                                             specificYield,
                                                             specificStorage,
                                                             confined,
-                                                            densityProps
+                                                            densityProperties
                                                             ));
                 lookupglobIDtoID[globid] = i;
                 i++;
