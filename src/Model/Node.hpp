@@ -433,12 +433,12 @@ Modify Properties
          * @brief calculates the flux correction term in vertical direction (in SWI2: BOUY)
          *
          */
-        t_meter calculateFluxCorrection(){
+        t_vol_t calculateFluxCorrection(){
             // find the top neighbor
             std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbours.find(NeighbourPosition::TOP);
             // get dimensionless density of the zones and the
             DensityProperties densityProps = get<DensityProperties, densityProperties>();
-            vector<t_dim> nusZones = densityProps.getNusZones(); // todo how does this work
+            vector<t_dim> nusZones = densityProps.getNusZones();
             vector<t_dim> delnus = densityProps.getDelnus();
 
             t_meter out;
@@ -1157,7 +1157,7 @@ Modify Properties
          * @brief Get Q part (external sources) of flow equations
          * @return volume over time
          */
-        t_vol_t getQ() noexcept {
+        t_vol_t getQ() noexcept { // Question: Rename to getExternalSources() ?
             t_meter eq_head = get<t_meter, EQHead>();
             t_meter head = get<t_meter, Head>();
             t_vol_t recharge = 0 * si::cubic_meter / day;
@@ -1172,6 +1172,65 @@ Modify Properties
                 out += flow.second.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
             }
             return out;
+        }
+
+        /**
+             * The pseudo source term for the flow equation, only used if variable density flow is active:
+             * This accounts for the effects of variable density flow
+             * @return volume per time
+             */
+        t_vol_t getR() const noexcept { // Question: rename to getPseudoSourceTerm() ?
+            t_vol_t out = 0.0 * (si::cubic_meter / day);
+            vector<t_dim> eps = densityProps.getEps();
+            vector<t_dim> delnus = densityProps.getDelnus();
+            std::forward_list<NeighbourPosition> possible_neighbours =
+                    {NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                     NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+
+            // pseudo source term calculation
+            for (const auto &position: possible_neighbours) {
+                map_itter got = neighbours.find(position);
+                std::unordered_map<t_dim, t_meter, FlowTypeHash> zetas = getZetas();
+                std::unordered_map<t_dim, t_meter, FlowTypeHash> zetasNeig = at(got)->getZetas();
+                t_s_meter_t conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+
+
+                if (got == neighbours.end()) {
+                    continue;
+                }
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
+                    std::vector<t_meter> zoneThicknesses = VariableDensityFlow.calculateZoneThicknesses(
+                            zetas, zetasNeig, getAt(edgeLengthLeftRight), get<edgeLengthLeftRight>());
+                } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
+                    std::vector<t_meter> zoneThicknesses = VariableDensityFlow.calculateZoneThicknesses(
+                            zetas, zetasNeig, getAt<edgeLengthLeftRight>(got), get<edgeLengthLeftRight>());
+                }
+                std::vector<t_s_meter_t> zoneConductances =
+                        VariableDensityFlow.calculateDensityZoneConductance(zoneThicknesses, conductance);
+                std::vector<t_s_meter_t> zoneConductanceCum =
+                        VariableDensityFlow.calculateCumulativeDensityZoneConductance(zoneConductances);
+
+                for (int i; i <= delnus.size(); i++){
+                    if (eps[i] != 0) {
+                        out += eps[i] * (zoneConductances[i] * ((zetas[i] - zetasNeig[i+1]) - (zetas[i] - zetas[i+1]));
+                    }
+                    if (delnus[i] != 0) {
+                        out -= delnus[i] * (zoneConductancesCum[i] * ((zetasNeig[i] - zetas[i])));
+                    }
+                }
+            }
+        }
+
+        /**
+         * Calculates the vertical flux correction for variable density flow (in SWI2: BOUY of current node and the one below/above)
+         * @return volume per time
+         */
+        t_vol_t getFluxCorrections() noexcept {
+            t_vol_t out = 0 * (si::cubic_meter / day);
+            // calculate flux correction for this node
+
+            // calculate flux correction for neighbour node
+
         }
 
         /**
@@ -1281,7 +1340,7 @@ Modify Properties
          * @return map <CellID,Conductance>
          * The left hand side of the equation
          */
-        std::unordered_map<large_num, t_s_meter_t> getConductance() {
+        std::unordered_map<large_num, t_s_meter_t> getConductance() { // QUestion: rename to getLeftHandSide?
             size_t numC = 7;
             std::unordered_map<large_num, t_s_meter_t> out;
             out.reserve(numC);
@@ -1337,7 +1396,10 @@ Modify Properties
          * @return volume per time
          */
         t_vol_t getRHS() {
-            t_vol_t externalFlows = -getQ(); // todo: currently this includes pseudo source term
+            t_vol_t externalFlows = -getQ(); // todo: remove pseudo source term from external flows
+            // todo: add getR() and getFluxCorrections()
+            // t_vol_t pseudoSource = getR();
+            // t_vol_t fluxCorrections = getFluxCorrections();
             t_vol_t dewateredFlow = calculateDewateredFlow();
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
@@ -1382,7 +1444,7 @@ Modify Properties
 
         bool isStaticNode() noexcept { return __isStaticNode(); }
 
-        PhysicalProperties &getProperties() { return fields; }
+        PhysicalProperties &getProperties() { return fields; } // Question: rename to getNodeProperties?
 
         void enableNWT() { nwt = true; }
 

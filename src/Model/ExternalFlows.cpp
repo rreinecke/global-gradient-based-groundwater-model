@@ -173,53 +173,6 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
     return out;
 }
 
-/*t_vol_t ExternalFlow::getR(vector<t_meter> zetas, vector<t_meter> zetas_neig, t_meter edgeLength_neig,
-                           t_meter edgeLength_self, vector<t_dim> eps, vector<t_dim> delnus,
-                           t_s_meter_t conductance) const noexcept {
-    t_vol_t out = 0.0 * (si::cubic_meter / day);
-    if (type == PSEUDO_SOURCE_FLOW) { // todo: move this to Node.hpp
-        // i: row, j: column, k: layer, n: density zone, m: time step
-        //t_meter zeta; // at i, j-1, k, n, m-1
-        //t_meter zetaBelow; // at i, j, k, n+1, m-1
-        //t_meter zetaNeig; // at i-1, j, k, n, m-1 OR i, j-1, k, n, m-1
-        //t_meter zetaNeigBelow; // at i-1, j, k, n+1, m-1 OR i, j-1, k, n+1, m-1
-        //t_meter zetaOtherNeig; // at i+1, j, k, n, m-1 OR i, j+1, k, n, m-1
-        //t_meter zetaOtherNeigBelow; // at i+1, j, k, n+1, m-1 OR i, j+1, k, n+1, m-1
-
-        std::vector<t_meter> zoneThicknesses = VariableDensityFlow.calculateZoneThicknesses(zetas, zetas_neig, edgeLength_neig, edgeLength_self);
-        std::vector<t_s_meter_t> zoneConductances = VariableDensityFlow.calculateDensityZoneConductance(zoneThicknesses, conductance);
-        t_s_meter_t zoneConductanceCum = VariableDensityFlow.calculateCumulativeDensityZoneConductance(zoneConductances);
-
-        // pseudo source term calculation todo perhaps with calculateRInDirection
-        for (int i; i <= delnus.size(); i++){
-            if (eps[i] != 0) {
-                out += eps[i] *
-                        (zoneConductancesLeft[i] * ((zetasLeft[i] - zetasLeft[i+1]) - (zetas[i] - zetas[i+1])) +
-                         zoneConductancesRight[i] * ((zetasRight[i] - zetasRight[i+1]) - (zetas[i] - zetas[i+1])) +
-                         zoneConductancesFront[i] * ((zetasFront[i] - zetasFront[i+1]) - (zetas[i] - zetas[i+1])) +
-                         zoneConductancesBack[i] * ((zetasBack[i] - zetasBack[i+1]) - (zetas[i] - zetas[i+1])));
-            }
-            if (delnus[i] != 0) {
-                out -= delnus[i] *
-                        (zoneConductancesCumLeft[i] * ((zetasLeft[i] - zetas[i])) +
-                         zoneConductancesCumRight[i] * ((zetasRight[i] - zetas[i])) +
-                         zoneConductancesCumFront[i] * ((zetasFront[i] - zetas[i])) +
-                         zoneConductancesCumBack[i] * ((zetasBack[i] - zetas[i])));
-            }
-        }
-    } else {
-        return out;
-    }
-}*/
-
-/*t_vol_t ExternalFlow::calculateRInDirection(zetaInputHor head, NeighbourPosition neigPos, ) const noexcept {
-    quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
-
-
-
-    return out;
-}*/
-
 t_vol_t ExternalFlow::calculateFloodplainDrainage(t_meter head) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     t_meter headAboveFloodplain = head - flowHead;
