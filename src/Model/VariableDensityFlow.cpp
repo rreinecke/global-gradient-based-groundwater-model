@@ -4,8 +4,8 @@ namespace GlobalFlow {
     namespace Model {
 
         std::vector<t_meter> VariableDensityFlow::calculateZoneThicknesses(
-                std::unordered_map<t_dim, t_meter> zetas,
-                std::unordered_map<t_dim, t_meter> zetas_neig,
+                std::vector<t_meter> zetas, // std::unordered_map<t_dim, t_meter>
+                std::vector<t_meter> zetas_neig, // std::unordered_map<t_dim, t_meter>
                 t_meter edgeLength_neig,
                 t_meter edgeLength_self) noexcept {
             // Question: how to adapt this or the definition of zetas so we can track across multiple layers?

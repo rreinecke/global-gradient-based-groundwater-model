@@ -84,8 +84,6 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             }
         case GENERAL_HEAD_BOUNDARY:
             return -conductance;
-        case PSEUDO_SOURCE_FLOW:
-            return out;
     }
     return out;
 }
@@ -167,8 +165,6 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             }
         case GENERAL_HEAD_BOUNDARY:
             return conductance * flowHead;
-        case PSEUDO_SOURCE_FLOW:
-            return this->special_flow; // Question: special flow correct?
     }
     return out;
 }
