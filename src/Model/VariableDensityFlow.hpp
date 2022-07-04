@@ -2,8 +2,8 @@
 // Created by dk on 23.02.22.
 //
 
-#ifndef VARIABLEDENSITYFLOW_HPP
-#define VARIABLEDENSITYFLOW_HPP
+#ifndef VARIABLE_DENSITY_FLOW_HPP
+#define VARIABLE_DENSITY_FLOW_HPP
 
 #include "Units.hpp"
 #include <unordered_map>
@@ -29,10 +29,10 @@ namespace GlobalFlow {
              * @param edgeLength_self edge width/length of this column/row
              * @return zone thickness
              */
-            std::vector<t_meter> calculateZoneThicknesses(std::unordered_map<t_dim, t_meter> zetas,
-                                                                    std::unordered_map<t_dim, t_meter> zetas_neig,
-                                                                    t_meter edgeLength_neig,
-                                                                    t_meter edgeLength_self) noexcept;
+            std::vector<t_meter> calculateZoneThicknesses(std::vector<t_meter> zetas,
+                                                          std::vector<t_meter> zetas_neig,
+                                                          t_meter edgeLength_neig,
+                                                          t_meter edgeLength_self) noexcept;
 
             /**
              * @brief calculates the conductance in the column/row direction for a density zone (in SWI2: SWICR & SWICC)
@@ -50,7 +50,7 @@ namespace GlobalFlow {
              * @return vector with conductances of density zones
              */
             std::vector<t_s_meter_t> calculateCumulativeDensityZoneConductances(
-                    std::vector<t_s_meter_t> densityZoneCond, t_s_meter_t conductance) noexcept;
+                    std::vector<t_s_meter_t> densityZoneCond) noexcept;
 
             //std::vector<t_dim> calculateTip() noexcept;
             //std::vector<t_dim> calculateToe() noexcept;
@@ -62,6 +62,7 @@ namespace GlobalFlow {
          */
         class DensityProperties{
         protected:
+            bool densityVariable;
             vector<t_dim> nusZetas; // dimensionless density on the zeta surfaces
             vector<t_dim> nusZones; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
@@ -70,11 +71,11 @@ namespace GlobalFlow {
         public:
 
 
-            static DensityProperties setDensityProperties(bool densityStratified, double densityFresh,
+            static DensityProperties setDensityProperties(bool densityVariable, bool densityStratified, double densityFresh,
                                                           vector<double> densityZones,
                                                           int numberOfDensityZones){
                 DensityProperties densityProps;
-
+                densityProps.densityVariable = densityVariable;
                 vector<t_dim> nusZetaVec;
                 vector<t_dim> nusZoneVec;
                 vector<t_dim> delnusVec;
@@ -123,7 +124,9 @@ namespace GlobalFlow {
             vector<t_dim> getDelnus(){return delnus;}
 
             vector<t_dim> getEps(){return eps;}
+
+            bool isDensityVariable(){return densityVariable;}
         };
     }
 }
-#endif //VARIABLEDENSITYFLOW_HPP
+#endif //VARIABLE_DENSITY_FLOW_HPP

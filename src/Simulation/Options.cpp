@@ -117,6 +117,7 @@ Options::load(const std::string &filename) {
     NUMBER_OF_DENSITY_ZONES = config.get<int>("number_of_density_zones");
     DENSITY_ZONES = getTypeArray<double>("density_zones", config);
 
+
     pt::ptree data = input.get_child("data");
 
     if (asArray) {

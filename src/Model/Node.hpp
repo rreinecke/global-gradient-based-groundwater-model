@@ -296,7 +296,7 @@ class NodeInterface {
                       double specificYield,
                       double specificStorage,
                       bool confined,
-                      Model::DensityProperties densityProperties);
+                      DensityProperties densityProperties);
 
         virtual ~NodeInterface() = default;
 
@@ -807,8 +807,8 @@ Modify Properties
                     //currently it is assumed that only one external flow of one type is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
-            }   
-	       
+            }
+
 	        if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
@@ -885,20 +885,8 @@ Modify Properties
         * @return number of density zones in the cell
         */
         int addZone(t_dim nus){
-            // todo: what to do if there is already a zone with that nus?
-            if (!zones.empty()) {
-                if (nus > zones[zones.size()]) {
-                    zones.push_back(nus); // question: sort the zones vector by nus values?
-                } else if (nus < zones[0]) {
-                    zones.insert(zones.begin(), nus);
-                } else {
-                    LOG(debug) << "Printing dimensionless densities of zones";
-                    for (auto const &imap: zones)
-                        LOG(debug) << " " << imap;
-                    LOG(debug) << "Dimensionless density of new zone: " << nus;
-                    throw "Unclear where to add the dimensionless density of new zone (end or beginning?)";
-                }
-            }
+            zones.push_back(nus);
+            sort(zones.begin(), zones.end());
             numOfZones++;
             return numOfZones;
         }
@@ -912,7 +900,8 @@ Modify Properties
         * @return number of zeta surfaces in the cell
         */
         int addZetaSurface(t_meter height){
-            Zetas.push_back(height); // todo: sort by height
+            Zetas.push_back(height);
+            sort(Zetas.begin(), Zetas.end(), greater<t_meter>());
             numOfZetas++;
             return numOfZetas;
         }
@@ -928,9 +917,9 @@ Modify Properties
         }
 
         /**
-        * @brief The number of zeta surfaces
+        * @brief The number of density surfaces
         */
-        // int getNumOfZetas() { return (int) numOfZetas;} // todo: remove is not required
+        int getNumOfZetas() { return (int) numOfZetas;}
 
         /**
         * @brief Zeta surfaces
@@ -1114,7 +1103,7 @@ Modify Properties
              * This accounts for the effects of variable density flow
              * @return volume per time
              */
-        t_vol_t getR() const noexcept { // Question: rename to getPseudoSourceTerm() ?
+        t_vol_t getR() { // Question: rename to getPseudoSourceTerm() ?
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             DensityProperties densityProps = get<DensityProperties, densityProperties>();
             vector<t_dim> eps = densityProps.getEps();
@@ -1129,36 +1118,42 @@ Modify Properties
                 if (got == neighbours.end()) {
                     continue;
                 }
+                t_meter edgeLength_neig = 0 * si::meter;
+                t_meter edgeLength_self = 0 * si::meter;
                 if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
-                    std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
-                            Zetas, at(got)->getZetas(), getAt<t_meter, EdgeLengthLeftRight>(got), get<t_meter, EdgeLengthLeftRight>());
+                    edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
                 } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
-                    std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
-                            Zetas, at(got)->getZetas(), getAt<t_meter, EdgeLengthFrontBack>(got), get<t_meter, EdgeLengthFrontBack>());
+                    edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
                 }
+                vector<t_meter> zetasNeig = at(got)->Zetas;
+                std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
+                        Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
                 std::vector<t_s_meter_t> zoneConductances =
-                        vdf.calculateDensityZoneConductance(
+                        vdf.calculateDensityZoneConductances(
                                 zoneThicknesses,
                                 mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
                 std::vector<t_s_meter_t> zoneConductancesCum =
                         vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
-                for (int i; i <= delnus.size(); i++){
+                for (int i = 0; i <= delnus.size() - 1; i++){
                     if (eps[i] != 0) {
-                        out += eps[i] * (zoneConductances[i] * ((zetas[i] - zetasNeig[i+1]) - (zetas[i] - zetas[i+1]));
+                        out += eps[i] * (zoneConductances[i] * ((Zetas[i] - zetasNeig[i+1]) - (Zetas[i] - Zetas[i+1])));
                     }
                     if (delnus[i] != 0) {
-                        out -= delnus[i] * (zoneConductancesCum[i] * ((zetasNeig[i] - zetas[i])));
+                        out -= delnus[i] * (zoneConductancesCum[i] * ((zetasNeig[i] - Zetas[i])));
                     }
                 }
             }
+            return out;
         }
 
-        bool isZetaAtTopOfCurrentNode(){ return true;}; // todo
+        bool isZetaAtTopOfCurrentNode(){ return true;} // todo
 
-        bool isZetaAtBottomOfTopNode(){ return true}; // todo
+        bool isZetaAtBottomOfTopNode(){ return true;} // todo
 
-        bool ishydraulicHeadBelowNodeBottom(){ return true}; // todo
+        bool ishydraulicHeadBelowNodeBottom(){ return true;} // todo
 
         /**
          * @brief calculates the flux correction term in vertical direction (in SWI2: BOUY)
@@ -1189,7 +1184,7 @@ Modify Properties
                 out += 0.5 * (-Zetas.front()) * (-nusTopOfThisNode);
             } else {//Current node has a top node
                 vector<t_dim> zonesTopNode = at(got)->getZones();
-                vector<t_meter> zetasTopNode = at(got)->getZetas(); // std::unordered_map<t_dim, t_meter, FlowTypeHash>
+                vector<t_meter> zetasTopNode = at(got)->Zetas; // std::unordered_map<t_dim, t_meter, FlowTypeHash>
                 for (int i = 0; i <= zonesTopNode.size(); i++){
                     out += zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]);
                 }
@@ -1235,7 +1230,7 @@ Modify Properties
                 verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                 out += fluxCorrectionTerm * verticalConductance;
             }
-
+            return out;
         }
 
         /**
@@ -1407,7 +1402,8 @@ Modify Properties
             t_vol_t rivers = calculateNotHeadDependandFlows();
             t_vol_t storageFlow =
                     getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
-            if (Zetas.size() > 0){
+            DensityProperties densityProps = get<DensityProperties, densityProperties>();
+            if (densityProps.isDensityVariable()){ // maybe make condition: zones.size() > 1
                 t_vol_t pseudoSource = getR();
                 t_vol_t fluxCorrections = getFluxCorrections();
             }

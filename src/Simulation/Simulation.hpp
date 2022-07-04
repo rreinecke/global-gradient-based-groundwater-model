@@ -129,15 +129,15 @@ namespace GlobalFlow {
             };
 
             void restore(){
-               if(loadNodes) {
-                   LOG(stateinfo) << "Restoring state..";
-                   {
+                if(loadNodes) {
+                    LOG(stateinfo) << "Restoring state..";
+                    {
                         std::ifstream in(saveName, ios::in | ios::binary);
                         boost::archive::binary_iarchive inStream(in);
                         inStream >> nodes;
-                   }
-                   LOG(stateinfo) << "Restored state successfully..";
-               }
+                    }
+                    LOG(stateinfo) << "Restored state successfully..";
+                }
             }
 
             /**
@@ -314,8 +314,7 @@ namespace GlobalFlow {
                 FASTSURFACE,
                 NAG,
                 STORAGE,
-                GENERAL_HEAD_BOUNDARY,
-                PSEUDO_SOURCE_FLOW
+                GENERAL_HEAD_BOUNDARY
                 // todo add global lake and wetland
             };
 
@@ -401,11 +400,6 @@ namespace GlobalFlow {
                     case STORAGE:
                         tmp = getError([this](int i) { return nodes->at(i)->getTotalStorageFlow().value(); });
                         break;
-                    case PSEUDO_SOURCE_FLOW:
-                        tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::PSEUDO_SOURCE_FLOW).value();
-                        });
-                        break;
                 }
 
                 stream << "IN :" << tmp.IN << "  OUT :" << tmp.OUT;
@@ -420,9 +414,9 @@ namespace GlobalFlow {
                 MassError totalErr = getMassError();
                 LOG(level) << "All units in meter per stepsize";
                 LOG(level) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
-                              << currentErr.OUT;
+                           << currentErr.OUT;
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
-                              << totalErr.OUT;
+                           << totalErr.OUT;
                 LOG(level) << "General Head Boundary: " << getFlowByName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getFlowByName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);

@@ -3,6 +3,7 @@ set(SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/Node.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ExternalFlows.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/FluidMechanics.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/VariableDensityFlow.cpp
         PARENT_SCOPE
         )
 set(HEADERS
@@ -12,5 +13,6 @@ set(HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/Units.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ExternalFlows.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/FluidMechanics.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/VariableDensityFlow.hpp
         PARENT_SCOPE
         )
