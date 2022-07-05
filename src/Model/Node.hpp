@@ -1098,12 +1098,65 @@ Modify Properties
             return out;
         }
 
+        t_vol_t getZetaMovementRHS(){
+            //t_vol_t porosityTerm = getPorosityTermZeta(); // todo
+            //t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(); // todo
+            //t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(); // todo
+            //t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
+            return out;
+        }
+
+        t_vol_t getZetaMovementLHS(){
+            t_vol_t out;
+            // t_vol_t conductanceZetaMovement = calculateConductanceZetaMovement(densityZoneCond, densityZoneCondCum, delnus, eps) todo SWISOLCC/R stuff
+            //
+            return out;
+        }
+
+        /**
+         * The source term below a zeta surface (in SWI2: G)
+         * return volume per time
+         */
+        t_vol_t getSourceTermBelowZeta(){ // in SWI2: G
+            // get RHS
+            t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n) todo why n?
+            t_vol_t dewateredFlow = calculateDewateredFlow(); // Question: what is this in MODFLOW?
+            t_vol_t rivers = calculateNotHeadDependandFlows(); // Question: what is this in MODFLOW?
+            t_vol_t storageFlow = // in MODFLOW: SS_i,j,k * DELR_j * DELC_i * (h^(m-1)_(i,j,k)/t^(m)-t^(m-1))
+                    getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
+            t_vol_t rhs = externalFlows + dewateredFlow - rivers - storageFlow;
+
+            // get HCOF
+            t_s_meter_t hcof = mechanics.getHCOF(steadyState,
+                                                 get<t_dim, StepModifier>(),
+                                                 getStorageCapacity(),
+                                                 getP()); // todo check whether correct and check out SWIHCOF in modflow code
+
+            // get vertical leakage
+            t_vol_t verticalLeakageTop = 0; // todo
+            t_vol_t verticalLeakage = 0; // todo
+            // G = RHS(without VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
+            t_vol_t out = rhs - hcof * get<t_meter, Head>() + (verticalLeakageTop - verticalLeakage);
+
+            return out;
+        }
+
+
+        t_vol_t getPseudoSource_Zetas(){
+            t_vol_t out;
+
+
+
+            return out;
+        }
+
+
         /**
              * The pseudo source term for the flow equation, only used if variable density flow is active:
              * This accounts for the effects of variable density flow
              * @return volume per time
              */
-        t_vol_t getR() { // Question: rename to getPseudoSourceTerm() ?
+        t_vol_t getPseudoSource_Flow() {
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             DensityProperties densityProps = get<DensityProperties, densityProperties>();
             vector<t_dim> eps = densityProps.getEps();
@@ -1335,7 +1388,7 @@ Modify Properties
          * @return map <CellID,Conductance>
          * The left hand side of the equation
          */
-        std::unordered_map<large_num, t_s_meter_t> getConductance() { // QUestion: rename to getLeftHandSide?
+        std::unordered_map<large_num, t_s_meter_t> getConductance() { // Question: rename to getLeftHandSide?
             size_t numC = 7;
             std::unordered_map<large_num, t_s_meter_t> out;
             out.reserve(numC);
@@ -1399,7 +1452,7 @@ Modify Properties
                     getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
             DensityProperties densityProps = get<DensityProperties, densityProperties>();
             if (densityProps.isDensityVariable()){ // maybe make condition: zones.size() > 1
-                t_vol_t pseudoSource = getR();
+                t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
                 t_vol_t fluxCorrections = getFluxCorrections();
             }
             if (steadyState) {
