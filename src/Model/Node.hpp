@@ -1149,15 +1149,9 @@ Modify Properties
             return out;
         }
 
-        bool isZetaAtTopOfCurrentNode(){ return true;} // todo
-
-        bool isZetaAtBottomOfTopNode(){ return true;} // todo
-
-        bool ishydraulicHeadBelowNodeBottom(){ return true;} // todo
-
         /**
          * @brief calculates the flux correction term in vertical direction (in SWI2: BOUY)
-         *
+         * @out meter
          */
         t_meter calculateFluxCorrection(){
             // find the top neighbor
@@ -1171,36 +1165,37 @@ Modify Properties
             t_meter out = 0 * si::meter;
 
             // dimensionless density at the top of current node (in SWI2: NUTOP)
-            vector<t_dim> zonesCurrentNode = getZones();
-            t_dim nusTopOfThisNode = zonesCurrentNode.front();  // in SWI2: NUTOP_i,j,k
-            for(int i = 1; i <= delnus.size(); i++) {
-                if (isZetaAtTopOfCurrentNode()){// if there is a ZETA surface at the top of current node
+            t_dim nusTopOfThisNode = zones.front();  // in SWI2: NUTOP_i,j,k
+            for(int i = 1; i <= zones.size(); i++) {
+                if (Zetas[i] == get<t_meter, Elevation>()) { // if there is a ZETA surface at the top of current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                     nusTopOfThisNode += delnus[i];
                 }
             }
 
             // dimensionless density at the bottom of the top node (in SWI2: NUBOT)
             if (got == neighbours.end()) {//No top node
+                // calculate the flux correction term for a node WITHOUT a top neighbour
                 out += 0.5 * (-Zetas.front()) * (-nusTopOfThisNode);
             } else {//Current node has a top node
-                vector<t_dim> zonesTopNode = at(got)->getZones();
+                vector<t_dim> zonesTopNode = at(got)->zones;
                 vector<t_meter> zetasTopNode = at(got)->Zetas; // std::unordered_map<t_dim, t_meter, FlowTypeHash>
+                // calculate first part of the flux correction term for a node WITH a top neighbour
                 for (int i = 0; i <= zonesTopNode.size(); i++){
                     out += zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]);
                 }
 
                 t_dim nusBottomOfTopNode = zonesTopNode.back(); // in SWI2: NUBOT_i,j,k-1
                 for(int i = 1; i <= delnus.size(); i++) {
-                    if (isZetaAtBottomOfTopNode() or // if there is a ZETA surface at the bottom of the overlying node
-                        ishydraulicHeadBelowNodeBottom()){ // or the hydraulic head is below the bottom of the node
+                    t_meter bottomOfTopNode = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);
+                    t_meter headTopNode = getAt<t_meter, Head>(got);
+                    if (zetasTopNode[i] == bottomOfTopNode or // if there is a ZETA surface at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
+                        headTopNode < bottomOfTopNode){ // or the hydraulic head is below the bottom of the node
                         nusBottomOfTopNode -= delnus[i];
                     }
                 }
+                // calculate second part of the flux correction term for a node WITHOUT a top neighbour
                 out += 0.5 * (zetasTopNode.back() - Zetas.front()) * (nusBottomOfTopNode-nusTopOfThisNode);
             }
-
-
-
 
             return out;
         }
@@ -1209,7 +1204,7 @@ Modify Properties
          * Calculates the vertical flux correction for variable density flow (in SWI2: BOUY of current node and the one below/above)
          * @return volume per time
          */
-        t_vol_t getFluxCorrections() noexcept {
+        t_vol_t getFluxCorrections() noexcept { // todo test when top and down cells exist
             t_vol_t out = 0 * (si::cubic_meter / day);
             t_meter fluxCorrectionTerm;
             t_s_meter_t verticalConductance;

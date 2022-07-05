@@ -146,8 +146,8 @@ namespace GlobalFlow {
         struct EdgeLengthLeftRight;
         struct EdgeLengthFrontBack;
         struct VerticalSize;
-        struct Elevation; //Always elevation of upper cell boundary
-        struct TopElevation; //Store elevation of TOP layer
+        struct Elevation; // elevation of upper cell boundary
+        struct TopElevation; // elevation of TOP layer
         struct Slope;
         struct EFolding;
         struct Confinement;
@@ -180,8 +180,8 @@ namespace GlobalFlow {
             PhysicalProperty<t_dim, StepModifier>,
             PhysicalProperty<t_s_meter, Area>,
             PhysicalProperty<t_meter, VerticalSize>,
-            PhysicalProperty<t_meter, Elevation>,
-            PhysicalProperty<t_meter, TopElevation>,
+            PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
+            PhysicalProperty<t_meter, TopElevation>, // elevation of TOP layer
             PhysicalProperty<t_dim, Slope>,
             PhysicalProperty<t_meter, EFolding>,
             PhysicalProperty<bool, Confinement>,
