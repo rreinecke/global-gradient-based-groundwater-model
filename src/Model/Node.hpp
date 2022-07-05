@@ -1098,18 +1098,63 @@ Modify Properties
             return out;
         }
 
+        t_vol_t getEffectivePorosityTerm(int n){
+            // todo: read effective porosity from a file
+            t_vol_t out = (get<t_dim, EffectivePorosity>() *
+                    (get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>())) /
+                            (day* get<t_dim, StepModifier>()) * Zetas[n];
+            return out;
+        }
+
         t_vol_t getZetaMovementRHS(){
-            //t_vol_t porosityTerm = getPorosityTermZeta(); // todo
-            //t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(); // todo
-            //t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(); // todo
-            //t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
+            t_vol_t porosityTerm = getPorosityTermZeta();
+            t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(); // todo
+            t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(); // todo
+            t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
             return out;
         }
 
         t_vol_t getZetaMovementLHS(){
-            t_vol_t out;
-            // t_vol_t conductanceZetaMovement = calculateConductanceZetaMovement(densityZoneCond, densityZoneCondCum, delnus, eps) todo SWISOLCC/R stuff
-            //
+            t_vol_t out = 0.0 * (si::cubic_meter / day);
+            DensityProperties densityProps = get<DensityProperties, densityProperties>();
+            vector<t_dim> eps = densityProps.getEps();
+            vector<t_dim> delnus = densityProps.getDelnus();
+            std::forward_list<NeighbourPosition> possible_neighbours =
+                    {NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                     NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+
+            // pseudo source term calculation
+            for (const auto &position: possible_neighbours) {
+                map_itter got = neighbours.find(position);
+                if (got == neighbours.end()) {
+                    continue;
+                }
+                t_meter edgeLength_neig = 0 * si::meter;
+                t_meter edgeLength_self = 0 * si::meter;
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT) {
+                    edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
+                } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
+                    edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
+                }
+                vector<t_meter> zetasNeig = at(got)->Zetas;
+                std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
+                        Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
+                std::vector<t_s_meter_t> zoneConductances =
+                        vdf.calculateDensityZoneConductances(
+                                zoneThicknesses,
+                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                std::vector<t_s_meter_t> zoneConductancesCum =
+                        vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
+
+                std::vector<t_s_meter_t> zetaMovementConductances =
+                        vdf.calculateZetaMovementConductances(zoneConductances, zoneConductancesCum, delnus, eps);
+
+                // todo: give these "conductance" values to the matrix for solving the equation system
+                // todo: also add the porosity term of current time step (m) to matrix
+            }
+
             return out;
         }
 
@@ -1119,7 +1164,7 @@ Modify Properties
          */
         t_vol_t getSourceTermBelowZeta(){ // in SWI2: G
             // get RHS
-            t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n) todo why n?
+            t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n) todo why n? Check with MODFLOW code
             t_vol_t dewateredFlow = calculateDewateredFlow(); // Question: what is this in MODFLOW?
             t_vol_t rivers = calculateNotHeadDependandFlows(); // Question: what is this in MODFLOW?
             t_vol_t storageFlow = // in MODFLOW: SS_i,j,k * DELR_j * DELC_i * (h^(m-1)_(i,j,k)/t^(m)-t^(m-1))
@@ -1141,12 +1186,56 @@ Modify Properties
             return out;
         }
 
+        t_vol_t getPseudoSource_Zetas() { // for one zone
+            t_vol_t out = 0.0 * (si::cubic_meter / day);
+            DensityProperties densityProps = get<DensityProperties, densityProperties>();
+            vector<t_dim> eps = densityProps.getEps();
+            vector<t_dim> delnus = densityProps.getDelnus();
+            std::forward_list<NeighbourPosition> possible_neighbours =
+                    {NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                     NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
-        t_vol_t getPseudoSource_Zetas(){
-            t_vol_t out;
+            // pseudo source term calculation
+            for (const auto &position: possible_neighbours) {
+                map_itter got = neighbours.find(position);
+                if (got == neighbours.end()) {
+                    continue;
+                }
+                t_meter edgeLength_neig = 0 * si::meter;
+                t_meter edgeLength_self = 0 * si::meter;
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT) {
+                    edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
+                } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
+                    edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
+                    edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
+                }
+                vector<t_meter> zetasNeig = at(got)->Zetas;
+                std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
+                        Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
+                std::vector<t_s_meter_t> zoneConductances =
+                        vdf.calculateDensityZoneConductances(
+                                zoneThicknesses,
+                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                std::vector<t_s_meter_t> zoneConductancesCum =
+                        vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
 
+                // todo get SWISOLCR/C and calculate out
 
+                for (int i = 0; i <= delnus.size() - 1; i++) { // todo change to zones.size() -1 (also at all other ocurrences)
+
+                    out += zoneConductancesCum[i] * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+
+                    if (eps[i] != 0) { // todo: p != n
+                        out += eps[i] *
+                               (zoneConductances[i] * ((Zetas[i] - zetasNeig[i + 1]) - (Zetas[i] - Zetas[i + 1])));
+                    }
+                    if (delnus[i] != 0) { // todo: p==n
+                        out -= delnus[i] * (zoneConductancesCum[i] * ((zetasNeig[i] - Zetas[i])));
+                    }
+                }
+            }
             return out;
         }
 

@@ -166,6 +166,7 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;
         struct SurfaceFrontBack;
         struct VolumeOfCell;
+        struct EffectivePorosity;
         struct densityProperties; // variable density properties
 
 /**
@@ -202,7 +203,9 @@ namespace GlobalFlow {
             PhysicalProperty<t_s_meter, SurfaceLeftRight>,
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
             PhysicalProperty<t_c_meter, VolumeOfCell>,
+            PhysicalProperty<t_dim, EffectivePorosity>,
             PhysicalProperty<DensityProperties, densityProperties> // variable density properties
+
         >;
 
     }
