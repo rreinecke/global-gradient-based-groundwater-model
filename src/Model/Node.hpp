@@ -1110,18 +1110,17 @@ Modify Properties
                 return out;
             }
 
-            t_s_meter_t getEffectivePorosityTerm(){
-                // todo: does this work?
+            t_s_meter_t getEffectivePorosityTerm(){ // todo: debugging
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() *
                                    (get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>())) /
                                   (day * get<t_dim, StepModifier>());
                 return out;
             }
 
-            t_vol_t getZetaMovementRHS(int zetaID){
+            t_vol_t getZetaMovementRHS(int zetaID){ // todo: debugging, call it from a solver
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[zetaID];
-                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(zetaID); // todo
-                t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(zetaID); // todo
+                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(zetaID);
+                t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(zetaID);
                 t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
                 return out;
             }
@@ -1132,7 +1131,8 @@ Modify Properties
              * The left hand side of the equation
              */
             std::unordered_map<large_num, t_s_meter_t>  getConductance_ZetaMovement(int zetaID){ // Question: Rename to getLeftHandSide_Zeta?
-                // todo: potential to enhance computational speed: change zoneConductanceCum to compute a single parameter instead of a vecotr
+                // todo: potential to enhance computational speed: change zoneConductanceCum to compute a single parameter instead of a vector
+                // todo: debugging
                 size_t numC = 5;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
@@ -1193,30 +1193,66 @@ Modify Properties
                 return out;
             }
 
+            t_vol_t getVerticalLeakage(){ // todo debugging
+                t_vol_t out = 0 * (si::cubic_meter / day);
+                t_s_meter_t verticalConductance;
+                t_vol_t verticalLeakage;
+
+                t_meter head_dif = 0 * si::meter;
+                for (int n = 0; n <= zones.size() - 1; n++){
+                    head_dif -= zones[n] * (Zetas[n+1] - Zetas[n]);
+                }
+
+                std::forward_list<NeighbourPosition> possible_neighbours =
+                        {NeighbourPosition::TOP, NeighbourPosition::DOWN};
+                for (const auto &position: possible_neighbours) {
+                    map_itter got = neighbours.find(position);
+                    if (got == neighbours.end()) {//No top node
+                    } else {//Current node has a top node
+                        verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
+                        vector<t_meter> zetas_neig = at(got)->Zetas;
+                        vector<t_dim> zonesTopNode = at(got)->zones;
+                        t_dim nusBottomOfTopNode = zonesTopNode.back(); // in SWI2: NUBOT_i,j,k-1
+                        t_dim nusTopOfThisNode = zones.front();  // in SWI2: NUTOP_i,j,k
+                        verticalLeakage = verticalConductance *
+                                (head_dif + (0.5 * (zetas_neig.back() + Zetas.front())) *
+                                    (nusBottomOfTopNode * nusTopOfThisNode));
+                        if (got->first == NeighbourPosition::TOP){
+                            out += verticalLeakage;
+                        } else { // NeighbourPosition::DOWN
+                            out -= verticalLeakage;
+                        }
+                    }
+                }
+                return out;
+            }
+
+
             /**
              * The source term below a zeta surface (in SWI2: G)
              * return volume per time
              */
-            t_vol_t getSourceTermBelowZeta(int zetaID){ // in SWI2: G
-                // get RHS
-                t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n) todo why n? Check with MODFLOW code
+            t_vol_t getSourceTermBelowZeta(int zetaID){ // in SWI2: G todo debugging
+                // get RHS of PREVIOUS time step
+                // todo make sure this is from previous time step!!
+                t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n)
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // Question: what is this in MODFLOW?
                 t_vol_t rivers = calculateNotHeadDependandFlows(); // Question: what is this in MODFLOW?
                 t_vol_t storageFlow = // in MODFLOW: SS_i,j,k * DELR_j * DELC_i * (h^(m-1)_(i,j,k)/t^(m)-t^(m-1))
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
-                t_vol_t rhs = externalFlows + dewateredFlow - rivers - storageFlow;
+                t_vol_t rhs_old = externalFlows + dewateredFlow - rivers - storageFlow;
 
-                // get HCOF
+                // get HCOF of NEW time step
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
                                                      getStorageCapacity(),
                                                      getP()); // todo check whether correct and check out SWIHCOF in modflow code
 
-                // get vertical leakage
-                t_vol_t verticalLeakageTop = 0; // todo
-                t_vol_t verticalLeakage = 0; // todo
+                // get vertical leakage of NEW time step
+                t_vol_t verticalLeakageTerm = getVerticalLeakage(); // todo
+
                 // G = RHS(without VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
-                t_vol_t out = rhs - hcof * get<t_meter, Head>() + (verticalLeakageTop - verticalLeakage);
+                t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakageTerm;
 
                 return out;
             }
@@ -1346,10 +1382,10 @@ Modify Properties
                     }
                 }
 
-                // dimensionless density at the bottom of the top node (in SWI2: NUBOT)
+
                 if (got == neighbours.end()) {//No top node
                     // calculate the flux correction term for a node WITHOUT a top neighbour
-                    out += 0.5 * (-Zetas.front()) * (-nusTopOfThisNode);
+                    out += 0.5 * (-Zetas.front()) * (-nusTopOfThisNode); // todo check with MODFLOW code whether this is correct
                 } else {//Current node has a top node
                     vector<t_dim> zonesTopNode = at(got)->zones;
                     vector<t_meter> zetasTopNode = at(got)->Zetas; // std::unordered_map<t_dim, t_meter, FlowTypeHash>
@@ -1358,6 +1394,7 @@ Modify Properties
                         out += zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]);
                     }
 
+                    // dimensionless density at the bottom of the top node (in SWI2: NUBOT)
                     t_dim nusBottomOfTopNode = zonesTopNode.back(); // in SWI2: NUBOT_i,j,k-1
                     for(int i = 1; i <= delnus.size(); i++) {
                         t_meter bottomOfTopNode = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);

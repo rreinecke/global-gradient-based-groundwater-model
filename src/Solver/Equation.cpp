@@ -368,7 +368,7 @@ Equation::solve() {
         }
 
         /**
-         * @brief head change convergance
+         * @brief head change convergence
          */
         headFail = isHeadChangeGreater();
         if (headFail) {
@@ -401,7 +401,7 @@ Equation::solve() {
 	oldMaxHead = maxHead;
 
         /**
-         * @brief residual norm convergance
+         * @brief residual norm convergence
          */
         if (nwt) {
             LOG(numerics) << "Inner iterations: " << innerItter;

@@ -75,6 +75,7 @@ class SimpleDataReader : public DataReader {
             int row{0};
             int col{0};
             lookupglobIDtoID.reserve(numberOfNodes);
+            Model::DensityProperties densityProperties;
 
             while (in.read_row(globid, x, y, area, row, col)) {
                 out[row][col] = i;
@@ -92,7 +93,7 @@ class SimpleDataReader : public DataReader {
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, confined));
+                                                            specificStorage, confined, densityProperties));
                 lookupglobIDtoID[globid] = i;
                 i++;
             }

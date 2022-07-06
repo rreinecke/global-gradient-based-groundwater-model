@@ -10,25 +10,27 @@ using namespace GlobalFlow::Simulation;
 class StepperFixture : public ::testing::Test {
 public:
     NodeVector nodes;
+    DensityProperties densityProperties;
     Options op;
     void SetUp(){
         NodeVector ptr(new std::vector<unique_ptr<GlobalFlow::Model::NodeInterface>>);
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true));
+                0.2, 0.1, true, densityProperties
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, densityProperties
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, densityProperties
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, densityProperties
+                ));
 
         nodes->at(0)->setNeighbour(1,RIGHT);
         nodes->at(1)->setNeighbour(0,LEFT);
