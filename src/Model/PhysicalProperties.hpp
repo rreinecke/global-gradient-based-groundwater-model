@@ -173,38 +173,38 @@ namespace GlobalFlow {
  * Definition of type and unit for each field
  */
         using PhysicalProperties = PropertyRepository<
-            PhysicalProperty<large_num, ID>,
-            PhysicalProperty<large_num, ArcID>,
-            PhysicalProperty<double, Lat>, //TODO use boost unit
-            PhysicalProperty<double, Lon>,
-            PhysicalProperty<int, Layer>,
-            PhysicalProperty<t_dim, StepModifier>,
-            PhysicalProperty<t_s_meter, Area>,
-            PhysicalProperty<t_meter, VerticalSize>,
-            PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
-            PhysicalProperty<t_meter, TopElevation>, // elevation of TOP layer
-            PhysicalProperty<t_dim, Slope>,
-            PhysicalProperty<t_meter, EFolding>,
-            PhysicalProperty<bool, Confinement>,
-            PhysicalProperty<t_vel, K>,
-            PhysicalProperty<t_dim, Anisotropy>,
-            PhysicalProperty<quantity < d_time>, StepSize>,
-            PhysicalProperty<t_c_meter, OUT>,
-            PhysicalProperty<t_c_meter, IN>,
-            PhysicalProperty<t_meter, Head>,
-            PhysicalProperty<t_meter, EQHead>,
-            PhysicalProperty<t_meter, HeadChange>,
-            PhysicalProperty<t_meter, Head_TZero>,
-            PhysicalProperty<t_meter, HeadChange_TZero>,
-            PhysicalProperty<t_dim, SpecificYield>,
-            PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-            PhysicalProperty<t_meter, EdgeLengthLeftRight>,
-            PhysicalProperty<t_meter, EdgeLengthFrontBack>,
-            PhysicalProperty<t_s_meter, SurfaceLeftRight>,
-            PhysicalProperty<t_s_meter, SurfaceFrontBack>,
-            PhysicalProperty<t_c_meter, VolumeOfCell>,
-            PhysicalProperty<t_dim, EffectivePorosity>,
-            PhysicalProperty<DensityProperties, densityProperties> // variable density properties
+                PhysicalProperty<large_num, ID>,
+                PhysicalProperty<large_num, ArcID>,
+                PhysicalProperty<double, Lat>, //TODO use boost unit
+                PhysicalProperty<double, Lon>,
+                PhysicalProperty<int, Layer>,
+                PhysicalProperty<t_dim, StepModifier>,
+                PhysicalProperty<t_s_meter, Area>,
+                PhysicalProperty<t_meter, VerticalSize>,
+                PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
+                PhysicalProperty<t_meter, TopElevation>, // elevation of TOP layer
+                PhysicalProperty<t_dim, Slope>,
+                PhysicalProperty<t_meter, EFolding>,
+                PhysicalProperty<bool, Confinement>,
+                PhysicalProperty<t_vel, K>,
+                PhysicalProperty<t_dim, Anisotropy>,
+                PhysicalProperty<quantity < d_time>, StepSize>,
+        PhysicalProperty<t_c_meter, OUT>,
+        PhysicalProperty<t_c_meter, IN>,
+        PhysicalProperty<t_meter, Head>,
+        PhysicalProperty<t_meter, EQHead>,
+        PhysicalProperty<t_meter, HeadChange>,
+        PhysicalProperty<t_meter, Head_TZero>,
+        PhysicalProperty<t_meter, HeadChange_TZero>,
+        PhysicalProperty<t_dim, SpecificYield>,
+        PhysicalProperty<quantity < perUnit>, SpecificStorage>,
+        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
+        PhysicalProperty<t_c_meter, VolumeOfCell>,
+        PhysicalProperty<t_dim, EffectivePorosity>,
+        PhysicalProperty<DensityProperties, densityProperties> // variable density properties
 
         >;
 

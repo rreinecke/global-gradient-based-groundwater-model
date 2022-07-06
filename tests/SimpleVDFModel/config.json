@@ -40,37 +40,38 @@
       "stepsize": "daily",
       "wetting_approach": "nwt"
     },
-  "input": {
-    "data_config": {
-      "k_from_lith": "true",
-      "k_ghb_from_file": "true",
-      "specificstorage_from_file": "false",
-      "specificyield_from_file": "false",
-      "k_river_from_file": "true",
-      "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "true",
-      "data_as_array": "false"
-    },
-    "default_data": {
-      "initial_head": 0,
-      "K": 2,
-      "ghb_K": 800,
-      "aquifer_thickness": [
-        40
-      ],
-      "anisotropy": 1,
-      "specificyield": 0.2,
-      "specificstorage": 0.000015
-    },
-    "data": {
-      "ghb_conductance": "ghb_conductance_simpleVDF.csv",
-      "recharge": "recharge_simpleVDF.csv",
-      "elevation": "elevation_simpleVDF.csv",
-      "lithology": "lithology_simpleVDF.csv",
-      "initial_head": "initial_head_simpleVDF.csv",
-      "initial_zetas": "initial_zetas_simpleVDF.csv",
-      "initial_zones": "initial_zones_simpleVDF.csv"
+    "input": {
+      "data_config": {
+        "k_from_lith": "true",
+        "k_ghb_from_file": "true",
+        "specificstorage_from_file": "false",
+        "specificyield_from_file": "false",
+        "k_river_from_file": "true",
+        "aquifer_depth_from_file": "false",
+        "initial_head_from_file": "true",
+        "data_as_array": "false"
+      },
+      "default_data": {
+        "initial_head": 0,
+        "K": 2,
+        "ghb_K": 800,
+        "aquifer_thickness": [
+          40
+        ],
+        "anisotropy": 1,
+        "specificyield": 0.2,
+        "specificstorage": 0.000015
+      },
+      "data": {
+        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
+        "recharge": "recharge_simpleVDF.csv",
+        "elevation": "elevation_simpleVDF.csv",
+        "lithology": "lithology_simpleVDF.csv",
+        "initial_head": "initial_head_simpleVDF.csv",
+        "initial_zetas": "initial_zetas_simpleVDF.csv",
+        "initial_zones": "initial_zones_simpleVDF.csv",
+        "effective_porosity": "effective_porosity_simpleVDF.csv"
+      }
     }
-  }
   }
 }

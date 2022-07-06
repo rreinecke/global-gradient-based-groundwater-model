@@ -53,12 +53,13 @@ namespace GlobalFlow {
                     std::vector<t_s_meter_t> densityZoneCond) noexcept;
 
 
-            std::vector<t_s_meter_t> calculateZetaMovementConductances(
+            t_s_meter_t calculateZetaMovementConductances( // todo remove if not needed
+                    int zetaID,
                     std::vector<t_s_meter_t> zoneConductances,
                     std::vector<t_s_meter_t> zoneConductancesCum,
                     std::vector<t_dim> delnus,
                     std::vector<t_dim> eps
-                    ) noexcept;
+            ) noexcept;
 
             //std::vector<t_dim> calculateTip() noexcept;
             //std::vector<t_dim> calculateToe() noexcept;

@@ -45,9 +45,10 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
 
-                LOG(userinfo) << "Reading variable density information";
+                LOG(userinfo) << "Reading parameters for variable density flow";
                 readInitialZetas(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()), op.getAquiferDepth()[0]);
                 readInitialZones(op.isDensityVariable(), op.getDensityFresh(), buildDir(op.getInitialZonesDir()));
+                readEffectivePorosity(buildDir(op.getEffectivePorosity()));
 
                 LOG(userinfo) << "Initializing head";
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -223,6 +224,12 @@ namespace GlobalFlow {
                         nodes->at(pos)->addZone(nus * Model::si::si_dimensionless);
                     }
                 }
+            }
+
+            void readEffectivePorosity(std::string path) {
+                readTwoColumns(path, [this](double data, int pos) {
+                    nodes->at(pos)->setEffectivePorosity(data * Model::si::si_dimensionless);
+                });
             }
 
             void readInitialHeads(std::string path) {

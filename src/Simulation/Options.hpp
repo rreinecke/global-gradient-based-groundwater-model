@@ -20,423 +20,426 @@
 #include <boost/optional/optional.hpp>
 
 namespace GlobalFlow {
-namespace Simulation {
+    namespace Simulation {
 
-using namespace std;
+        using namespace std;
 
-enum Stepsize {
-    DAILY,
-    MONTHLY
-};
+        enum Stepsize {
+            DAILY,
+            MONTHLY
+        };
 
 /**
  * @class Options
  * Reads simulation options from a JSON file
  * Defines getters and setters for options
  */
-class Options {
+        class Options {
 
-        //++Input data++//
-        vector<string> ELEVATION_a;
-        vector<string> EFOLDING_a;
-        vector<string> SLOPE_a;
-        vector<string> EQ_WTD_a;
-        vector<string> BLUE_ELEVATION_a;
+            //++Input data++//
+            vector<string> ELEVATION_a;
+            vector<string> EFOLDING_a;
+            vector<string> SLOPE_a;
+            vector<string> EQ_WTD_a;
+            vector<string> BLUE_ELEVATION_a;
 
-        string ELEVATION{""};
-        string EFOLDING{""};
-        string SLOPE{""};
-        string EQ_WTD{""};
-        string BLUE_ELEVATION{""};
+            string ELEVATION{""};
+            string EFOLDING{""};
+            string SLOPE{""};
+            string EQ_WTD{""};
+            string BLUE_ELEVATION{""};
 
-        string RECHARGE{""};
-        string PSEUDO_SOURCE_FLOW{""};
-        string LITHOLOGY{""};
-        string RIVERS{""};
-        string GLOBAL_LAKES{""};
-        string GLOBAL_WETLANDS{""};
-        string LOCAL_LAKES{""};
-        string LOCAL_WETLANDS{""};
-        string K_DIR{""};
-        string RIVER_K_DIR{""};
-        string GHB_K_DIR{""};
-        string SS_FILE{""};
-        string SY_FILE{""};
-        string AQ_DEPTH{""};
-        string INITIAL_HEADS{""};
-        string INITIAL_ZETAS{""};
-        string INITIAL_ZONES{""};
+            string RECHARGE{""};
+            string PSEUDO_SOURCE_FLOW{""};
+            string LITHOLOGY{""};
+            string RIVERS{""};
+            string GLOBAL_LAKES{""};
+            string GLOBAL_WETLANDS{""};
+            string LOCAL_LAKES{""};
+            string LOCAL_WETLANDS{""};
+            string K_DIR{""};
+            string RIVER_K_DIR{""};
+            string GHB_K_DIR{""};
+            string SS_FILE{""};
+            string SY_FILE{""};
+            string AQ_DEPTH{""};
+            string INITIAL_HEADS{""};
+            string INITIAL_ZETAS{""};
+            string INITIAL_ZONES{""};
+            string EFFECTIVE_POROSITY{""};
 
-        //++Special mappings++//
-        string NODEID_SPATID{""};
+            //++Special mappings++//
+            string NODEID_SPATID{""};
 
-        //++General configuration++//
-        long NUMBER_OF_NODES{0};
-        long NUMBER_OF_ROWS{0};
-        long NUMBER_OF_COLS{0};
-        double EDGE_LENGTH_ROWS{0.0};
-        double EDGE_LENGTH_COLS{0.0};
-        int LAYERS{0};
-        int IITER{0};
-        int I_ITTER{0};
-        double RCLOSE{0.1};
-        string SOLVER{"PCG"};
-        string NODES{""};
-        int THREADS{0};
-        bool CACHE{false};
-        bool ADAPTIVE_STEPSIZE{false};
-        Stepsize stepsize{DAILY};
-        string WETTING_APPROACH{"nwt"};
-        int INITAL_HEAD{0};
-        double K{0.001};
-        double GHB_K{0.1};
-        vector<int> AQUIFER_DEPTH{100};
-        double ANISOTROPY{10};
-        double SPECIFIC_YIELD{0.15};
-        double SPECIFIC_STORAGE{0.000015};
-        string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
-        bool SENSITIVITY{false};
-    	bool ONE_LAYER{false};
-        vector<bool> CONFINED{};
-        // density information
-        bool DENSITY_VARIABLE{false};
-        bool DENSITY_STRATIFIED{false};
-        double DENSITY_FRESH{1000.0};
-        vector<double> DENSITY_ZONES{1000.0};
-        int NUMBER_OF_DENSITY_ZONES{1};
+            //++General configuration++//
+            long NUMBER_OF_NODES{0};
+            long NUMBER_OF_ROWS{0};
+            long NUMBER_OF_COLS{0};
+            double EDGE_LENGTH_ROWS{0.0};
+            double EDGE_LENGTH_COLS{0.0};
+            int LAYERS{0};
+            int IITER{0};
+            int I_ITTER{0};
+            double RCLOSE{0.1};
+            string SOLVER{"PCG"};
+            string NODES{""};
+            int THREADS{0};
+            bool CACHE{false};
+            bool ADAPTIVE_STEPSIZE{false};
+            Stepsize stepsize{DAILY};
+            string WETTING_APPROACH{"nwt"};
+            int INITAL_HEAD{0};
+            double K{0.001};
+            double GHB_K{0.1};
+            vector<int> AQUIFER_DEPTH{100};
+            double ANISOTROPY{10};
+            double SPECIFIC_YIELD{0.15};
+            double SPECIFIC_STORAGE{0.000015};
+            string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
+            bool SENSITIVITY{false};
+            bool ONE_LAYER{false};
+            vector<bool> CONFINED{};
+            // density information
+            bool DENSITY_VARIABLE{false};
+            bool DENSITY_STRATIFIED{false};
+            double DENSITY_FRESH{1000.0};
+            vector<double> DENSITY_ZONES{1000.0};
+            int NUMBER_OF_DENSITY_ZONES{1};
 
-    	string BASE_PATH{"data"};
-        bool k_from_lith{true};
-        bool k_ghb_from_file{false};
-        bool specificstorage_from_file{false};
-        bool specificyield_from_file{false};
-        bool k_river_from_file{false};
-        bool aquifer_depth_from_file{false};
+            string BASE_PATH{"data"};
+            bool k_from_lith{true};
+            bool k_ghb_from_file{false};
+            bool specificstorage_from_file{false};
+            bool specificyield_from_file{false};
+            bool k_river_from_file{false};
+            bool aquifer_depth_from_file{false};
 
-        bool ROW_COLS{false};
-        double MAX_HEAD_CHANGE{0.01};
-        bool DAMPING{false};
-        double MIN_DAMP{0.01};
-        double MAX_DAMP{0.5};
+            bool ROW_COLS{false};
+            double MAX_HEAD_CHANGE{0.01};
+            bool DAMPING{false};
+            double MIN_DAMP{0.01};
+            double MAX_DAMP{0.5};
 
-    public:
+        public:
 
-        enum BoundaryCondition {
-            GENERAL_HEAD_BOUNDARY,
-            GENERAL_HEAD_NEIGHBOUR,
-            STATIC_HEAD_SEA_LEVEL
-        };
+            enum BoundaryCondition {
+                GENERAL_HEAD_BOUNDARY,
+                GENERAL_HEAD_NEIGHBOUR,
+                STATIC_HEAD_SEA_LEVEL
+            };
 
-        void setClosingCrit(double crit) { RCLOSE = crit; }
+            void setClosingCrit(double crit) { RCLOSE = crit; }
 
-        void setDamping(bool set) { DAMPING = set; }
+            void setDamping(bool set) { DAMPING = set; }
 
-        bool isDampingEnabled() { return DAMPING; }
+            bool isDampingEnabled() { return DAMPING; }
 
-        double getMinDamp() { return MIN_DAMP; }
+            double getMinDamp() { return MIN_DAMP; }
 
-        double getMaxDamp() { return MAX_DAMP; }
+            double getMaxDamp() { return MAX_DAMP; }
 
-        double getMaxHeadChange() { return MAX_HEAD_CHANGE; }
+            double getMaxHeadChange() { return MAX_HEAD_CHANGE; }
 
-        bool isConfined(int layer) { return CONFINED[layer]; }
+            bool isConfined(int layer) { return CONFINED[layer]; }
 
-    	bool isOneLayerApproach() { return ONE_LAYER; }
+            bool isOneLayerApproach() { return ONE_LAYER; }
 
-        vector<bool> getConfinements() { return CONFINED; }
+            vector<bool> getConfinements() { return CONFINED; }
 
-        BoundaryCondition getBoundaryCondition() {
-            if (BOUNDARY_CONDITION == "GeneralHeadBoundary") {
-                return BoundaryCondition::GENERAL_HEAD_BOUNDARY;
+            BoundaryCondition getBoundaryCondition() {
+                if (BOUNDARY_CONDITION == "GeneralHeadBoundary") {
+                    return BoundaryCondition::GENERAL_HEAD_BOUNDARY;
+                }
+                if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
+                    return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
+                }
+                return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
             }
-            if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
-                return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
+
+            bool isSensitivity() { return SENSITIVITY; }
+
+            bool isKFromLith() { return k_from_lith; }
+
+            bool isKGHBFile() { return k_ghb_from_file; }
+
+            bool isSpecificStorageFile() { return specificstorage_from_file; }
+
+            bool isSpecificYieldFile() { return specificyield_from_file; }
+
+            bool isKRiverFile() { return k_river_from_file; }
+
+            bool isAquiferDepthFile() { return aquifer_depth_from_file; }
+
+            string getKDir() { return K_DIR; }
+
+            string getKRiverDir() { return RIVER_K_DIR; }
+
+            string getKGHBDir() { return GHB_K_DIR; }
+
+            string getSSDir() { return SS_FILE; }
+
+            string getSYDir() { return SY_FILE; }
+
+            string getAQDepthDir() { return AQ_DEPTH; }
+
+            string getInitialHeadsDir() {return INITIAL_HEADS;}
+
+            string getInitialZetasDir() {return INITIAL_ZETAS;}
+
+            string getInitialZonesDir() {return INITIAL_ZONES;}
+
+            string getEffectivePorosity() {return EFFECTIVE_POROSITY;}
+
+            bool isRowCol() { return ROW_COLS; }
+
+            int getInnerItter() { return I_ITTER; }
+
+            long
+            getNumberOfNodes() {
+                return NUMBER_OF_NODES;
+            };
+
+            long
+            getNumberOfRows() {
+                return NUMBER_OF_ROWS;
+            };
+
+            long
+            getNumberOfCols() {
+                return NUMBER_OF_COLS;
+            };
+
+            double
+            getEdgeLengthLeftRight() {
+                return EDGE_LENGTH_ROWS;
+            };
+
+            double
+            getEdgeLengthFrontBack() {
+                return EDGE_LENGTH_COLS;
+            };
+
+            int
+            getNumberOfLayers() {
+                return LAYERS;
             }
-            return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
-        }
 
-        bool isSensitivity() { return SENSITIVITY; }
+            bool isDensityVariable() { return DENSITY_VARIABLE; }
 
-        bool isKFromLith() { return k_from_lith; }
+            bool isDensityStratified() { return DENSITY_STRATIFIED; }
 
-        bool isKGHBFile() { return k_ghb_from_file; }
+            double
+            getDensityFresh() {
+                return DENSITY_FRESH;
+            }
 
-        bool isSpecificStorageFile() { return specificstorage_from_file; }
+            vector<double>
+            getDensityZones() {
+                return DENSITY_ZONES;
+            }
 
-        bool isSpecificYieldFile() { return specificyield_from_file; }
+            int
+            getNumberOfDensityZones() {
+                return NUMBER_OF_DENSITY_ZONES;
+            }
 
-        bool isKRiverFile() { return k_river_from_file; }
+            int
+            getMaxIterations() {
+                return IITER;
+            }
 
-        bool isAquiferDepthFile() { return aquifer_depth_from_file; }
+            double
+            getConverganceCriteria() {
+                return RCLOSE;
+            }
 
-        string getKDir() { return K_DIR; }
+            string
+            getSolverName() {
+                return SOLVER;
+            }
 
-        string getKRiverDir() { return RIVER_K_DIR; }
-
-        string getKGHBDir() { return GHB_K_DIR; }
-
-        string getSSDir() { return SS_FILE; }
-
-        string getSYDir() { return SY_FILE; }
-
-        string getAQDepthDir() { return AQ_DEPTH; }
-
-        string getInitialHeadsDir() {return INITIAL_HEADS;}
-
-        string getInitialZetasDir() {return INITIAL_ZETAS;}
-
-        string getInitialZonesDir() {return INITIAL_ZONES;}
-
-        bool isRowCol() { return ROW_COLS; }
-
-        int getInnerItter() { return I_ITTER; }
-
-        long
-        getNumberOfNodes() {
-            return NUMBER_OF_NODES;
-        };
-
-        long
-        getNumberOfRows() {
-            return NUMBER_OF_ROWS;
-        };
-
-        long
-        getNumberOfCols() {
-            return NUMBER_OF_COLS;
-        };
-
-        double
-        getEdgeLengthLeftRight() {
-            return EDGE_LENGTH_ROWS;
-        };
-
-        double
-        getEdgeLengthFrontBack() {
-            return EDGE_LENGTH_COLS;
-        };
-
-        int
-        getNumberOfLayers() {
-            return LAYERS;
-        }
-
-        bool isDensityVariable() { return DENSITY_VARIABLE; }
-
-        bool isDensityStratified() { return DENSITY_STRATIFIED; }
-
-        double
-        getDensityFresh() {
-            return DENSITY_FRESH;
-        }
-
-        vector<double>
-        getDensityZones() {
-            return DENSITY_ZONES;
-        }
-
-        int
-        getNumberOfDensityZones() {
-            return NUMBER_OF_DENSITY_ZONES;
-        }
-
-        int
-        getMaxIterations() {
-            return IITER;
-        }
-
-        double
-        getConverganceCriteria() {
-            return RCLOSE;
-        }
-
-        string
-        getSolverName() {
-            return SOLVER;
-        }
-
-        bool disableDryCells() {
-            if (WETTING_APPROACH == "nwt") {
+            bool disableDryCells() {
+                if (WETTING_APPROACH == "nwt") {
+                    return false;
+                }
+                if (WETTING_APPROACH == "classic") {
+                    return true;
+                }
                 return false;
             }
-            if (WETTING_APPROACH == "classic") {
-                return true;
+
+            //string getBasePath() {
+            //    return BASE_PATH;
+            //}
+
+            string
+            getNodesDir() {
+                return NODES;
             }
-            return false;
-        }
 
-        //string getBasePath() {
-        //    return BASE_PATH;
-        //}
-
-        string
-        getNodesDir() {
-            return NODES;
-        }
-
-        string
-        getElevation() {
-            return ELEVATION;
-        }
-
-        string
-        getEfolding() {
-            return EFOLDING;
-        }
-
-        string
-        getEqWTD() {
-            return EQ_WTD;
-        }
-
-        string getSlope() {
-            return SLOPE;
-        }
-
-        string getBlue() {
-            return BLUE_ELEVATION;
-        }
-
-        vector<string>
-        getElevation_A() {
-            return ELEVATION_a;
-        }
-
-        vector<string>
-        getEfolding_a() {
-            return EFOLDING_a;
-        }
-
-        vector<string>
-        getEqWTD_a() {
-            return EQ_WTD_a;
-        }
-
-        vector<string>
-        getSlope_a() {
-            return SLOPE_a;
-        }
-
-        vector<string>
-        getBlue_a() {
-            return BLUE_ELEVATION_a;
-        }
-
-        string
-        getRecharge() {
-            return RECHARGE;
-        }
-
-        string
-        getPseudoSourceFlow() {
-            return PSEUDO_SOURCE_FLOW;
-        }
-
-        string
-        getLithology() {
-            return LITHOLOGY;
-        }
-
-        string
-        getRivers() {
-            return RIVERS;
-        }
-
-        string
-        getGlobalLakes() {
-            return GLOBAL_LAKES;
-        }
-
-        string
-        getGlobalWetlands() {
-            return GLOBAL_WETLANDS;
-        }
-
-        string
-        getLocalLakes() {
-            return LOCAL_LAKES;
-        }
-
-        string
-        getLocalWetlands() {
-            return LOCAL_WETLANDS;
-        }
-
-        string
-        getMapping() {
-            return NODEID_SPATID;
-        }
-
-        int
-        getThreads() {
-            return THREADS;
-        }
-
-        const bool
-        adaptiveStepsizeEnabled() {
-            return ADAPTIVE_STEPSIZE;
-        }
-
-        //Computations are all based on daily
-        const int
-        getStepsizeModifier() {
-            switch (stepsize) {
-                case DAILY:
-                    return 1;
-                case MONTHLY:
-                    return 31;
+            string
+            getElevation() {
+                return ELEVATION;
             }
-            throw std::out_of_range("No valid stepsize\n");
-        }
 
-        bool
-        cacheEnabled() {
-            return CACHE;
-        }
+            string
+            getEfolding() {
+                return EFOLDING;
+            }
 
-        int
-        getInitialHead() {
-            return INITAL_HEAD;
-        }
+            string
+            getEqWTD() {
+                return EQ_WTD;
+            }
 
-        double
-        getInitialK() {
-            return K;
-        }
+            string getSlope() {
+                return SLOPE;
+            }
 
-        double
-        getGHBConduct() {
-            return GHB_K;
-        }
+            string getBlue() {
+                return BLUE_ELEVATION;
+            }
 
-        vector<int>
-        getAquiferDepth() {
-            return AQUIFER_DEPTH;
-        }
+            vector<string>
+            getElevation_A() {
+                return ELEVATION_a;
+            }
 
-        double
-        getAnisotropy() {
-            return ANISOTROPY;
-        }
+            vector<string>
+            getEfolding_a() {
+                return EFOLDING_a;
+            }
 
-        double
-        getSpecificYield() {
-            return SPECIFIC_YIELD;
-        }
+            vector<string>
+            getEqWTD_a() {
+                return EQ_WTD_a;
+            }
 
-        double
-        getSpecificStorage() {
-            return SPECIFIC_STORAGE;
-        }
+            vector<string>
+            getSlope_a() {
+                return SLOPE_a;
+            }
 
-        void
-        load(const std::string &filename);
+            vector<string>
+            getBlue_a() {
+                return BLUE_ELEVATION_a;
+            }
 
-        //FIXME implement node serialization
-        void
-        save(const std::string &filename);
-};
+            string
+            getRecharge() {
+                return RECHARGE;
+            }
 
-}
+            string
+            getPseudoSourceFlow() {
+                return PSEUDO_SOURCE_FLOW;
+            }
+
+            string
+            getLithology() {
+                return LITHOLOGY;
+            }
+
+            string
+            getRivers() {
+                return RIVERS;
+            }
+
+            string
+            getGlobalLakes() {
+                return GLOBAL_LAKES;
+            }
+
+            string
+            getGlobalWetlands() {
+                return GLOBAL_WETLANDS;
+            }
+
+            string
+            getLocalLakes() {
+                return LOCAL_LAKES;
+            }
+
+            string
+            getLocalWetlands() {
+                return LOCAL_WETLANDS;
+            }
+
+            string
+            getMapping() {
+                return NODEID_SPATID;
+            }
+
+            int
+            getThreads() {
+                return THREADS;
+            }
+
+            const bool
+            adaptiveStepsizeEnabled() {
+                return ADAPTIVE_STEPSIZE;
+            }
+
+            //Computations are all based on daily
+            const int
+            getStepsizeModifier() {
+                switch (stepsize) {
+                    case DAILY:
+                        return 1;
+                    case MONTHLY:
+                        return 31;
+                }
+                throw std::out_of_range("No valid stepsize\n");
+            }
+
+            bool
+            cacheEnabled() {
+                return CACHE;
+            }
+
+            int
+            getInitialHead() {
+                return INITAL_HEAD;
+            }
+
+            double
+            getInitialK() {
+                return K;
+            }
+
+            double
+            getGHBConduct() {
+                return GHB_K;
+            }
+
+            vector<int>
+            getAquiferDepth() {
+                return AQUIFER_DEPTH;
+            }
+
+            double
+            getAnisotropy() {
+                return ANISOTROPY;
+            }
+
+            double
+            getSpecificYield() {
+                return SPECIFIC_YIELD;
+            }
+
+            double
+            getSpecificStorage() {
+                return SPECIFIC_STORAGE;
+            }
+
+            void
+            load(const std::string &filename);
+
+            //FIXME implement node serialization
+            void
+            save(const std::string &filename);
+        };
+
+    }
 }//ns
 #endif //COVERAGE_OPTIONS_H
