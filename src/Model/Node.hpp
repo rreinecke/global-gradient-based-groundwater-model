@@ -1214,14 +1214,22 @@ Modify Properties
                         vector<t_dim> zonesTopNode = at(got)->zones;
                         t_dim nusBottomOfTopNode = zonesTopNode.back(); // in SWI2: NUBOT_i,j,k-1
                         t_dim nusTopOfThisNode = zones.front();  // in SWI2: NUTOP_i,j,k
-                        verticalLeakage = verticalConductance *
-                                (head_dif + (0.5 * (zetas_neig.back() + Zetas.front())) *
-                                    (nusBottomOfTopNode * nusTopOfThisNode));
+                        verticalLeakage = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)))
+                                - calculateFluxCorrection(); // (head_dif + (0.5 * (zetas_neig.back() + Zetas.front())) * (nusBottomOfTopNode + nusTopOfThisNode));
                         if (got->first == NeighbourPosition::TOP){
                             out += verticalLeakage;
                         } else { // NeighbourPosition::DOWN
                             out -= verticalLeakage;
                         }
+                        // todo implement:
+                        //  nubelbot = NUTOP(j,i,k+1)
+                        //  IF ((qzbot.LT.0).AND.(nubelbot.LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.nubelbot)) THEN
+                        //      BRHS(j,i,iz) = BRHS(j,i,iz) + 0 // already implemented: ELSE BRHS(j,i,iz) = BRHS(j,i,iz) + qzbot
+                        // and
+                        //  nuontop = NUBOT(j,i,k-1)
+                        //  IF ((qztop.LT.0).AND.(nuontop.GE.NUS(iz)).AND.NUBOT(j,i,k).GE.nuontop)) THEN
+                        //      BRHS(j,i,iz) = BRHS(j,i,iz) + qztop
+
                     }
                 }
                 return out;
@@ -1233,14 +1241,17 @@ Modify Properties
              * return volume per time
              */
             t_vol_t getSourceTermBelowZeta(int zetaID){ // in SWI2: G todo debugging
-                // get RHS of PREVIOUS time step
+                // get RHS of PREVIOUS time step (without VDF terms pseudo source term and flux correction)
                 // todo make sure this is from previous time step!!
-                t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n)
+                t_vol_t rhs_old = get<t_vol_t, RHSConstantDensity_TZero>(); // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
+
+                /*t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n)
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // Question: what is this in MODFLOW?
                 t_vol_t rivers = calculateNotHeadDependandFlows(); // Question: what is this in MODFLOW?
                 t_vol_t storageFlow = // in MODFLOW: SS_i,j,k * DELR_j * DELC_i * (h^(m-1)_(i,j,k)/t^(m)-t^(m-1))
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
                 t_vol_t rhs_old = externalFlows + dewateredFlow - rivers - storageFlow;
+                */
 
                 // get HCOF of NEW time step
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
@@ -1249,7 +1260,7 @@ Modify Properties
                                                      getP()); // todo check whether correct and check out SWIHCOF in modflow code
 
                 // get vertical leakage of NEW time step
-                t_vol_t verticalLeakageTerm = getVerticalLeakage(); // todo
+                t_vol_t verticalLeakageTerm = getVerticalLeakage();
 
                 // G = RHS(without VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
                 t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakageTerm;
@@ -1360,7 +1371,8 @@ Modify Properties
             }
 
             /**
-             * @brief calculates the flux correction term in vertical direction (in SWI2: BOUY)
+             * @brief calculates the flux correction term in vertical direction
+             * (in SWI2 documentation: BOUY; in code: QLEXTRA)
              * @out meter
              */
             t_meter calculateFluxCorrection(){
@@ -1382,16 +1394,13 @@ Modify Properties
                     }
                 }
 
-
                 if (got == neighbours.end()) {//No top node
-                    // calculate the flux correction term for a node WITHOUT a top neighbour
-                    out += 0.5 * (-Zetas.front()) * (-nusTopOfThisNode); // todo check with MODFLOW code whether this is correct
                 } else {//Current node has a top node
                     vector<t_dim> zonesTopNode = at(got)->zones;
                     vector<t_meter> zetasTopNode = at(got)->Zetas; // std::unordered_map<t_dim, t_meter, FlowTypeHash>
                     // calculate first part of the flux correction term for a node WITH a top neighbour
                     for (int i = 0; i <= zonesTopNode.size(); i++){
-                        out += zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]);
+                        out -= zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
                     }
 
                     // dimensionless density at the bottom of the top node (in SWI2: NUBOT)
@@ -1405,7 +1414,7 @@ Modify Properties
                         }
                     }
                     // calculate second part of the flux correction term for a node WITHOUT a top neighbour
-                    out += 0.5 * (zetasTopNode.back() - Zetas.front()) * (nusBottomOfTopNode-nusTopOfThisNode);
+                    out += 0.5 * (zetasTopNode.back() - Zetas.front()) * (nusBottomOfTopNode + nusTopOfThisNode); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
                 }
 
                 return out;
@@ -1415,7 +1424,7 @@ Modify Properties
              * Calculates the vertical flux correction for variable density flow (in SWI2: BOUY of current node and the one below/above)
              * @return volume per time
              */
-            t_vol_t getFluxCorrections() noexcept { // todo test when top and down cells exist
+            t_vol_t getFluxCorrections() noexcept { // todo rewrite so one can get one flux correction at a time|| test when top and down cells exist
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 t_meter fluxCorrectionTerm;
                 t_s_meter_t verticalConductance;
@@ -1426,7 +1435,7 @@ Modify Properties
                     map_itter got = neighbours.find(position);
                     if (got == neighbours.end()) {
                         continue;
-                    } else if (got->first == NeighbourPosition::DOWN) {
+                    } else if (got->first == NeighbourPosition::DOWN) { // neighbour DOWN needed for vert. conductance
                         // calculate flux correction for this node
                         fluxCorrectionTerm = calculateFluxCorrection();
                     } else { // got == NeighbourPosition::TOP
@@ -1609,14 +1618,22 @@ Modify Properties
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                if (densityProps.isDensityVariable()){ // maybe make condition: zones.size() > 1
-                    t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
-                    t_vol_t fluxCorrections = getFluxCorrections();
-                }
                 if (steadyState) {
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
+
                 t_vol_t out = externalFlows + dewateredFlow - rivers - storageFlow;
+
+                if (densityProps.isDensityVariable()){ // todo maybe make condition: zones.size() > 1
+                    // save RHS without variable density terms for calculation of zeta movement at next time step
+                    set < t_vol_t, RHSConstantDensity_TZero > (out);
+                    // calculate variable density terms
+                    t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
+                    t_vol_t fluxCorrections = getFluxCorrections();
+                    // add variable density terms to RHS
+                    out += pseudoSourceFlow + fluxCorrections;
+                }
+
                 NANChecker(out.value(), "RHS");
                 return out;
             }

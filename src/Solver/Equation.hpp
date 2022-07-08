@@ -39,7 +39,7 @@ namespace GlobalFlow {
         using namespace Eigen;
       
 	using pr_t = double; //change here if other precision should be used e.g. long double
-	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<Model::NodeInterface>>>;
+	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>>;
 	using large_num = unsigned long int;
 	using long_vector = Matrix<pr_t, Dynamic, 1>;
 

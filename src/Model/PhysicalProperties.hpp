@@ -168,6 +168,7 @@ namespace GlobalFlow {
         struct VolumeOfCell;
         struct EffectivePorosity;
         struct densityProperties; // variable density properties
+        struct RHSConstantDensity_TZero;
 
 /**
  * Definition of type and unit for each field
@@ -204,8 +205,8 @@ namespace GlobalFlow {
         PhysicalProperty<t_s_meter, SurfaceFrontBack>,
         PhysicalProperty<t_c_meter, VolumeOfCell>,
         PhysicalProperty<t_dim, EffectivePorosity>,
-        PhysicalProperty<DensityProperties, densityProperties> // variable density properties
-
+        PhysicalProperty<DensityProperties, densityProperties>, // variable density properties
+        PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
         >;
 
     }
