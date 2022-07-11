@@ -115,8 +115,10 @@ namespace GlobalFlow {
             DENSITY_VARIABLE = config.get<bool>("density_variable");
             DENSITY_STRATIFIED = config.get<bool>("density_stratified");
             NUMBER_OF_DENSITY_ZONES = config.get<int>("number_of_density_zones");
+            DENSITY_FRESH = config.get<double>("density_fresh");
             DENSITY_ZONES = getTypeArray<double>("density_zones", config);
-
+            MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
+            MAX_TIP_SLPOE = config.get<double>("max_tip_slope");
 
             pt::ptree data = input.get_child("data");
 

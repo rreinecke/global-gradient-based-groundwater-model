@@ -33,7 +33,9 @@ namespace GlobalFlow {
                                 op.isDensityStratified(),
                                 op.getDensityFresh(),
                                 op.getDensityZones(),
-                                op.getNumberOfDensityZones());
+                                op.getNumberOfDensityZones(),
+                                op.getMaxToeSlope(),
+                                op.getMaxTipSlope());
 
                 LOG(userinfo) << "Reading hydraulic parameters";
                 readConduct(buildDir(op.getLithology()));
@@ -76,7 +78,9 @@ namespace GlobalFlow {
                      bool densityStratified,
                      double densityFresh,
                      vector<double> densityZones,
-                     int numberOfDensityZones) {
+                     int numberOfDensityZones,
+                     double maxToeSlope,
+                     double maxTipSlope) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -96,7 +100,7 @@ namespace GlobalFlow {
                                                                        densityStratified,
                                                                        densityFresh,
                                                                        densityZones,
-                                                                       numberOfDensityZones);
+                                                                       numberOfDensityZones, maxToeSlope, maxTipSlope);
 
                 while (in.read_row(globid, x, y, area, row, col)) {
                     out[row][col] = i;

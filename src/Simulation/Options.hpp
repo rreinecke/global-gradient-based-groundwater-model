@@ -105,6 +105,8 @@ namespace GlobalFlow {
             double DENSITY_FRESH{1000.0};
             vector<double> DENSITY_ZONES{1000.0};
             int NUMBER_OF_DENSITY_ZONES{1};
+            double MAX_TOE_SLOPE{0.2};
+            double MAX_TIP_SLOPE{0.2};
 
             string BASE_PATH{"data"};
             bool k_from_lith{true};
@@ -241,6 +243,16 @@ namespace GlobalFlow {
             int
             getNumberOfDensityZones() {
                 return NUMBER_OF_DENSITY_ZONES;
+            }
+
+            double
+            getMaxToeSlope() {
+                return MAX_TOE_SLOPE;
+            }
+
+            double
+            getMaxTipSlope() {
+                return MAX_TIP_SLOPE;
             }
 
             int

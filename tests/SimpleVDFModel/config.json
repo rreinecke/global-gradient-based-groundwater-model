@@ -23,6 +23,8 @@
         1000,
         1025
       ],
+      "max_toe_slope": 0.2,
+      "max_tip_slope": 0.2,
       "cache": "false",
       "adaptivestepsize": "false",
       "boundarycondition": "GeneralHeadBoundary",

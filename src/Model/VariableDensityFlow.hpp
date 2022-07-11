@@ -76,13 +76,15 @@ namespace GlobalFlow {
             vector<t_dim> nusZones; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
             vector<t_dim> eps; // variation of dimensionless density over a density zone
+            t_dim maxToeSlope;
+            t_dim maxTipSlope;
 
         public:
 
 
             static DensityProperties setDensityProperties(bool densityVariable, bool densityStratified, double densityFresh,
-                                                          vector<double> densityZones,
-                                                          int numberOfDensityZones){
+                                                          vector<double> densityZones, int numberOfDensityZones,
+                                                          double maxToeSlope, double maxTipSlope){
                 DensityProperties densityProps;
                 densityProps.densityVariable = densityVariable;
                 vector<t_dim> nusZetaVec;
@@ -125,6 +127,8 @@ namespace GlobalFlow {
                 densityProps.nusZones = nusZoneVec;
                 densityProps.delnus = delnusVec;
                 densityProps.eps = epsVec;
+                densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
+                densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
                 return densityProps;
             }
 
@@ -135,6 +139,10 @@ namespace GlobalFlow {
             vector<t_dim> getEps(){return eps;}
 
             bool isDensityVariable(){return densityVariable;}
+
+            t_dim getMaxToeSlope(){return maxToeSlope;}
+
+            t_dim getMaxTipSlope(){return maxTipSlope;}
         };
     }
 }
