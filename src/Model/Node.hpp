@@ -1167,13 +1167,10 @@ Modify Properties
 
                         t_meter edgeLength_neig = 0 * si::meter;
                         t_meter edgeLength_self = 0 * si::meter;
-                        if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT) {
-                            edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
-                            edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
-                        } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
-                            edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
-                            edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
-                        }
+
+                        edgeLength_self = getEdgeLengthSelf(got);
+                        edgeLength_neig = getEdgeLengthNeig(got);
+
                         vector<t_meter> zetasNeig = at(got)->Zetas;
                         std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
                                 Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
@@ -1184,11 +1181,9 @@ Modify Properties
                         std::vector<t_s_meter_t> zoneConductancesCum =
                                 vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
-                        t_s_meter_t zetaMovementConductance = vdf.calculateZetaMovementConductances( zetaID,
-                                                                                                     zoneConductances,
-                                                                                                     zoneConductancesCum,
-                                                                                                     delnus,
-                                                                                                     eps);
+                        t_s_meter_t zetaMovementConductance =
+                                vdf.calculateZetaMovementConductances( zetaID,zoneConductances,
+                                                                       zoneConductancesCum,delnus,eps);
 
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         out[nodes->at(got->second)->get<large_num, ID>()] = move(zetaMovementConductance);
@@ -1289,6 +1284,8 @@ Modify Properties
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                t_meter edgeLength_neig;
+                t_meter edgeLength_self;
 
                 // pseudo source term calculation
                 for (const auto &position: possible_neighbours) {
@@ -1296,15 +1293,9 @@ Modify Properties
                     if (got == neighbours.end()) {
                         continue;
                     }
-                    t_meter edgeLength_neig = 0 * si::meter;
-                    t_meter edgeLength_self = 0 * si::meter;
-                    if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT) {
-                        edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
-                        edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
-                    } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
-                        edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
-                        edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
-                    }
+                    edgeLength_neig = getEdgeLengthNeig(got);
+                    edgeLength_self = getEdgeLengthSelf(got);
+
                     vector<t_meter> zetasNeig = at(got)->Zetas;
                     std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
                             Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
@@ -1354,13 +1345,10 @@ Modify Properties
                     }
                     t_meter edgeLength_neig = 0 * si::meter;
                     t_meter edgeLength_self = 0 * si::meter;
-                    if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
-                        edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
-                        edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
-                    } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
-                        edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
-                        edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
-                    }
+
+                    edgeLength_neig = getEdgeLengthNeig(got);
+                    edgeLength_self = getEdgeLengthSelf(got);
+
                     vector<t_meter> zetasNeig = at(got)->Zetas;
                     std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
                             Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
@@ -1458,20 +1446,35 @@ Modify Properties
             /**
              * @brief tracking the tips and toes of the zeta surfaces (at top and bottom of the current node)
              */
-            void TipAndToeTracking(){
+            void TipAndToeTracking(){ // in MODFLOW code: SSWI2_HORZMOVE
+                // todo do not change tips and tose at boundary nodes
+                vector<t_meter> zetas_neig; // zetas of the neighbor in current direction
+                vector<t_meter> zetas_neig2; // zetas of the neighbor in the opposite direction
+                std::unordered_map<NeighbourPosition, NeighbourPosition> oppositeDirections;
+                oppositeDirections[NeighbourPosition::BACK] = NeighbourPosition::FRONT;
+                oppositeDirections[NeighbourPosition::FRONT] = NeighbourPosition::BACK;
+                oppositeDirections[NeighbourPosition::LEFT] = NeighbourPosition::RIGHT;
+                oppositeDirections[NeighbourPosition::RIGHT] = NeighbourPosition::LEFT;
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 t_dim maxToeSlope = densityProps.getMaxToeSlope();
                 t_dim maxTipSlope = densityProps.getMaxTipSlope();
+
                 t_meter edgeLength_self;
                 t_meter edgeLength_neig;
-                t_meter maxDeltaZeta;
-                t_meter referenceElevation;
-                t_dim adjust = 0.1; // slope adjustment fraction
-                t_meter minZeta = 0.1 * si::meter; // minimum depth threshold for zeta surface toes
-                t_dim effPor_self;
-                t_dim effPor_neig;
-                t_meter zetaAdjust_self;
-                t_meter zetaAdjust_neig;
+                t_meter edgeLength_neig2;
+                t_meter maxDeltaZeta; // maximum height difference of a zeta surface n between adjacent cells
+                t_meter referenceElevation; // top/bottom of the cell for tip/toe tracking
+                t_dim adjust = 0.1 * si::si_dimensionless; // slope adjustment fraction (in SWI2: ALPHA)
+                t_dim minZeta = 0.1 * si::si_dimensionless; // minimum depth threshold for zeta surface toes (in SWI2: BETA)
+                t_dim effPor_self; // effective porosity of this cell
+                t_dim effPor_neig; // effective porosity of neighbouring cell
+                t_dim effPor_neig2; // effective porosity of opposite neighbouring cell
+                t_meter zetaChange_self; // zeta height
+                t_meter zetaChange_neig;
+                t_meter top_self = get<t_meter, Elevation>();
+                t_meter bottom_self = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                t_meter top_neig;
+                t_meter bottom_neig;
 
                 std::unordered_map<string, t_dim> trackMap;
                 trackMap["Toe"] = maxToeSlope;
@@ -1484,44 +1487,93 @@ Modify Properties
                         map_itter got = neighbours.find(position);
                         if (got == neighbours.end()) { // no neighbour at position
                         } else {
-                            for (int n = 0; n < Zetas.size() - 1; n++) {
-                                // get reference elevation
-                                if (tracker.first == "Toe"){
-                                    referenceElevation = get<t_meter, Elevation>() - get<t_meter, VerticalSize>(); // cell bottom
-                                } else { // tracker.first == "Tip"
-                                    referenceElevation = get<t_meter, Elevation>(); // cell top
+                            zetas_neig = at(got)->Zetas;
+                            bottom_neig = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);
+                            top_neig = getAt<t_meter, Elevation>(got);
+
+                            for (int n = 0; n < Zetas.size() -1; n++){
+
+                                if (Zetas[n] > bottom_self and Zetas[n] < top_self) {
+                                    // get reference elevation
+                                    if (tracker.first == "Toe" and zetas_neig[n] == bottom_neig) {
+                                        referenceElevation = bottom_self; // node bottom
+                                    } else if (tracker.first == "Tip" and zetas_neig[n] == top_neig) {
+                                        referenceElevation = top_self; // node top
+                                    } else {
+                                        continue;
+                                    }
+
+                                    // get length of the edges
+                                    edgeLength_self = getEdgeLengthSelf(got);
+                                    edgeLength_neig = getEdgeLengthNeig(got);
+
+                                    // get max delta of zeta between nodes
+                                    maxDeltaZeta = 0.5 * (edgeLength_self + edgeLength_neig) * tracker.second;
+
+                                    // raise/lower zeta surfaces
+                                    if (Zetas[n] - referenceElevation > maxDeltaZeta) {
+                                        effPor_self = get<t_dim, EffectivePorosity>();
+                                        effPor_neig = getAt<t_dim, EffectivePorosity>(got);
+                                        // if tracking tip/toe: raise/lower this zeta surface in this node (ZETA_(i,j,k,n))
+                                        zetaChange_self = adjust * maxDeltaZeta * ((effPor_neig * edgeLength_neig) /
+                                                                                   ((effPor_self * edgeLength_self) +
+                                                                                    (effPor_neig * edgeLength_neig)));
+                                        // for tracking tip/toe: lower/raise this zeta surface in neighbouring node (e.g. ZETA_(i,j+1,k,n))
+                                        zetaChange_neig = adjust * maxDeltaZeta * ((effPor_self * edgeLength_self) /
+                                                                                   ((effPor_self * edgeLength_self) +
+                                                                                    (effPor_neig * edgeLength_neig)));
+                                    }
+
+
+                                    if (tracker.first == "Toe" and zetas_neig[n] == bottom_neig) {
+                                        if((Zetas[n] - Zetas[Zetas.size()-1]) > maxDeltaZeta) {
+                                            setZeta(n, Zetas[n] - zetaChange_self);
+                                            setZeta(n, at(got)->Zetas[n] + zetaChange_neig);
+                                        }
+                                    } else if (tracker.first == "Tip" and zetas_neig[n] == top_neig){
+                                        if((Zetas[n] - Zetas[Zetas.size()-1]) > maxDeltaZeta) {
+                                            setZeta(n, Zetas[n] + zetaChange_self);
+                                            setZeta(n, at(got)->Zetas[n] - zetaChange_neig);
+                                        }
+                                    } else {
+                                        continue;
+                                    }
+
+                                    if ((Zetas[n] - Zetas[Zetas.size()-1]) < (minZeta * zetaChange_neig)){
+                                        zetas_neig = at(got)->Zetas;
+                                        if (zetas_neig[n] > bottom_self and zetas_neig[n] < top_self) {
+                                            // change zeta in other direction neighbour
+                                            map_itter got2 = neighbours.find(oppositeDirections[position]);
+                                            zetas_neig2 = at(got2)->Zetas;
+                                            edgeLength_neig2 = getEdgeLengthNeig(got2);
+                                            effPor_neig2 = getAt<t_dim, EffectivePorosity>(got2);
+                                            setZeta(n, zetas_neig2[n] + ((Zetas[n] - Zetas[Zetas.size() - 1]) *
+                                                    (edgeLength_self * effPor_self) /
+                                                    (edgeLength_neig2 * effPor_neig2)));
+                                            setZeta(n, zetas_neig[zetas_neig.size() - 1]);
+                                        }
+                                    }
+
                                 }
-
-                                // get length of the edges
-                                if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK) {
-                                    edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
-                                    edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
-                                } else { // got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT
-                                    edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
-                                    edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
-                                }
-
-                                // get max delta of zeta between nodes
-                                maxDeltaZeta = 0.5 * (edgeLength_self + edgeLength_neig) * tracker.second;
-
-                                // raise/lower zeta surfaces
-                                if (Zetas[n] - referenceElevation > maxDeltaZeta){
-                                    effPor_self = get<t_dim, EffectivePorosity>();
-                                    effPor_neig = getAt<t_dim, EffectivePorosity>(got);
-                                    // if tracking tip/toe: raise/lower this zeta surface in this node (ZETA_(i,j,k,n))
-                                    zetaAdjust_self = adjust * maxDeltaZeta * ((effPor_neig * edgeLength_neig) /
-                                            ((effPor_self * edgeLength_self) + (effPor_neig * edgeLength_neig)));
-                                    // for tracking tip/toe: lower/raise this zeta surface in neighbouring node (e.g. ZETA_(i,j+1,k,n))
-                                    zetaAdjust_neig = adjust * maxDeltaZeta * ((effPor_self * edgeLength_self) /
-                                            ((effPor_self * edgeLength_self) + (effPor_neig * edgeLength_neig)));
-                                }
-                                setZeta(n, Zetas[n] + zetaAdjust_self);
-                                setZeta(n, at(got)->Zetas[n] + zetaAdjust_neig);
-
-                                
                             }
                         }
                     }
+                }
+            }
+
+            t_meter getEdgeLengthNeig(map_itter got){
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
+                    return getAt<t_meter, EdgeLengthLeftRight>(got);
+                } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
+                    return getAt<t_meter, EdgeLengthFrontBack>(got);
+                }
+            }
+
+            t_meter getEdgeLengthSelf(map_itter got){
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
+                    return get<t_meter, EdgeLengthLeftRight>();
+                } else { // NeighbourPosition::FRONT or NeighbourPosition::BACK
+                    return get<t_meter, EdgeLengthFrontBack>();
                 }
             }
 
