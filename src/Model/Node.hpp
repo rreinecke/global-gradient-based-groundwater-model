@@ -453,7 +453,7 @@ Modify Properties
 
                         /*if (Zetas.size() > 0) { // Question: add fluxCorrection here?
                             t_meter fluxCorrection;
-                            fluxCorrection = calculateFluxCorrection();
+                            fluxCorrection = verticalFluxCorrectionTerm();
 
                             t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got) -
                                                           fluxCorrection);
@@ -1203,8 +1203,8 @@ Modify Properties
             t_vol_t getVerticalLeakage(){ // todo debugging
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 t_s_meter_t verticalConductance;
-                t_vol_t verticalLeakage;
-                t_vol_t headDiff;
+                t_vol_t verticalFlux;
+                t_vol_t verticalFluxCorrected;
 
                 t_meter head_dif = 0 * si::meter;
                 for (int n = 0; n <= zones.size() - 1; n++){
@@ -1222,12 +1222,12 @@ Modify Properties
                         vector<t_dim> zonesTopNode = at(got)->zones;
                         t_dim nusBottomOfTopNode = zonesTopNode.back(); // in SWI2: NUBOT_i,j,k-1
                         t_dim nusTopOfThisNode = zones.front();  // in SWI2: NUTOP_i,j,k
-                        headDiff = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)));
-                        verticalLeakage = headDiff - getFluxCorrection({position}); // (head_dif + (0.5 * (zetas_neig.back() + Zetas.front())) * (nusBottomOfTopNode + nusTopOfThisNode));
+                        verticalFlux = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)));
+                        verticalFluxCorrected = verticalFlux - verticalFluxCorrection({position}); // (head_dif + (0.5 * (zetas_neig.back() + Zetas.front())) * (nusBottomOfTopNode + nusTopOfThisNode));
                         if (got->first == NeighbourPosition::TOP){
-                            out += verticalLeakage;
+                            out += verticalFluxCorrected;
                         } else { // NeighbourPosition::DOWN
-                            out -= verticalLeakage;
+                            out -= verticalFluxCorrected;
                         }
                         // todo implement:
                         //  nubelbot = NUTOP(j,i,k+1)
@@ -1376,11 +1376,10 @@ Modify Properties
              * (in SWI2 documentation: BOUY; in code: QLEXTRA)
              * @out meter
              */
-            t_meter calculateFluxCorrection(){
+            t_meter verticalFluxCorrectionTerm(){
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> delnus = densityProps.getDelnus();
                 t_meter out = 0 * si::meter;
-
                 // dimensionless density at the top of current node (in SWI2: NUTOP)
                 t_dim nusTopOfThisNode = zones.front();  // in SWI2: NUTOP_i,j,k
                 for(int i = 1; i <= zones.size(); i++) {
@@ -1388,7 +1387,6 @@ Modify Properties
                         nusTopOfThisNode += delnus[i];
                     }
                 }
-
                 // find the top neighbor
                 std::unordered_map<NeighbourPosition, large_num>::const_iterator got =
                         neighbours.find(NeighbourPosition::TOP);
@@ -1406,7 +1404,6 @@ Modify Properties
                             nusBottomOfTopNode -= delnus[i];
                         }
                     }
-
                     // first part of the flux correction term
                     for (int i = 0; i <= zonesTopNode.size(); i++){
                         out -= zonesTopNode[i] * (zetasTopNode[i] - zetasTopNode[i+1]); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
@@ -1418,11 +1415,11 @@ Modify Properties
             }
 
             /**
-             * @brief Calculates the vertical flux correction for variable density flow (in SWI2: BOUY of current node and the one below/above)
+             * @brief Calculates the vertical flux correction for variable density flow (in SWI2 documentation: BOUY; in SWI2 code: QLEXTRA)
              * @param possible_neighbours neighbours (TOP and/or DOWN) to/from which flow should be corrected
              * @return volume per time
              */
-            t_vol_t getFluxCorrection(std::forward_list<NeighbourPosition> possible_neighbours) noexcept { // todo test for case where top and down cells exist
+            t_vol_t verticalFluxCorrection(std::forward_list<NeighbourPosition> possible_neighbours) noexcept { // todo test for case where top and down cells exist
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 t_meter fluxCorrectionTerm;
                 t_s_meter_t verticalConductance;
@@ -1431,13 +1428,13 @@ Modify Properties
                     map_itter got = neighbours.find(position);
                     if (got == neighbours.end()) { // no neighbour at position
                     } else if (got->first == NeighbourPosition::DOWN) {
-                        fluxCorrectionTerm = calculateFluxCorrection(); // flux correction term for this node
+                        fluxCorrectionTerm = verticalFluxCorrectionTerm(); // flux correction term for this node
                         verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                        out += fluxCorrectionTerm * verticalConductance;
+                        out -= fluxCorrectionTerm * verticalConductance; // -=
                     } else { // got->first == NeighbourPosition::TOP
-                        fluxCorrectionTerm = at(got)->calculateFluxCorrection(); // flux correction term for top node
+                        fluxCorrectionTerm = at(got)->verticalFluxCorrectionTerm(); // flux correction term for top node
                         verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                        out += fluxCorrectionTerm * verticalConductance;
+                        out += fluxCorrectionTerm * verticalConductance; // +=
                     }
                 }
                 return out;
@@ -1553,13 +1550,69 @@ Modify Properties
                                             setZeta(n, zetas_neig[zetas_neig.size() - 1]);
                                         }
                                     }
-
                                 }
                             }
                         }
                     }
                 }
             }
+
+            void verticalZetaMovement(){
+
+                // skip nodes where head is below the bottom of the node
+                t_meter bottom_self = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                if (get<t_meter, Head>() < bottom_self) {
+                    t_vol_t verticalFluxTop; // in SWI2: qztop
+                    t_s_meter_t verticalConductanceTop;
+                    t_meter deltaZeta;
+                    map_itter top = neighbours.find(NeighbourPosition::TOP);
+                    if (top == neighbours.end()) { // no neighbour at position
+                    } else {
+                        // calculate flux through the top
+                        verticalConductanceTop = mechanics.calculateVerticalConductance(createDataTuple(top));
+                        verticalFluxTop = verticalConductanceTop * (get<t_meter, Head>() - getAt<t_meter, Head>(top)) -
+                                verticalFluxCorrection({NeighbourPosition::TOP});
+
+                        for (int n = 0; n < Zetas.size() - 1; n++){
+                            // zeta only moves to
+                            if (Zetas[n] >= get<t_meter, Elevation>() and
+                                at(top)->Zetas[n] >= getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top)) { // if there is a ZETA surface at the top of current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
+
+                                // if vertical flux through the top of the node is positive,
+                                // lift zeta height of the lowest zeta surface in this node
+                                if (verticalFluxTop > (0 * si::cubic_meter / day)){
+                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
+                                            (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top));
+
+                                    at(top)->setZeta(n, at(top)->Zetas[Zetas.size() - 1] + deltaZeta);
+
+                                // if vertical flux through the top of the node is negative,
+                                // lower zeta height of the highest zeta surface in this node
+                                } else if (verticalFluxTop < (0 * si::cubic_meter / day)) {
+                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
+                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>());
+
+                                    setZeta(n, Zetas[Zetas.size() - 1] + deltaZeta);
+                                }
+
+                            }
+                        // calculate flux
+                    }
+                }
+            }
+
+            // todo list:
+            //  flow equation
+            //  - UPDATE THE UPPER ZETA SURFACE TO THE TOP OF THE WATER TABLE FOR UNCONFINED CONDITIONS // SSWI2_UPZ1()
+            //  - CHECK TIP AND TOE SLOPE FOR SWI2 PACKAGE // SSWI2_CHKSLOPE
+            //  zeta movement, tip and toe tracking
+            //  - CHECK WHETHER ANYWHERE THE THICKNESS GETS TOO THIN // SSWI2_ZETACLIP()
+            //  - MODIFY ZETA ANYWHERE THE SURFACES ARE CROSSING // SSWI2_ZETACROSS()
+            //  - PREVENT SURFACES FROM LOCKING // SSWI2_ANTILOCKMIN(Kkstp,Kkper)
+            //  Someday:
+            //  - INSTANTANEOUS MIXING TERMS FOR ZONE BUDGETS // SSWI2_IMIX(A)
+            //  - CALCULATE PRE TIP TOE TRACKING CHANGE IN ZONE THICKNESS (ZONECHG1) // SSWI2_ZCHG(A)
+            //  - CALCULATE POST TIP TOE TRACKING CHANGE IN ZONE THICKNESS (ZONECHG2) // SSWI2_ZCHG(A)
 
             t_meter getEdgeLengthNeig(map_itter got){
                 if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
@@ -1758,7 +1811,7 @@ Modify Properties
                     set < t_vol_t, RHSConstantDensity_TZero > (out);
                     // calculate variable density terms
                     t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
-                    t_vol_t fluxCorrection = getFluxCorrection({NeighbourPosition::TOP, NeighbourPosition::DOWN});
+                    t_vol_t fluxCorrection = verticalFluxCorrection({NeighbourPosition::TOP, NeighbourPosition::DOWN});
                     // add variable density terms to RHS
                     out += pseudoSourceFlow + fluxCorrection;
                 }
