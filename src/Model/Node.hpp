@@ -1440,11 +1440,65 @@ Modify Properties
                 return out;
             }
 
+            void adjustZetaHeights(){
+                verticalZetaMovement();
+                horizontalZetaMovement();
+                clipZetaHeights();
+                correctCrossingZetas();
+                preventZetaLocking();
+            }
+
+
+            void verticalZetaMovement() { // todo: call this, debug
+
+                // skip nodes where head is below the bottom of the node
+                t_meter bottom_self = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                if (get<t_meter, Head>() < bottom_self) {
+                    t_vol_t verticalFluxTop; // in SWI2: qztop
+                    t_s_meter_t verticalConductanceTop;
+                    t_meter deltaZeta;
+                    map_itter top = neighbours.find(NeighbourPosition::TOP);
+                    // skip nodes that do not have a top neighbour
+                    if (top == neighbours.end()) { // no neighbour at position
+                    } else {
+                        // calculate flux through the top
+                        verticalConductanceTop = mechanics.calculateVerticalConductance(createDataTuple(top));
+                        verticalFluxTop = verticalConductanceTop * (get<t_meter, Head>() - getAt<t_meter, Head>(top)) -
+                                          verticalFluxCorrection({NeighbourPosition::TOP});
+
+                        for (int n = 0; n < Zetas.size() - 1; n++) {
+                            // zeta only moves through a node surface if if there is a ZETA surface
+                            // - at the top of current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
+                            // - and at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
+                            t_meter bottomOfTopNode = getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top);
+                            if (Zetas[n] >= get<t_meter, Elevation>() and
+                                at(top)->Zetas[n] >= bottomOfTopNode) {
+                                // if vertical flux through the top of the node is positive...
+                                if (verticalFluxTop > (0 * si::cubic_meter / day)) {
+                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top));
+                                    // ...lift zeta height of the lowest zeta surface in this node
+                                    at(top)->setZeta(n, at(top)->Zetas.back() + deltaZeta);
+                                // if vertical flux through the top of the node is negative...
+                                } else if (verticalFluxTop < (0 * si::cubic_meter / day)) {
+                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
+                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>());
+                                    // ...lower zeta height of the highest zeta surface in this node
+                                    setZeta(n, Zetas.back() + deltaZeta);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
             /**
              * @brief tracking the tips and toes of the zeta surfaces (at top and bottom of the current node)
              */
-            void TipAndToeTracking(){ // in MODFLOW code: SSWI2_HORZMOVE
-                // todo do not change tips and tose at boundary nodes
+            void horizontalZetaMovement(){ // in SWI2 code: SSWI2_HORZMOVE, in documentation: "Tip and Toe Tracking"
+                // todo do not change tips and toes at boundary nodes
+                // todo call this, debug
                 vector<t_meter> zetas_neig; // zetas of the neighbor in current direction
                 vector<t_meter> zetas_neig2; // zetas of the neighbor in the opposite direction
                 std::unordered_map<NeighbourPosition, NeighbourPosition> oppositeDirections;
@@ -1458,14 +1512,14 @@ Modify Properties
 
                 t_meter edgeLength_self;
                 t_meter edgeLength_neig;
-                t_meter edgeLength_neig2;
-                t_meter maxDeltaZeta; // maximum height difference of a zeta surface n between adjacent cells
-                t_meter referenceElevation; // top/bottom of the cell for tip/toe tracking
-                t_dim adjust = 0.1 * si::si_dimensionless; // slope adjustment fraction (in SWI2: ALPHA)
-                t_dim minZeta = 0.1 * si::si_dimensionless; // minimum depth threshold for zeta surface toes (in SWI2: BETA)
-                t_dim effPor_self; // effective porosity of this cell
-                t_dim effPor_neig; // effective porosity of neighbouring cell
-                t_dim effPor_neig2; // effective porosity of opposite neighbouring cell
+                t_meter edgeLength_neig2; // edge length of opposite neighbour node
+                t_meter maxDeltaZeta; // maximum height difference of a zeta surface n between adjacent nodes
+                t_meter referenceElevation; // top/bottom of the node for tip/toe tracking
+                t_dim slopeAdjustmentFraction = 0.1 * si::si_dimensionless; // slope adjustment fraction (in SWI2: ALPHA)
+                t_dim minDepthThreshold = 0.1 * si::si_dimensionless; // minimum depth threshold for zeta surface toes (in SWI2: BETA)
+                t_dim effPor_self; // effective porosity of this node
+                t_dim effPor_neig; // effective porosity of neighbouring node
+                t_dim effPor_neig2; // effective porosity of opposite neighbouring node
                 t_meter zetaChange_self; // zeta height
                 t_meter zetaChange_neig;
                 t_meter top_self = get<t_meter, Elevation>();
@@ -1512,23 +1566,23 @@ Modify Properties
                                         effPor_self = get<t_dim, EffectivePorosity>();
                                         effPor_neig = getAt<t_dim, EffectivePorosity>(got);
                                         // if tracking tip/toe: raise/lower this zeta surface in this node (ZETA_(i,j,k,n))
-                                        zetaChange_self = adjust * maxDeltaZeta * ((effPor_neig * edgeLength_neig) /
-                                                                                   ((effPor_self * edgeLength_self) +
-                                                                                    (effPor_neig * edgeLength_neig)));
+                                        zetaChange_self = slopeAdjustmentFraction * maxDeltaZeta *
+                                                          ((effPor_neig * edgeLength_neig) /
+                                                           ((effPor_self * edgeLength_self) + (effPor_neig * edgeLength_neig)));
                                         // for tracking tip/toe: lower/raise this zeta surface in neighbouring node (e.g. ZETA_(i,j+1,k,n))
-                                        zetaChange_neig = adjust * maxDeltaZeta * ((effPor_self * edgeLength_self) /
-                                                                                   ((effPor_self * edgeLength_self) +
-                                                                                    (effPor_neig * edgeLength_neig)));
+                                        zetaChange_neig = slopeAdjustmentFraction * maxDeltaZeta *
+                                                          ((effPor_self * edgeLength_self) /
+                                                           ((effPor_self * edgeLength_self) + (effPor_neig * edgeLength_neig)));
                                     }
 
 
                                     if (tracker.first == "Toe" and zetas_neig[n] == bottom_neig) {
-                                        if((Zetas[n] - Zetas[Zetas.size()-1]) > maxDeltaZeta) {
+                                        if((Zetas[n] - Zetas.back()) > maxDeltaZeta) {
                                             setZeta(n, Zetas[n] - zetaChange_self);
                                             setZeta(n, at(got)->Zetas[n] + zetaChange_neig);
                                         }
                                     } else if (tracker.first == "Tip" and zetas_neig[n] == top_neig){
-                                        if((Zetas[n] - Zetas[Zetas.size()-1]) > maxDeltaZeta) {
+                                        if((Zetas[n] - Zetas.back()) > maxDeltaZeta) {
                                             setZeta(n, Zetas[n] + zetaChange_self);
                                             setZeta(n, at(got)->Zetas[n] - zetaChange_neig);
                                         }
@@ -1536,7 +1590,7 @@ Modify Properties
                                         continue;
                                     }
 
-                                    if ((Zetas[n] - Zetas[Zetas.size()-1]) < (minZeta * zetaChange_neig)){
+                                    if ((Zetas[n] - Zetas.back()) < (minDepthThreshold * zetaChange_neig)){
                                         zetas_neig = at(got)->Zetas;
                                         if (zetas_neig[n] > bottom_self and zetas_neig[n] < top_self) {
                                             // change zeta in other direction neighbour
@@ -1544,9 +1598,9 @@ Modify Properties
                                             zetas_neig2 = at(got2)->Zetas;
                                             edgeLength_neig2 = getEdgeLengthNeig(got2);
                                             effPor_neig2 = getAt<t_dim, EffectivePorosity>(got2);
-                                            setZeta(n, zetas_neig2[n] + ((Zetas[n] - Zetas[Zetas.size() - 1]) *
-                                                    (edgeLength_self * effPor_self) /
-                                                    (edgeLength_neig2 * effPor_neig2)));
+                                            setZeta(n, zetas_neig2[n] + ((Zetas[n] - Zetas.back()) *
+                                                                         (edgeLength_self * effPor_self) /
+                                                                         (edgeLength_neig2 * effPor_neig2)));
                                             setZeta(n, zetas_neig[zetas_neig.size() - 1]);
                                         }
                                     }
@@ -1557,57 +1611,101 @@ Modify Properties
                 }
             }
 
-            void verticalZetaMovement(){
-
-                // skip nodes where head is below the bottom of the node
-                t_meter bottom_self = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
-                if (get<t_meter, Head>() < bottom_self) {
-                    t_vol_t verticalFluxTop; // in SWI2: qztop
-                    t_s_meter_t verticalConductanceTop;
-                    t_meter deltaZeta;
-                    map_itter top = neighbours.find(NeighbourPosition::TOP);
-                    if (top == neighbours.end()) { // no neighbour at position
-                    } else {
-                        // calculate flux through the top
-                        verticalConductanceTop = mechanics.calculateVerticalConductance(createDataTuple(top));
-                        verticalFluxTop = verticalConductanceTop * (get<t_meter, Head>() - getAt<t_meter, Head>(top)) -
-                                verticalFluxCorrection({NeighbourPosition::TOP});
-
-                        for (int n = 0; n < Zetas.size() - 1; n++){
-                            // zeta only moves to
-                            if (Zetas[n] >= get<t_meter, Elevation>() and
-                                at(top)->Zetas[n] >= getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top)) { // if there is a ZETA surface at the top of current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
-
-                                // if vertical flux through the top of the node is positive,
-                                // lift zeta height of the lowest zeta surface in this node
-                                if (verticalFluxTop > (0 * si::cubic_meter / day)){
-                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
-                                            (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top));
-
-                                    at(top)->setZeta(n, at(top)->Zetas[Zetas.size() - 1] + deltaZeta);
-
-                                // if vertical flux through the top of the node is negative,
-                                // lower zeta height of the highest zeta surface in this node
-                                } else if (verticalFluxTop < (0 * si::cubic_meter / day)) {
-                                    deltaZeta = (verticalFluxTop * (day * get<t_dim, StepModifier>())) /
-                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>());
-
-                                    setZeta(n, Zetas[Zetas.size() - 1] + deltaZeta);
-                                }
-
-                            }
-                        // calculate flux
+            /**
+             * @brief clip zeta surfaces that are outside of the bounds (bounds: first and last zeta surface)
+             * in SWI2: SSWI2_ZETACLIP
+             */
+            void clipZetaHeights(){
+                for (int n = 0; n < Zetas.size() - 1; n++){
+                    if (Zetas[n] < Zetas.back()) {
+                        setZeta(n, Zetas.back());
+                    }
+                    if (Zetas[n] > Zetas.front()) {
+                        setZeta(n, Zetas.front());
                     }
                 }
             }
 
+            /**
+             * @brief adjust zeta surfaces if they have crossed or their height difference is below a minimum value
+             * in SWI2: SSWI2_ZETACROSS
+             */
+            void correctCrossingZetas(){
+                // todo: debug with this info:
+                //  n | n2      | n3
+                //  1 | -       | -
+                //  2 | 1       | 1,2,3
+                //  3 | 2,1     | 2,3,4; 1,2,3,4
+                //  4 | 3,2,1   | 3,4,5; 2,3,4,5; 1,2,3,4,5
+                t_meter zetaDifferenceCap = 0.001 * si::meter;
+                t_meter zetaAverage;
+                t_meter zetaSum;
+                int n2_min;
+                int n2_max;
+                for (int n = 1; n < Zetas.size() - 2; n++){
+                    // if zeta surface n is very close to or lower than the zeta surface that SHOULD be below (n+1)
+                    if (Zetas[n] - Zetas[n+1] < zetaDifferenceCap) {
+                        // make the zeta height of both surfaces their average
+                        zetaAverage = 0.5 * (Zetas[n] + Zetas[n+1]);
+                        setZeta(n, zetaAverage);
+                        setZeta(n+1, zetaAverage);
+                        // if there are zeta surfaces above that could possibly be crossing
+                        if (n >= 2){
+                            for (int x = 1; x < n-1; x++){
+                                // create a range from n_min (n-x) to n_max (n+1)
+                                n2_min = n-x;
+                                n2_max = n+1;
+                                // if a zeta surface above (n-x) crosses or is very close to zeta surface below (n+1)
+                                // (which is now at the same, averaged, height of zeta surface n)
+                                if(Zetas[n2_min] - Zetas[n2_max] < zetaDifferenceCap){
+                                    // calculate the average height from that zeta surface above (n-x) until
+                                    // the zeta surface below (n+1)
+                                    zetaSum = std::accumulate(Zetas[n2_min], Zetas[n2_max],0 * si::meter);
+                                    zetaAverage = zetaSum / ((n2_max-n2_min) * si::si_dimensionless); // todo check whether that is true
+
+                                    // set every zeta surface between n-1 and n+1 to the averaged value
+                                    for(int n2 = n2_min; n2 <= n2_max; n2++){ setZeta(n2, zetaAverage); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /**
+             * @brief
+             * in SWI2: SSWI2_ANTILOCKMIN
+             */
+            void preventZetaLocking(){
+                t_dim swiLock = 0.001 * si::si_dimensionless;
+                t_meter topOfNode;
+                t_meter bottomOfNode;
+                for (int n = 1; n < Zetas.size() - 1; n++){
+                    topOfNode = get<t_meter, Elevation>();
+                    bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                    if (Zetas[n] < bottomOfNode or Zetas[n] > bottomOfNode) {
+                        // iterate through neighbours
+
+
+                        // t1 = (BOTM(j,i,LBOTM(k)-1) - BOTM(j,i,LBOTM(k))) * ALPHA
+                        // t2 = (BOTM(j-1,i,LBOTM(k)-1) - BOTM(j-1,i,LBOTM(k))) * ALPHA
+                        // if swiLock (in MF: dzetamax) > t1 or swiLock > t2
+                        //      dzetamax = MIN(t1, t2)
+                        // else
+                        //      dzetamax = swiLock;
+
+                        // dzeta1 = dzetamax * (SSZ(j-1,i,k)*DELR(j-1)) / (SSZ(j,i,k)*DELR(j) + SSZ(j-1,i,k)* DELR(j-1))
+                        // dzeta2 = dzetamax * (SSZ(j,i,k)*DELR(j)) / ( SSZ(j,i,k)*DELR(j) +  SSZ(j-1,i,k)* DELR(j-1))
+
+                        // continue in line 2858
+                    }
+                }
+            }
             // todo list:
             //  flow equation
             //  - UPDATE THE UPPER ZETA SURFACE TO THE TOP OF THE WATER TABLE FOR UNCONFINED CONDITIONS // SSWI2_UPZ1()
             //  - CHECK TIP AND TOE SLOPE FOR SWI2 PACKAGE // SSWI2_CHKSLOPE
             //  zeta movement, tip and toe tracking
-            //  - CHECK WHETHER ANYWHERE THE THICKNESS GETS TOO THIN // SSWI2_ZETACLIP()
-            //  - MODIFY ZETA ANYWHERE THE SURFACES ARE CROSSING // SSWI2_ZETACROSS()
             //  - PREVENT SURFACES FROM LOCKING // SSWI2_ANTILOCKMIN(Kkstp,Kkper)
             //  Someday:
             //  - INSTANTANEOUS MIXING TERMS FOR ZONE BUDGETS // SSWI2_IMIX(A)
