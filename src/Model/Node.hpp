@@ -890,6 +890,18 @@ Modify Properties
             // todo: removeZone like removeZeta below
 
             /**
+            * @brief Add a zeta surface to the cell
+            * @param height the zeta surface height in meters
+            * @return number of zeta surfaces in the cell
+            */
+            int addZetaSurface(t_meter height){
+                Zetas.push_back(height);
+                sort(Zetas.begin(), Zetas.end(), greater<t_meter>());
+                numOfZetas++;
+                return numOfZetas;
+            }
+
+            /**
             * @brief Set the height of zeta surface n
             * @param n the zeta ID
             * @param height the zeta surface height in meters
@@ -1252,28 +1264,19 @@ Modify Properties
                 //
                 // get RHS of PREVIOUS time step (without VDF terms pseudo source term and flux correction)
                 // todo make sure this is from previous time step!!
-                t_vol_t rhs_old = get<t_vol_t, RHSConstantDensity_TZero>(); // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
-
-                /*t_vol_t externalFlows = -getQ(); // Q_(i,j,k,n)
-                t_vol_t dewateredFlow = calculateDewateredFlow(); // Question: what is this in MODFLOW?
-                t_vol_t rivers = calculateNotHeadDependandFlows(); // Question: what is this in MODFLOW?
-                t_vol_t storageFlow = // in MODFLOW: SS_i,j,k * DELR_j * DELC_i * (h^(m-1)_(i,j,k)/t^(m)-t^(m-1))
-                        getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
-                t_vol_t rhs_old = externalFlows + dewateredFlow - rivers - storageFlow;
-                */
+                t_vol_t rhs_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
 
                 // get HCOF of NEW time step
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
                                                      getStorageCapacity(),
-                                                     getP()); // todo check whether correct and check out SWIHCOF in modflow code
+                                                     getP());
 
-                // get vertical leakage of NEW time step
+                // get vertical leakage of NEW time step (the only term of G that depends on zones of density
                 t_vol_t verticalLeakageTerm = getVerticalLeakage();
 
-                // G = RHS(without VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
-                t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakageTerm;
-
+                // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
+                t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakageTerm; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
                 return out;
             }
 
