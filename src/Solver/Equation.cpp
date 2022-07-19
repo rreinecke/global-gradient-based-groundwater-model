@@ -95,6 +95,29 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
     }
 }
 
+void inline
+Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
+    std::unordered_map<large_num, std::vector<quantity<Model::MeterSquaredPerTime>>> map;
+    std::vector<quantity<Model::MeterSquaredPerTime>> zetaConductances;
+    map = node->getConductance_ZetaMovement(); // todo: how to iterate through this?
+
+    auto zetaIDs = node->getProperties().get<large_num, Model::ZetaIDs>(); // todo add Model::ZetaID to node
+
+
+    for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] zeta conductances
+        zetaConductances = entry.second;
+        for(int n = 0; n < zetaConductances.size() - 1; n++){
+
+            if (cached) {
+                A_zeta.coeffRef(zetaIDs[n], entry.first) = zetaConductances[n].value();
+            } else {
+                A_zeta.insert(zetaIDs[n], entry.first) = zetaConductances[n].value();
+            }
+        }
+
+    }
+}
+
 void inline Equation::reallocateMatrix() {
     if (not disable_dry_cells) {
         return;
@@ -213,6 +236,65 @@ Equation::updateMatrix() {
 }
 
 void inline
+Equation::updateZetaMatrix() {
+        Index n = A_zeta.outerSize();
+        std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
+        disabled_nodes.clear();
+
+#ifdef EIGEN_HAS_OPENMP
+        Eigen::initParallel();
+        Index threads = Eigen::nbThreads();
+#endif
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+        for (large_num j = 0; j < numberOfNodes; ++j) {
+            //---------------------Left
+            addToA(nodes->at(j), isCached);
+            //---------------------Right
+            double rhs{0.0};
+            if (nwt) {
+                rhs = nodes->at(j)->getRHS__NWT();
+                b[nodes->at(j)->getProperties().get<large_num, Model::ID>()] = std::move(rhs);
+                NANChecker(rhs, "Right hand side");
+            } else {
+                rhs = nodes->at(j)->getRHS().value();
+                b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
+                NANChecker(rhs, "Right hand side");
+            }
+        }
+
+        if (not disable_dry_cells) {
+            dry_have_changed = not set_compare(tmp_disabled_nodes, disabled_nodes);
+        }
+
+        //some nodes are in dried condition
+        //reallocate matrix, and a,b
+        reallocateMatrix();
+
+        //A is up to date and b contains only rhs term
+        //Update with current heads
+        if (nwt) {
+            if (disable_dry_cells) {
+                _b_ = _b_ + _A_ * _x_;
+            } else {
+                b = b + A * x;
+            }
+        }
+
+        //Check if after iteration former 0 values turned to non-zero
+        if (disable_dry_cells) {
+            if ((not _A_.isCompressed()) and isCached) {
+                LOG(numerics) << "Recompressing Matrix";
+                _A_.makeCompressed();
+            }
+        } else {
+            if ((not A.isCompressed()) and isCached) {
+                LOG(numerics) << "Recompressing Matrix";
+                A.makeCompressed();
+            }
+        }
+    }
+
+void inline
 Equation::preconditioner() {
     LOG(numerics) << "Decomposing Matrix";
     if (nwt) {
@@ -310,7 +392,7 @@ Equation::solve() {
     }
 
     LOG(numerics) << "Running Time Step";
-    
+
     double maxHead{0};
     double oldMaxHead{0};
     int itterScale{0};

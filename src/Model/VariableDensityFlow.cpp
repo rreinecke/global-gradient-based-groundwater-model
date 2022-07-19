@@ -51,16 +51,19 @@ namespace GlobalFlow {
             return out;
         }
 
-        t_s_meter_t calculateZetaMovementConductances( // todo remove if not needed
-                int zetaID,
-                std::vector<t_s_meter_t> zoneConductances,
-                std::vector<t_s_meter_t> zoneConductancesCum,
+        std::vector<t_s_meter_t> calculateZetaMovementConductances(
+                std::vector<t_s_meter_t> densityZoneCond,
+                std::vector<t_s_meter_t> densityZoneCondCum,
                 std::vector<t_dim> delnus,
                 std::vector<t_dim> eps
         ) noexcept {
 
-            t_s_meter_t out = (delnus[zetaID] * zoneConductancesCum[zetaID]) -
-                              (eps[zetaID] * zoneConductances[zetaID]);
+            std::vector<t_s_meter_t> out;
+
+            for (int n = 0; n < delnus.size(); n++) {
+                out[n] = (delnus[zetaID] * densityZoneCondCum[zetaID]) - (eps[zetaID] * densityZoneCond[zetaID]);
+                NANChecker(out.value(), "zetaMovementConductance");
+            }
 
             return out;
         }

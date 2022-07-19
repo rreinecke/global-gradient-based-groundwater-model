@@ -30,8 +30,6 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
     }
 
-
-
     DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();
     //sim.save();
 }

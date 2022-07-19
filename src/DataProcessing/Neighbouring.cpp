@@ -8,8 +8,8 @@ namespace DataProcessing {
  * @param nodes
  * @param grid
  * @param layers
- * @param ghbConduct
- * @param staticHeadBoundary
+ * @param ghbConduct // Question: what is this required for?
+ * @param staticHeadBoundary // Question: what is this required for?
  */
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary) {
     //id->row,col
@@ -56,7 +56,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
  * @param id_mapping
  * @param resolution
  * @param layers
- * @param oceanCoduct
+ * @param boundaryConduct
  * @param boundaryCondition
  */
 void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mapping, int resolution, int layers,
@@ -114,7 +114,7 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
 
 /**
  * @brief calculates all neighbours based on a spatial ID
- * Assumes no landmask and caclulates all possible neighbours
+ * Assumes no landmask and calculates all possible neighbours
  * @param id
  * @param res
  * @return
@@ -337,7 +337,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 /**
  * @brief
  * @param from is position in vector of top layer node
- * @param to is position in vector of node that recieve neighbouring information
+ * @param to is position in vector of node that receive neighbouring information
  */
 void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
     auto neighbours = nodes->at(from)->getListOfNeighbours();

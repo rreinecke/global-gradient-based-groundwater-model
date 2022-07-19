@@ -199,7 +199,9 @@ namespace GlobalFlow {
          */
         void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-        /**
+        void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
+
+            /**
          * Update the matrix for the current iteration
          */
         void inline updateMatrix();
@@ -236,7 +238,9 @@ namespace GlobalFlow {
         bool SteadyState = false;
         //Only for testin purposes
         bool simpleHead = true;
-};
+
+            void addToA_zeta(const unique_ptr<Model::NodeInterface> &node, bool cached);
+        };
 }
 }
 
