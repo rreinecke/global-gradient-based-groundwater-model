@@ -1,4 +1,5 @@
 #include "VariableDensityFlow.hpp"
+#include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {
     namespace Model {
@@ -61,8 +62,8 @@ namespace GlobalFlow {
             std::vector<t_s_meter_t> out;
 
             for (int n = 0; n < delnus.size(); n++) {
-                out[n] = (delnus[zetaID] * densityZoneCondCum[zetaID]) - (eps[zetaID] * densityZoneCond[zetaID]);
-                NANChecker(out.value(), "zetaMovementConductance");
+                out[n] = (delnus[n] * densityZoneCondCum[n]) - (eps[n] * densityZoneCond[n]);
+                NANChecker(out[n].value(), "zetaMovementConductance");
             }
 
             return out;

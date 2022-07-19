@@ -95,6 +95,14 @@ namespace GlobalFlow {
                 return this->b;
             }
 
+            long_vector getResults_zeta() {
+                return this->x_zeta;
+            }
+
+            long_vector getRHS_zeta(){
+                return this->b_zeta;
+            }
+
             /**
              * Toogle the steady-state in all nodes
              * @return
@@ -154,6 +162,11 @@ namespace GlobalFlow {
         SparseMatrix<pr_t> A;
         SparseMatrix<pr_t> _A_;
 
+        long_vector x_zeta;
+        long_vector b_zeta;
+        SparseMatrix<pr_t> A_zeta;
+
+
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
@@ -206,6 +219,8 @@ namespace GlobalFlow {
          */
         void inline updateMatrix();
 
+        void inline updateMatrix_zeta();
+
         /**
          * Reallocate matrix and vectors absed on dried nodes
          * @bug This is currently missing reenabling of deactivated nodes!
@@ -239,7 +254,6 @@ namespace GlobalFlow {
         //Only for testin purposes
         bool simpleHead = true;
 
-            void addToA_zeta(const unique_ptr<Model::NodeInterface> &node, bool cached);
         };
 }
 }

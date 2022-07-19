@@ -99,20 +99,20 @@ void inline
 Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
     std::unordered_map<large_num, std::vector<quantity<Model::MeterSquaredPerTime>>> map;
     std::vector<quantity<Model::MeterSquaredPerTime>> zetaConductances;
-    map = node->getConductance_ZetaMovement(); // todo: how to iterate through this?
+    map = node->getConductance_ZetaMovement();
 
-    auto zetaIDs = node->getProperties().get<large_num, Model::ZetaIDs>(); // todo add Model::ZetaID to node
-
+    large_num zetaID = 0; // Question: add ZetaID to Node?
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] zeta conductances
         zetaConductances = entry.second;
         for(int n = 0; n < zetaConductances.size() - 1; n++){
 
             if (cached) {
-                A_zeta.coeffRef(zetaIDs[n], entry.first) = zetaConductances[n].value();
+                A_zeta.coeffRef(zetaID, entry.first) = zetaConductances[n].value();
             } else {
-                A_zeta.insert(zetaIDs[n], entry.first) = zetaConductances[n].value();
+                A_zeta.insert(zetaID, entry.first) = zetaConductances[n].value();
             }
+            zetaID++;
         }
 
     }
@@ -236,11 +236,12 @@ Equation::updateMatrix() {
 }
 
 void inline
-Equation::updateZetaMatrix() {
+Equation::updateMatrix_zeta() {
         Index n = A_zeta.outerSize();
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
 
+        large_num zetaID = 0;
 #ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
@@ -248,18 +249,18 @@ Equation::updateZetaMatrix() {
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
         for (large_num j = 0; j < numberOfNodes; ++j) {
             //---------------------Left
-            addToA(nodes->at(j), isCached);
+            addToA_zeta(nodes->at(j), isCached);
             //---------------------Right
-            double rhs{0.0};
-            if (nwt) {
-                rhs = nodes->at(j)->getRHS__NWT();
-                b[nodes->at(j)->getProperties().get<large_num, Model::ID>()] = std::move(rhs);
-                NANChecker(rhs, "Right hand side");
-            } else {
-                rhs = nodes->at(j)->getRHS().value();
-                b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
-                NANChecker(rhs, "Right hand side");
+            double rhs_zeta{0.0};
+            int numOfZones = nodes->at(j)->getNumOfZones();
+            for (int n = 0; n < numOfZones; n++){
+                rhs_zeta = nodes->at(j)->getRHS_zeta(n).value();
+                b_zeta(zetaID) = rhs_zeta;
+                zetaID++;
+                NANChecker(rhs_zeta, "Right hand side (of zeta surface equation)");
             }
+
+
         }
 
         if (not disable_dry_cells) {

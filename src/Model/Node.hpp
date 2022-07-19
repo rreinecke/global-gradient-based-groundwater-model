@@ -903,7 +903,7 @@ Modify Properties
 
             /**
             * @brief Set the height of zeta surface n
-            * @param n the zeta ID
+            * @param n the zeta surface number
             * @param height the zeta surface height in meters
             */
             void setZeta(int n, t_meter height){
@@ -927,7 +927,12 @@ Modify Properties
             /**
             * @brief The number of density surfaces
             */
-            int getNumOfZetas() { return (int) numOfZetas;}
+            int getNumOfZetas() { return (int) numOfZetas;} // todo remove if not required
+
+            /**
+            * @brief The number of density surfaces
+            */
+            int getNumOfZones() { return (int) numOfZones;}
 
             /**
             * @brief get zeta surfaces
@@ -1140,11 +1145,11 @@ Modify Properties
                 return out;
             }
 
-            t_vol_t getZetaMovementRHS(int zetaID){ // todo: debugging, call it from a solver (in MF: each layer and in each layer each zeta surface are solved individually!)
+            t_vol_t getRHS_zeta(int nZone){ // todo: debugging, call it from a solver (in MF: each layer is solved individually!)
                 //
-                t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[zetaID];
-                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(zetaID); // in MF: with SWIHCOF and BRHS of current layer and zeta
-                t_vol_t pseudoSource_Zetas = getPseudoSource_Zetas(zetaID);
+                t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[nZone];
+                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(nZone); // in MF: with SWIHCOF and BRHS of current layer and zeta
+                t_vol_t pseudoSource_Zetas = getPseudoSource_Zeta(nZone);
                 t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
                 return out;
             }
@@ -1197,17 +1202,25 @@ Modify Properties
                                 vdf.calculateZetaMovementConductances(zoneConductances,
                                                                       zoneConductancesCum,delnus,eps);
                         // NAN is checked in calculateZetaMovementConductances
+                        // add zeta movement  conductance to out, the key in the unordered map is the ID of the neighbouring node (used to solve for the head at the neighbouring node)
                         out[nodes->at(got->second)->get<large_num, ID>()] = zetaMovementConductance; // todo use something similar to "move()"
                     }
                 }
 
+
                 t_s_meter_t tmp_c = 0 * (si::square_meter / day);
-                for (const auto &storedZetaMovementCond : out) { tmp_c = tmp_c - storedZetaMovementCond.second; }
+                vector<t_s_meter_t> vec_tmp_c;
+                for (int n = 0; n < Zetas.size() - 1; n++) {
+                    for (const auto &storedZetaMovementCond : out) {
+                        tmp_c = tmp_c - storedZetaMovementCond.second[n];
+                    }
+                    vec_tmp_c[n] = tmp_c;
+                }
 
                 t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
                 tmp_c = tmp_c + effectivePorosityTerm;
                 NANChecker(effectivePorosityTerm.value(), "effectivePorosityTerm");
-                out[get<large_num, ID>()] = tmp_c;
+                out[get<large_num, ID>()] = vec_tmp_c;
                 return out;
             }
 
@@ -1272,7 +1285,7 @@ Modify Properties
                 return out;
             }
 
-            t_vol_t getPseudoSource_Zetas(int zetaID) { // for one zeta
+            t_vol_t getPseudoSource_Zeta(int nZone) { // for one zeta
                 // todo debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
@@ -1297,7 +1310,7 @@ Modify Properties
                         bottom_neig = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);
                         zetas_neig = at(got)->Zetas;
                         // if zeta of neighbour is not at the top or bottom
-                        if (zetas_neig[zetaID] != bottom_neig and zetas_neig[zetaID] != top_neig) {
+                        if (zetas_neig[nZone] != bottom_neig and zetas_neig[nZone] != top_neig) {
                             edgeLength_neig = getEdgeLengthNeig(got);
                             edgeLength_self = getEdgeLengthSelf(got);
 
@@ -1315,13 +1328,13 @@ Modify Properties
                                 // 1st part: cumulative zone conductances and the difference between the new heads
                                 out += zoneConductancesCum[i] * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                                 // 2nd part: density variation in this zone (eps), zone conductance & "old" zeta surface heights
-                                if (eps[i] != 0 and i == zetaID) {
+                                if (eps[i] != 0 and i == nZone) {
                                     out += eps[i] *
                                            (zoneConductances[i] *
                                             ((Zetas[i] - zetas_neig[i + 1]) - (Zetas[i] - Zetas[i + 1])));
                                 }
                                 // 3rd part: density variation (delnus) in all zones except this one, cumulative zone conductance and "old" zeta surface heights
-                                if (delnus[i] != 0 and i != zetaID) {
+                                if (delnus[i] != 0 and i != nZone) {
                                     out -= delnus[i] * (zoneConductancesCum[i] * ((zetas_neig[i] - Zetas[i])));
                                 }
                             }
@@ -1953,22 +1966,26 @@ Modify Properties
                         /*if(conduct.value() == 0){
                             LOG(numerics) << "conductance to neighbour is 0";
                         }*/
+
+                        // add conductance to out, the key in the unordered map is the ID of the neighbouring node (used to solve for the head at the neighbouring node)
                         out[nodes->at(got->second)->get<large_num, ID>()] = move(conduct);
                     }
                 }
 
+                // To solve for the head at this node, the conductances to neighbours and HCOF are used
                 t_s_meter_t tmp_c = 0; // Question: multiply with units?
-
+                // subtract the conductances to neighbours (which were calculated above)
                 for (const auto &c : out) { tmp_c = tmp_c - c.second; }
+                // add HCOF
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
                                                      getStorageCapacity(),
                                                      getP());
                 tmp_c = tmp_c + hcof;
-                NANChecker(tmp_c.value(), "HCOF");
-                //if(tmp_c.value() == 0){
-                //	LOG(numerics) << "HCOF term is 0";
-                //}
+                // check for nan
+                NANChecker(tmp_c.value(), "HCOF");  //if(tmp_c.value() == 0){LOG(numerics) << "HCOF term is 0";}
+
+                // add resulting conductance to solve for the head at this node to out
                 out[get<large_num, ID>()] = tmp_c;
                 return out;
             };
