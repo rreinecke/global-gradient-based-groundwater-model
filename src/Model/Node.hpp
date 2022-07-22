@@ -152,7 +152,9 @@ namespace GlobalFlow {
             unordered_map<NeighbourPosition, large_num> neighbours;
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             vector<t_meter> Zetas; // zeta surfaces (dimensionless density and elevation) of current node at t
-            vector<t_meter> ZetasZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
+            vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
+            vector<t_meter> ZetasChange;
+            vector<t_meter> ZetasChange_TZero;
             vector<t_dim> zones; // dimensionless density zones in current node | todo: do we need this or is it enough to access generally with densityProps.nusZones?
             int numOfExternalFlows{0};
             int numOfZetas{0};
@@ -950,6 +952,22 @@ Modify Properties
             }
 
             /**
+            * @brief get zeta surfaces
+            */
+            std::vector<t_meter> getZetasChange() noexcept { return ZetasChange;}
+
+            /**
+             * @brief Update the current head change (in comparison to last time step)
+             * @note Should only be called at end of time step
+             */
+            void updateZetaChange() noexcept {
+
+                set < t_meter, ZetaChange_TZero > (
+                        get<t_meter, Zetas>() - get<t_meter, Zetas_TZero>());
+                set < t_meter, Zetas_TZero > (get<t_meter, Zetas>());
+            }
+
+            /**
             * @brief get density zones
             */
             std::vector<t_dim> getZones() noexcept { return zones;}
@@ -1344,6 +1362,8 @@ Modify Properties
                 return out;
             }
 
+            void initRHSConstantDensity_t0() noexcept { set < t_vol_t, RHSConstantDensity_TZero > (getRHSConstantDensity()); }
+
 
             /**
                  * The pseudo source term for the flow equation, only used if variable density flow is active:
@@ -1473,7 +1493,7 @@ Modify Properties
              * @brief Updating zeta surface heights at the top after a solution is found for the groundwater heads.
              * Zeta surface heights at the top are set to the new groundwater heads.
              */
-            void updateZetaSurfaceHeights(){
+            void clipTopZetasToHeads(){
                 t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
                 t_meter topOfNode = get<t_meter, Elevation>();
                 t_meter updatedZeta;
@@ -1990,23 +2010,25 @@ Modify Properties
                 return out;
             };
 
-            /**
-             * @brief The right hand side of the equation
-             * @return volume per time
-             */
-            t_vol_t getRHS() {
+            t_vol_t getRHSConstantDensity(){
                 t_vol_t externalFlows = -getQ();
                 t_vol_t dewateredFlow = calculateDewateredFlow();
                 t_vol_t rivers = calculateNotHeadDependandFlows();
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day* get<t_dim, StepModifier>()));
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 if (steadyState) {
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
 
                 t_vol_t out = externalFlows + dewateredFlow - rivers - storageFlow;
+                NANChecker(out.value(), "RHS constant density");
+                return out;
+            }
 
+
+            t_vol_t getRHSVariableDensity(){
+                t_vol_t out = 0 * (si::cubic_meter / day);
+                DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 if (densityProps.isDensityVariable()){ // todo maybe make condition: zones.size() > 1
                     // save RHS without variable density terms for calculation of zeta movement at next time step
                     set < t_vol_t, RHSConstantDensity_TZero > (out);
@@ -2016,6 +2038,17 @@ Modify Properties
                     // add variable density terms to RHS
                     out += pseudoSourceFlow + vertFluxCorrection;
                 }
+                NANChecker(out.value(), "RHS variable density");
+                return out;
+            }
+
+            /**
+             * @brief The right hand side of the equation
+             * @return volume per time
+             */
+            t_vol_t getRHS() {
+
+                t_vol_t out = getRHSConstantDensity() + getRHSVariableDensity();
 
                 NANChecker(out.value(), "RHS");
                 return out;

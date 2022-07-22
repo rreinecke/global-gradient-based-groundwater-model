@@ -59,6 +59,12 @@ namespace GlobalFlow {
             void solve();
 
             /**
+             * Solve Zeta Surface Equation
+             *
+             */
+            void solve_zetas();
+
+            /**
              * @return The number of iterations
              */
             int getItter();
@@ -95,12 +101,12 @@ namespace GlobalFlow {
                 return this->b;
             }
 
-            long_vector getResults_zeta() {
-                return this->x_zeta;
+            long_vector getResults_zetas() {
+                return this->x_zetas;
             }
 
-            long_vector getRHS_zeta(){
-                return this->b_zeta;
+            long_vector getRHS_zetas(){
+                return this->b_zetas;
             }
 
             /**
@@ -162,9 +168,12 @@ namespace GlobalFlow {
         SparseMatrix<pr_t> A;
         SparseMatrix<pr_t> _A_;
 
-        long_vector x_zeta;
-        long_vector b_zeta;
-        SparseMatrix<pr_t> A_zeta;
+        long_vector x_zetas;
+        long_vector _x__zetas;
+        long_vector b_zetas;
+        long_vector _b__zetas;
+        SparseMatrix<pr_t> A_zetas;
+        SparseMatrix<pr_t> _A__zetas;
 
 
         const Simulation::Options options;
@@ -174,15 +183,17 @@ namespace GlobalFlow {
 
         int IITER{0};//FIXME this is used as outer iterations
         pr_t RCLOSE{0};
-	int inner_iterations{0};
+	    int inner_iterations{0};
 
         //From current run
         int __itter{0};
         double __error{0};
 
         bool isCached{false};
+        bool isCached_zetas{false};
 
         double maxHeadChange{0.01};
+        double maxZetaChange{0.01};
         double dampMin{0.01};
         double dampMax{0.01};
 
@@ -199,12 +210,19 @@ namespace GlobalFlow {
                    && std::equal(lhs.begin(), lhs.end(), rhs.begin());
         }
 
-        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg; 	
+        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
+
+        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
 
         BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
+
+            BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
         //Used for NWT
         bool nwt{false};
 
+        bool vdf{false};
+
+        int numberOfZones{0};
         /**
          * Helper for updating the matrix
          * @param node
@@ -214,7 +232,7 @@ namespace GlobalFlow {
 
         void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-            /**
+        /**
          * Update the matrix for the current iteration
          */
         void inline updateMatrix();
@@ -222,9 +240,9 @@ namespace GlobalFlow {
         void inline updateMatrix_zeta();
 
         /**
-         * Reallocate matrix and vectors absed on dried nodes
-         * @bug This is currently missing reenabling of deactivated nodes!
-         * Reenable if:
+         * Reallocate matrix and vectors based on dried nodes
+         * @bug This is currently missing re-enabling of deactivated nodes!
+         * Re-enable if:
          * 1) head in cell below needs to be higher than threshold
          * 2) head in one of 4 neighbours higher than threshold
          */
@@ -234,6 +252,8 @@ namespace GlobalFlow {
          * Run the preconditioner
          */
         void inline preconditioner();
+
+        void inline preconditioner_zeta();
 
         /**
          * Update heads in inner iteration
@@ -249,6 +269,20 @@ namespace GlobalFlow {
          * Write the final head to the nodes
          */
         void inline updateFinalHeads();
+
+        /**
+         * Write the final zeta surface heights to the nodes
+         */
+        void inline updateFinalZetas();
+
+        /**
+         * Write the final zeta surface heights to the nodes
+         */
+        void inline updateTopZetasToHeads();
+
+        void inline checkAllZetaSlopes();
+
+        void inline adjustAllZetaHeights();
 
         bool SteadyState = false;
         //Only for testin purposes
