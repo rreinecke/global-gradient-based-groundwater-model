@@ -810,7 +810,7 @@ Equation::solve_zetas(){
 
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustAllZetaHeights();
-    // updateZetaBudget();
+    // updateZetaBudget(); // Question: calculate zeta budgets?
 
     updateFinalZetaChange();
 

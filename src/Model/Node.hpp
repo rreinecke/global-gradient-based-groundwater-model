@@ -1177,9 +1177,10 @@ Modify Properties
              * @return map <CellID,Conductance>
              * The left hand side of the equation
              */
-            std::unordered_map<large_num, std::vector<t_s_meter_t>> getConductance_ZetaMovement(){ // Question: Rename to getLeftHandSide_Zeta?
+            std::unordered_map<large_num, std::vector<t_s_meter_t>> getConductance_ZetaMovement() { // Question: Rename to getLeftHandSide_Zeta?
                 // todo: potential to enhance computational speed: change zoneConductanceCum to compute a single parameter instead of a vector
                 // todo: debugging
+
                 size_t numC = 5;
                 std::unordered_map<large_num, std::vector<t_s_meter_t>> out;
                 out.reserve(numC);
@@ -1191,37 +1192,44 @@ Modify Properties
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
+                std::vector<t_meter> zetasNeig;
+                std::vector<t_meter> zoneThicknesses;
+                std::vector<t_s_meter_t> zoneConductances;
+                std::vector<t_s_meter_t> zoneConductancesCum;
+                std::vector<t_s_meter_t> zetaMovementConductance;
+                vector<t_s_meter_t> vec_tmp_0(numOfZones, 0 * (si::square_meter / day));
+
                 // pseudo source term calculation
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
-                    if (got == neighbours.end()) {
-                        //No neighbouring node
+                    if (got == neighbours.end()) { //No neighbouring node
                         continue;
-                    } else {
-                        //There is a neighbour node
+                    } else { //There is a neighbour node
+                        if (hasGHB()) {// At boundary nodes, fill vector with 0
+                            zetaMovementConductance = vec_tmp_0;
+                        } else {
+                            t_meter edgeLength_neig = 0 * si::meter;
+                            t_meter edgeLength_self = 0 * si::meter;
 
-                        t_meter edgeLength_neig = 0 * si::meter;
-                        t_meter edgeLength_self = 0 * si::meter;
+                            edgeLength_self = getEdgeLengthSelf(got);
+                            edgeLength_neig = getEdgeLengthNeig(got);
 
-                        edgeLength_self = getEdgeLengthSelf(got);
-                        edgeLength_neig = getEdgeLengthNeig(got);
+                            zetasNeig = at(got)->Zetas;
+                            zoneThicknesses = vdf.calculateZoneThicknesses(
+                                    Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
+                            zoneConductances = vdf.calculateDensityZoneConductances(
+                                    zoneThicknesses,
+                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                            zoneConductancesCum = vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
-                        std::vector<t_meter> zetasNeig = at(got)->Zetas;
-                        std::vector<t_meter> zoneThicknesses = vdf.calculateZoneThicknesses(
-                                Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
-                        std::vector<t_s_meter_t> zoneConductances =
-                                vdf.calculateDensityZoneConductances(
-                                        zoneThicknesses,
-                                        mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                        std::vector<t_s_meter_t> zoneConductancesCum =
-                                vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
-
-                        std::vector<t_s_meter_t> zetaMovementConductance =
-                                vdf.calculateZetaMovementConductances(zoneConductances,
-                                                                      zoneConductancesCum,delnus,eps);
-                        // NAN is checked in calculateZetaMovementConductances
+                            zetaMovementConductance = vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
+                            // vdf.calculateZetaMovementConductances(zoneConductances,
+                            //                                                        zoneConductancesCum, delnus,
+                            //                                                        eps); // NAN is checked in calculateZetaMovementConductances
+                        }
                         // add zeta movement  conductance to out, the key in the unordered map is the ID of the neighbouring node (used to solve for the head at the neighbouring node)
-                        out[nodes->at(got->second)->get<large_num, ID>()] = zetaMovementConductance; // todo use something similar to "move()"
+                        out[nodes->at(
+                                got->second)->get<large_num, ID>()] = zetaMovementConductance; // todo use something similar to "move()"
                     }
                 }
 
@@ -1229,15 +1237,18 @@ Modify Properties
                 t_s_meter_t tmp_c = 0 * (si::square_meter / day);
                 vector<t_s_meter_t> vec_tmp_c;
                 for (int n = 0; n < numOfZones; n++) {
-                    for (const auto &storedZetaMovementCond : out) {
-                        tmp_c = tmp_c - storedZetaMovementCond.second[n];
-                    }
+                    for (const auto &storedZetaMovementCond: out) {
+                        if (hasGHB()) {// At boundary nodes, tmp_c stays 0
+                        } else {
+                            tmp_c = tmp_c - storedZetaMovementCond.second[n];
+                        }
                     vec_tmp_c[n] = tmp_c;
-                }
+                    }
 
-                t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
-                tmp_c = tmp_c + effectivePorosityTerm;
-                NANChecker(effectivePorosityTerm.value(), "effectivePorosityTerm");
+                    t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
+                    tmp_c = tmp_c + effectivePorosityTerm;
+                    NANChecker(effectivePorosityTerm.value(), "effectivePorosityTerm");
+                }
                 out[get<large_num, ID>()] = vec_tmp_c;
                 return out;
             }
@@ -1372,6 +1383,8 @@ Modify Properties
                  */
             t_vol_t getPseudoSource_Flow() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
+                if (hasGHB()) { return out; } // return 0 at boundary nodes
+
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> eps = densityProps.getEps();
                 vector<t_dim> delnus = densityProps.getDelnus();
@@ -1591,8 +1604,8 @@ Modify Properties
              * in SWI2 code: SSWI2_HORZMOVE, in documentation: "Tip and Toe Tracking"
              */
             void horizontalZetaMovement(){
-                // todo do not change tips and toes at boundary nodes
                 // todo debug
+                if (hasGHB()) { return; } // do nothing at boundary nodes
                 vector<t_meter> zetas_neig; // zetas of the neighbor in current direction
                 vector<t_meter> zetas_neig2; // zetas of the neighbor in the opposite direction
                 std::unordered_map<NeighbourPosition, NeighbourPosition> oppositeDirections;
@@ -1763,10 +1776,11 @@ Modify Properties
             }
 
             /**
-             * @brief
+             * @brief Avoid zeta surface locking
              * in SWI2: SSWI2_ANTILOCKMIN
              */
             void preventZetaLocking(){
+                if (hasGHB()) { return; } // do nothing at boundary nodes
                 t_meter swiLock = 0.001 * si::meter;
                 t_dim slopeAdjustmentFraction = 0.1 * si::si_dimensionless; // slope adjustment fraction (in SWI2: ALPHA)
                 t_meter maxDeltaZeta;

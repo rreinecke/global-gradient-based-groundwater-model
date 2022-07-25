@@ -7,6 +7,7 @@
 
 #include "Units.hpp"
 #include <unordered_map>
+#include "../Simulation/Options.hpp"
 
 using namespace std;
 
@@ -18,6 +19,8 @@ namespace GlobalFlow {
          * Provides helper functions for variable density calulcations
          */
         class VariableDensityFlow {
+        private:
+            Simulation::Options options;
         public:
             VariableDensityFlow(){}
 
@@ -53,7 +56,15 @@ namespace GlobalFlow {
                     std::vector<t_s_meter_t> densityZoneCond) noexcept;
 
 
-            std::vector<t_s_meter_t> calculateZetaMovementConductances( // todo remove if not needed
+            /**
+             * @brief calculates the horizontal conductances used to solve ZETA surface heights (in SWI2: SWISOLCC/R)
+             * @param densityZoneCond vector of density zone condutctances
+             * @param densityZoneCondCum vector of density zone condutctances below each surface
+             * @param delnus difference in dimensionless density between successive zeta surfaces
+             * @param eps variation of dimensionless density over a density zone (for continuous option)
+             * @return vector with horizontal conductances used to solve ZETA surface heights
+             */
+            std::vector<t_s_meter_t> calculateZetaMovementConductances(
                     std::vector<t_s_meter_t> densityZoneCond,
                     std::vector<t_s_meter_t> densityZoneCondCum,
                     std::vector<t_dim> delnus,
@@ -71,9 +82,10 @@ namespace GlobalFlow {
             vector<t_dim> nusZetas; // dimensionless density on the zeta surfaces
             vector<t_dim> nusZones; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
-            vector<t_dim> eps; // variation of dimensionless density over a density zone
+            vector<t_dim> eps; // variation of dimensionless density over a density zone (for continuous option)
             t_dim maxToeSlope;
             t_dim maxTipSlope;
+            int numOfZones;
 
         public:
 
@@ -125,6 +137,7 @@ namespace GlobalFlow {
                 densityProps.eps = epsVec;
                 densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
                 densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
+                densityProps.numOfZones = numberOfDensityZones;
                 return densityProps;
             }
 
