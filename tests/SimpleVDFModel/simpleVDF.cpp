@@ -24,8 +24,8 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
 
     for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running a steady state step";
-        step.first->toggleSteadyState();
+        LOG(userinfo) << "Running a transient steps";
+        //step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
     }

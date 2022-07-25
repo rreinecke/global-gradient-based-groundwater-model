@@ -4,7 +4,8 @@
 namespace GlobalFlow {
     namespace Model {
 
-        std::vector<t_meter> VariableDensityFlow::calculateZoneThicknesses(
+        std::vector<t_meter>
+        VariableDensityFlow::calculateZoneThicknesses(
                 std::vector<t_meter> zetas, // std::unordered_map<t_dim, t_meter>
                 std::vector<t_meter> zetas_neig, // std::unordered_map<t_dim, t_meter>
                 t_meter edgeLength_neig,
@@ -20,7 +21,8 @@ namespace GlobalFlow {
             return out;
         }
 
-        std::vector<t_s_meter_t> VariableDensityFlow::calculateDensityZoneConductances(
+        std::vector<t_s_meter_t>
+        VariableDensityFlow::calculateDensityZoneConductances(
                 std::vector<t_meter> zoneThicknesses, t_s_meter_t conductance)noexcept {
             // calculate the sum of the zone thicknesses
             t_meter sumOfZoneThicknesses = 0 * si::meter;
@@ -37,7 +39,8 @@ namespace GlobalFlow {
             return out;
         }
 
-        std::vector<t_s_meter_t> VariableDensityFlow::calculateCumulativeDensityZoneConductances(
+        std::vector<t_s_meter_t>
+        VariableDensityFlow::calculateCumulativeDensityZoneConductances(
                 std::vector<t_s_meter_t> densityZoneCond)noexcept {
             // calculate the sum of density zone conductances below a zeta surface n and add to vector out
             std::vector<t_s_meter_t> out;
@@ -52,12 +55,12 @@ namespace GlobalFlow {
             return out;
         }
 
-        std::vector<t_s_meter_t> calculateZetaMovementConductances(
+        std::vector<t_s_meter_t>
+        VariableDensityFlow::calculateZetaMovementConductances(
                 std::vector<t_s_meter_t> densityZoneCond,
                 std::vector<t_s_meter_t> densityZoneCondCum,
                 std::vector<t_dim> delnus,
-                std::vector<t_dim> eps
-        ) noexcept {
+                std::vector<t_dim> eps) noexcept {
 
             std::vector<t_s_meter_t> out;
 

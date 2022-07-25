@@ -60,7 +60,6 @@ namespace GlobalFlow {
 
             /**
              * Solve Zeta Surface Equation
-             *
              */
             void solve_zetas();
 
@@ -237,7 +236,7 @@ namespace GlobalFlow {
          */
         void inline updateMatrix();
 
-        void inline updateMatrix_zeta();
+        void inline updateMatrix_zetas();
 
         /**
          * Reallocate matrix and vectors based on dried nodes
@@ -249,16 +248,24 @@ namespace GlobalFlow {
         void inline reallocateMatrix();
 
         /**
-         * Run the preconditioner
+         * Run the preconditioner for heads
          */
         void inline preconditioner();
 
-        void inline preconditioner_zeta();
+        /**
+         * Run the preconditioner for zetas
+         */
+        void inline preconditioner_zetas();
 
         /**
          * Update heads in inner iteration
          */
         void inline updateIntermediateHeads();
+
+        /**
+         * Update zetas in inner iteration
+         */
+        void inline updateIntermediateZetas();
 
         /**
          * Calculate the final budget
@@ -273,7 +280,7 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateFinalZetas();
+        void inline updateFinalZetaChange();
 
         /**
          * Write the final zeta surface heights to the nodes

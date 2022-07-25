@@ -57,8 +57,8 @@ namespace GlobalFlow {
                     std::vector<t_s_meter_t> densityZoneCond,
                     std::vector<t_s_meter_t> densityZoneCondCum,
                     std::vector<t_dim> delnus,
-                    std::vector<t_dim> eps
-            ) noexcept;
+                    std::vector<t_dim> eps) noexcept;
+
         };
 
         /**

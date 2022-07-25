@@ -3,7 +3,7 @@
     "model_config": {
       "nodes": "grid_simpleVDF.csv",
       "row_cols": "true",
-      "steadystate": "true",
+      "steadystate": "false",
       "number_of_nodes": 50,
       "number_of_rows": 50,
       "number_of_cols": 1,
