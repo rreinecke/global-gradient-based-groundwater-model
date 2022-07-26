@@ -124,20 +124,20 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 
 void inline
 Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
-    std::unordered_map<large_num, std::vector<quantity<Model::MeterSquaredPerTime>>> map;
-    std::vector<quantity<Model::MeterSquaredPerTime>> zetaConductances;
-    map = node->getConductance_ZetaMovement();
+    std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
+    quantity<Model::MeterSquaredPerTime> zoneConductance;
 
     large_num zetaID = 0; // Question: add ZetaID to Node?
+    for(int n = 0; n < numberOfZones; n++){
+        map = node->getConductance_ZetaMovement(n);
 
-    for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] zeta conductances
-        zetaConductances = entry.second;
-        for(int n = 0; n < zetaConductances.size() - 1; n++){
+        for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
+            zoneConductance = entry.second;
 
             if (cached) {
-                A_zetas.coeffRef(zetaID, entry.first) = zetaConductances[n].value();
+                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value();
             } else {
-                A_zetas.insert(zetaID, entry.first) = zetaConductances[n].value();
+                A_zetas.insert(zetaID, entry.first) = zoneConductance.value();
             }
             zetaID++;
         }
@@ -269,22 +269,21 @@ Equation::updateMatrix_zetas() {
         disabled_nodes.clear();
 
         large_num zetaID = 0;
-#ifdef EIGEN_HAS_OPENMP
+/*#ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
 #endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)*/
         for (large_num j = 0; j < numberOfNodes; ++j) {
             //---------------------Left
             addToA_zeta(nodes->at(j), isCached);
             //---------------------Right
             double rhs_zeta{0.0};
-            int numOfZones = nodes->at(j)->getNumOfZones();
-            for (int n = 0; n < numOfZones; n++){
+            for (int n = 0; n < numberOfZones; n++){
                 rhs_zeta = nodes->at(j)->getRHS_zeta(n).value();
                 b_zetas(zetaID) = rhs_zeta;
                 zetaID++;
-                NANChecker(rhs_zeta, "Right hand side (zetas)");
+                //NANChecker(rhs_zeta, "Right hand side (zetas)");
             }
 
 
@@ -402,8 +401,7 @@ Equation::updateIntermediateZetas() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
         //large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>(); // Question: ZetasID required?
-        int numOfZones = nodes->at(k)->getNumOfZones();
-        for (int n = 0; n < numOfZones; n++) {
+        for (int n = 0; n < numberOfZones; n++) {
             if (reduced) {
                 nodes->at(k)->addDeltaToZeta(n, (double) changes[zetaID] * si::meter);
             } else {

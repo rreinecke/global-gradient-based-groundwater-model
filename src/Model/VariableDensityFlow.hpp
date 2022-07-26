@@ -52,8 +52,7 @@ namespace GlobalFlow {
              * @param conductance conductance of cell towards respective neighbouring cell
              * @return vector with conductances of density zones
              */
-            std::vector<t_s_meter_t> calculateCumulativeDensityZoneConductances(
-                    std::vector<t_s_meter_t> densityZoneCond) noexcept;
+            t_s_meter_t calculateZoneConductanceCum(int n, std::vector<t_s_meter_t> densityZoneCond) noexcept;
 
 
             /**
@@ -64,11 +63,12 @@ namespace GlobalFlow {
              * @param eps variation of dimensionless density over a density zone (for continuous option)
              * @return vector with horizontal conductances used to solve ZETA surface heights
              */
-            std::vector<t_s_meter_t> calculateZetaMovementConductances(
+            /*t_s_meter_t calculateZetaMovementConductance(
+                    int n,
                     std::vector<t_s_meter_t> densityZoneCond,
                     std::vector<t_s_meter_t> densityZoneCondCum,
                     std::vector<t_dim> delnus,
-                    std::vector<t_dim> eps) noexcept;
+                    std::vector<t_dim> eps) noexcept;*/
 
         };
 

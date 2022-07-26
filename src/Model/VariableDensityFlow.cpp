@@ -16,7 +16,11 @@ namespace GlobalFlow {
             t_meter zoneThickness;
             int numOfZones = options.getNumberOfDensityZones();
             for (int p = 0; p < numOfZones; p++) {
-                zoneThickness = ((edgeLength_neig * (zetas[p] - zetas[p + 1])) / (edgeLength_neig + edgeLength_self)) + ((edgeLength_self * (zetas_neig[p] - zetas_neig[p + 1])) / (edgeLength_neig + edgeLength_self));
+                zoneThickness = ((edgeLength_neig * (zetas[p] - zetas[p + 1])) /
+                                 (edgeLength_neig + edgeLength_self)) +
+                                ((edgeLength_self * (zetas_neig[p] - zetas_neig[p + 1])) /
+                                 (edgeLength_neig + edgeLength_self));
+                NANChecker(zoneThickness.value(), "zoneThickness");
                 out.push_back(zoneThickness);
             }
             return out;
@@ -37,29 +41,26 @@ namespace GlobalFlow {
             for (int n = 0; n < numOfZones; n++) {
                 densityZoneConductance = conductance * (zoneThicknesses[n] / sumOfZoneThicknesses);
                 out.push_back(densityZoneConductance);
+                NANChecker(densityZoneConductance.value(), "densityZoneConductance"); // todo find out why nan here
             }
             return out;
         }
 
-        std::vector<t_s_meter_t>
-        VariableDensityFlow::calculateCumulativeDensityZoneConductances(
-                std::vector<t_s_meter_t> densityZoneCond)noexcept {
+        t_s_meter_t
+        VariableDensityFlow::calculateZoneConductanceCum(int n, std::vector<t_s_meter_t> densityZoneCond)noexcept {
             // calculate the sum of density zone conductances below a zeta surface n and add to vector out
-            std::vector<t_s_meter_t> out;
-            t_s_meter_t sumDensityZoneCondBelow = 0 * si::square_meter / day;
+            t_s_meter_t out = 0 * si::square_meter / day;
             int numOfZones = options.getNumberOfDensityZones();
-            for (int n = 0; n < numOfZones; n++) {
-                std::for_each(densityZoneCond.begin() + n, densityZoneCond.end(), [&](t_s_meter_t densityZoneCondBelow) {
-                    sumDensityZoneCondBelow += densityZoneCondBelow;
-                });
-                out.push_back(sumDensityZoneCondBelow);
-                sumDensityZoneCondBelow = 0;
-            }
+
+            std::for_each(densityZoneCond.begin() + n, densityZoneCond.end(), [&](t_s_meter_t densityZoneCondBelow) {
+                out += densityZoneCondBelow;
+            });
+            NANChecker(out.value(), "calculateZoneConductanceCum");
             return out;
         }
 
-        /*std::vector<t_s_meter_t>
-        VariableDensityFlow::calculateZetaMovementConductances(
+        /*t_s_meter_t
+        VariableDensityFlow::calculateZetaMovementConductance(int n,
                 std::vector<t_s_meter_t> densityZoneCond, std::vector<t_s_meter_t> densityZoneCondCum,
                 std::vector<t_dim> delnus, std::vector<t_dim> eps) noexcept {
 

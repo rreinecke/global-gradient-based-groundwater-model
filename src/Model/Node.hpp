@@ -1161,14 +1161,16 @@ Modify Properties
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() *
                                    (get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>())) /
                                   (day * get<t_dim, StepModifier>());
+                NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
 
             t_vol_t getRHS_zeta(int nZone){ // todo: debugging, call it from a solver (in MF: each layer is solved individually!)
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[nZone];
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(nZone); // in MF: with SWIHCOF and BRHS of current layer and zeta
-                t_vol_t pseudoSource_Zetas = getPseudoSource_Zeta(nZone);
-                t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zetas;
+                t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(nZone);
+                t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta;
+                NANChecker(out.value(), "getRHS_zeta");
                 return out;
             }
 
@@ -1177,81 +1179,74 @@ Modify Properties
              * @return map <CellID,Conductance>
              * The left hand side of the equation
              */
-            std::unordered_map<large_num, std::vector<t_s_meter_t>> getConductance_ZetaMovement() { // Question: Rename to getLeftHandSide_Zeta?
+            std::unordered_map<large_num, t_s_meter_t> getConductance_ZetaMovement(int n) { // Question: Rename to getLeftHandSide_Zeta?
                 // todo: potential to enhance computational speed: change zoneConductanceCum to compute a single parameter instead of a vector
                 // todo: debugging
-
                 size_t numC = 5;
-                std::unordered_map<large_num, std::vector<t_s_meter_t>> out;
+                std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
 
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                std::vector<t_dim> eps = densityProps.getEps();
-                std::vector<t_dim> delnus = densityProps.getDelnus();
+                //Get all conductances from neighbouring cells
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
-                std::vector<t_meter> zetasNeig;
+                DensityProperties densityProps = get<DensityProperties, densityProperties>();
+                std::vector<t_dim> eps = densityProps.getEps();
+                std::vector<t_dim> delnus = densityProps.getDelnus();
+
+                std::vector<t_meter> zetas_neig;
                 std::vector<t_meter> zoneThicknesses;
                 std::vector<t_s_meter_t> zoneConductances;
-                std::vector<t_s_meter_t> zoneConductancesCum;
-                std::vector<t_s_meter_t> zetaMovementConductance;
-                vector<t_s_meter_t> vec_tmp_0(numOfZones, 0 * (si::square_meter / day));
+                t_s_meter_t zoneConductanceCum;
 
-                // pseudo source term calculation
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
-                    if (got == neighbours.end()) { //No neighbouring node
+                    t_s_meter_t zetaMovementConductance = 0 * (si::square_meter / day); // Question: move this to after the first else?
+                    if (got == neighbours.end()) {
+                        //No neighbouring node
                         continue;
-                    } else { //There is a neighbour node
-                        if (hasGHB()) {// At boundary nodes, fill vector with 0
-                            zetaMovementConductance = vec_tmp_0;
+                    } else {
+                        if (hasGHB()) { // At boundary nodes, zetaMovementConductance is 0
+                            continue;
                         } else {
-                            t_meter edgeLength_neig = 0 * si::meter;
-                            t_meter edgeLength_self = 0 * si::meter;
-
-                            edgeLength_self = getEdgeLengthSelf(got);
-                            edgeLength_neig = getEdgeLengthNeig(got);
-
-                            zetasNeig = at(got)->Zetas;
+                            //There is a neighbour node
                             zoneThicknesses = vdf.calculateZoneThicknesses(
-                                    Zetas, zetasNeig, edgeLength_neig, edgeLength_self);
+                                    Zetas, at(got)->Zetas, getEdgeLengthNeig(got), getEdgeLengthSelf(got));
                             zoneConductances = vdf.calculateDensityZoneConductances(
                                     zoneThicknesses,
                                     mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                            zoneConductancesCum = vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
+                            zoneConductanceCum = vdf.calculateZoneConductanceCum(n, zoneConductances);
 
-                            zetaMovementConductance = vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
-                            // vdf.calculateZetaMovementConductances(zoneConductances,
-                            //                                                        zoneConductancesCum, delnus,
-                            //                                                        eps); // NAN is checked in calculateZetaMovementConductances
+                            zetaMovementConductance = delnus[n] * zoneConductanceCum - eps[n] * zoneConductances[n];
+
+                            NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
+
+                            // add conductance to out, the key in the unordered map is the ID of the neighbouring node
+                            // (used to solve for the head at the neighbouring node)
+                            out[nodes->at(got->second)->get<large_num, ID>()] = move(zetaMovementConductance);
+
                         }
-                        // add zeta movement  conductance to out, the key in the unordered map is the ID of the neighbouring node (used to solve for the head at the neighbouring node)
-                        out[nodes->at(
-                                got->second)->get<large_num, ID>()] = zetaMovementConductance; // todo use something similar to "move()"
                     }
                 }
 
-
+                // To solve for zeta, the conductances to neighbours and porosity term are used
                 t_s_meter_t tmp_c = 0 * (si::square_meter / day);
-                vector<t_s_meter_t> vec_tmp_c;
-                for (int n = 0; n < numOfZones; n++) {
-                    for (const auto &storedZetaMovementCond: out) {
-                        if (hasGHB()) {// At boundary nodes, tmp_c stays 0
-                        } else {
-                            tmp_c = tmp_c - storedZetaMovementCond.second[n];
-                        }
-                    vec_tmp_c[n] = tmp_c;
-                    }
-
-                    t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
-                    tmp_c = tmp_c + effectivePorosityTerm;
-                    NANChecker(effectivePorosityTerm.value(), "effectivePorosityTerm");
+                // subtract the conductances to neighbours (which were calculated above)
+                if (hasGHB()) {// At boundary nodes, tmp_c stays 0
+                } else {
+                    for (const auto &c: out) { tmp_c = tmp_c - c.second; }
                 }
-                out[get<large_num, ID>()] = vec_tmp_c;
+
+                // add effectivePorosityTerm
+                t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
+                tmp_c = tmp_c + effectivePorosityTerm;
+
+                // add resulting conductance to solve for zeta to out
+                out[get<large_num, ID>()] = tmp_c;
                 return out;
-            }
+            };
+
 
             t_vol_t getVerticalLeakage(int nZone){ // todo debug
                 t_vol_t out = 0 * (si::cubic_meter / day);
@@ -1311,6 +1306,8 @@ Modify Properties
 
                 // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
                 t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
+                NANChecker(out.value(), "getSourceTermBelowZeta");
+
                 return out;
             }
 
@@ -1350,26 +1347,28 @@ Modify Properties
                                     vdf.calculateDensityZoneConductances(
                                             zoneThicknesses,
                                             mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                            std::vector<t_s_meter_t> zoneConductancesCum =
-                                    vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
-                            for (int i = 0; i <= Zetas.size() - 2; i++) {
+
+                            for (int n = 0; n <= numOfZones - 1; n++) {
+                                t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(n, zoneConductances);
                                 // 1st part: cumulative zone conductances and the difference between the new heads
-                                out += zoneConductancesCum[i] * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                                out += zoneConductanceCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                                 // 2nd part: density variation in this zone (eps), zone conductance & "old" zeta surface heights
-                                if (eps[i] != 0 and i == nZone) {
-                                    out += eps[i] *
-                                           (zoneConductances[i] *
-                                            ((Zetas[i] - zetas_neig[i + 1]) - (Zetas[i] - Zetas[i + 1])));
+                                if (eps[n] != 0 and n == nZone) {
+                                    out += eps[n] *
+                                           (zoneConductances[n] *
+                                            ((Zetas[n] - zetas_neig[n + 1]) - (Zetas[n] - Zetas[n + 1])));
                                 }
                                 // 3rd part: density variation (delnus) in all zones except this one, cumulative zone conductance and "old" zeta surface heights
-                                if (delnus[i] != 0 and i != nZone) {
-                                    out -= delnus[i] * (zoneConductancesCum[i] * ((zetas_neig[i] - Zetas[i])));
+                                if (delnus[n] != 0 and n != nZone) {
+                                    out -= delnus[n] * (zoneConductanceCum * ((zetas_neig[n] - Zetas[n])));
                                 }
                             }
                         }
                     }
                 }
+                NANChecker(out.value(), "getPseudoSource_Zeta");
+
                 return out;
             }
 
@@ -1411,15 +1410,14 @@ Modify Properties
                             vdf.calculateDensityZoneConductances(
                                     zoneThicknesses,
                                     mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                    std::vector<t_s_meter_t> zoneConductancesCum =
-                            vdf.calculateCumulativeDensityZoneConductances(zoneConductances);
 
-                    for (int i = 0; i <= Zetas.size() - 2; i++){
-                        if (eps[i] != 0) {
-                            out += eps[i] * (zoneConductances[i] * ((Zetas[i] - zetasNeig[i+1]) - (Zetas[i] - Zetas[i+1])));
+                    for (int n = 0; n <= numOfZones - 1; n++){
+                        t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(n, zoneConductances);
+                        if (eps[n] != 0) {
+                            out += eps[n] * (zoneConductances[n] * ((Zetas[n] - zetasNeig[n+1]) - (Zetas[n] - Zetas[n+1])));
                         }
-                        if (delnus[i] != 0) {
-                            out -= delnus[i] * (zoneConductancesCum[i] * ((zetasNeig[i] - Zetas[i])));
+                        if (delnus[n] != 0) {
+                            out -= delnus[n] * (zoneConductanceCum * ((zetasNeig[n] - Zetas[n])));
                         }
                     }
                 }
@@ -2010,7 +2008,8 @@ Modify Properties
                             LOG(numerics) << "conductance to neighbour is 0";
                         }*/
 
-                        // add conductance to out, the key in the unordered map is the ID of the neighbouring node (used to solve for the head at the neighbouring node)
+                        // add conductance to out, the key in the unordered map is the ID of the neighbouring node
+                        // (used to solve for the head at the neighbouring node)
                         out[nodes->at(got->second)->get<large_num, ID>()] = move(conduct);
                     }
                 }
