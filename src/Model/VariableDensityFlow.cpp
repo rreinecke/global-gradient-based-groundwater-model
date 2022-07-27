@@ -15,12 +15,14 @@ namespace GlobalFlow {
             std::vector<t_meter> out;
             t_meter zoneThickness;
             int numOfZones = options.getNumberOfDensityZones();
-            for (int p = 0; p < numOfZones; p++) {
+            for (int p = 0; p <= numOfZones; p++) {
                 zoneThickness = ((edgeLength_neig * (zetas[p] - zetas[p + 1])) /
                                  (edgeLength_neig + edgeLength_self)) +
                                 ((edgeLength_self * (zetas_neig[p] - zetas_neig[p + 1])) /
                                  (edgeLength_neig + edgeLength_self));
                 NANChecker(zoneThickness.value(), "zoneThickness");
+                //LOG(userinfo) << "zoneThickness:" + std::to_string(zoneThickness.value());
+
                 out.push_back(zoneThickness);
             }
             return out;
@@ -34,15 +36,19 @@ namespace GlobalFlow {
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
                 sumOfZoneThicknesses += zoneThickness;
             });
+            //LOG(userinfo) << "sumOfZoneThicknesses:" + std::to_string(sumOfZoneThicknesses.value());
+
             // calculate the density zone conductances
             std::vector<t_s_meter_t> out;
             t_s_meter_t densityZoneConductance;
             int numOfZones = options.getNumberOfDensityZones();
-            for (int n = 0; n < numOfZones; n++) {
-                densityZoneConductance = conductance * (zoneThicknesses[n] / sumOfZoneThicknesses);
+            std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
+                densityZoneConductance = conductance * (zoneThickness / sumOfZoneThicknesses);
+
                 out.push_back(densityZoneConductance);
-                NANChecker(densityZoneConductance.value(), "densityZoneConductance"); // todo find out why nan here
-            }
+
+                NANChecker(densityZoneConductance.value(), "densityZoneConductance");
+            });
             return out;
         }
 

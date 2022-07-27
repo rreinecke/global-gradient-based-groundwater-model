@@ -113,7 +113,8 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
         }
     }
 
-    for (const auto &conductance : map) { 
+    for (const auto &conductance : map) {
+        // conductance.first is the nodeID of the respective neighbour node
         if (cached) {
             A.coeffRef(nodeID, conductance.first) = conductance.second.value();
         } else {
@@ -133,9 +134,9 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool ca
 
         for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
             zoneConductance = entry.second;
-
+            // conductance.first is the zetaID of the zeta surface in the respective neighbour node
             if (cached) {
-                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value();
+                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value(); // todo
             } else {
                 A_zetas.insert(zetaID, entry.first) = zoneConductance.value();
             }
@@ -351,7 +352,7 @@ void inline
 Equation::preconditioner_zetas() {
         LOG(numerics) << "Decomposing Matrix";
         if (disable_dry_cells) {
-            cg_zetas.compute(_A__zetas); // Question is cg the same initially in preconditioner and preconditioner_zeta?
+            cg_zetas.compute(_A__zetas);
         } else {
             cg_zetas.compute(A_zetas);
         }
@@ -664,7 +665,7 @@ Equation::solve_zetas(){
         isCached_zetas = true;
     }
 
-    preconditioner_zetas(); // todo
+    preconditioner_zetas();
     if (disable_dry_cells) {
         adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
     } else {
