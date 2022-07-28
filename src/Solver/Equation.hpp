@@ -234,7 +234,7 @@ namespace GlobalFlow {
          */
         void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-        void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
+        void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached);
 
         /**
          * Update the matrix for the current iteration

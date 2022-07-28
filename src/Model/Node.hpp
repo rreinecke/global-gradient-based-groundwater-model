@@ -1169,8 +1169,9 @@ Modify Properties
                 return out;
             }
 
-            t_vol_t getRHS_zeta(int nZone){ // todo: debugging, call it from a solver (in MF: each layer is solved individually!)
+            t_vol_t getRHS_zeta(int nZone){ // todo: debugging (in MF: each layer is solved individually!)
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[nZone];
+                NANChecker(Zetas[nZone].value(), "Zetas[nZone] (in getRHS_zeta)");
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(nZone); // in MF: with SWIHCOF and BRHS of current layer and zeta
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(nZone);
                 t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta;

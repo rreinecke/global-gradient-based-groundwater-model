@@ -124,25 +124,23 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
+Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
-    large_num zetaID = 0; // Question: add ZetaID to Node?
-    for(int n = 1; n < numberOfZones; n++){
-        map = node->getConductance_ZetaMovement(n);
+    map = node->getConductance_ZetaMovement(localZetaID);
 
-        for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
-            zoneConductance = entry.second;
-            LOG(userinfo) << "zetaID (row): " + std::to_string(zetaID) + "| (col): " + std::to_string(entry.first);
-            // conductance.first is the zetaID of the zeta surface in the respective neighbour node
-            if (cached) {
-                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value();
-            } else {
-                A_zetas.insert(zetaID, entry.first) = zoneConductance.value();
-            }
-            zetaID++;
+    for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
+        zoneConductance = entry.second;
+        LOG(userinfo) << "zetaID (row): " + std::to_string(globalZetaID) + "| (col): " + std::to_string(entry.first);
+        // conductance.first is the zetaID of the zeta surface in the respective neighbour node
+        if (cached) {
+            A_zetas.coeffRef(globalZetaID, entry.first) = zoneConductance.value();
+        } else {
+            A_zetas.insert(globalZetaID, entry.first) = zoneConductance.value();
         }
+
+
 
     }
 }
@@ -270,7 +268,7 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
 
-        large_num zetaID = 0;
+        large_num globalZetaID = 0;
 /*#ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
@@ -280,13 +278,13 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
 
 
             double rhs_zeta{0.0};
-            for (int n = 0; n < numberOfZones; n++){ // todo move zeta loop somewhere else
+            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){ // todo move zeta loop somewhere else?
                 //---------------------Left
-                addToA_zeta(nodes->at(j), isCached); // todo give current zetaID (for row)
+                addToA_zeta(nodes->at(j), localZetaID, globalZetaID, isCached);
                 //---------------------Right
                 rhs_zeta = nodes->at(j)->getRHS_zeta(n).value();
-                b_zetas(zetaID) = rhs_zeta;
-                zetaID++;
+                b_zetas(globalZetaID) = rhs_zeta;
+                globalZetaID++;
                 //NANChecker(rhs_zeta, "Right hand side (zetas)");
             }
 
