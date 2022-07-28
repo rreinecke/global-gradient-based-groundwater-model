@@ -129,14 +129,15 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, bool ca
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
     large_num zetaID = 0; // Question: add ZetaID to Node?
-    for(int n = 0; n < numberOfZones; n++){
+    for(int n = 1; n < numberOfZones; n++){
         map = node->getConductance_ZetaMovement(n);
 
         for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
             zoneConductance = entry.second;
+            LOG(userinfo) << "zetaID (row): " + std::to_string(zetaID) + "| (col): " + std::to_string(entry.first);
             // conductance.first is the zetaID of the zeta surface in the respective neighbour node
             if (cached) {
-                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value(); // todo
+                A_zetas.coeffRef(zetaID, entry.first) = zoneConductance.value();
             } else {
                 A_zetas.insert(zetaID, entry.first) = zoneConductance.value();
             }
@@ -264,7 +265,7 @@ Equation::updateMatrix() {
 }
 
 void inline
-Equation::updateMatrix_zetas() {
+Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more than one moving zeta surface (each has one equation system)
         Index n = A_zetas.outerSize();
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
@@ -276,11 +277,13 @@ Equation::updateMatrix_zetas() {
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)*/
         for (large_num j = 0; j < numberOfNodes; ++j) {
-            //---------------------Left
-            addToA_zeta(nodes->at(j), isCached);
-            //---------------------Right
+
+
             double rhs_zeta{0.0};
-            for (int n = 0; n < numberOfZones; n++){
+            for (int n = 0; n < numberOfZones; n++){ // todo move zeta loop somewhere else
+                //---------------------Left
+                addToA_zeta(nodes->at(j), isCached); // todo give current zetaID (for row)
+                //---------------------Right
                 rhs_zeta = nodes->at(j)->getRHS_zeta(n).value();
                 b_zetas(zetaID) = rhs_zeta;
                 zetaID++;
@@ -391,9 +394,9 @@ void inline
 Equation::updateIntermediateZetas() {
     long_vector changes;
     if (disable_dry_cells) {
-        changes = adaptiveDamping.getDamping(getResiduals(), _x__zetas, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals_zetas(), _x__zetas, isAdaptiveDamping);
     } else {
-        changes = adaptiveDamping.getDamping(getResiduals(), x_zetas, isAdaptiveDamping);
+        changes = adaptiveDamping.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
     }
 
     bool reduced = disabled_nodes.empty();
@@ -401,12 +404,12 @@ Equation::updateIntermediateZetas() {
 
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-        //large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>(); // Question: ZetasID required?
+        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>(); // Question: ZetasID required?
         for (int n = 0; n < numberOfZones; n++) {
             if (reduced) {
                 nodes->at(k)->addDeltaToZeta(n, (double) changes[zetaID] * si::meter);
             } else {
-                auto m = index_mapping[zetaID];
+                auto m = index_mapping[id];
                 if (m != -1) {
                     nodes->at(k)->addDeltaToZeta(n, (double) changes[zetaID] * si::meter);
                 }

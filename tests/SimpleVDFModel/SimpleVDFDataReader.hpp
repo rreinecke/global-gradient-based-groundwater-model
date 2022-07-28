@@ -89,11 +89,11 @@ namespace GlobalFlow {
                 double x{0};
                 double y{0};
                 double area{0};
-                int globid{0};
+                int arcID{0};
                 int i{0};
                 int row{0};
                 int col{0};
-                lookupglobIDtoID.reserve(numberOfNodes);
+                lookuparcIDtoID.reserve(numberOfNodes);
 
                 Model::DensityProperties densityProperties =
                         Model::DensityProperties::setDensityProperties(densityVariable,
@@ -102,7 +102,7 @@ namespace GlobalFlow {
                                                                        densityZones,
                                                                        numberOfDensityZones, maxToeSlope, maxTipSlope);
 
-                while (in.read_row(globid, x, y, area, row, col)) {
+                while (in.read_row(arcID, x, y, area, row, col)) {
                     out[row][col] = i;
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
@@ -110,7 +110,7 @@ namespace GlobalFlow {
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) globid,
+                                                                (unsigned long) arcID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 stepMod,
@@ -121,7 +121,7 @@ namespace GlobalFlow {
                                                                 confined,
                                                                 densityProperties
                     ));
-                    lookupglobIDtoID[globid] = i;
+                    lookuparcIDtoID[arcID] = i;
                     i++;
                 }
 
@@ -154,7 +154,7 @@ namespace GlobalFlow {
                 while (in.read_row(arcid, elevation, conduct)) {
                     int pos = 0;
                     try {
-                        pos = lookupglobIDtoID.at(arcid);
+                        pos = lookuparcIDtoID.at(arcid);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -183,6 +183,7 @@ namespace GlobalFlow {
                     int arcid{0};
                     double density{0};
                     double height{0};
+                    int globalZetaID{0};
 
                     // read initial data for density surfaces
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
@@ -190,18 +191,14 @@ namespace GlobalFlow {
                     while (inZetas.read_row(arcid, density, height)) {
                         int pos = 0;
                         try {
-                            pos = lookupglobIDtoID.at(arcid);
+                            pos = lookuparcIDtoID.at(arcid);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        // double nus = ( density - densityFresh ) / densityFresh;
-                        if (nodes->at(pos)->getNumOfZetas() == 0){
-                            nodes->at(pos)->addZetaSurface(0 * Model::si::meter);
-                            nodes->at(pos)->addZetaSurface(-aquiferDepth * Model::si::meter);
-                        }
-                        nodes->at(pos)->addZetaSurface(height * Model::si::meter);
+                        nodes->at(pos)->addZetaSurface(height * Model::si::meter, globalZetaID);
+                        globalZetaID++;
                     }
                 }
             }
@@ -218,7 +215,7 @@ namespace GlobalFlow {
                     while (inZones.read_row(arcid, density)) {
                         int pos = 0;
                         try {
-                            pos = lookupglobIDtoID.at(arcid);
+                            pos = lookuparcIDtoID.at(arcid);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry

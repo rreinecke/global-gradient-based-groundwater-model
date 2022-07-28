@@ -152,6 +152,7 @@ namespace GlobalFlow {
             unordered_map<NeighbourPosition, large_num> neighbours;
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             vector<t_meter> Zetas; // zeta surfaces (dimensionless density and elevation) of current node at t
+            vector<int> GlobalZetaID;
             vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
             vector<t_meter> ZetasChange;
             vector<t_meter> ZetasChange_TZero;
@@ -891,14 +892,17 @@ Modify Properties
 
             // todo: removeZone like removeZeta below
 
+
+
             /**
             * @brief Add a zeta surface to the cell
             * @param height the zeta surface height in meters
             * @return number of zeta surfaces in the cell
             */
-            int addZetaSurface(t_meter height){
+            int addZetaSurface(t_meter height, int globalZetaID){
                 Zetas.push_back(height);
-                sort(Zetas.begin(), Zetas.end(), greater<t_meter>());
+                GlobalZetaID.push_back(globalZetaID);
+                // sort(Zetas.begin(), Zetas.end(), greater<t_meter>()); todo throw error if height not in correct order
                 numOfZetas++;
                 return numOfZetas;
             }
@@ -1224,7 +1228,7 @@ Modify Properties
 
                             // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                             // (used to solve for the head at the neighbouring node)
-                            out[nodes->at(got->second)->get<large_num, ID>()] = move(zetaMovementConductance);
+                            out[nodes->at(got->second)->GlobalZetaID[n]] = move(zetaMovementConductance);
 
                         }
                     }
@@ -1283,6 +1287,8 @@ Modify Properties
                 }
                 return out;
             }
+
+
 
 
             /**

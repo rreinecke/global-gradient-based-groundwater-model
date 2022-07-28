@@ -16,9 +16,9 @@ namespace GlobalFlow {
 
         /**
          * @class VariableDensityFlow
-         * Provides helper functions for variable density calulcations
+         * Provides helper functions for variable density calculations
          */
-        class VariableDensityFlow {
+        class VariableDensityFlow { // todo do we really need this class?
         private:
             Simulation::Options options;
         public:

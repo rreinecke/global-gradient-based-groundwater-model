@@ -140,6 +140,10 @@ namespace GlobalFlow {
                 return cg.getResiduals();
             }
 
+            VectorType& getResiduals_zetas() const {
+                return cg_zetas.getResiduals();
+            }
+
             void updateClosingCrit(double crit) { cg.setTolerance(crit); }
 
             /**
@@ -201,6 +205,7 @@ namespace GlobalFlow {
         std::unordered_set<large_num> disabled_nodes;
         //Real -> Current
         std::unordered_map<large_num, long long> index_mapping;
+
         bool dry_have_changed{true};
 
         template<typename Set>
@@ -215,7 +220,7 @@ namespace GlobalFlow {
 
         BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
 
-            BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
+        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
         //Used for NWT
         bool nwt{false};
 

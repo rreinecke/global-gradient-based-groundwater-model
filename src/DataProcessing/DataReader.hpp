@@ -52,8 +52,8 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupglobIDtoID <GlobalID, ID>*/
-        std::unordered_map<int, int> lookupglobIDtoID;
+        /** @var lookuparcIDtoID <ArcID, ID>*/
+        std::unordered_map<int, int> lookuparcIDtoID;
         /** @var lookupZeroPointFivetoFiveMinute <ArcID(0.5°), vector<GlobalID(5')>>*/
         std::unordered_map<int, std::vector<int>> lookupZeroPointFivetoFiveMinute;
     public:
@@ -93,10 +93,10 @@ namespace GlobalFlow {
          * @param globid Global identifier, can be different from position in node vector
          * @return i the position in the node vector
          */
-        inline int check(int globid) {
+        inline int check(int arcid) {
             int i{0};
             try {
-                i = lookupglobIDtoID.at(globid);
+                i = lookuparcIDtoID.at(arcid);
             }
             catch (const std::out_of_range &ex) {
                 return -1;
@@ -157,7 +157,7 @@ namespace GlobalFlow {
          * @return <ArcID, ID (internal array id)>
          */
         const std::unordered_map<int, int> &getGlobIDMapping() {
-            return lookupglobIDtoID;
+            return lookuparcIDtoID;
         };
 
         /**

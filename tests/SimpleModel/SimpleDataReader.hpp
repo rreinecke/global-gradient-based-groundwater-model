@@ -74,7 +74,7 @@ class SimpleDataReader : public DataReader {
             int i{0};
             int row{0};
             int col{0};
-            lookupglobIDtoID.reserve(numberOfNodes);
+            lookuparcIDtoID.reserve(numberOfNodes);
             Model::DensityProperties densityProperties;
 
             while (in.read_row(globid, x, y, area, row, col)) {
@@ -94,7 +94,7 @@ class SimpleDataReader : public DataReader {
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage, confined, densityProperties));
-                lookupglobIDtoID[globid] = i;
+                lookuparcIDtoID[globid] = i;
                 i++;
             }
 
@@ -128,7 +128,7 @@ class SimpleDataReader : public DataReader {
             while (in.read_row(arcid, head, bottom, conduct)) {
                 int i = 0;
                 try {
-                    i = lookupglobIDtoID.at(arcid);
+                    i = lookuparcIDtoID.at(arcid);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
