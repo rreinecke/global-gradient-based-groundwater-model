@@ -132,7 +132,7 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
-        LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
+        //LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
         // conductance.first is the zetaID of the zeta surface in the respective neighbour node
         if (cached) {
             A_zetas.coeffRef(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
