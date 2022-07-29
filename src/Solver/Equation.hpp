@@ -157,6 +157,7 @@ namespace GlobalFlow {
         bool initalized = false;
 
         large_num numberOfNodes;
+        large_num totalNumberOfZetas;
         int initialHead;
 
         /**

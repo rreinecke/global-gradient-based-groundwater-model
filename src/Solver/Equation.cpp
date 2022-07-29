@@ -70,17 +70,17 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     if(vdf) {
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getNumberOfDensityZones();
-
-        long_vector __x_zetas(numberOfNodes * (numberOfZones + 1));
-        long_vector __b_zetas(numberOfNodes * (numberOfZones + 1));
+        this->totalNumberOfZetas = numberOfNodes * (numberOfZones - 1);
+        long_vector __x_zetas(totalNumberOfZetas);
+        long_vector __b_zetas(totalNumberOfZetas);
 
         x_zetas = std::move(__x_zetas);
         b_zetas = std::move(__b_zetas);
 
-        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodes * (numberOfZones + 1), numberOfNodes * (numberOfZones + 1));
+        Eigen::SparseMatrix<pr_t> __A_zetas(totalNumberOfZetas, totalNumberOfZetas);
 
         A_zetas = std::move(__A_zetas);
-        A_zetas.reserve(long_vector::Constant(numberOfNodes * (numberOfZones + 1), 5));
+        A_zetas.reserve(long_vector::Constant(totalNumberOfZetas, 5));
 
         if (nwt) {
             bicgstab_zetas.setMaxIterations(inner_iterations);
@@ -132,12 +132,12 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
-        LOG(userinfo) << "zetaID (row): " + std::to_string(globalZetaID) + "| (col): " + std::to_string(entry.first);
+        LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
         // conductance.first is the zetaID of the zeta surface in the respective neighbour node
         if (cached) {
-            A_zetas.coeffRef(globalZetaID, entry.first) = zoneConductance.value();
+            A_zetas.coeffRef(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
         } else {
-            A_zetas.insert(globalZetaID, entry.first) = zoneConductance.value();
+            A_zetas.insert(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
         }
 
 
@@ -268,27 +268,23 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
 
-        large_num globalZetaID = 0;
+        large_num globalZetaID = numberOfNodes; // todo this needs to be documented well (implications for initial_zetas.csv)
 /*#ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)*/
         for (large_num j = 0; j < numberOfNodes; ++j) {
-
-
             double rhs_zeta{0.0};
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){ // todo move zeta loop somewhere else?
                 //---------------------Left
                 addToA_zeta(nodes->at(j), localZetaID, globalZetaID, isCached);
                 //---------------------Right
-                rhs_zeta = nodes->at(j)->getRHS_zeta(n).value();
-                b_zetas(globalZetaID) = rhs_zeta;
+                rhs_zeta = nodes->at(j)->getRHS_zeta(localZetaID).value();
+                b_zetas(globalZetaID - numberOfNodes) = rhs_zeta;
                 globalZetaID++;
                 //NANChecker(rhs_zeta, "Right hand side (zetas)");
             }
-
-
         }
 
         if (not disable_dry_cells) {
@@ -398,21 +394,20 @@ Equation::updateIntermediateZetas() {
     }
 
     bool reduced = disabled_nodes.empty();
-    large_num zetaID = 0;
 
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>(); // Question: ZetasID required?
-        for (int n = 0; n < numberOfZones; n++) {
+        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
+        for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
+            large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
             if (reduced) {
-                nodes->at(k)->addDeltaToZeta(n, (double) changes[zetaID] * si::meter);
+                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
             } else {
                 auto m = index_mapping[id];
                 if (m != -1) {
-                    nodes->at(k)->addDeltaToZeta(n, (double) changes[zetaID] * si::meter);
+                    nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
                 }
             }
-            zetaID++;
         }
     }
 }
@@ -684,10 +679,10 @@ Equation::solve_zetas(){
         double lowerBound = maxZetaChange;
         double changeMax = 0;
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes * (numberOfZones + 1); ++k) {
+        for (large_num k = 0; k < totalNumberOfZetas; ++k) {
             double val;
-            for (int n = 0; n < numberOfZones; n++){
-                val = std::abs(nodes->at(k)->getZetasChange()[n].value()); // todo improve for loop
+            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){
+                val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop
                 changeMax = (val > changeMax) ? val : changeMax;
             }
         }
