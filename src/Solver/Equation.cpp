@@ -132,7 +132,7 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
-        //LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
+        LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
         // conductance.first is the zetaID of the zeta surface in the respective neighbour node
         if (cached) {
             A_zetas.coeffRef(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
@@ -269,11 +269,11 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
         disabled_nodes.clear();
 
         large_num globalZetaID = numberOfNodes; // todo this needs to be documented well (implications for initial_zetas.csv)
-/*#ifdef EIGEN_HAS_OPENMP
+#ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
 #endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)*/
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
         for (large_num j = 0; j < numberOfNodes; ++j) {
             double rhs_zeta{0.0};
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){ // todo move zeta loop somewhere else?
@@ -400,6 +400,7 @@ Equation::updateIntermediateZetas() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
+            LOG(userinfo) << "Zeta changes " + std::to_string(changes[globalZetaID-numberOfNodes]);
             if (reduced) {
                 nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
             } else {

@@ -899,7 +899,7 @@ Modify Properties
             * @param height the zeta surface height in meters
             * @return number of zeta surfaces in the cell
             */
-            int addZetaSurface(t_meter height, int globalZetaID){
+            int addZetaSurface(t_meter height, unsigned long int globalZetaID){
                 Zetas.push_back(height);
                 Zetas_TZero.push_back(height);
                 ZetasChange_TZero.push_back(0 * si::meter); // todo improve?
@@ -927,13 +927,16 @@ Modify Properties
              * @param head
              */
             virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
-                NANChecker(delta.value(), "addDeltaToZeta");
+                NANChecker(delta.value(), "addDeltaToZeta: delta");
                 t_meter current_zeta = Zetas[localZetaID];
                 if (localZetaID > ZetasChange.size()){
-                    ZetasChange.push_back(delta);
+                    LOG(userinfo) << "zeta surface with localZetaID " + std::to_string(localZetaID) +
+                                     " missing at globalZetaID " + std::to_string(GlobalZetaID[localZetaID]);
+                    //ZetasChange.push_back(delta);
                 }
-                ZetasChange[localZetaID-1] = delta;
+                ZetasChange[localZetaID-1] = delta; // size of ZetasChange is one lower than size of Zetas
                 Zetas[localZetaID] =  Zetas[localZetaID] + delta;
+                NANChecker(Zetas[localZetaID].value(), "addDeltaToZeta: Zetas[localZetaID]");
             }
 
             /**
@@ -1212,30 +1215,35 @@ Modify Properties
                 std::vector<t_meter> zoneThicknesses;
                 std::vector<t_s_meter_t> zoneConductances;
                 t_s_meter_t zoneConductanceCum;
+                t_s_meter_t zetaMovementConductance;
 
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
-                    t_s_meter_t zetaMovementConductance = 0 * (si::square_meter / day); // Question: move this to after the first else?
+                    zetaMovementConductance = 0 * (si::square_meter / day);
                     if (got == neighbours.end()) {
-                        //No neighbouring node
-                        continue;
-                    } else {
-                        if (hasGHB()) { // At boundary nodes, zetaMovementConductance is 0
-                            continue;
-                        } else {
-                            //There is a neighbour node
-                            zoneThicknesses = vdf.calculateZoneThicknesses(
-                                    Zetas, at(got)->Zetas, getEdgeLengthNeig(got), getEdgeLengthSelf(got));
-                            zoneConductances = vdf.calculateDensityZoneConductances(
-                                    zoneThicknesses,
-                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                            zoneConductanceCum = vdf.calculateZoneConductanceCum(localZetaID, zoneConductances);
+                        //No neighbouring node or this node is a boundary node: zetaMovementConductance = 0
+                    } else { //There is a neighbour node
 
-                            zetaMovementConductance = delnus[localZetaID] * zoneConductanceCum -
-                                                      eps[localZetaID] * zoneConductances[localZetaID];
+                        zoneThicknesses = vdf.calculateZoneThicknesses(
+                                Zetas, at(got)->Zetas, getEdgeLengthNeig(got), getEdgeLengthSelf(got));
+                        zoneConductances = vdf.calculateDensityZoneConductances(
+                                zoneThicknesses,
+                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                        zetaMovementConductance = -(eps[localZetaID] * zoneConductances[localZetaID]); // in SWI2: SWISOLCC/R
 
-                            NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
+                        if (hasGHB()){ // at boundary do nothing
+                        } else { // not at boundary
+                            t_meter topOfNode_self = get<t_meter, Elevation>();
+                            t_meter bottomOfNode_self = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                            t_meter topOfNode_neig = getAt<t_meter, Elevation>(got);
+                            t_meter bottomOfNode_neig = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);
+                            if (Zetas[localZetaID] >= bottomOfNode_self and Zetas[localZetaID] <= topOfNode_self and
+                                at(got)->Zetas[localZetaID] >= bottomOfNode_neig and at(got)->Zetas[localZetaID] <= topOfNode_neig) {
+                                zoneConductanceCum = vdf.calculateZoneConductanceCum(localZetaID, zoneConductances);
+                                zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
+                            }
                         }
+                        NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                         // (used to solve for the head at the neighbouring node)
                         out[nodes->at(got->second)->GlobalZetaID[localZetaID]] = move(zetaMovementConductance);
@@ -1249,13 +1257,12 @@ Modify Properties
                 } else {
                     for (const auto &c: out) { tmp_c = tmp_c - c.second; }
                 }
-
                 // add effectivePorosityTerm
                 t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
+
                 tmp_c = tmp_c + effectivePorosityTerm;
 
                 // add resulting conductance to solve for zeta to out
-                LOG(userinfo) << "GlobalZetaID[localZetaID]: " + std::to_string(GlobalZetaID[localZetaID]);
                 out[GlobalZetaID[localZetaID]] = tmp_c;
                 return out;
             };
@@ -1864,10 +1871,7 @@ Modify Properties
                     }
                 }
             }
-            // todo list:
-            //  flow equation
-            //  -
-            //  Someday:
+            // todo
             //  - INSTANTANEOUS MIXING TERMS FOR ZONE BUDGETS // SSWI2_IMIX(A)
             //  - CALCULATE PRE TIP TOE TRACKING CHANGE IN ZONE THICKNESS (ZONECHG1) // SSWI2_ZCHG(A)
             //  - CALCULATE POST TIP TOE TRACKING CHANGE IN ZONE THICKNESS (ZONECHG2) // SSWI2_ZCHG(A)

@@ -183,7 +183,7 @@ namespace GlobalFlow {
                     int arcid{0};
                     double density{0};
                     double height{0};
-                    int globalZetaID{0};
+                    unsigned long int globalZetaID{0};
 
                     // read initial data for density surfaces
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);

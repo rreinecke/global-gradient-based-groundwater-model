@@ -22,9 +22,11 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 400);
+    int stepNumber = 1;
 
     for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running transient steps";
+        LOG(userinfo) << "Running transient step " + std::to_string(stepNumber);
+        stepNumber++;;
         //step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);

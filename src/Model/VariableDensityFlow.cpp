@@ -20,10 +20,10 @@ namespace GlobalFlow {
                                  (edgeLength_neig + edgeLength_self)) +
                                 ((edgeLength_self * (zetas_neig[localZetaID] - zetas_neig[localZetaID + 1])) /
                                  (edgeLength_neig + edgeLength_self));
-                LOG(userinfo) << "zetas[localZetaID] (in zoneThickness):" + std::to_string(zetas[localZetaID].value());
-                LOG(userinfo) << "zetas[localZetaID+1] (in zoneThickness):" + std::to_string(zetas[localZetaID+1].value());
-                LOG(userinfo) << "zetas_neig[localZetaID] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID].value());
-                LOG(userinfo) << "zetas_neig[localZetaID+1] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID+1].value());
+                //LOG(userinfo) << "zetas[localZetaID] (in zoneThickness):" + std::to_string(zetas[localZetaID].value());
+                //LOG(userinfo) << "zetas[localZetaID+1] (in zoneThickness):" + std::to_string(zetas[localZetaID+1].value());
+                //LOG(userinfo) << "zetas_neig[localZetaID] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID].value());
+                //LOG(userinfo) << "zetas_neig[localZetaID+1] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID+1].value());
                 NANChecker(zoneThickness.value(), "zoneThickness");
 
                 out.push_back(zoneThickness);
