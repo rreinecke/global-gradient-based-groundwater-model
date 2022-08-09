@@ -928,14 +928,17 @@ Modify Properties
              */
             virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
                 NANChecker(delta.value(), "addDeltaToZeta: delta");
-                t_meter current_zeta = Zetas[localZetaID];
-                if (localZetaID > ZetasChange.size()){
-                    LOG(userinfo) << "zeta surface with localZetaID " + std::to_string(localZetaID) +
-                                     " missing at globalZetaID " + std::to_string(GlobalZetaID[localZetaID]);
-                    //ZetasChange.push_back(delta);
+                if (localZetaID > ZetasChange.size()) {
+                    ZetasChange.push_back(delta); // add delta as new entry in ZetasChange
+                } else {
+                    ZetasChange[localZetaID - 1] = delta; // size of ZetasChange is one lower than size of Zetas
                 }
-                ZetasChange[localZetaID-1] = delta; // size of ZetasChange is one lower than size of Zetas
-                Zetas[localZetaID] =  Zetas[localZetaID] + delta;
+                if (localZetaID > Zetas.size()) {
+                    LOG(debug) << "addDeltaToZeta: localZetaID larger than Zetas.size()" << std::endl;
+                    Zetas.push_back(delta); // add delta as new entry in Zetas
+                } else {
+                    Zetas[localZetaID] = Zetas[localZetaID] + delta;
+                }
                 NANChecker(Zetas[localZetaID].value(), "addDeltaToZeta: Zetas[localZetaID]");
             }
 
@@ -1181,7 +1184,7 @@ Modify Properties
 
             t_vol_t getRHS_zeta(int localZetaID){ // todo: debugging (in MF: each layer is solved individually!)
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID];
-                //LOG(userinfo) << "nZone: " + std::to_string(localZetaID) + " Zetas[nZone]: " + std::to_string(Zetas[localZetaID].value());
+                //LOG(debug) << "nZone: " + std::to_string(localZetaID) + " Zetas[nZone]: " + std::to_string(Zetas[localZetaID].value()) << std::endl;
                 //NANChecker(Zetas[localZetaID].value(), "Zetas[nZone] (in getRHS_zeta)");
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in MF: with SWIHCOF and BRHS of current layer and zeta
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(localZetaID);

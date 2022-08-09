@@ -4,7 +4,7 @@ namespace GlobalFlow {
 namespace Solver {
 
 Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes;
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodes << std::endl;
 
     this->numberOfNodes = numberOfNodes;
     this->IITER = options.getMaxIterations();
@@ -94,7 +94,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
 }
 
 Equation::~Equation() {
-    LOG(debug) << "Destroying equation\n";
+    LOG(debug) << "Destroying equation\n" << std::endl;
 }
 
 void inline
@@ -132,16 +132,13 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
-        LOG(userinfo) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)";
+        //LOG(debug) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)" << std::endl;
         // conductance.first is the zetaID of the zeta surface in the respective neighbour node
         if (cached) {
             A_zetas.coeffRef(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
         } else {
             A_zetas.insert(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
         }
-
-
-
     }
 }
 
@@ -293,30 +290,33 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
 
         //some nodes are in dried condition
         //reallocate matrix, and a,b
-        reallocateMatrix();
+        //reallocateMatrix(); // Question: is this needed with zetas?
 
         //A is up to date and b contains only rhs term
         //Update with current heads
         if (nwt) {
             if (disable_dry_cells) {
-                _b_ = _b_ + _A_ * _x_;
+                _b__zetas = _b__zetas + _A__zetas * _x__zetas;
             } else {
-                b = b + A * x;
+                b_zetas = b_zetas + A_zetas * x_zetas;
             }
         }
 
         //Check if after iteration former 0 values turned to non-zero
         if (disable_dry_cells) {
-            if ((not _A_.isCompressed()) and isCached) {
+            if ((not _A__zetas.isCompressed()) and isCached) {
                 LOG(numerics) << "Recompressing Matrix";
-                _A_.makeCompressed();
+                _A__zetas.makeCompressed();
             }
         } else {
-            if ((not A.isCompressed()) and isCached) {
+            if ((not A_zetas.isCompressed()) and isCached) {
                 LOG(numerics) << "Recompressing Matrix";
-                A.makeCompressed();
+                A_zetas.makeCompressed();
             }
         }
+    LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
+    LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
+    LOG(debug) << "b_zetas:\n" << b_zetas << std::endl;
     }
 
 void inline
@@ -392,7 +392,7 @@ Equation::updateIntermediateZetas() {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
     }
-
+    LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
     bool reduced = disabled_nodes.empty();
 
 #pragma omp parallel for
@@ -400,7 +400,7 @@ Equation::updateIntermediateZetas() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
-            LOG(userinfo) << "Zeta changes " + std::to_string(changes[globalZetaID-numberOfNodes]);
+
             if (reduced) {
                 nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
             } else {
@@ -675,7 +675,7 @@ Equation::solve_zetas(){
     double oldMaxZeta{0};
     int itterScale{0};
 
-    // Returns true if max headchange is greater than defined val
+    // Returns true if max zetaschange is greater than defined val
     auto isZetaChangeGreater = [this,&maxZeta]() -> bool {
         double lowerBound = maxZetaChange;
         double changeMax = 0;
@@ -696,6 +696,7 @@ Equation::solve_zetas(){
     bool zetaFail{false};
     char smallZetaChanges{0};
     bool zetaConverged{false};
+
     while (iterations < IITER) {
 
         LOG(numerics) << "Outer iteration (zetas): " << iterations;
@@ -714,6 +715,7 @@ Equation::solve_zetas(){
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
             }
         }
+        LOG(debug) << "x_zetas (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
         updateIntermediateZetas();
         int innerItter{0};
