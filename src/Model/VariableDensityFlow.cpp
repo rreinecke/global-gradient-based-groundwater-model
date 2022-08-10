@@ -20,10 +20,7 @@ namespace GlobalFlow {
                                  (edgeLength_neig + edgeLength_self)) +
                                 ((edgeLength_self * (zetas_neig[localZetaID] - zetas_neig[localZetaID + 1])) /
                                  (edgeLength_neig + edgeLength_self));
-                //LOG(userinfo) << "zetas[localZetaID] (in zoneThickness):" + std::to_string(zetas[localZetaID].value());
-                //LOG(userinfo) << "zetas[localZetaID+1] (in zoneThickness):" + std::to_string(zetas[localZetaID+1].value());
-                //LOG(userinfo) << "zetas_neig[localZetaID] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID].value());
-                //LOG(userinfo) << "zetas_neig[localZetaID+1] (in zoneThickness):" + std::to_string(zetas_neig[localZetaID+1].value());
+                //LOG(debug) << "zoneThickness (in calculateZoneThicknesses):" << zoneThickness.value() << std::endl;
                 NANChecker(zoneThickness.value(), "zoneThickness");
 
                 out.push_back(zoneThickness);
@@ -47,7 +44,7 @@ namespace GlobalFlow {
             int numOfZones = options.getNumberOfDensityZones();
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
                 densityZoneConductance = conductance * (zoneThickness / sumOfZoneThicknesses);
-
+                //LOG(debug) << "densityZoneConductance (in calculateDensityZoneConductances):" << densityZoneConductance.value() << std::endl;
                 out.push_back(densityZoneConductance);
 
                 NANChecker(densityZoneConductance.value(), "densityZoneConductance");
@@ -64,6 +61,7 @@ namespace GlobalFlow {
             std::for_each(densityZoneCond.begin() + n, densityZoneCond.end(), [&](t_s_meter_t densityZoneCondBelow) {
                 out += densityZoneCondBelow;
             });
+            //LOG(debug) << "zoneConductancesCum (in calculateZoneConductanceCum):" << out.value() << std::endl;
             NANChecker(out.value(), "calculateZoneConductanceCum");
             return out;
         }

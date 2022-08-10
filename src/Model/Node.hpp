@@ -1002,8 +1002,8 @@ Modify Properties
             }
 
             /**
-             * @brief Modify hydraulic conductivity (no e-folding, no layers)
-             * @param New conductivity
+             * @brief Modify effective porosity
+             * @param New effective porosity
              */
             void setEffectivePorosity_direct(t_dim effectivePorosity) { set<t_dim, EffectivePorosity>(effectivePorosity); }
 
@@ -1178,6 +1178,8 @@ Modify Properties
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() *
                                    (get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>())) /
                                   (day * get<t_dim, StepModifier>());
+
+                //LOG(debug) << "effective porosity: " << out.value() << std::endl;
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -1246,6 +1248,7 @@ Modify Properties
                                 zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                             }
                         }
+                        LOG(debug) << "zetaMovementConductance: " << zetaMovementConductance.value() << std::endl;
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                         // (used to solve for the head at the neighbouring node)
@@ -1374,7 +1377,7 @@ Modify Properties
                                             mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
 
 
-                            for (int localZetaID = 0; localZetaID <= numOfZones - 1; localZetaID++) {
+                            for (int localZetaID = 0; localZetaID < numOfZones; localZetaID++) {
                                 t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(localZetaID, zoneConductances);
                                 // 1st part: cumulative zone conductances and the difference between the new heads
                                 out += zoneConductanceCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
@@ -1438,7 +1441,7 @@ Modify Properties
                                     zoneThicknesses,
                                     mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
 
-                    for (int localZetaID = 0; localZetaID <= numOfZones - 1; localZetaID++){
+                    for (int localZetaID = 0; localZetaID < numOfZones; localZetaID++){
                         t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(localZetaID, zoneConductances);
                         if (eps[localZetaID] != 0) {
                             out += eps[localZetaID] * (zoneConductances[localZetaID] *
@@ -2076,17 +2079,10 @@ Modify Properties
 
 
             t_vol_t getRHSVariableDensity(){
-                t_vol_t out = 0 * (si::cubic_meter / day);
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                if (densityProps.isDensityVariable()){ // todo maybe make condition: zones.size() > 1
-                    // save RHS without variable density terms for calculation of zeta movement at next time step
-                    set < t_vol_t, RHSConstantDensity_TZero > (out);
-                    // calculate variable density terms
-                    t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
-                    t_vol_t vertFluxCorrection = verticalFluxVDF({NeighbourPosition::TOP, NeighbourPosition::DOWN});
-                    // add variable density terms to RHS
-                    out += pseudoSourceFlow + vertFluxCorrection;
-                }
+                // calculate variable density terms
+                t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
+                t_vol_t vertFluxCorrection = verticalFluxVDF({NeighbourPosition::TOP, NeighbourPosition::DOWN});
+                t_vol_t out = pseudoSourceFlow + vertFluxCorrection;
                 NANChecker(out.value(), "RHS variable density");
                 return out;
             }
@@ -2097,8 +2093,13 @@ Modify Properties
              */
             t_vol_t getRHS() {
 
-                t_vol_t out = getRHSConstantDensity() + getRHSVariableDensity();
-
+                t_vol_t out = getRHSConstantDensity();
+                DensityProperties densityProps = get<DensityProperties, densityProperties>();
+                if (densityProps.isDensityVariable()) { // todo maybe make condition: zones.size() > 1
+                    // save RHS without variable density terms for calculation of zeta movement at next time step
+                    set<t_vol_t, RHSConstantDensity_TZero>(out);
+                    out += getRHSVariableDensity();
+                }
                 NANChecker(out.value(), "RHS");
                 return out;
             }

@@ -8,6 +8,7 @@
 #include "Units.hpp"
 #include <unordered_map>
 #include "../Simulation/Options.hpp"
+#include "../Misc/Helpers.hpp"
 
 using namespace std;
 
@@ -123,12 +124,13 @@ namespace GlobalFlow {
                                              * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces above and below
                         epsVec.push_back((( nusZetaVec[id+1] - nusZetaVec[id] ) / 6));
                     }
-
+                    //LOG(debug) << "eps (for zone " << id << "): " << epsVec[id].value() << std::endl;
                     if (id == 0) {
                         delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
                     } else {
                         delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id-1]));
                     }
+                    //LOG(debug) << "delnus (for zone " << id << "): " << epsVec[id].value() << std::endl;
                 }
                 // todo sort nusZetas and nusZones ascending or throw error if not ascending
                 densityProps.nusZetas = nusZetaVec;
