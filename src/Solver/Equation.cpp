@@ -314,8 +314,8 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
                 A_zetas.makeCompressed();
             }
         }
-    LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
-    LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
+    //LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
+    //LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
     LOG(debug) << "b_zetas:\n" << b_zetas << std::endl;
     }
 

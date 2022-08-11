@@ -154,6 +154,8 @@ namespace GlobalFlow {
             t_dim getMaxToeSlope(){return maxToeSlope;}
 
             t_dim getMaxTipSlope(){return maxTipSlope;}
+
+            int getNumOfZones(){return numOfZones;}
         };
     }
 }

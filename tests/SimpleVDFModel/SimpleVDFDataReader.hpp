@@ -49,7 +49,6 @@ namespace GlobalFlow {
 
                 LOG(userinfo) << "Reading parameters for variable density flow";
                 readInitialZetas(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()), op.getAquiferDepth()[0]);
-                readInitialZones(op.isDensityVariable(), op.getDensityFresh(), buildDir(op.getInitialZonesDir()));
                 readEffectivePorosity(buildDir(op.getEffectivePorosity()));
 
                 LOG(userinfo) << "Initializing head";
@@ -94,7 +93,7 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookuparcIDtoID.reserve(numberOfNodes);
-
+                LOG(debug) << "numberOfDensityZones: " << numberOfDensityZones << std::endl;
                 Model::DensityProperties densityProperties =
                         Model::DensityProperties::setDensityProperties(densityVariable,
                                                                        densityStratified,
@@ -199,30 +198,6 @@ namespace GlobalFlow {
                         }
                         nodes->at(pos)->addZetaSurface(height * Model::si::meter, globalZetaID);
                         globalZetaID++;
-                    }
-                }
-            }
-
-
-            void readInitialZones(bool densityVariable, double densityFresh, std::string pathZones) {
-                if (densityVariable){
-                    int arcid{0};
-                    double density{0};
-
-                    // read initial data for density zones
-                    io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZones(pathZones);
-                    inZones.read_header(io::ignore_no_column, "arcID", "density");
-                    while (inZones.read_row(arcid, density)) {
-                        int pos = 0;
-                        try {
-                            pos = lookuparcIDtoID.at(arcid);
-                        }
-                        catch (const std::out_of_range &ex) {
-                            //if Node does not exist ignore entry
-                            continue;
-                        }
-                        double nus = ( density - densityFresh ) / densityFresh;
-                        nodes->at(pos)->addZone(nus * Model::si::si_dimensionless);
                     }
                 }
             }
