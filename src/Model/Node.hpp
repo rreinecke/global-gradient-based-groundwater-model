@@ -158,6 +158,7 @@ namespace GlobalFlow {
             vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
             int numOfZetas{0};
+            int zoneOfExternalFlow{0};
             bool nwt{false};
             bool initial_head{true};
             bool simpleDistance{false};
@@ -840,6 +841,14 @@ Modify Properties
                 return numOfExternalFlows;
             }
 
+            void setZoneOfExternalFlow(int zone){ // todo improve to account for multiple external flows added different zones
+                DensityProperties densityProps = get<DensityProperties, densityProperties>();
+
+                if(densityProps.getNumOfZones() >= zone){
+                    zoneOfExternalFlow = zone;
+                }
+            }
+
             /**
              * @brief Remove an external flow to the cell by id
              * @param ID The flow id
@@ -1159,7 +1168,7 @@ Modify Properties
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID]; // todo: really localZetaID? Starts at 1!!!
                 //LOG(debug) << "nZone: " + std::to_string(localZetaID) + " Zetas[nZone]: " + std::to_string(Zetas[localZetaID].value()) << std::endl;
                 //NANChecker(Zetas[localZetaID].value(), "Zetas[nZone] (in getRHS_zeta)");
-                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in MF: with SWIHCOF and BRHS of current layer and zeta
+                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in MF code: with SWIHCOF and BRHS of current layer and zeta, in MF doc: G or known source term below zeta
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(localZetaID);
                 t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta;
                 NANChecker(out.value(), "getRHS_zeta");
@@ -1317,10 +1326,11 @@ Modify Properties
              */
             t_vol_t getSourceTermBelowZeta(int nZone){ // in SWI2: G todo debugging
                 //
-                // get RHS of PREVIOUS time step (without VDF terms pseudo source term and flux correction)
-                // todo make sure this is from previous time step!!
-                t_vol_t rhs_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
-
+                // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
+                t_vol_t RHSConstantDensity_old = 0 * (si::cubic_meter / day);
+                if (nZone == zoneOfExternalFlow) {
+                    RHSConstantDensity_old += get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
+                } // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
                 // get HCOF of NEW time step
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
@@ -1331,7 +1341,7 @@ Modify Properties
                 t_vol_t verticalLeakage = getVerticalLeakage(nZone);
 
                 // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
-                t_vol_t out = rhs_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
+                t_vol_t out = RHSConstantDensity_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
                 NANChecker(out.value(), "getSourceTermBelowZeta");
 
                 return out;
