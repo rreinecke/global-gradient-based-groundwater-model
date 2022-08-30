@@ -130,7 +130,7 @@ namespace GlobalFlow {
                     } else {
                         delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id-1]));
                     }
-                    //LOG(debug) << "delnus (for zone " << id << "): " << epsVec[id].value() << std::endl;
+                    //LOG(debug) << "delnus (for zone " << id << "): " << delnusVec[id].value() << std::endl;
                 }
                 // todo sort nusZetas and nusZones ascending or throw error if not ascending
                 densityProps.nusZetas = nusZetaVec;

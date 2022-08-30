@@ -368,6 +368,7 @@ Equation::updateIntermediateHeads() {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
+    //LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
 
     bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
@@ -519,8 +520,8 @@ Equation::solve() {
     bool headFail{false};
     char smallHeadChanges{0};
     bool headConverged{false};
-    while (iterations < IITER) {
 
+    while (iterations < IITER) {
         LOG(numerics) << "Outer iteration: " << iterations;
 
         //Solve inner iterations
@@ -537,7 +538,7 @@ Equation::solve() {
                 x = cg.solveWithGuess(b, x);
             }
         }
-        LOG(debug) << "x (hydraulic head) (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+        LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
@@ -576,14 +577,14 @@ Equation::solve() {
             }
         }
 
-	if(maxHead == oldMaxHead){
-		//The head change is really the same -> increase inner iterations
-		itterScale = itterScale + 10;
-	}else{
-		itterScale = 0;
-	}
-    cg.setMaxIterations(inner_iterations + itterScale);
-	oldMaxHead = maxHead;
+        if(maxHead == oldMaxHead){
+            //The head change is really the same -> increase inner iterations
+            itterScale = itterScale + 10;
+        }else{
+            itterScale = 0;
+        }
+        cg.setMaxIterations(inner_iterations + itterScale);
+        oldMaxHead = maxHead;
 
         /**
          * @brief residual norm convergence
@@ -591,11 +592,15 @@ Equation::solve() {
         if (nwt) {
             LOG(numerics) << "Inner iterations: " << innerItter;
             if (bicgstab.info() == Success) {
+                LOG(numerics) << "bicgstab solver success";
                 break;
             }
         } else {
             LOG(numerics) << "Inner iterations: " << innerItter;
             if (cg.info() == Success and iterations != 0) {
+                LOG(numerics) << "cg solver success"; // this is always reached in outer iteration 1 (starts at 0)
+
+                // Question: why dont we iterate until convergence?? Or: what does cg.info() == Success mean?
                 break;
             }
         }
@@ -686,7 +691,7 @@ Equation::solve_zetas(){
             double val;
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){
                 val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop
-                LOG(debug) << "val (in solve_zeta): " << val << std::endl;
+                //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                 changeMax = (val > changeMax) ? val : changeMax;
             }
         }
@@ -718,7 +723,7 @@ Equation::solve_zetas(){
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
             }
         }
-        LOG(debug) << "x_zetas (zeta heights) before updating and convergence check (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+        LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
         updateIntermediateZetas();
         int innerItter{0};
@@ -772,11 +777,13 @@ Equation::solve_zetas(){
         if (nwt) {
             LOG(numerics) << "Inner iterations (zetas): " << innerItter;
             if (bicgstab_zetas.info() == Success) {
+                LOG(numerics) << "bicgstab_zetas success";
                 break;
             }
         } else {
-            LOG(numerics) << "Inner zeta iterations (zetas): " << innerItter;
+            LOG(numerics) << "Inner iterations (zetas): " << innerItter;
             if (cg_zetas.info() == Success and iterations != 0) {
+                LOG(numerics) << "cg_zetas success";
                 break;
             }
         }

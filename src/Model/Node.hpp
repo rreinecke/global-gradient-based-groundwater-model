@@ -923,14 +923,14 @@ Modify Properties
                     ZetasChange.push_back(delta); // add delta as new entry in ZetasChange
                 } else {
                     ZetasChange[localZetaID] = delta; // size of ZetasChange is one lower than size of Zetas
-                    LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
+                    //LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
                 }
                 if (localZetaID > Zetas.size()) {
                     LOG(debug) << "localZetaID larger than Zetas.size() (in addDeltaToZeta)" << std::endl;
                     Zetas.push_back(delta); // add delta as new entry in Zetas
                 } else {
                     Zetas[localZetaID] = Zetas[localZetaID] + delta;
-                    LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
+                    //LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
                 NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
             }
@@ -1172,7 +1172,6 @@ Modify Properties
                 //LOG(debug) << "localZetaID (in getRHS_zeta): " << localZetaID << std::endl;
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID]; // todo: really localZetaID? Starts at 1!!!
                 //LOG(debug) << "porosityTerm (in getRHS_zeta): " << porosityTerm.value() << std::endl;
-                //NANChecker(Zetas[localZetaID].value(), "Zetas[nZone] (in getRHS_zeta)");
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in MF code: with SWIHCOF and BRHS of current layer and zeta, in MF doc: G or known source term below zeta
                 //LOG(debug) << "sourceTermBelowZeta (in getRHS_zeta): " << sourceTermBelowZeta.value() << std::endl;
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(localZetaID);
@@ -1332,10 +1331,10 @@ Modify Properties
              * The source term below a zeta surface (in SWI2: G)
              * return volume per time
              */
-            t_vol_t getSourceTermBelowZeta(int nZone){ // in SWI2: G todo debugging
+            t_vol_t getSourceTermBelowZeta(int localZetaID){ // in SWI2: G todo debugging
                 // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
                 t_vol_t RHSConstantDensity_old = 0 * (si::cubic_meter / day);
-                if (nZone == zoneOfExternalFlow) {
+                if (localZetaID == zoneOfExternalFlow) {
                     RHSConstantDensity_old += get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
                     //LOG(numerics) << "RHSConstantDensity_old (in getSourceTermBelowZeta): " << RHSConstantDensity_old.value() << std::endl;
                 } // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
@@ -1346,7 +1345,7 @@ Modify Properties
                                                      getP());
                 ///LOG(numerics) << "hcof (in getSourceTermBelowZeta): " << hcof.value() << std::endl;
                 // get vertical leakage of NEW time step (the only term of G that depends on zones of density
-                t_vol_t verticalLeakage = getVerticalLeakage(nZone);
+                t_vol_t verticalLeakage = getVerticalLeakage(localZetaID);
                 //LOG(numerics) << "verticalLeakage (in getSourceTermBelowZeta): " << verticalLeakage.value() << std::endl;
                 // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
                 t_vol_t out = RHSConstantDensity_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
@@ -1355,7 +1354,7 @@ Modify Properties
                 return out;
             }
 
-            t_vol_t getPseudoSource_Zeta(int nZone) { // for one zeta
+            t_vol_t getPseudoSource_Zeta(int localZetaID) { // for one zeta
                 // todo debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
@@ -1380,7 +1379,7 @@ Modify Properties
                         bottom_neig = getAt<t_meter, Elevation>(got) - getAt<t_meter, VerticalSize>(got);
                         zetas_neig = at(got)->Zetas;
                         // if zeta of neighbour is not at the top or bottom
-                        if (zetas_neig[nZone] != bottom_neig and zetas_neig[nZone] != top_neig) {
+                        if (zetas_neig[localZetaID] != bottom_neig and zetas_neig[localZetaID] != top_neig) {
                             edgeLength_neig = getEdgeLengthNeig(got);
                             edgeLength_self = getEdgeLengthSelf(got);
 
@@ -1393,21 +1392,31 @@ Modify Properties
                                             mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
 
 
-                            for (int localZetaID = 0; localZetaID < densityProps.getNumOfZones(); localZetaID++) {
-                                t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(localZetaID, zoneConductances);
-                                // 1st part: cumulative zone conductances and the difference between the new heads
-                                out += zoneConductanceCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
-                                // 2nd part: density variation in this zone (eps), zone conductance & "old" zeta surface heights
-                                if (eps[localZetaID] != 0 and localZetaID == nZone) {
-                                    out += eps[localZetaID] *
-                                           (zoneConductances[localZetaID] *
-                                            ((Zetas[localZetaID] - zetas_neig[localZetaID + 1]) -
-                                             (Zetas[localZetaID] - Zetas[localZetaID + 1])));
+                            for (int zetaID = 0; zetaID < densityProps.getNumOfZones(); zetaID++) {
+                                t_s_meter_t zoneConductanceCum = vdf.calculateZoneConductanceCum(zetaID, zoneConductances);
+                                //%% 1st part %%
+                                // cumulative zone conductances and the difference between the new heads
+                                t_vol_t first_part = -zoneConductanceCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                                out += first_part;
+                                //LOG(debug) << "first_part (head-dependent) (in getPseudoSource_Zeta): " << first_part.value() << std::endl;
+                                //%% 2nd part %%
+                                //  density variation in this zone (eps), zone conductance & "old" zeta surface heights
+                                if (eps[zetaID] > 0 and zetaID == localZetaID) {
+                                    t_vol_t second_part = eps[zetaID] *
+                                           (zoneConductances[zetaID] *
+                                            ((zetas_neig[zetaID] - Zetas[zetaID]) -
+                                            (zetas_neig[zetaID + 1] - Zetas[zetaID + 1])));
+                                    out += second_part;
+                                    //LOG(debug) << "second_part (eps) (in getPseudoSource_Zeta): " << second_part.value() << std::endl;
                                 }
-                                // 3rd part: density variation (delnus) in all zones except this one, cumulative zone conductance and "old" zeta surface heights
-                                if (delnus[localZetaID] != 0 and localZetaID != nZone) {
-                                    out -= delnus[localZetaID] * (zoneConductanceCum *
-                                                                  ((zetas_neig[localZetaID] - Zetas[localZetaID])));
+                                //%% 3rd part %%
+                                // density variation (delnus) in all zones except this one, cumulative zone conductance and "old" zeta surface heights
+                                if (delnus[zetaID] > 0 and zetaID != localZetaID) {
+                                    t_vol_t third_part = -delnus[zetaID] * (zoneConductanceCum *
+                                            ((zetas_neig[zetaID] - Zetas[zetaID])));
+                                    out += third_part;
+                                    //LOG(debug) << "third_part (delnus) (in getPseudoSource_Zeta): " << third_part.value() << std::endl;
+
                                 }
                             }
                         }
