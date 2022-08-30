@@ -213,8 +213,10 @@ namespace GlobalFlow {
                                                               t_s_meter storageCapacity,
                                                               quantity<MeterSquaredPerTime> P) noexcept {
             if (steadyState)
+                // LOG(numerics) << "HCOF for steady state sim. (= P) (in getHCOF): " << P.value() << std::endl;
                 return P;
             quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
+            // LOG(numerics) << "HCOF for transient sim. (= P - storage capacity/time step) (in getHCOF): " << out.value() << std::endl;
             NANChecker(out.value(), "HCOF");
             return out;
         }

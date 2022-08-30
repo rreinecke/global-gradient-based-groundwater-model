@@ -25,11 +25,14 @@ void StandaloneRunner::simulate() {
     int stepNumber = 1;
 
     for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running transient step " + std::to_string(stepNumber);
-        stepNumber++;;
-        //step.first->toggleSteadyState();
+        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
+
+        if (stepNumber == 1) {
+            step.first->toggleSteadyState();
+        }
         step.first->solve();
         sim.printMassBalances(debug);
+        stepNumber++;
     }
 
     DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();

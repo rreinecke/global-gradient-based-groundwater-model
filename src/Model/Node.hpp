@@ -617,7 +617,7 @@ Modify Properties
                     //when we are in the second layer check if we are defined as confined
                     if (get<bool, Confinement>()) { return getStorageCapacity__Primary(); }
                 }
-                //we are not in the first layer and we are in unconfined conditions as specified by the user
+                //we are not in the first layer, and we are in unconfined conditions as specified by the user
 
                 if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                     //water-table condition
@@ -891,6 +891,7 @@ Modify Properties
             int addZetaSurface(t_meter height, unsigned long int globalZetaID){
                 Zetas.push_back(height);
                 Zetas_TZero.push_back(height);
+                ZetasChange.push_back(0 * si::meter); // todo improve?
                 ZetasChange_TZero.push_back(0 * si::meter); // todo improve?
                 GlobalZetaID.push_back(globalZetaID);
                 // sort(Zetas.begin(), Zetas.end(), greater<t_meter>()); todo instead of sort: throw error if height not in correct order
@@ -916,19 +917,22 @@ Modify Properties
              * @param head
              */
             virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
-                NANChecker(delta.value(), "addDeltaToZeta: delta");
+                NANChecker(delta.value(), "delta (in addDeltaToZeta)");
                 if (localZetaID > ZetasChange.size()) {
+                    LOG(debug) << "localZetaID larger than ZetasChange.size() (in addDeltaToZeta)" << std::endl;
                     ZetasChange.push_back(delta); // add delta as new entry in ZetasChange
                 } else {
-                    ZetasChange[localZetaID - 1] = delta; // size of ZetasChange is one lower than size of Zetas
+                    ZetasChange[localZetaID] = delta; // size of ZetasChange is one lower than size of Zetas
+                    LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
                 }
                 if (localZetaID > Zetas.size()) {
-                    LOG(debug) << "addDeltaToZeta: localZetaID larger than Zetas.size()" << std::endl;
+                    LOG(debug) << "localZetaID larger than Zetas.size() (in addDeltaToZeta)" << std::endl;
                     Zetas.push_back(delta); // add delta as new entry in Zetas
                 } else {
                     Zetas[localZetaID] = Zetas[localZetaID] + delta;
+                    LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
-                NANChecker(Zetas[localZetaID].value(), "addDeltaToZeta: Zetas[localZetaID]");
+                NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
             }
 
             /**
@@ -1165,12 +1169,16 @@ Modify Properties
             }
 
             t_vol_t getRHS_zeta(int localZetaID){ // todo: debugging (in MF: each layer is solved individually!)
+                //LOG(debug) << "localZetaID (in getRHS_zeta): " << localZetaID << std::endl;
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID]; // todo: really localZetaID? Starts at 1!!!
-                //LOG(debug) << "nZone: " + std::to_string(localZetaID) + " Zetas[nZone]: " + std::to_string(Zetas[localZetaID].value()) << std::endl;
+                //LOG(debug) << "porosityTerm (in getRHS_zeta): " << porosityTerm.value() << std::endl;
                 //NANChecker(Zetas[localZetaID].value(), "Zetas[nZone] (in getRHS_zeta)");
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in MF code: with SWIHCOF and BRHS of current layer and zeta, in MF doc: G or known source term below zeta
+                //LOG(debug) << "sourceTermBelowZeta (in getRHS_zeta): " << sourceTermBelowZeta.value() << std::endl;
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(localZetaID);
+                LOG(debug) << "pseudoSource_Zeta (in getRHS_zeta): " << pseudoSource_Zeta.value() << std::endl;
                 t_vol_t out = porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta;
+                //LOG(debug) << "out (in getRHS_zeta): " << out.value() << std::endl;
                 NANChecker(out.value(), "getRHS_zeta");
                 return out;
             }
@@ -1325,25 +1333,25 @@ Modify Properties
              * return volume per time
              */
             t_vol_t getSourceTermBelowZeta(int nZone){ // in SWI2: G todo debugging
-                //
                 // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
                 t_vol_t RHSConstantDensity_old = 0 * (si::cubic_meter / day);
                 if (nZone == zoneOfExternalFlow) {
-                    RHSConstantDensity_old += get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI // Equation.getRHS() returns a Matrix<double, Dynamic, 1>
+                    RHSConstantDensity_old += get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                    //LOG(numerics) << "RHSConstantDensity_old (in getSourceTermBelowZeta): " << RHSConstantDensity_old.value() << std::endl;
                 } // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
                 // get HCOF of NEW time step
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
                                                      getStorageCapacity(),
                                                      getP());
-
+                ///LOG(numerics) << "hcof (in getSourceTermBelowZeta): " << hcof.value() << std::endl;
                 // get vertical leakage of NEW time step (the only term of G that depends on zones of density
                 t_vol_t verticalLeakage = getVerticalLeakage(nZone);
-
+                //LOG(numerics) << "verticalLeakage (in getSourceTermBelowZeta): " << verticalLeakage.value() << std::endl;
                 // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
                 t_vol_t out = RHSConstantDensity_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
                 NANChecker(out.value(), "getSourceTermBelowZeta");
-
+                //LOG(numerics) << "out (in getSourceTermBelowZeta): " << out.value() << std::endl;
                 return out;
             }
 
@@ -1405,6 +1413,7 @@ Modify Properties
                         }
                     }
                 }
+                // LOG(numerics) << "out (in getPseudoSource_Zeta): " << out.value() << std::endl;
                 NANChecker(out.value(), "getPseudoSource_Zeta");
 
                 return out;
@@ -2094,7 +2103,7 @@ Modify Properties
             t_vol_t getRHSVariableDensity(){
                 // calculate variable density terms
                 t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
-                LOG(debug) << "pseudoSourceFlow: " << pseudoSourceFlow.value() << std::endl;
+                //LOG(debug) << "pseudoSourceFlow: " << pseudoSourceFlow.value() << std::endl;
                 t_vol_t vertFluxCorrection = verticalFluxVDF({NeighbourPosition::TOP, NeighbourPosition::DOWN});
                 //LOG(debug) << "vertFluxCorrection: " << vertFluxCorrection.value() << std::endl;
                 t_vol_t out = pseudoSourceFlow + vertFluxCorrection;

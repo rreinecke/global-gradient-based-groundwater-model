@@ -118,6 +118,7 @@ namespace GlobalFlow {
 
             bool ROW_COLS{false};
             double MAX_HEAD_CHANGE{0.01};
+            double MAX_ZETA_CHANGE{0.01};
             bool DAMPING{false};
             double MIN_DAMP{0.01};
             double MAX_DAMP{0.5};
@@ -141,6 +142,8 @@ namespace GlobalFlow {
             double getMaxDamp() { return MAX_DAMP; }
 
             double getMaxHeadChange() { return MAX_HEAD_CHANGE; }
+
+            double getMaxZetaChange() { return MAX_ZETA_CHANGE; }
 
             bool isConfined(int layer) { return CONFINED[layer]; }
 

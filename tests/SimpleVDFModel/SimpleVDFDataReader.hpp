@@ -42,7 +42,7 @@ namespace GlobalFlow {
                 readElevation(buildDir(op.getElevation()));
 
                 LOG(userinfo) << "Reading the groundwater recharge";
-                readGWRecharge(buildDir(op.getRecharge()));
+                readGWRecharge(buildDir(op.getRecharge()), op.isDensityVariable());
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));

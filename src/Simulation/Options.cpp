@@ -76,6 +76,7 @@ namespace GlobalFlow {
             I_ITTER = numerics.get<int>("inner_itter");
             RCLOSE = numerics.get<double>("closingcrit");
             MAX_HEAD_CHANGE = numerics.get<double>("headchange");
+            MAX_ZETA_CHANGE = numerics.get<double>("zetachange");
             DAMPING = numerics.get<bool>("damping");
             MIN_DAMP = numerics.get<double>("min_damp");
             MAX_DAMP = numerics.get<double>("max_damp");

@@ -71,6 +71,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getNumberOfDensityZones();
         this->totalNumberOfZetas = numberOfNodes * (numberOfZones - 1);
+        this->maxZetaChange = options.getMaxZetaChange();
         long_vector __x_zetas(totalNumberOfZetas);
         long_vector __b_zetas(totalNumberOfZetas);
 
@@ -316,7 +317,7 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
         }
     //LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
     //LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
-    LOG(debug) << "b_zetas:\n" << b_zetas << std::endl;
+    LOG(debug) << "b_zetas (= rhs_zeta):\n" << b_zetas << std::endl;
     }
 
 void inline
@@ -347,7 +348,7 @@ Equation::preconditioner() {
 
 void inline
 Equation::preconditioner_zetas() {
-        LOG(numerics) << "Decomposing Matrix";
+        LOG(numerics) << "Decomposing Matrix (zetas)";
         if (disable_dry_cells) {
             cg_zetas.compute(_A__zetas);
         } else {
@@ -506,6 +507,7 @@ Equation::solve() {
             double
                     val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
+            //LOG(debug) << "val (in solve): " << val << std::endl;
             changeMax = (val > changeMax) ? val : changeMax;
         }
 	    maxHead = changeMax;
@@ -535,6 +537,7 @@ Equation::solve() {
                 x = cg.solveWithGuess(b, x);
             }
         }
+        LOG(debug) << "x (hydraulic head) (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
@@ -598,7 +601,7 @@ Equation::solve() {
         }
 
         if (nwt) {
-            LOG(numerics) << "Residual squared norm error " << bicgstab.error();
+            LOG(numerics) << "Residual squared norm error: " << bicgstab.error();
             LOG(numerics) << "Head change bigger: " << headFail;
         } else {
             LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
@@ -615,7 +618,7 @@ Equation::solve() {
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations";
         if (nwt) {
-            LOG(numerics) << "Residual squared norm error " << bicgstab.error();
+            LOG(numerics) << "Residual squared norm error: " << bicgstab.error();
         } else {
             LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
             LOG(numerics) << "|Residual|_l2: " << cg.error();
@@ -637,7 +640,6 @@ Equation::solve() {
      if(vdf) {
          solve_zetas();
      }
-
 }
 
 /**
@@ -675,7 +677,7 @@ Equation::solve_zetas(){
     double oldMaxZeta{0};
     int itterScale{0};
 
-    // Returns true if max zetaschange is greater than defined val
+    // Returns true if max zetachange is greater than defined val
     auto isZetaChangeGreater = [this,&maxZeta]() -> bool {
         double lowerBound = maxZetaChange;
         double changeMax = 0;
@@ -684,6 +686,7 @@ Equation::solve_zetas(){
             double val;
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++){
                 val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop
+                LOG(debug) << "val (in solve_zeta): " << val << std::endl;
                 changeMax = (val > changeMax) ? val : changeMax;
             }
         }
@@ -715,7 +718,7 @@ Equation::solve_zetas(){
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
             }
         }
-        LOG(debug) << "x_zetas (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+        LOG(debug) << "x_zetas (zeta heights) before updating and convergence check (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
         updateIntermediateZetas();
         int innerItter{0};
@@ -796,10 +799,10 @@ Equation::solve_zetas(){
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations";
         if (nwt) {
-            LOG(numerics) << "Residual squared norm error " << bicgstab_zetas.error();
+            LOG(numerics) << "Residual squared norm error (zetas): " << bicgstab_zetas.error();
         } else {
-            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg_zetas.error_inf();
-            LOG(numerics) << "|Residual|_l2: " << cg_zetas.error();
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
+            LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
         }
     }
 
