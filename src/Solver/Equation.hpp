@@ -205,7 +205,7 @@ namespace GlobalFlow {
         //Maybe rename me :D
         std::unordered_set<large_num> disabled_nodes;
         //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping;
+        std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index mapping for zetas?
 
         bool dry_have_changed{true};
 
@@ -252,6 +252,9 @@ namespace GlobalFlow {
          * 2) head in one of 4 neighbours higher than threshold
          */
         void inline reallocateMatrix();
+
+
+        void inline reallocateMatrix_zetas(); /// Question: is this at all necessary?
 
         /**
          * Run the preconditioner for heads

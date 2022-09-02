@@ -201,6 +201,64 @@ void inline Equation::reallocateMatrix() {
     }
 }
 
+void inline Equation::reallocateMatrix_zetas() {
+    if (not disable_dry_cells) {
+        return;
+    }
+
+    if (disabled_nodes.empty()) { // todo disabled zetas?
+        _A__zetas = A_zetas;
+        _b__zetas = b_zetas;
+        _x__zetas = x_zetas;
+        return;
+    }
+
+    large_num __missing{0};
+    long size = A_zetas.rows() - disabled_nodes.size();
+    Matrix<pr_t, 2, Dynamic> new_matrix_zetas(size, size);
+
+
+    if (dry_have_changed) {
+        index_mapping.clear(); // todo index mappping zetas?
+    }
+
+    for (large_num i = 0; i < A_zetas.rows(); i++) {
+        if (not dry_have_changed) {
+            auto m = index_mapping[i];
+            if (m != -1) {
+                new_matrix_zetas.row(i) = A_zetas.row(i);
+            }
+        } else {
+            const bool is_in = disabled_nodes.find(i) != disabled_nodes.end();
+            if (not is_in) {
+                //Save all non-zero
+                new_matrix_zetas.row(i) = A_zetas.row(i);
+                index_mapping[i] = i - __missing;
+            } else {
+                __missing++;
+                index_mapping[i] = -1;
+            }
+        }
+    }
+    _A__zetas = new_matrix_zetas.sparseView();
+
+    long_vector buffer_b_zetas;
+    long_vector buffer_x_zetas;
+    for (int j = 0; j < b_zetas.size(); ++j) {
+        auto m = index_mapping[j];
+        if (m != -1) {
+            buffer_b_zetas[m] = b_zetas[j];
+            if (dry_have_changed) {
+                buffer_x_zetas[m] = x_zetas[j];
+            }
+        }
+    }
+    _b__zetas = buffer_b_zetas;
+    if (dry_have_changed) {
+        _x__zetas = buffer_x_zetas;
+    }
+}
+
 void inline
 Equation::updateMatrix() {
     Index n = A.outerSize();
@@ -291,7 +349,7 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
 
         //some nodes are in dried condition
         //reallocate matrix, and a,b
-        //reallocateMatrix(); // Question: is this needed with zetas?
+        reallocateMatrix_zetas(); // Question: is this needed with zetas?
 
         //A is up to date and b contains only rhs term
         //Update with current heads
@@ -315,7 +373,7 @@ Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more tha
                 A_zetas.makeCompressed();
             }
         }
-    //LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
+    LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
     //LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
     LOG(debug) << "b_zetas (= rhs_zeta):\n" << b_zetas << std::endl;
     }
