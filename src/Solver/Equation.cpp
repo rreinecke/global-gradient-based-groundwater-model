@@ -426,7 +426,7 @@ Equation::updateIntermediateHeads() {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
-    //LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
+    LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
 
     bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
@@ -462,11 +462,11 @@ Equation::updateIntermediateZetas() {
             large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
 
             if (reduced) {
-                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
+                nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
             } else {
                 auto m = index_mapping[id];
                 if (m != -1) {
-                    nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter);
+                    nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
                 }
             }
         }

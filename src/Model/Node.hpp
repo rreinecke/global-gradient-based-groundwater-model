@@ -1235,7 +1235,6 @@ Modify Properties
                                 zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                             }
                         }
-                        //LOG(debug) << "zetaMovementConductance: " << zetaMovementConductance.value() << std::endl;
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                         // (used to solve for the head at the neighbouring node)
@@ -1252,7 +1251,6 @@ Modify Properties
                 }
                 // add effectivePorosityTerm
                 t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
-
                 tmp_c = tmp_c - effectivePorosityTerm;
 
                 // add resulting conductance to solve for zeta to out
