@@ -14,15 +14,21 @@ namespace GlobalFlow {
             // calculate zone thicknesses
             std::vector<t_meter> out;
             t_meter zoneThickness;
+            t_meter deltaZeta;
+            t_meter deltaZeta_neig;
             int numOfZones = options.getNumberOfDensityZones();
             for (int localZetaID = 0; localZetaID <= numOfZones; localZetaID++) {
-                zoneThickness = ((edgeLength_neig * (zetas[localZetaID] - zetas[localZetaID + 1])) /
-                                 (edgeLength_neig + edgeLength_self)) +
-                                ((edgeLength_self * (zetas_neig[localZetaID] - zetas_neig[localZetaID + 1])) /
-                                 (edgeLength_neig + edgeLength_self));
+                deltaZeta = zetas[localZetaID] - zetas[localZetaID + 1];
+                deltaZeta_neig = zetas_neig[localZetaID] - zetas_neig[localZetaID + 1];
+
+                if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
+                    zoneThickness = 0 * si::meter;
+                } else {
+                    zoneThickness = ((edgeLength_neig * deltaZeta) / (edgeLength_neig + edgeLength_self)) +
+                                    ((edgeLength_self * deltaZeta_neig) / (edgeLength_neig + edgeLength_self));
+                }
                 //LOG(debug) << "zoneThickness (in calculateZoneThicknesses):" << zoneThickness.value() << std::endl;
                 NANChecker(zoneThickness.value(), "zoneThickness");
-
                 out.push_back(zoneThickness);
             }
             return out;
@@ -36,14 +42,18 @@ namespace GlobalFlow {
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
                 sumOfZoneThicknesses += zoneThickness;
             });
-            //LOG(userinfo) << "sumOfZoneThicknesses:" + std::to_string(sumOfZoneThicknesses.value());
+            //LOG(debug) << "sumOfZoneThicknesses:" + std::to_string(sumOfZoneThicknesses.value());
 
             // calculate the density zone conductances
             std::vector<t_s_meter_t> out;
             t_s_meter_t densityZoneConductance;
             int numOfZones = options.getNumberOfDensityZones();
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
-                densityZoneConductance = conductance * (zoneThickness / sumOfZoneThicknesses);
+                if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
+                    densityZoneConductance = 0 * si::square_meter / day;
+                } else {
+                    densityZoneConductance = conductance * (zoneThickness / sumOfZoneThicknesses);
+                }
                 //LOG(debug) << "densityZoneConductance (in calculateDensityZoneConductances):" << densityZoneConductance.value() << std::endl;
                 out.push_back(densityZoneConductance);
 
