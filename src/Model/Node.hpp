@@ -1290,15 +1290,16 @@ Modify Properties
                 return out;
             }
 
-            std::string getZetaPosInNode(int localZetaID){ // Question: can nodes be inactive?
-                t_meter topOfNode = get<t_meter, Elevation>();
-                t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+            std::string getZetaPosInNode(int localZetaID){ // adapted from SWI2 lines 4358-4383
+                // Question: can nodes be inactive?
                 std::string out;
-                if (Zetas[localZetaID] == topOfNode){
+                if (localZetaID == 0) {
+                    out = "between";
+                } else if (Zetas[localZetaID] == Zetas.front()){
                     out = "top";
-                } else if (Zetas[localZetaID] == bottomOfNode){
+                } else if (Zetas[localZetaID] == Zetas.back()){
                     out = "bottom";
-                } else if (Zetas[localZetaID] < topOfNode and Zetas[localZetaID] > bottomOfNode){
+                } else if (Zetas[localZetaID] < Zetas.front() and Zetas[localZetaID] > Zetas.back()){
                     out = "between";
                 } // if nodes can be inactive: additional else if
                 return out;
