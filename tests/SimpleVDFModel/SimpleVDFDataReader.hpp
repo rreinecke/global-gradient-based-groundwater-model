@@ -42,7 +42,10 @@ namespace GlobalFlow {
                 readElevation(buildDir(op.getElevation()));
 
                 LOG(userinfo) << "Reading the groundwater recharge";
-                readGWRecharge(buildDir(op.getRecharge()), op.isDensityVariable());
+                readGWRecharge(buildDir(op.getRecharge()));
+
+                LOG(userinfo) << "Reading the zones of sources and sinks";
+                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()));
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
@@ -166,42 +169,21 @@ namespace GlobalFlow {
                 }
             }
 
-            void readGWRecharge(std::string path, bool densityVariable) {
-                if (densityVariable){
-                    int arcid{0};
-                    double recharge{0};
-                    int zone{0};
+            void readGWRecharge(std::string path) {
+                readTwoColumns(path, [this](double data, int pos) {
+                    nodes->at(pos)->addExternalFlow(Model::RECHARGE,
+                                                    0 * Model::si::meter,
+                                                    data * nodes->at(pos)->getProperties().get<Model::quantity<
+                                                            Model::SquareMeter>,
+                                                            Model::Area>().value(),
+                                                    0 * Model::si::meter);
+                });
+            }
 
-                    // read initial data for density surfaces
-                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                    in.read_header(io::ignore_no_column, "arcID", "recharge", "zone");
-                    while (in.read_row(arcid, recharge, zone)) {
-                        int pos = 0;
-                        try {
-                            pos = lookuparcIDtoID.at(arcid);
-                        }
-                        catch (const std::out_of_range &ex) {
-                            //if Node does not exist ignore entry
-                            continue;
-                        }
-                        nodes->at(pos)->addExternalFlow(Model::RECHARGE,
-                                                        0 * Model::si::meter,
-                                                        recharge * nodes->at(pos)->getProperties().get<Model::quantity<
-                                                                Model::SquareMeter>,
-                                                                Model::Area>().value(),
-                                                        0 * Model::si::meter);
-                        nodes->at(pos)->setZoneOfExternalFlow(zone);
-                    }
-                } else {
-                    readTwoColumns(path, [this](double data, int pos) {
-                        nodes->at(pos)->addExternalFlow(Model::RECHARGE,
-                                                        0 * Model::si::meter,
-                                                        data * nodes->at(pos)->getProperties().get<Model::quantity<
-                                                                Model::SquareMeter>,
-                                                                Model::Area>().value(),
-                                                        0 * Model::si::meter);
-                    });
-                }
+            void readZonesSourcesSinks(std::string path) {
+                readTwoColumns(path, [this](int data, int pos) {
+                    nodes->at(pos)->setZoneOfSourcesAndSinks(data);
+                });
             }
 
             void readInitialZetas(bool densityVariable, double densityFresh, std::string pathZetas, double aquiferDepth) {

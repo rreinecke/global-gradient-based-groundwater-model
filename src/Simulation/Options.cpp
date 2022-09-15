@@ -141,6 +141,7 @@ namespace GlobalFlow {
 
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
+            ZONES_SOURCES_SINKS = getOptional("zones_sources_sinks", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVERS = getOptional("rivers", data);
             GLOBAL_WETLANDS = getOptional("globalwetlands", data);

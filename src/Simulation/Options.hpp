@@ -50,6 +50,7 @@ namespace GlobalFlow {
             string BLUE_ELEVATION{""};
 
             string RECHARGE{""};
+            string ZONES_SOURCES_SINKS{""};
             string PSEUDO_SOURCE_FLOW{""};
             string LITHOLOGY{""};
             string RIVERS{""};
@@ -343,6 +344,11 @@ namespace GlobalFlow {
             string
             getRecharge() {
                 return RECHARGE;
+            }
+
+            string
+            getZonesOfSourcesAndSinks() {
+                return ZONES_SOURCES_SINKS;
             }
 
             string

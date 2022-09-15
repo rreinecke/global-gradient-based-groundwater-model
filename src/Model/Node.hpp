@@ -158,7 +158,7 @@ namespace GlobalFlow {
             vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
             int numOfZetas{0};
-            int zoneOfExternalFlow{0};
+            int zoneOfSourcesAndSinks{0};
             bool nwt{false};
             bool initial_head{true};
             bool simpleDistance{false};
@@ -841,12 +841,21 @@ Modify Properties
                 return numOfExternalFlows;
             }
 
-            void setZoneOfExternalFlow(int zone){ // todo improve to account for multiple external flows added different zones
+            void setZoneOfSourcesAndSinks(int zone){ // todo improve to account for multiple sinks/sources sinks/sources in different zones
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
 
                 if(densityProps.getNumOfZones() >= zone){
-                    zoneOfExternalFlow = zone;
+                    zoneOfSourcesAndSinks = zone;
+                } else {
+                    throw "Zone number for sources and sinks too high";
                 }
+                // from SWI2 doc:
+                //  - ISOURCE > 0: sources and sinks are of the same type as water in zone ISOURCE. If such a zone is not present in the cell, sources and sinks interact with the zone at the top of the aquifer.
+                //  - ISOURCE = 0: sources and sinks are of the same type as water at top of aquifer.
+                //  - ISOURCE < 0: for submarine groundwater discharge (SGD)
+                //      sources are of the same type as water in zone abs(ISOURCE) (e.g. salt water from ocean)
+                //      sinks are the same water type as the water at top of aquifer (e.g. fresh water from "upstream")
+
             }
 
             /**
@@ -1295,13 +1304,13 @@ Modify Properties
                 std::string out;
                 if (localZetaID == 0) {
                     out = "between";
-                } else if (Zetas[localZetaID] == Zetas.front()){
+                } else if (Zetas[localZetaID] >= Zetas.front()){
                     out = "top";
-                } else if (Zetas[localZetaID] == Zetas.back()){
+                } else if (Zetas[localZetaID] <= Zetas.back()){
                     out = "bottom";
                 } else if (Zetas[localZetaID] < Zetas.front() and Zetas[localZetaID] > Zetas.back()){
                     out = "between";
-                } // if nodes can be inactive: additional else if
+                } // todo: if nodes can be inactive: additional else if
                 return out;
             }
 
@@ -1347,28 +1356,40 @@ Modify Properties
              * The source term below a zeta surface (in SWI2: G)
              * return volume per time
              */
-            t_vol_t getSourceTermBelowZeta(int localZetaID){ // in SWI2 doc: G todo debugging
+            t_vol_t getSourceTermBelowZeta(int localZetaID){ // in SWI2 doc: G
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
                 t_vol_t RHSConstantDensity_old = 0 * (si::cubic_meter / day);
                 t_s_meter_t hcof = 0 * (si::square_meter / day);
-                if (getZetaPosInNode(localZetaID) == "between") {
-                    // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
+                int zoneToUse = zoneOfSourcesAndSinks; // the zone
 
-                    if (localZetaID == zoneOfExternalFlow) {
-                        RHSConstantDensity_old += get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
-                        //LOG(numerics) << "RHSConstantDensity_old (in getSourceTermBelowZeta): " << RHSConstantDensity_old.value() << std::endl;
-                    } // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
+
+                if (getZetaPosInNode(localZetaID) == "between") { // adapted from SWI2 code lines 3523-3569
+                    // Question: adapt functionality to deal with zone numbers over 100 from SWI2 code?
+                    // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
+                    t_vol_t RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                    //LOG(numerics) << "RHSConstantDensity_old (in getSourceTermBelowZeta): " << RHSConstantDensity_old.value() << std::endl;
+                    // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
                     // get HCOF of NEW time step
-                     hcof = mechanics.getHCOF(steadyState,
+                    t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                          get<t_dim, StepModifier>(),
                                                          getStorageCapacity(),
                                                          getP());
+
+                    if (zoneOfSourcesAndSinks < 0 and
+                        (RHSConstantDensity_old - hcof * get<t_meter, Head>()) > 0 * (si::cubic_meter / day)){ // Question: add 3539-3540? could be: if (ibound < 0){q=-BUFF}
+                        zoneToUse = 0;
+                    }
+                }
+
+                // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
+                if (localZetaID <= abs(zoneToUse)) {
+                    out += RHSConstantDensity_old - hcof * get<t_meter, Head>(); // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR if IZONENR > 100
                 }
                 //LOG(numerics) << "hcof (in getSourceTermBelowZeta): " << hcof.value() << std::endl;
-                // get vertical leakage of NEW time step (the only term of G that depends on zones of density
-                t_vol_t verticalLeakage = getVerticalLeakage(localZetaID);
+
+                t_vol_t verticalLeakage = getVerticalLeakage(localZetaID); // get vertical leakage of NEW time step
+                out += verticalLeakage;
                 //LOG(numerics) << "verticalLeakage (in getSourceTermBelowZeta): " << verticalLeakage.value() << std::endl;
-                // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
-                t_vol_t out = RHSConstantDensity_old - hcof * get<t_meter, Head>() + verticalLeakage; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR
                 NANChecker(out.value(), "getSourceTermBelowZeta");
                 //LOG(numerics) << "out (in getSourceTermBelowZeta): " << out.value() << std::endl;
                 return out;

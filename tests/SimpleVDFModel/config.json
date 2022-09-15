@@ -73,7 +73,8 @@
         "initial_head": "initial_head_simpleVDF.csv",
         "initial_zetas": "initial_zetas_simpleVDF.csv",
         "initial_zones": "initial_zones_simpleVDF.csv",
-        "effective_porosity": "effective_porosity_simpleVDF.csv"
+        "effective_porosity": "effective_porosity_simpleVDF.csv",
+        "zones_sources_sinks": "zones_sources_sinks_simpleVDF.csv"
       }
     }
   }
