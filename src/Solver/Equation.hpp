@@ -242,7 +242,7 @@ namespace GlobalFlow {
          */
         void inline updateMatrix();
 
-        void inline updateMatrix_zetas();
+        void inline updateMatrix_zetas(int localZetaID);
 
         /**
          * Reallocate matrix and vectors based on dried nodes
@@ -274,7 +274,7 @@ namespace GlobalFlow {
         /**
          * Update zetas in inner iteration
          */
-        void inline updateIntermediateZetas();
+        void inline updateIntermediateZetas(int localZetaID);
 
         /**
          * Calculate the final budget
@@ -289,16 +289,16 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateFinalZetaChange();
+        void inline updateFinalZetaChange(int localZetaID);
 
         /**
          * Write the final zeta surface heights to the nodes
          */
         void inline updateTopZetasToHeads();
 
-        void inline checkAllZetaSlopes();
+        void inline checkAllZetaSlopes(int localZetaID);
 
-        void inline adjustAllZetaHeights();
+        void inline adjustAllZetaHeights(int localZetaID);
 
         bool SteadyState = false;
         //Only for testin purposes
