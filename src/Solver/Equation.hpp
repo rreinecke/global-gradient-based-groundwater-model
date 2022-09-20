@@ -228,6 +228,8 @@ namespace GlobalFlow {
             bool vdf{false};
 
             int numberOfZones{0};
+
+            int localZetaID{0};
             /**
              * Helper for updating the matrix
              * @param node
@@ -235,14 +237,14 @@ namespace GlobalFlow {
              */
             void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-            void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached);
+            void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, large_num globalZetaID, bool cached);
 
             /**
              * Update the matrix for the current iteration
              */
             void inline updateMatrix();
 
-            void inline updateMatrix_zetas(int localZetaID);
+            void inline updateMatrix_zetas();
 
             /**
              * Reallocate matrix and vectors based on dried nodes
@@ -274,7 +276,7 @@ namespace GlobalFlow {
             /**
              * Update zetas in inner iteration
              */
-            void inline updateIntermediateZetas(int localZetaID);
+            void inline updateIntermediateZetas();
 
             /**
              * Calculate the final budget
@@ -289,16 +291,16 @@ namespace GlobalFlow {
             /**
              * Write the final zeta surface heights to the nodes
              */
-            void inline updateFinalZetaChange(int localZetaID);
+            void inline updateFinalZetaChange();
 
             /**
              * Write the final zeta surface heights to the nodes
              */
             void inline updateTopZetasToHeads();
 
-            void inline checkAllZetaSlopes(int localZetaID);
+            void inline checkAllZetaSlopes();
 
-            void inline adjustAllZetaHeights(int localZetaID);
+            void inline adjustAllZetaHeights();
 
             bool SteadyState = false;
             //Only for testin purposes

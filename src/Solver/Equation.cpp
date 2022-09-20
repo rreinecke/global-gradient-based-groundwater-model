@@ -125,7 +125,7 @@ namespace GlobalFlow {
         }
 
         void inline
-        Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached) {
+        Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, large_num globalZetaID, bool cached) {
             std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
             quantity<Model::MeterSquaredPerTime> zoneConductance;
 
@@ -317,12 +317,11 @@ namespace GlobalFlow {
                 }
             }
             //LOG(debug) << "A:\n" << A << std::endl;
-            //LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
             //LOG(debug) << "b (= rhs):\n" << b << std::endl;
         }
 
         void inline
-        Equation::updateMatrix_zetas(int localZetaID) { // todo: adapt for multiple layers and more than one moving zeta surface (each has one equation system)
+        Equation::updateMatrix_zetas() { // todo: adapt for multiple layers and more than one moving zeta surface (each has one equation system)
             Index n = A_zetas.outerSize();
             std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
             disabled_nodes.clear();
@@ -335,7 +334,7 @@ namespace GlobalFlow {
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
             for (large_num j = 0; j < numberOfNodes; ++j) {
                 //---------------------Left
-                addToA_zeta(nodes->at(j), localZetaID, globalZetaID, isCached);
+                addToA_zeta(nodes->at(j), globalZetaID, isCached);
                 //---------------------Right
                 b_zetas(globalZetaID - numberOfNodes) = nodes->at(j)->getRHS_zeta(localZetaID).value();
                 globalZetaID++;
@@ -423,7 +422,7 @@ namespace GlobalFlow {
             } else {
                 changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
             }
-            LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
+            //LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
 
             bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
@@ -442,14 +441,15 @@ namespace GlobalFlow {
         }
 
         void inline
-        Equation::updateIntermediateZetas(int localZetaID) {
+        Equation::updateIntermediateZetas() {
             long_vector changes;
             if (disable_dry_cells) {
                 changes = adaptiveDamping.getDamping(getResiduals_zetas(), _x__zetas, isAdaptiveDamping);
             } else {
                 changes = adaptiveDamping.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
             }
-            LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
+            // todo: CAUTION!!! these are not really changes!!!
+            LOG(debug) << "Zeta 'changes' (in updateIntermediateZetas):\n" << changes << std::endl;
             bool reduced = disabled_nodes.empty();
 
 #pragma omp parallel for
@@ -458,11 +458,11 @@ namespace GlobalFlow {
                 large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
 
                 if (reduced) {
-                    nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
+                    nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
                 } else {
                     auto m = index_mapping[id];
                     if (m != -1) {
-                        nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
+                        nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
                     }
                 }
             }
@@ -477,7 +477,7 @@ namespace GlobalFlow {
         }
 
         void inline
-        Equation::updateFinalZetaChange(int localZetaID) {
+        Equation::updateFinalZetaChange() {
 #pragma omp parallel for
             for (large_num k = 0; k < numberOfNodes; ++k) {
                 nodes->at(k)->updateZetaChange(localZetaID);
@@ -501,10 +501,16 @@ Equation::checkAllZetaSlopes(int localZetaID) {
 }*/
 
         void inline
-        Equation::adjustAllZetaHeights(int localZetaID) {
+        Equation::adjustAllZetaHeights() {
 #pragma omp parallel for
             for (large_num k = 0; k < numberOfNodes; ++k) {
                 nodes->at(k)->adjustZetaHeights(localZetaID);
+            }
+
+            LOG(debug) << "adjusted Zeta heights (after adjustAllZetaHeights):" << std::endl;
+#pragma omp parallel for
+            for (large_num k = 0; k < numberOfNodes; ++k) {
+                LOG(debug) << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
             }
         }
 
@@ -707,10 +713,9 @@ Equation::checkAllZetaSlopes(int localZetaID) {
         Equation::solve_zetas(){
             LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
             updateTopZetasToHeads();
-
-            for (int localZetaID = 1; localZetaID <= numberOfZones - 1; localZetaID++) {
+            for (localZetaID = 1; localZetaID <= numberOfZones - 1; localZetaID++) {
                 LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID <<")";
-                updateMatrix_zetas(localZetaID);
+                updateMatrix_zetas();
 
                 if (!isCached_zetas) {
                     LOG(numerics) << "Compressing matrix (zetas)";
@@ -736,18 +741,16 @@ Equation::checkAllZetaSlopes(int localZetaID) {
                 double oldMaxZeta{0};
                 int itterScale{0};
 
+
                 // Returns true if max zetachange is greater than defined val
                 auto isZetaChangeGreater = [this, &maxZeta]() -> bool {
                     double lowerBound = maxZetaChange;
                     double changeMax = 0;
 #pragma omp parallel for
-                    for (large_num k = 0; k < totalNumberOfZetas; ++k) {
-                        double val;
-                        for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-                            val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop
-                            //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
-                            changeMax = (val > changeMax) ? val : changeMax;
-                        }
+                    for (large_num k = 0; k < numberOfNodes; ++k) {
+                        double val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value());
+                        //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
+                        changeMax = (val > changeMax) ? val : changeMax;
                     }
                     maxZeta = changeMax;
                     LOG(numerics) << "MAX Zeta Change: " << changeMax;
@@ -780,7 +783,7 @@ Equation::checkAllZetaSlopes(int localZetaID) {
                     LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration "
                                << iterations << "):\n" << x_zetas << std::endl;
 
-                    updateIntermediateZetas(localZetaID);
+                    updateIntermediateZetas();
                     int innerItter{0};
                     if (nwt) {
                         innerItter = bicgstab_zetas.iterations();
@@ -852,7 +855,7 @@ Equation::checkAllZetaSlopes(int localZetaID) {
                         LOG(numerics) << "Zeta change bigger: " << zetaFail;
                     }
 
-                    updateMatrix_zetas(localZetaID);
+                    updateMatrix_zetas();
                     preconditioner_zetas();
 
                     iterations++;
@@ -873,10 +876,10 @@ Equation::checkAllZetaSlopes(int localZetaID) {
                 // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
 
                 LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
-                adjustAllZetaHeights(localZetaID);
+                adjustAllZetaHeights();
                 // updateZetaBudget(); // Question: calculate zeta budgets?
 
-                updateFinalZetaChange(localZetaID);
+                updateFinalZetaChange();
 
                 __itter = iterations;
                 __error = nwt ? bicgstab_zetas.error() : cg_zetas.error_inf();
