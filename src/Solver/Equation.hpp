@@ -37,11 +37,11 @@ namespace GlobalFlow {
     namespace Solver {
         using namespace boost::units;
         using namespace Eigen;
-      
-	using pr_t = double; //change here if other precision should be used e.g. long double
-	using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>>;
-	using large_num = unsigned long int;
-	using long_vector = Matrix<pr_t, Dynamic, 1>;
+
+        using pr_t = double; //change here if other precision should be used e.g. long double
+        using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>>;
+        using large_num = unsigned long int;
+        using long_vector = Matrix<pr_t, Dynamic, 1>;
 
 /**
  * @class Equation The internal finite difference equation
@@ -151,161 +151,161 @@ namespace GlobalFlow {
              */
             void enableDamping() {
                 isAdaptiveDamping = true;
-            } 
+            }
 
-    private:
-        bool initalized = false;
+        private:
+            bool initalized = false;
 
-        large_num numberOfNodes;
-        large_num totalNumberOfZetas;
-        int initialHead;
+            large_num numberOfNodes;
+            large_num totalNumberOfZetas;
+            int initialHead;
 
-        /**
-         * _var_ only used if disabling of cells is required
-         */
-        NodeVector nodes;
+            /**
+             * _var_ only used if disabling of cells is required
+             */
+            NodeVector nodes;
 
-        long_vector x;
-        long_vector _x_;
-        long_vector b;
-        long_vector _b_;
-        SparseMatrix<pr_t> A;
-        SparseMatrix<pr_t> _A_;
+            long_vector x;
+            long_vector _x_;
+            long_vector b;
+            long_vector _b_;
+            SparseMatrix<pr_t> A;
+            SparseMatrix<pr_t> _A_;
 
-        long_vector x_zetas;
-        long_vector _x__zetas;
-        long_vector b_zetas;
-        long_vector _b__zetas;
-        SparseMatrix<pr_t> A_zetas;
-        SparseMatrix<pr_t> _A__zetas;
-
-
-        const Simulation::Options options;
-
-        bool isAdaptiveDamping{true};
-        AdaptiveDamping adaptiveDamping;
-
-        int IITER{0};//FIXME this is used as outer iterations
-        pr_t RCLOSE{0};
-	    int inner_iterations{0};
-
-        //From current run
-        int __itter{0};
-        double __error{0};
-
-        bool isCached{false};
-        bool isCached_zetas{false};
-
-        double maxHeadChange{0.01};
-        double maxZetaChange{0.01};
-        double dampMin{0.01};
-        double dampMax{0.01};
-
-        bool disable_dry_cells{false};
-        //Maybe rename me :D
-        std::unordered_set<large_num> disabled_nodes;
-        //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index mapping for zetas?
-
-        bool dry_have_changed{true};
-
-        template<typename Set>
-        bool set_compare(Set const &lhs, Set const &rhs) {
-            return lhs.size() == rhs.size()
-                   && std::equal(lhs.begin(), lhs.end(), rhs.begin());
-        }
-
-        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
-
-        ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
-
-        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
-
-        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
-        //Used for NWT
-        bool nwt{false};
-
-        bool vdf{false};
-
-        int numberOfZones{0};
-        /**
-         * Helper for updating the matrix
-         * @param node
-         * @param cached
-         */
-        void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
-
-        void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached);
-
-        /**
-         * Update the matrix for the current iteration
-         */
-        void inline updateMatrix();
-
-        void inline updateMatrix_zetas(int localZetaID);
-
-        /**
-         * Reallocate matrix and vectors based on dried nodes
-         * @bug This is currently missing re-enabling of deactivated nodes!
-         * Re-enable if:
-         * 1) head in cell below needs to be higher than threshold
-         * 2) head in one of 4 neighbours higher than threshold
-         */
-        void inline reallocateMatrix();
+            long_vector x_zetas;
+            long_vector _x__zetas;
+            long_vector b_zetas;
+            long_vector _b__zetas;
+            SparseMatrix<pr_t> A_zetas;
+            SparseMatrix<pr_t> _A__zetas;
 
 
-        void inline reallocateMatrix_zetas(); /// Question: is this at all necessary?
+            const Simulation::Options options;
 
-        /**
-         * Run the preconditioner for heads
-         */
-        void inline preconditioner();
+            bool isAdaptiveDamping{true};
+            AdaptiveDamping adaptiveDamping;
 
-        /**
-         * Run the preconditioner for zetas
-         */
-        void inline preconditioner_zetas();
+            int IITER{0};//FIXME this is used as outer iterations
+            pr_t RCLOSE{0};
+            int inner_iterations{0};
 
-        /**
-         * Update heads in inner iteration
-         */
-        void inline updateIntermediateHeads();
+            //From current run
+            int __itter{0};
+            double __error{0};
 
-        /**
-         * Update zetas in inner iteration
-         */
-        void inline updateIntermediateZetas(int localZetaID);
+            bool isCached{false};
+            bool isCached_zetas{false};
 
-        /**
-         * Calculate the final budget
-         */
-        void inline updateBudget();
+            double maxHeadChange{0.01};
+            double maxZetaChange{0.01};
+            double dampMin{0.01};
+            double dampMax{0.01};
 
-        /**
-         * Write the final head to the nodes
-         */
-        void inline updateFinalHeads();
+            bool disable_dry_cells{false};
+            //Maybe rename me :D
+            std::unordered_set<large_num> disabled_nodes;
+            //Real -> Current
+            std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index mapping for zetas?
 
-        /**
-         * Write the final zeta surface heights to the nodes
-         */
-        void inline updateFinalZetaChange(int localZetaID);
+            bool dry_have_changed{true};
 
-        /**
-         * Write the final zeta surface heights to the nodes
-         */
-        void inline updateTopZetasToHeads();
+            template<typename Set>
+            bool set_compare(Set const &lhs, Set const &rhs) {
+                return lhs.size() == rhs.size()
+                       && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+            }
 
-        void inline checkAllZetaSlopes(int localZetaID);
+            ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
-        void inline adjustAllZetaHeights(int localZetaID);
+            ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
 
-        bool SteadyState = false;
-        //Only for testin purposes
-        bool simpleHead = true;
+            BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
+
+            BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
+            //Used for NWT
+            bool nwt{false};
+
+            bool vdf{false};
+
+            int numberOfZones{0};
+            /**
+             * Helper for updating the matrix
+             * @param node
+             * @param cached
+             */
+            void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
+
+            void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached);
+
+            /**
+             * Update the matrix for the current iteration
+             */
+            void inline updateMatrix();
+
+            void inline updateMatrix_zetas(int localZetaID);
+
+            /**
+             * Reallocate matrix and vectors based on dried nodes
+             * @bug This is currently missing re-enabling of deactivated nodes!
+             * Re-enable if:
+             * 1) head in cell below needs to be higher than threshold
+             * 2) head in one of 4 neighbours higher than threshold
+             */
+            void inline reallocateMatrix();
+
+
+            void inline reallocateMatrix_zetas(); /// Question: is this at all necessary?
+
+            /**
+             * Run the preconditioner for heads
+             */
+            void inline preconditioner();
+
+            /**
+             * Run the preconditioner for zetas
+             */
+            void inline preconditioner_zetas();
+
+            /**
+             * Update heads in inner iteration
+             */
+            void inline updateIntermediateHeads();
+
+            /**
+             * Update zetas in inner iteration
+             */
+            void inline updateIntermediateZetas(int localZetaID);
+
+            /**
+             * Calculate the final budget
+             */
+            void inline updateBudget();
+
+            /**
+             * Write the final head to the nodes
+             */
+            void inline updateFinalHeads();
+
+            /**
+             * Write the final zeta surface heights to the nodes
+             */
+            void inline updateFinalZetaChange(int localZetaID);
+
+            /**
+             * Write the final zeta surface heights to the nodes
+             */
+            void inline updateTopZetasToHeads();
+
+            void inline checkAllZetaSlopes(int localZetaID);
+
+            void inline adjustAllZetaHeights(int localZetaID);
+
+            bool SteadyState = false;
+            //Only for testin purposes
+            bool simpleHead = true;
 
         };
-}
+    }
 }
 
 #endif
