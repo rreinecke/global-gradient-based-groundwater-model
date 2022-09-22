@@ -19,60 +19,60 @@ namespace GlobalFlow {
          * @class VariableDensityFlow
          * Provides helper functions for variable density calculations
          */
-        class VariableDensityFlow { // todo do we really need this class?
+        /*class VariableDensityFlow { // todo do we really need this class?
         private:
             Simulation::Options options;
         public:
             VariableDensityFlow(){}
 
-            /**
+            *//**
              * @brief calculates the thicknesses of the density zones between current and neighbouring node by linear interpolation (in SWI2: THICKRF, THICKFF)
              * @param zetas zeta surface height (zeta[p+1]: surface below)
              * @param zetas_neig zeta surface height in neighbouring cell (zeta_neig[p+1]: surface below)
              * @param edgeLength_neig edge width/length of neighbouring column/row
              * @param edgeLength_self edge width/length of this column/row
              * @return zone thickness
-             */
+             *//*
             std::vector<t_meter> calculateZoneThicknesses(std::vector<t_meter> zetas,
                                                           std::vector<t_meter> zetas_neig,
                                                           t_meter edgeLength_neig,
                                                           t_meter edgeLength_self) noexcept;
 
-            /**
+            *//**
              * @brief calculates the conductance in the column/row direction for a density zone (in SWI2: SWICR & SWICC)
              * @param zoneThicknesses thicknesses of zones
              * @param conductance conductance of cell towards respective neighbouring cell
              * @return vector with conductances of density zones
-             */
+             *//*
             std::vector<t_s_meter_t> calculateDensityZoneConductances(
                     std::vector<t_meter> zoneThicknesses, t_s_meter_t conductance) noexcept;
 
-            /**
+            *//**
              * @brief calculates the cumulative conductance in column/row direction below a density surface n (in SWI2: SWICUMCR & SWICUMCC)
              * @param densityZoneCond
              * @param conductance conductance of cell towards respective neighbouring cell
              * @return vector with conductances of density zones
-             */
+             *//*
             t_s_meter_t calculateZoneConductanceCum(int n, std::vector<t_s_meter_t> densityZoneCond) noexcept;
 
 
-            /**
+            *//**
              * @brief calculates the horizontal conductances used to solve ZETA surface heights (in SWI2: SWISOLCC/R)
              * @param densityZoneCond vector of density zone condutctances
              * @param densityZoneCondCum vector of density zone condutctances below each surface
              * @param delnus difference in dimensionless density between successive zeta surfaces
              * @param eps variation of dimensionless density over a density zone (for continuous option)
              * @return vector with horizontal conductances used to solve ZETA surface heights
-             */
-            /*t_s_meter_t calculateZetaMovementConductance(
+             *//*
+            *//*t_s_meter_t calculateZetaMovementConductance(
                     int n,
                     std::vector<t_s_meter_t> densityZoneCond,
                     std::vector<t_s_meter_t> densityZoneCondCum,
                     std::vector<t_dim> delnus,
-                    std::vector<t_dim> eps) noexcept;*/
+                    std::vector<t_dim> eps) noexcept;*//*
 
         };
-
+*/
         /**
          * @class DensityProperties
          * Class to store the dimensionless density of zones and surfaces, & info about density change between surfaces
@@ -113,15 +113,13 @@ namespace GlobalFlow {
                     nusZetaVec.push_back((densityZeta - densityFresh ) / densityFresh * Model::si::si_dimensionless);
                 }
 
-                for (int id = 0; id <= numberOfDensityZones-1; id++) {
+                for (int id = 0; id < numberOfDensityZones; id++) {
 
                     if (densityStratified) {
                         nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
                         epsVec.push_back(0 * Model::si::si_dimensionless);
                     } else { // if continuous todo: test for continuous case whether the results are correct
-                        nusZoneVec.push_back(((densityZones[id] - densityFresh) * 0.5 +
-                                              (densityZones[id+1] - densityFresh) * 0.5)
-                                             * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces above and below
+                        nusZoneVec.push_back((nusZetaVec[id] + nusZetaVec[id+1]) * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces at top and bottom
                         epsVec.push_back((( nusZetaVec[id+1] - nusZetaVec[id] ) / 6));
                     }
                     //LOG(debug) << "eps (for zone " << id << "): " << epsVec[id].value() << std::endl;

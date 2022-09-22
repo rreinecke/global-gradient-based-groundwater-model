@@ -708,7 +708,7 @@ Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
 
-    for (int localZetaID = 1; localZetaID <= numberOfZones - 1; localZetaID++) {
+    for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID <<")";
         updateMatrix_zetas(localZetaID);
 

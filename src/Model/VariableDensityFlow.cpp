@@ -1,3 +1,4 @@
+/*
 #include "VariableDensityFlow.hpp"
 #include "../Misc/Helpers.hpp"
 
@@ -17,10 +18,10 @@ namespace GlobalFlow {
             t_meter deltaZeta;
             t_meter deltaZeta_neig;
             int numOfZones = options.getNumberOfDensityZones();
+
             for (int localZetaID = 0; localZetaID <= numOfZones; localZetaID++) {
                 deltaZeta = zetas[localZetaID] - zetas[localZetaID + 1];
                 deltaZeta_neig = zetas_neig[localZetaID] - zetas_neig[localZetaID + 1];
-
                 if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
                     zoneThickness = 0 * si::meter;
                 } else {
@@ -47,7 +48,6 @@ namespace GlobalFlow {
             // calculate the density zone conductances
             std::vector<t_s_meter_t> out;
             t_s_meter_t densityZoneConductance;
-            int numOfZones = options.getNumberOfDensityZones();
             std::for_each(zoneThicknesses.begin(), zoneThicknesses.end(), [&](t_meter zoneThickness) {
                 if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
                     densityZoneConductance = 0 * si::square_meter / day;
@@ -66,7 +66,6 @@ namespace GlobalFlow {
         VariableDensityFlow::calculateZoneConductanceCum(int n, std::vector<t_s_meter_t> densityZoneCond)noexcept {
             // calculate the sum of density zone conductances below a zeta surface n and add to vector out
             t_s_meter_t out = 0 * si::square_meter / day;
-            int numOfZones = options.getNumberOfDensityZones();
 
             std::for_each(densityZoneCond.begin() + n, densityZoneCond.end(), [&](t_s_meter_t densityZoneCondBelow) {
                 out += densityZoneCondBelow;
@@ -76,7 +75,8 @@ namespace GlobalFlow {
             return out;
         }
 
-        /*t_s_meter_t
+        */
+/*t_s_meter_t
         VariableDensityFlow::calculateZetaMovementConductance(int n,
                 std::vector<t_s_meter_t> densityZoneCond, std::vector<t_s_meter_t> densityZoneCondCum,
                 std::vector<t_dim> delnus, std::vector<t_dim> eps) noexcept {
@@ -91,8 +91,9 @@ namespace GlobalFlow {
             }
 
             return out;
-        }*/
+        }*//*
+
 
 
     }
-}
+}*/
