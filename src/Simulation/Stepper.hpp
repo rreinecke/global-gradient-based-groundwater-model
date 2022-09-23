@@ -25,10 +25,10 @@ namespace GlobalFlow {
         enum TimeFrame {
             DAY = 1,
             TWO_DAYS = 2,
-	          WEEK = 7,
+            WEEK = 7,
             FORTNIGHT = 15,
-	          MONTH = 30,
-	          YEAR = 360
+	        MONTH = 30,
+	        YEAR = 360
         };
 
         typedef std::pair<Solver::Equation *, double> step;

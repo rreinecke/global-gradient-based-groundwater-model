@@ -1474,71 +1474,79 @@ Modify Properties
                 oppositePositions[NeighbourPosition::LEFT] = NeighbourPosition::RIGHT;
 
                 // tip and toe flow calculation (in 6 parts)
-                for (const auto &position: possible_neighbours) {
-                    map_itter got = neighbours.find(position);
-                    if (got == neighbours.end()) {
-                    } else {
-                        if (at(got)->getZetaPosInNode(localZetaID) != "between") {
-                            // 1st part: head part for left/back neighbour
-                            std::vector<t_s_meter_t> zoneConductances =
-                                    calculateZoneConductances(
-                                            got,
-                                            mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                            t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
-                                                                                  zoneConductances);
-                            t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
-                            out -= head_part;
-                            // 2nd part: eps part for left/back neighbour
-                            t_vol_t eps_part = eps[localZetaID] *
-                                               (zoneConductances[localZetaID] *
-                                                (-(at(got)->Zetas[localZetaID] - Zetas[localZetaID]) +
-                                                 (at(got)->Zetas[localZetaID + 1] - Zetas[localZetaID + 1])));
-                            out -= eps_part;
-                            // 3rd part: delnus part for left/back neighbour
-                            for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                                t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID, zoneConductances);
-                                t_vol_t delnus_part = delnus[zetaID] *
-                                                      (zoneCondCumZetaID * (at(got)->Zetas[zetaID] - Zetas[zetaID]));
-                                out -= delnus_part;
+                if (getZetaPosInNode(localZetaID) == "between") { // if the Zeta surface at this node is between top and bottom of the node
+                    for (const auto &position: possible_neighbours) {
+                        map_itter got = neighbours.find(position);
+                        if (got == neighbours.end()) { // do nothing if neighbour does not exist
+                        } else {
+                            if (at(got)->getZetaPosInNode(localZetaID) != "between") { // if the Zeta surface at neighbouring node is at top or bottom of the node
+                                // 1st part: head part for left/back neighbour
+                                std::vector<t_s_meter_t> zoneConductances =
+                                        calculateZoneConductances(
+                                                got,
+                                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                                t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
+                                                                                      zoneConductances);
+                                t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                                out -= head_part;
+                                // 2nd part: eps part for left/back neighbour
+                                t_vol_t eps_part = eps[localZetaID] *
+                                                   (zoneConductances[localZetaID] *
+                                                    (-(at(got)->Zetas[localZetaID] - Zetas[localZetaID]) +
+                                                     (at(got)->Zetas[localZetaID + 1] - Zetas[localZetaID + 1])));
+                                out -= eps_part;
+                                // 3rd part: delnus part for left/back neighbour
+                                for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
+                                    t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
+                                                                                                zoneConductances);
+                                    t_vol_t delnus_part = delnus[zetaID] *
+                                                          (zoneCondCumZetaID *
+                                                           (at(got)->Zetas[zetaID] - Zetas[zetaID]));
+                                    out -= delnus_part;
+                                }
                             }
                         }
-                    }
-                    map_itter got_opp = neighbours.find(oppositePositions[position]);
-                    if (got == neighbours.end()) {
-                    } else {
-                        if (at(got_opp)->getZetaPosInNode(localZetaID) != "between") {
-                            // 4th part: head part for right/front neighbour:
-                            //  getAt is now used for the other head
-                            //  got is now to the opposite: got_opp
-                            //  head part is added, instead of subtracted
-                            std::vector<t_s_meter_t> zoneConductances_opp =
-                                    calculateZoneConductances(
-                                            got_opp,
-                                            mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got_opp)));
-                            t_s_meter_t zoneCondCum_opp = calculateZoneConductanceCum(localZetaID,
-                                                                                      zoneConductances_opp);
-                            t_vol_t head_part2 = zoneCondCum_opp * (get<t_meter, Head>() - getAt<t_meter, Head>(got_opp));
-                            out += head_part2;
+                        map_itter got_opp = neighbours.find(oppositePositions[position]);
+                        if (got_opp == neighbours.end()) { // do nothing if opposite neighbour does not exist
+                        } else {
+                            if (at(got_opp)->getZetaPosInNode(localZetaID) != "between") { // if the Zeta surface at the opposite neighbouring node is at top or bottom of the node
+                                // 4th part: head part for right/front neighbour:
+                                //  getAt is now used for the other head
+                                //  got is now to the opposite: got_opp
+                                //  head part is added, instead of subtracted
+                                std::vector<t_s_meter_t> zoneConductances_opp =
+                                        calculateZoneConductances(
+                                                got_opp,
+                                                mechanics.calculateHarmonicMeanConductance(
+                                                        createDataTuple<Head>(got_opp)));
+                                t_s_meter_t zoneCondCum_opp = calculateZoneConductanceCum(localZetaID,
+                                                                                          zoneConductances_opp);
+                                t_vol_t head_part2 =
+                                        zoneCondCum_opp * (get<t_meter, Head>() - getAt<t_meter, Head>(got_opp));
+                                out += head_part2;
 
-                            // 5th part: eps part for right/front neighbour
-                            //  got is now got_opp
-                            //  at(got)-> is now at the other Zetas
-                            //  eps part is added, instead of subtracted
-                            t_vol_t eps_part2 = eps[localZetaID] *
-                                               (zoneConductances_opp[localZetaID] *
-                                                (-(Zetas[localZetaID] - at(got_opp)->Zetas[localZetaID]) +
-                                                 (Zetas[localZetaID + 1] - at(got_opp)->Zetas[localZetaID + 1])));
-                            out += eps_part2;
+                                // 5th part: eps part for right/front neighbour
+                                //  got is now got_opp
+                                //  at(got)-> is now at the other Zetas
+                                //  eps part is added, instead of subtracted
+                                t_vol_t eps_part2 = eps[localZetaID] *
+                                                    (zoneConductances_opp[localZetaID] *
+                                                     (-(Zetas[localZetaID] - at(got_opp)->Zetas[localZetaID]) +
+                                                      (Zetas[localZetaID + 1] - at(got_opp)->Zetas[localZetaID + 1])));
+                                out += eps_part2;
 
-                            // 6th part: delnus part for right/front neighbour
-                            //  got is now got_opp
-                            //  at(got)-> is now at the other Zetas
-                            //  delnus part is added, instead of subtracted
-                            for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                                t_s_meter_t zoneCondCumZetaID_opp = calculateZoneConductanceCum(zetaID, zoneConductances_opp);
-                                t_vol_t delnus_part2 = delnus[zetaID] *
-                                                      (zoneCondCumZetaID_opp * (Zetas[zetaID] - at(got_opp)->Zetas[zetaID]));
-                                out += delnus_part2;
+                                // 6th part: delnus part for right/front neighbour
+                                //  got is now got_opp
+                                //  at(got)-> is now at the other Zetas
+                                //  delnus part is added, instead of subtracted
+                                for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
+                                    t_s_meter_t zoneCondCumZetaID_opp = calculateZoneConductanceCum(zetaID,
+                                                                                                    zoneConductances_opp);
+                                    t_vol_t delnus_part2 = delnus[zetaID] *
+                                                           (zoneCondCumZetaID_opp *
+                                                            (Zetas[zetaID] - at(got_opp)->Zetas[zetaID]));
+                                    out += delnus_part2;
+                                }
                             }
                         }
                     }
