@@ -920,20 +920,22 @@ Modify Properties
             }
 
             /**
-             * @brief Update heads after one or multiple inner iterations
-             * @param head
+             * @brief Update zetas after one or multiple inner iteration
+             * @param localZetaID
+             * @param delta
              */
-            virtual void addDeltaToZeta(int localZetaID, t_meter newZeta) {
-                NANChecker(newZeta.value(), "delta (in addDeltaToZeta)");
+            virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
+                NANChecker(delta.value(), "delta (in addDeltaToZeta)");
                 if (localZetaID < ZetasChange.size()) {
-                    ZetasChange[localZetaID] = newZeta - Zetas[localZetaID]; // size of ZetasChange is one lower than size of Zetas
+                    ZetasChange[localZetaID] = delta; // - Zetas[localZetaID];
                     //LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
                 } else {
                     LOG(debug) << "localZetaID larger than ZetasChange.size() (in addDeltaToZeta)" << std::endl;
-                    ZetasChange.push_back(newZeta - Zetas[localZetaID]); // add delta as new entry in ZetasChange
+                    ZetasChange.push_back(delta); // - Zetas[localZetaID]); // add delta as new entry in ZetasChange
                 }
                 if (localZetaID < Zetas.size()) {
-                    Zetas[localZetaID] = newZeta;
+                    t_meter current_zeta = Zetas[localZetaID];
+                    Zetas[localZetaID] = current_zeta + delta;
                     //LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
                 NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
@@ -1179,7 +1181,7 @@ Modify Properties
                 t_vol_t pseudoSource_Zeta = getPseudoSource_Zeta(localZetaID);
                 //LOG(debug) << "pseudoSource_Zeta (in getRHS_zeta): " << pseudoSource_Zeta.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID);
-
+                //LOG(debug) << "tipToeFlow (in getRHS_zeta): " << tipToeFlow.value() << std::endl;
                 t_vol_t out = - porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta + tipToeFlow;
                 //LOG(debug) << "out (in getRHS_zeta): " << out.value() << std::endl;
                 NANChecker(out.value(), "getRHS_zeta");
@@ -1357,14 +1359,11 @@ Modify Properties
                     get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) { // adapted from SWI2 code lines 3523-3569
                     // Question: adapt functionality to deal with zone numbers over 100 from SWI2 code?
                     // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
-                    t_vol_t RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                    RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
                     //LOG(numerics) << "RHSConstantDensity_old (in getSourceTermBelowZeta): " << RHSConstantDensity_old.value() << std::endl;
                     // todo make sure this is from previous time step!! And adapt so multiple external flows can be added to multiple zones
                     // get HCOF of NEW time step
-                    t_s_meter_t hcof = mechanics.getHCOF(steadyState,
-                                                         get<t_dim, StepModifier>(),
-                                                         getStorageCapacity(),
-                                                         getP());
+                    hcof = mechanics.getHCOF(steadyState, get<t_dim, StepModifier>(), getStorageCapacity(), getP());
 
                     if (zoneOfSourcesAndSinks < 0 and
                         (RHSConstantDensity_old - hcof * get<t_meter, Head>()) > 0 * (si::cubic_meter / day)){ // Question: add 3539-3540? could be: if (ibound < 0){q=-BUFF}
@@ -1452,14 +1451,14 @@ Modify Properties
                         }
                     }
                 }
-                // LOG(numerics) << "out (in getPseudoSource_Zeta): " << out.value() << std::endl;
+                // LOG(debug) << "out (in getPseudoSource_Zeta): " << out.value() << std::endl;
                 NANChecker(out.value(), "getPseudoSource_Zeta");
                 return out;
             }
 
             /*
              * Specification of boundary condition at tips and toes
-             * adapted from SWI2 code lines 3637-3678
+             * adapted from SWI2 code lines 3637-3703
              */
             t_vol_t getTipToeFlow(int localZetaID){ // todo: debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
@@ -1467,90 +1466,106 @@ Modify Properties
                 vector<t_dim> eps = densityProps.getEps();
                 vector<t_dim> delnus = densityProps.getDelnus();
                 std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::LEFT, NeighbourPosition::BACK};
+                        {NeighbourPosition::LEFT, NeighbourPosition::RIGHT,
+                         NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                         NeighbourPosition::TOP, NeighbourPosition::DOWN};
 
-                std::unordered_map<NeighbourPosition, NeighbourPosition> oppositePositions;
-                oppositePositions[NeighbourPosition::BACK] = NeighbourPosition::FRONT;
-                oppositePositions[NeighbourPosition::LEFT] = NeighbourPosition::RIGHT;
-
-                // tip and toe flow calculation (in 6 parts)
+                // tip and toe flow calculation (in 8 parts)
                 if (getZetaPosInNode(localZetaID) == "between") { // if the Zeta surface at this node is between top and bottom of the node
                     for (const auto &position: possible_neighbours) {
                         map_itter got = neighbours.find(position);
                         if (got == neighbours.end()) { // do nothing if neighbour does not exist
                         } else {
                             if (at(got)->getZetaPosInNode(localZetaID) != "between") { // if the Zeta surface at neighbouring node is at top or bottom of the node
-                                // 1st part: head part for left/back neighbour
-                                std::vector<t_s_meter_t> zoneConductances =
-                                        calculateZoneConductances(
-                                                got,
-                                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-                                t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
-                                                                                      zoneConductances);
-                                t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
-                                out -= head_part;
-                                // 2nd part: eps part for left/back neighbour
-                                t_vol_t eps_part = eps[localZetaID] *
-                                                   (zoneConductances[localZetaID] *
-                                                    (-(at(got)->Zetas[localZetaID] - Zetas[localZetaID]) +
-                                                     (at(got)->Zetas[localZetaID + 1] - Zetas[localZetaID + 1])));
-                                out -= eps_part;
-                                // 3rd part: delnus part for left/back neighbour
-                                for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                                    t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
-                                                                                                zoneConductances);
-                                    t_vol_t delnus_part = delnus[zetaID] *
-                                                          (zoneCondCumZetaID *
-                                                           (at(got)->Zetas[zetaID] - Zetas[zetaID]));
-                                    out -= delnus_part;
-                                }
-                            }
-                        }
-                        map_itter got_opp = neighbours.find(oppositePositions[position]);
-                        if (got_opp == neighbours.end()) { // do nothing if opposite neighbour does not exist
-                        } else {
-                            if (at(got_opp)->getZetaPosInNode(localZetaID) != "between") { // if the Zeta surface at the opposite neighbouring node is at top or bottom of the node
-                                // 4th part: head part for right/front neighbour:
-                                //  getAt is now used for the other head
-                                //  got is now to the opposite: got_opp
-                                //  head part is added, instead of subtracted
-                                std::vector<t_s_meter_t> zoneConductances_opp =
-                                        calculateZoneConductances(
-                                                got_opp,
-                                                mechanics.calculateHarmonicMeanConductance(
-                                                        createDataTuple<Head>(got_opp)));
-                                t_s_meter_t zoneCondCum_opp = calculateZoneConductanceCum(localZetaID,
-                                                                                          zoneConductances_opp);
-                                t_vol_t head_part2 =
-                                        zoneCondCum_opp * (get<t_meter, Head>() - getAt<t_meter, Head>(got_opp));
-                                out += head_part2;
+                                if ((position == NeighbourPosition::LEFT) or
+                                    (position == NeighbourPosition::BACK)) {
+                                    // 1st part: head part for left/back neighbour
+                                    std::vector<t_s_meter_t> zoneConductances =
+                                            calculateZoneConductances(
+                                                    got,
+                                                    mechanics.calculateHarmonicMeanConductance(
+                                                            createDataTuple<Head>(got)));
+                                    t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
+                                                                                          zoneConductances);
+                                    t_vol_t head_part =
+                                            zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                                    //LOG(debug) << "head_part (in getTipToeFlow): " << head_part.value() << std::endl;
 
-                                // 5th part: eps part for right/front neighbour
-                                //  got is now got_opp
-                                //  at(got)-> is now at the other Zetas
-                                //  eps part is added, instead of subtracted
-                                t_vol_t eps_part2 = eps[localZetaID] *
-                                                    (zoneConductances_opp[localZetaID] *
-                                                     (-(Zetas[localZetaID] - at(got_opp)->Zetas[localZetaID]) +
-                                                      (Zetas[localZetaID + 1] - at(got_opp)->Zetas[localZetaID + 1])));
-                                out += eps_part2;
+                                    out -= head_part;
+                                    // 2nd part: eps part for left/back neighbour
+                                    t_vol_t eps_part = eps[localZetaID] *
+                                                       (zoneConductances[localZetaID] *
+                                                        (-(at(got)->Zetas[localZetaID] - Zetas[localZetaID]) +
+                                                         (at(got)->Zetas[localZetaID + 1] - Zetas[localZetaID + 1])));
+                                    //LOG(debug) << "eps_part (in getTipToeFlow): " << eps_part.value() << std::endl;
+                                    out -= eps_part;
+                                    // 3rd part: delnus part for left/back neighbour
+                                    for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
+                                        t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
+                                                                                                    zoneConductances);
+                                        t_vol_t delnus_part = delnus[zetaID] *
+                                                              (zoneCondCumZetaID *
+                                                               (at(got)->Zetas[zetaID] - Zetas[zetaID]));
+                                        //LOG(debug) << "delnus_part (in getTipToeFlow): " << delnus_part.value() << std::endl;
+                                        out -= delnus_part;
+                                    }
 
-                                // 6th part: delnus part for right/front neighbour
-                                //  got is now got_opp
-                                //  at(got)-> is now at the other Zetas
-                                //  delnus part is added, instead of subtracted
-                                for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                                    t_s_meter_t zoneCondCumZetaID_opp = calculateZoneConductanceCum(zetaID,
-                                                                                                    zoneConductances_opp);
-                                    t_vol_t delnus_part2 = delnus[zetaID] *
-                                                           (zoneCondCumZetaID_opp *
-                                                            (Zetas[zetaID] - at(got_opp)->Zetas[zetaID]));
-                                    out += delnus_part2;
+                                } else if ((position == NeighbourPosition::RIGHT) or
+                                    (position == NeighbourPosition::FRONT)) {
+                                    // 4th part: head part for right/front neighbour:
+                                    //  getAt is now used for the other head
+                                    //  got is now to the opposite: got_opp
+                                    //  head part is added, instead of subtracted
+                                    std::vector<t_s_meter_t> zoneConductances =
+                                            calculateZoneConductances(
+                                                    got,
+                                                    mechanics.calculateHarmonicMeanConductance(
+                                                            createDataTuple<Head>(got)));
+                                    t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
+                                                                                              zoneConductances);
+                                    t_vol_t head_part2 =
+                                            zoneCondCum * (get<t_meter, Head>() - getAt<t_meter, Head>(got));
+                                    //LOG(debug) << "head_part2 (in getTipToeFlow): " << head_part2.value() << std::endl;
+
+                                    out += head_part2;
+
+                                    // 5th part: eps part for right/front neighbour
+                                    //  got is now got_opp
+                                    //  at(got)-> is now at the other Zetas
+                                    //  eps part is added, instead of subtracted
+                                    t_vol_t eps_part2 = eps[localZetaID] *
+                                                        (zoneConductances[localZetaID] *
+                                                         (-(Zetas[localZetaID] - at(got)->Zetas[localZetaID]) +
+                                                          (Zetas[localZetaID + 1] -
+                                                           at(got)->Zetas[localZetaID + 1])));
+                                    //LOG(debug) << "eps_part2 (in getTipToeFlow): " << eps_part2.value() << std::endl;
+                                    out += eps_part2;
+
+                                    // 6th part: delnus part for right/front neighbour
+                                    //  got is now got_opp
+                                    //  at(got)-> is now at the other Zetas
+                                    //  delnus part is added, instead of subtracted
+                                    for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
+                                        t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
+                                                                                                        zoneConductances);
+                                        t_vol_t delnus_part2 = delnus[zetaID] *
+                                                               (zoneCondCumZetaID *
+                                                                (Zetas[zetaID] - at(got)->Zetas[zetaID]));
+                                        //LOG(debug) << "delnus_part2 (in getTipToeFlow): " << delnus_part2.value() << std::endl;
+                                        out += delnus_part2;
+                                    }
+                                } else if (position == NeighbourPosition::TOP) {
+                                    // 7th part: vertical leakage
+                                    // todo
+                                } else if (position == NeighbourPosition::DOWN) {
+                                    // 8th part: vertical leakage
+                                    // todo
                                 }
                             }
                         }
                     }
                 }
+
                 return out;
             }
 
@@ -1669,7 +1684,7 @@ Modify Properties
              * (in SWI2 documentation: CV*BOUY; in code: QLEXTRA)
              * @out meter
              */
-            t_vol_t verticalFluxCorrection(){
+            t_vol_t verticalFluxCorrection(){ // todo debug
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> delnus = densityProps.getDelnus();
                 vector<t_dim> nusZones = densityProps.getNusZones();
@@ -1679,7 +1694,7 @@ Modify Properties
 
                 // find the top neighbor
                 std::unordered_map<NeighbourPosition, large_num>::const_iterator got =
-                        neighbours.find(NeighbourPosition::DOWN);
+                        neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) {//No top node
                 } else {//Current node has a top node
                     // first part of the flux correction term
@@ -1689,8 +1704,8 @@ Modify Properties
                     // second part of the flux correction term
                     verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
-                          (headdiff + 0.5 * (Zetas.back() - at(got)->Zetas.front()) *
-                           (getNusBot() + at(got)->getNusTop())); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
+                          (headdiff + 0.5 * (at(got)->Zetas.back() - Zetas.front()) *
+                           (at(got)->getNusBot() + getNusTop())); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
                 }
                 return out;
             }
@@ -1847,28 +1862,29 @@ Modify Properties
                 t_meter zetaChange_self; // zeta height
                 t_meter zetaChange_neig;
 
-                std::unordered_map<string, t_dim> trackMap;
+                std::unordered_map<string, t_dim> maxSlopes;
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                trackMap["Toe"] = densityProps.getMaxToeSlope();
-                trackMap["Tip"] = densityProps.getMaxTipSlope();
+                maxSlopes["Toe"] = densityProps.getMaxToeSlope();
+                maxSlopes["Tip"] = densityProps.getMaxTipSlope();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
-                for (const auto &tracker : trackMap) {
+                for (const auto &maxSlope : maxSlopes) {
                     for (const auto &position : possible_neighbours) {
                         map_itter got = neighbours.find(position);
                         map_itter got_opp = neighbours.find(oppositePositions[position]);
                         if (got == neighbours.end() or got_opp == neighbours.end()) { // no neighbour at position or opposite side
                         } else {
                             if (getZetaPosInNode(localZetaID) == "between") {
-                                if ((tracker.first == "Toe" and at(got)->getZetaPosInNode(localZetaID) == "bottom") or
-                                    (tracker.first == "Tip" and at(got)->getZetaPosInNode(localZetaID) == "top")) {
+                                if ((maxSlope.first == "Toe" and at(got)->getZetaPosInNode(localZetaID) == "bottom") or
+                                    (maxSlope.first == "Tip" and at(got)->getZetaPosInNode(localZetaID) == "top")) {
 
                                     // get length of the edges
                                     edgeLength_self = getLengthSelf(got);
                                     edgeLength_neig = getLengthNeig(got);
                                     // get max delta of zeta between nodes
-                                    maxDeltaZeta = 0.5 * (edgeLength_self + edgeLength_neig) * tracker.second;
+                                    maxDeltaZeta = 0.5 * (edgeLength_self + edgeLength_neig) * maxSlope.second;
+                                    LOG(debug) << "maxDeltaZeta: " << maxDeltaZeta.value() << std::endl;
 
                                     // raise/lower zeta surfaces
                                     effPor_self = get<t_dim, EffectivePorosity>();
@@ -1884,13 +1900,20 @@ Modify Properties
                                                        ((effPor_self * edgeLength_self) +
                                                         (effPor_neig * edgeLength_neig)));
 
-                                    if (tracker.first == "Toe" and at(got)->getZetaPosInNode(localZetaID) == "bottom") {
-                                        if ((Zetas[localZetaID] - at(got)->Zetas.back()) > maxDeltaZeta) {
+                                    if (maxSlope.first == "Toe" and
+                                        at(got)->getZetaPosInNode(localZetaID) == "bottom") {
+                                        t_meter deltaZeta = abs(Zetas[localZetaID] - at(got)->Zetas.back());
+                                        LOG(debug) << "deltaZeta (toe): " << deltaZeta.value() << std::endl;
+
+                                        if (deltaZeta > maxDeltaZeta) {
                                             Zetas[localZetaID] = Zetas[localZetaID] - zetaChange_self;
                                             at(got)->Zetas[localZetaID] = at(got)->Zetas.back() + zetaChange_neig;
                                         }
-                                    } else if (tracker.first == "Tip" and at(got)->getZetaPosInNode(localZetaID) == "top") {
-                                        if ((at(got)->Zetas.front() - Zetas[localZetaID]) > maxDeltaZeta) {
+                                    } else if (maxSlope.first == "Tip" and
+                                               at(got)->getZetaPosInNode(localZetaID) == "top") {
+                                        t_meter deltaZeta = abs(at(got)->Zetas.front() - Zetas[localZetaID]);
+                                        LOG(debug) << "deltaZeta (tip): " << deltaZeta.value() << std::endl;
+                                        if (deltaZeta > maxDeltaZeta) {
                                             Zetas[localZetaID] = Zetas[localZetaID] + zetaChange_self;
                                             at(got)->Zetas[localZetaID] = at(got)->Zetas.front() - zetaChange_neig;
                                         }
@@ -2238,8 +2261,8 @@ Modify Properties
             };
 
             t_vol_t getRHSConstantDensity(){
-                t_vol_t externalFlows = -getQ();
-                //LOG(debug) << "externalFlows: " << externalFlows.value() << std::endl;
+                t_vol_t extFlows = -getQ();
+                //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow();
                 //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t rivers = calculateNotHeadDependandFlows();
@@ -2251,27 +2274,14 @@ Modify Properties
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
 
-                t_vol_t out = externalFlows + dewateredFlow - rivers - storageFlow;
+                t_vol_t out = extFlows + dewateredFlow - rivers - storageFlow;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
                 return out;
             }
 
-
-            t_vol_t getRHSVariableDensity(){
-                // calculate variable density terms
-                t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
-                //LOG(debug) << "pseudoSourceFlow: " << pseudoSourceFlow.value() << std::endl;
-                t_vol_t vertFluxCorrection = verticalFluxVDF({NeighbourPosition::TOP, NeighbourPosition::DOWN});
-                //LOG(debug) << "vertFluxCorrection: " << vertFluxCorrection.value() << std::endl;
-                t_vol_t out = pseudoSourceFlow + vertFluxCorrection;
-                //LOG(debug) << "RHS variable density: " << out.value() << std::endl;
-                NANChecker(out.value(), "RHS variable density");
-                return out;
-            }
-
             /**
-             * @brief The right hand side of the equation
+             * @brief The right hand side of the flow equation
              * @return volume per time
              */
             t_vol_t getRHS() {
@@ -2279,9 +2289,16 @@ Modify Properties
                 t_vol_t out = getRHSConstantDensity();
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 if (densityProps.isDensityVariable()) { // todo maybe make condition: zones.size() > 1
-                    // save RHS without variable density terms for calculation of zeta movement at next time step
+                    // save constant density RHS (without variable density terms) for calculation of zeta movement
                     set<t_vol_t, RHSConstantDensity_TZero>(out);
-                    out += getRHSVariableDensity();
+
+                    // calculate variable density terms Pseudo-Source Flow and Vertical Flux Correction; add them to RHS
+                    t_vol_t pseudoSourceFlow = getPseudoSource_Flow();
+                    //LOG(debug) << "pseudoSourceFlow: " << pseudoSourceFlow.value() << std::endl;
+                    t_vol_t vertFluxCorrection = verticalFluxVDF({NeighbourPosition::TOP, NeighbourPosition::DOWN});
+                    //LOG(debug) << "vertFluxCorrection: " << vertFluxCorrection.value() << std::endl;
+                    out += pseudoSourceFlow + vertFluxCorrection;
+                    //LOG(debug) << "RHS variable density: " << out.value() << std::endl;
                 }
                 NANChecker(out.value(), "RHS");
                 return out;

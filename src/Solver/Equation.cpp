@@ -458,11 +458,11 @@ Equation::updateIntermediateZetas(int localZetaID) {
         large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
 
         if (reduced) {
-            nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
+            nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // setZeta
         } else {
             auto m = index_mapping[id];
             if (m != -1) {
-                nodes->at(k)->setZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // addDeltaToZeta
+                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // setZeta
             }
         }
     }
