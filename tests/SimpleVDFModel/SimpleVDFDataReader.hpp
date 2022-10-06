@@ -205,7 +205,7 @@ namespace GlobalFlow {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        nodes->at(pos)->addZetaSurface(height * Model::si::meter, globalZetaID);
+                        nodes->at(pos)->addInitialZeta(height * Model::si::meter, globalZetaID);
                         globalZetaID++;
                     }
                 }

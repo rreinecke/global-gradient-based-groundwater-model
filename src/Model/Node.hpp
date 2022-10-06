@@ -891,13 +891,24 @@ Modify Properties
             }
 
             /**
-            * @brief Add a zeta surface to the cell
+            * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
             * @param height the zeta surface height in meters
             * @return number of zeta surfaces in the cell
             */
-            int addZetaSurface(t_meter height, unsigned long int globalZetaID){
-                Zetas.push_back(height);
-                Zetas_TZero.push_back(height);
+            int addInitialZeta(t_meter initialZeta, unsigned long int globalZetaID){
+
+                // in SWI2: lines 660-680
+                t_meter swismall = 0.001 * si::meter; // SWISMALL
+                t_meter topOfNode = get<t_meter, Elevation>();
+                t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                if (initialZeta > topOfNode - swismall) {
+                    initialZeta = topOfNode;
+                } else if (initialZeta < bottomOfNode + swismall){
+                    initialZeta = bottomOfNode;
+                }
+
+                Zetas.push_back(initialZeta);
+                Zetas_TZero.push_back(initialZeta);
                 ZetasChange.push_back(0 * si::meter); // todo improve?
                 ZetasChange_TZero.push_back(0 * si::meter); // todo improve?
                 GlobalZetaID.push_back(globalZetaID);
@@ -917,6 +928,14 @@ Modify Properties
                 } else {
                     Zetas[localZetaID] = height;
                 }
+            }
+
+            /**
+             * @brief Get initial zeta value (bounded by hydraulic head or elevation at top and cell bottom at bottom.
+             *
+             */
+            void setInitialZeta(int localZetaID, t_meter initialZeta) {
+
             }
 
             /**
@@ -1746,16 +1765,17 @@ Modify Properties
                 if (get<bool, Confinement>()){
                     return;
                 } else { // only clip if node is unconfined
+                    t_meter head = get<t_meter, Head>();
                     t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
                     t_meter topOfNode = get<t_meter, Elevation>();
                     t_meter updatedZeta;
                     // if groundwater head is BELOW the top of the node
-                    if (get<t_meter, Head>() < topOfNode) {
+                    if (head < topOfNode) {
                         // if groundwater head is ABOVE the bottom of the node
-                        if (get<t_meter, Head>() > bottomOfNode) {
-                            updatedZeta = get<t_meter, Head>();
+                        if (head > bottomOfNode) {
+                            updatedZeta = head;
                             // if groundwater head is BELOW OR EQUAL to the bottom of the node
-                        } else { // if bottomOfNode <= get<t_meter, Head>()
+                        } else { // head <= bottomOfNode
                             updatedZeta = bottomOfNode;
                         }
                         // update the first zeta surface
@@ -1771,7 +1791,7 @@ Modify Properties
                             Zetas_TZero[localZetaID] = updatedZeta;
                         }
                         // if groundwater head is ABOVE the top of the node
-                    } else { // get<t_meter, Head>() > topOfNode
+                    } else { // head > topOfNode
                         // clip zeta to the top of the node
                         Zetas[0] = topOfNode;
                         Zetas_TZero[0] = topOfNode;
@@ -2113,7 +2133,7 @@ Modify Properties
                 t_vol_t eqFlow = getEqFlow();
                 for (const auto &flow : externalFlows) {
                     if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
-                        if (flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
+                        if (flow.second.flowIsHeadDependant(head)) {
                             out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
                         }
                     } else {
@@ -2143,7 +2163,7 @@ Modify Properties
                 //Q part is already subtracted in RHS
                 for (const auto &flow : externalFlows) {
                     if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
-                        if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
+                        if (not flow.second.flowIsHeadDependant(head)) {
                             out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
                                    flow.second.getBottom();
                         }

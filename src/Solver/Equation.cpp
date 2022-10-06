@@ -40,7 +40,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     //Initial head should be positive
     //resulting head is the real hydraulic head
     double tmp = 0;
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < numberOfNodes; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();
@@ -403,7 +403,18 @@ Equation::preconditioner() {
 
 void inline
 Equation::preconditioner_zetas() {
-        LOG(numerics) << "Decomposing Matrix (zetas)";
+    LOG(numerics) << "Decomposing Matrix (zetas)";
+    if (nwt) {
+        if (disable_dry_cells) {
+            bicgstab_zetas.compute(_A__zetas);
+        } else {
+            bicgstab_zetas.compute(A_zetas);
+        }
+        if (bicgstab_zetas.info() != Success) {
+            LOG(numerics) << "Fail in decomposing matrix (zetas)";
+            throw "Fail in decomposing matrix (zetas)";
+        }
+    } else {
         if (disable_dry_cells) {
             cg_zetas.compute(_A__zetas);
         } else {
@@ -414,6 +425,7 @@ Equation::preconditioner_zetas() {
             throw "Fail in decomposing matrix (zetas)";
         }
     }
+}
 
 void inline
 Equation::updateIntermediateHeads() {
@@ -674,7 +686,7 @@ Equation::solve() {
     }
 
     if (iterations == IITER) {
-        std::cerr << "Fail in solving matrix with max iterations";
+        std::cerr << "Fail in solving matrix with max iterations\n";
         if (nwt) {
             LOG(numerics) << "Residual squared norm error: " << bicgstab.error();
         } else {
@@ -709,6 +721,14 @@ Equation::solve_zetas(){
     updateTopZetasToHeads();
 
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
+        //Init first result vector x_zetas by writing initial zetas
+#pragma omp parallel for
+        for (int i = 0; i < numberOfNodes; ++i) {
+            x_zetas[nodes->at(i)->getProperties().get<large_num, Model::ID>()] =
+                    nodes->at(i)->getZetas()[localZetaID].value();
+            //nodes->at(i)->initHead_t0();
+        }
+
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID <<")";
         updateMatrix_zetas(localZetaID);
 
@@ -743,8 +763,8 @@ Equation::solve_zetas(){
 #pragma omp parallel for
             for (large_num k = 0; k < totalNumberOfZetas; ++k) {
                 double val;
-                for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-                    val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop
+                for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) { // need to define localZetaID inside "isZetaChangeGreater"
+                    val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop (by getting rid of it)
                     //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                     changeMax = (val > changeMax) ? val : changeMax;
                 }
@@ -860,7 +880,7 @@ Equation::solve_zetas(){
         }
 
         if (iterations == IITER) {
-            std::cerr << "Fail in solving matrix with max iterations";
+            std::cerr << "Fail in solving matrix with max iterations (zetas)\n";
             if (nwt) {
                 LOG(numerics) << "Residual squared norm error (zetas): " << bicgstab_zetas.error();
             } else {

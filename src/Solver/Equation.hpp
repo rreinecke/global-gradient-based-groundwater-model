@@ -301,7 +301,7 @@ namespace GlobalFlow {
         void inline adjustAllZetaHeights(int localZetaID);
 
         bool SteadyState = false;
-        //Only for testin purposes
+        //Only for testing purposes
         bool simpleHead = true;
 
         };
