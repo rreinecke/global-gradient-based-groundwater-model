@@ -435,7 +435,7 @@ Equation::updateIntermediateHeads() {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
-    LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
+    //LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
 
     bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
@@ -461,7 +461,7 @@ Equation::updateIntermediateZetas(int localZetaID) {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
     }
-    LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
+    //LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
     bool reduced = disabled_nodes.empty();
 
 #pragma omp parallel for
@@ -518,7 +518,13 @@ Equation::adjustAllZetaHeights(int localZetaID) {
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->adjustZetaHeights(localZetaID);
         }
-}
+
+        LOG(debug)<< "Zetas after adjustments:\n”" << std::endl;
+#pragma omp parallel for
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            LOG(debug)<< "(nodeID:" << k << ") " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+        }
+    }
 
 void inline
 Equation::updateBudget() {
@@ -603,7 +609,7 @@ Equation::solve() {
                 x = cg.solveWithGuess(b, x);
             }
         }
-        LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
+        //LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
