@@ -725,10 +725,9 @@ void
 Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
-
+#pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         //Init first result vector x_zetas by writing initial zetas
-#pragma omp parallel for
         for (int i = 0; i < numberOfNodes; ++i) {
             x_zetas[nodes->at(i)->getProperties().get<large_num, Model::ID>()] =
                     nodes->at(i)->getZetas()[localZetaID].value();
@@ -750,11 +749,12 @@ Equation::solve_zetas(){
         }
 
         preconditioner_zetas();
+        /*
         if (disable_dry_cells) {
             adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
         } else {
             adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
-        }
+        }*/
 
         LOG(numerics) << "Running Time Step (zetas)";
 
@@ -790,7 +790,7 @@ Equation::solve_zetas(){
             LOG(numerics) << "Outer iteration (zetas): " << iterations;
 
             //Solve inner iterations
-            if (nwt) {
+            /*if (nwt) {
                 if (disable_dry_cells) {
                     _x__zetas = bicgstab_zetas.solveWithGuess(_b__zetas, _x__zetas);
                 } else {
@@ -799,20 +799,20 @@ Equation::solve_zetas(){
             } else {
                 if (disable_dry_cells) {
                     _x__zetas = cg_zetas.solveWithGuess(_b__zetas, _x__zetas);
-                } else {
+                } else {*/
                     x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                }
-            }
+                /*}
+            }*/
             LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration "
                        << iterations << "):\n" << x_zetas << std::endl;
 
             updateIntermediateZetas(localZetaID);
             int innerItter{0};
-            if (nwt) {
+            /*if (nwt) {
                 innerItter = bicgstab_zetas.iterations();
-            } else {
+            } else {*/
                 innerItter = cg_zetas.iterations();
-            }
+            //}
 
             if (innerItter == 0 and iterations == 0) {
                 LOG(numerics) << "Zeta surfaces: convergence criterion to small - no iterations";

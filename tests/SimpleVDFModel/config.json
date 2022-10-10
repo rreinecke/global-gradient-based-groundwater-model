@@ -36,7 +36,7 @@
       "inner_itter": 30,
       "closingcrit": 9.9999997E-10,
       "headchange": 9.9999997E-6,
-      "zetachange": 9.9999997E-6,
+      "zetachange": 9.9999997E-16,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
