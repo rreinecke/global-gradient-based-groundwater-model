@@ -504,6 +504,16 @@ Equation::updateTopZetasToHeads() {
         }
 }
 
+void inline
+Equation::setZetaPosInNodes() {
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (int localZetaID = 0; localZetaID <= numberOfZones; localZetaID++) {
+            nodes->at(k)->setZetaPosInNode(localZetaID);
+        }
+    }
+}
+
 /*void inline // todo: remove if not required (in SWI2: required for time step adjustment)
 Equation::checkAllZetaSlopes(int localZetaID) {
 #pragma omp parallel for
@@ -725,6 +735,7 @@ void
 Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
+    setZetaPosInNodes();
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         //Init first result vector x_zetas by writing initial zetas
