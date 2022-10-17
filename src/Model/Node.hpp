@@ -1508,11 +1508,14 @@ Modify Properties
                         zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                 out += head_part;
                 LOG(debug) << "head_part (in tipToeFlow): " << head_part.value() << std::endl;
+                LOG(debug) << "with zoneCondCum = " << zoneCondCum.value() << std::endl;
+                LOG(debug) << "with getAt<t_meter, Head>(got): " << getAt<t_meter, Head>(got).value() << std::endl;
+                LOG(debug) << "get<t_meter, Head>(): " << get<t_meter, Head>().value() << std::endl;
 
                 // 3rd part: delnus part for left/back neighbour
                 for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
                     // 2nd part: eps part for left/back neighbour
-                    if (zetaID >= localZetaID) {
+                    if (zetaID >= localZetaID and eps[zetaID] != 0) {
                         t_vol_t eps_part = eps[zetaID] * zoneConductances[zetaID] *
                                             (-(at(got)->Zetas[zetaID] - Zetas[zetaID]) +
                                              (at(got)->Zetas[zetaID + 1] - Zetas[zetaID + 1]));
@@ -1527,9 +1530,9 @@ Modify Properties
                                            (at(got)->Zetas[zetaID] - Zetas[zetaID]));
                     out += delnus_part;
                     LOG(debug) << "delnus_part (in tipToeFlow): " << delnus_part.value() << std::endl;
-                    LOG(debug) << "with zoneCondCumZetaID" << zoneCondCumZetaID.value() << std::endl;
-                    LOG(debug) << "with Zetas[zetaID=" << zetaID << "]= " << Zetas[zetaID].value() << std::endl;
-                    LOG(debug) << "with at(got)->Zetas[zetaID=" << zetaID << "]= " << at(got)->Zetas[zetaID].value() << std::endl;
+                    LOG(debug) << "with zoneCondCumZetaID = " << zoneCondCumZetaID.value() << std::endl;
+                    LOG(debug) << "with Zetas[zetaID = " << zetaID << "] = " << Zetas[zetaID].value() << std::endl;
+                    LOG(debug) << "with at(got)->Zetas[zetaID = " << zetaID << "] = " << at(got)->Zetas[zetaID].value() << std::endl;
 
                 }
                 return out;
@@ -1558,6 +1561,7 @@ Modify Properties
                                 if ((position == NeighbourPosition::LEFT) or
                                     (position == NeighbourPosition::BACK)) {
                                     // subtract tipToeFlow for LEFT and BACK
+                                    LOG(debug) << "LEFT or BACK. Node ID of neighbour: " << got->second << std::endl;
                                     out -= tipToeFlow(got, localZetaID);
 
                                 } else if ((position == NeighbourPosition::RIGHT) or
@@ -1570,6 +1574,7 @@ Modify Properties
                                     } else if (position == NeighbourPosition::FRONT) {
                                         thisNode = at(got)->neighbours.find(NeighbourPosition::BACK);
                                     }
+                                    LOG(debug) << "RIGHT or FRONT. ID of neighbour: " << got->second << ". ID of this node: " << thisNode->second << std::endl;
                                     out += at(got)->tipToeFlow(thisNode, localZetaID);
 
                                 } else if (position == NeighbourPosition::TOP) {
@@ -1714,7 +1719,7 @@ Modify Properties
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
                 // find the top neighbor
-                std::unordered_map<NeighbourPosition, large_num>::const_iterator got =
+                map_itter got =
                         neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) {//No top node
                 } else {//Current node has a top node

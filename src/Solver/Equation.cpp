@@ -616,7 +616,7 @@ Equation::solve() {
                 x = cg.solveWithGuess(b, x);
             }
         }
-        //LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
+        LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
