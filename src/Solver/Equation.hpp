@@ -184,6 +184,7 @@ namespace GlobalFlow {
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
+        AdaptiveDamping adaptiveDamping_zetas;
 
         int IITER{0};//FIXME this is used as outer iterations
         pr_t RCLOSE{0};

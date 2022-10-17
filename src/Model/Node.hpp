@@ -959,6 +959,7 @@ Modify Properties
                     //LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
                 NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
+                //LOG(debug) << "addDeltaToZeta: updated Zetas[" << localZetaID << "]:" << Zetas[localZetaID].value() << std::endl;
             }
 
             /**
@@ -1192,9 +1193,9 @@ Modify Properties
 
             t_vol_t getRHS_zeta(int localZetaID){ // todo: debugging
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
-                if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
+                //if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
                     porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID];
-                }
+                //}
                 //LOG(debug) << "porosityTerm (in getRHS_zeta): " << porosityTerm.value() << std::endl;
                 t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in SWI2 code: SWIHCOF, part of BRHS; in SWI2 doc: G or known source term below zeta
                 //LOG(debug) << "sourceTermBelowZeta (in getRHS_zeta): " << sourceTermBelowZeta.value() << std::endl;
@@ -1240,25 +1241,29 @@ Modify Properties
                     if (got == neighbours.end()) {
                         //No neighbouring node: zetaMovementConductance = 0
                     } else { //There is a neighbour node
-
-                        zoneConductances = calculateZoneConductances(
-                                got,
-                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
-
                         if (hasGHB()){ // at boundary: do not add the delnus term (adapted from SWI code lines 3719-3739)
                         } else { // not at boundary: add the delnus term
                             if (ZetaPosInNode[localZetaID] == "between" and
                                 at(got)->ZetaPosInNode[localZetaID] == "between") {
+                                zoneConductances = calculateZoneConductances(
+                                        got,
+                                        mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+
                                 zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
                                 zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                                 LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
                             }
                             //LOG(debug) << "ZetaPosInNode[localZetaID]: " << ZetaPosInNode[localZetaID] << std::endl;
                             //LOG(debug) << "at(got)->ZetaPosInNode[localZetaID]: " << at(got)->ZetaPosInNode[localZetaID] << std::endl;
-
                         }
-                        zetaMovementConductance -= (eps[localZetaID] * zoneConductances[localZetaID]); // in SWI2: SWISOLCC/R
 
+                        if (eps[localZetaID] != 0 * si::si_dimensionless) {
+                            zoneConductances = calculateZoneConductances(
+                                    got,
+                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                            zetaMovementConductance -= (eps[localZetaID] *
+                                                        zoneConductances[localZetaID]); // in SWI2: SWISOLCC/R
+                        }
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                         // (used to solve for the head at the neighbouring node)
@@ -1275,6 +1280,8 @@ Modify Properties
                 }
                 // add effectivePorosityTerm
                 t_s_meter_t effectivePorosityTerm = getEffectivePorosityTerm();
+                //LOG(debug) << "effectivePorosityTerm = " << effectivePorosityTerm.value() << std::endl;
+
                 tmp_c = tmp_c - effectivePorosityTerm;
 
                 // add resulting conductance to solve for zeta to out
@@ -1287,7 +1294,7 @@ Modify Properties
              */
             t_dim getNusTop(){
                 t_dim out = 0 * si::si_dimensionless;
-                for (int localZetaID = 1; localZetaID < Zetas.size()-1; localZetaID++){
+                for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "top"){
                         DensityProperties densityProps = get<DensityProperties, densityProperties>();
                         vector<t_dim> delnus = densityProps.getDelnus();
@@ -1302,7 +1309,7 @@ Modify Properties
              */
             t_dim getNusBot(){
                 t_dim out = 0 * si::si_dimensionless;
-                for (int localZetaID = 1; localZetaID < Zetas.size()-1; localZetaID++){
+                for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "bottom"){
                         DensityProperties densityProps = get<DensityProperties, densityProperties>();
                         vector<t_dim> delnus = densityProps.getDelnus();
@@ -1500,7 +1507,7 @@ Modify Properties
                 t_vol_t head_part =
                         zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                 out += head_part;
-                //LOG(debug) << "head_part (in tipToeFlow): " << head_part.value() << std::endl;
+                LOG(debug) << "head_part (in tipToeFlow): " << head_part.value() << std::endl;
 
                 // 3rd part: delnus part for left/back neighbour
                 for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
@@ -1510,7 +1517,7 @@ Modify Properties
                                             (-(at(got)->Zetas[zetaID] - Zetas[zetaID]) +
                                              (at(got)->Zetas[zetaID + 1] - Zetas[zetaID + 1]));
                         out += eps_part;
-                        //LOG(debug) << "eps_part (in tipToeFlow): " << eps_part.value() << std::endl;
+                        LOG(debug) << "eps_part (in tipToeFlow): " << eps_part.value() << std::endl;
                     }
 
                     t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
@@ -1519,10 +1526,10 @@ Modify Properties
                                           (zoneCondCumZetaID *
                                            (at(got)->Zetas[zetaID] - Zetas[zetaID]));
                     out += delnus_part;
-                    //LOG(debug) << "delnus_part (in tipToeFlow): " << delnus_part.value() << std::endl;
-                    //LOG(debug) << "with zoneCondCumZetaID" << zoneCondCumZetaID.value() << std::endl;
-                    //LOG(debug) << "with Zetas[zetaID=" << zetaID << "]= " << Zetas[zetaID].value() << std::endl;
-                    //LOG(debug) << "with at(got)->Zetas[zetaID=" << zetaID << "]= " << at(got)->Zetas[zetaID].value() << std::endl;
+                    LOG(debug) << "delnus_part (in tipToeFlow): " << delnus_part.value() << std::endl;
+                    LOG(debug) << "with zoneCondCumZetaID" << zoneCondCumZetaID.value() << std::endl;
+                    LOG(debug) << "with Zetas[zetaID=" << zetaID << "]= " << Zetas[zetaID].value() << std::endl;
+                    LOG(debug) << "with at(got)->Zetas[zetaID=" << zetaID << "]= " << at(got)->Zetas[zetaID].value() << std::endl;
 
                 }
                 return out;
@@ -1550,7 +1557,7 @@ Modify Properties
 
                                 if ((position == NeighbourPosition::LEFT) or
                                     (position == NeighbourPosition::BACK)) {
-                                    // subtract tipToeFlow for LEFZ and BACK
+                                    // subtract tipToeFlow for LEFT and BACK
                                     out -= tipToeFlow(got, localZetaID);
 
                                 } else if ((position == NeighbourPosition::RIGHT) or
@@ -1584,7 +1591,7 @@ Modify Properties
 
             std::vector<t_s_meter_t> calculateZoneConductances(map_itter got, t_s_meter_t conductance) {
                 std::vector<t_s_meter_t> out;
-                t_s_meter_t zoneConductance = 0 * si::square_meter / day;
+                t_s_meter_t zoneConductance;
                 std::vector<t_meter> zoneThicknesses;
                 t_meter zoneThickness;
                 t_meter sumOfZoneThicknesses = 0 * si::meter;
@@ -1593,6 +1600,9 @@ Modify Properties
 
                 // calculate the zone thicknesses and their sum
                 for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++) {
+                    //LOG(debug) << "Zetas[" << localZetaID << "]:" << Zetas[localZetaID].value() << std::endl;
+                    //LOG(debug) << "Zetas[" << localZetaID+1 << "]:" << Zetas[localZetaID+1].value() << std::endl;
+
                     deltaZeta = Zetas[localZetaID] - Zetas[localZetaID + 1];
                     deltaZeta_neig = at(got)->Zetas[localZetaID] - at(got)->Zetas[localZetaID + 1];
                     if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
@@ -1609,9 +1619,9 @@ Modify Properties
                 //LOG(debug) << "sumOfZoneThicknesses:" + std::to_string(sumOfZoneThicknesses.value());
 
                 // calculate the density zone conductances
-                for (int localZetaID = 0; localZetaID < Zetas.size(); localZetaID++) {
+                for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++) {
                     if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
-                        // zoneConductance stays 0;
+                        zoneConductance = 0 * si::square_meter / day; // zoneConductance is 0;
                     } else {
                         if ((localZetaID > 0 and localZetaID < Zetas.size() - 2) and
                             ((ZetaPosInNode[localZetaID] != "between") + // adapted from SWI2 code lines 1212-1222
@@ -1620,11 +1630,12 @@ Modify Properties
                              (at(got)->ZetaPosInNode[localZetaID + 1] != "between")) > 0){
                             // zoneConductance stays 0 if zone is not active in this AND neighbouring cell
                             // this section is not reached if Zetas.size() < 4 and numberOfZones < 3
+                            zoneConductance = 0 * si::square_meter / day;
                         } else {
                             zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
                         }
                     }
-                    LOG(debug) << "zoneConductance:" << zoneConductance.value() << std::endl;
+                    //LOG(debug) << "zoneConductance:" << zoneConductance.value() << std::endl;
                     out.push_back(zoneConductance);
                     NANChecker(zoneConductance.value(), "zoneConductance");
                 }
@@ -1635,10 +1646,10 @@ Modify Properties
                 // calculate the sum of density zone conductances below a zeta surface n and add to vector out
                 t_s_meter_t out = 0 * si::square_meter / day;
 
-                for (int localZetaID = curLocalZetaID; localZetaID < Zetas.size()-1; localZetaID++) {
+                for (int localZetaID = curLocalZetaID; localZetaID < Zetas.size() - 1; localZetaID++) {
                     out += zoneConductances[localZetaID];
                 };
-                //LOG(debug) << "zoneConductancesCum (in calculateZoneConductanceCum):" << out.value() << std::endl;
+                //LOG(debug) << "zoneConductanceCum (in calculateZoneConductanceCum):" << out.value() << std::endl;
                 NANChecker(out.value(), "calculateZoneConductanceCum");
                 return out;
             }
@@ -1982,7 +1993,7 @@ Modify Properties
                 int n2_min;
                 int n2_max;
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                if (localZetaID <= Zetas.size() - 2) {
+                if (localZetaID < Zetas.size() - 1) {
                     // if zeta surface n is very close to or lower than the zeta surface that SHOULD be below (n+1)
                     if (Zetas[localZetaID] - Zetas[localZetaID+1] < zetaDifferenceCap) {
                         // make the zeta height of both surfaces their average

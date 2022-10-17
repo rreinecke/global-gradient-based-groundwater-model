@@ -129,7 +129,7 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
-    map = node->getConductance_ZetaMovement(localZetaID);
+    map = node->getConductance_ZetaMovement(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
@@ -154,7 +154,6 @@ void inline Equation::reallocateMatrix() {
         _x_ = x;
         return;
     }
-
     large_num __missing{0};
     long size = A.rows() - disabled_nodes.size();
     Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
@@ -322,7 +321,7 @@ Equation::updateMatrix() {
 }
 
 void inline
-Equation::updateMatrix_zetas(int localZetaID) { // todo: adapt for multiple layers and more than one moving zeta surface (each has one equation system)
+Equation::updateMatrix_zetas(int localZetaID) {
         Index n = A_zetas.outerSize();
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
@@ -457,11 +456,12 @@ void inline
 Equation::updateIntermediateZetas(int localZetaID) {
     long_vector changes;
     if (disable_dry_cells) {
-        changes = adaptiveDamping.getDamping(getResiduals_zetas(), _x__zetas, isAdaptiveDamping);
+        changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), _x__zetas, isAdaptiveDamping);
     } else {
-        changes = adaptiveDamping.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
+        changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
     }
-    //LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
+
+    LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
     bool reduced = disabled_nodes.empty();
 
 #pragma omp parallel for
@@ -550,11 +550,8 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
-
-
     LOG(numerics) << "Updating Matrix";
     updateMatrix();
-
 
     if (!isCached) {
         LOG(numerics) << "Compressing matrix";
@@ -762,10 +759,11 @@ Equation::solve_zetas(){
         preconditioner_zetas();
         /*
         if (disable_dry_cells) {
-            adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
-        } else {
-            adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
-        }*/
+            adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
+        } else {*/
+            // needed for updateIntermediateZetas:
+            adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
+        //}
 
         LOG(numerics) << "Running Time Step (zetas)";
 

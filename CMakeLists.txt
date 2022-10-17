@@ -52,11 +52,11 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 ################################
 # Simple Demo Model
 ################################
-project(simple)
+# project(simple)
 
-add_subdirectory(tests/SimpleModel)
-add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
-target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+# add_subdirectory(tests/SimpleModel)
+# add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
+# target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Simple Demo Model for Variable Density Flow (VDF)
