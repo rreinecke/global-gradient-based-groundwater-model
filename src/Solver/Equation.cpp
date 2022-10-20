@@ -461,7 +461,7 @@ Equation::updateIntermediateZetas(int localZetaID) {
         changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
     }
 
-    LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
+    //LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
     bool reduced = disabled_nodes.empty();
 
 #pragma omp parallel for
@@ -529,10 +529,10 @@ Equation::adjustAllZetaHeights(int localZetaID) {
             nodes->at(k)->adjustZetaHeights(localZetaID);
         }
 
-        LOG(debug)<< "Zetas after adjustments:\n”" << std::endl;
+        LOG(debug)<< "node, zeta" << std::endl;
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            LOG(debug)<< "(nodeID:" << k << ") " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+            LOG(debug)<< k << ", " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
         }
     }
 

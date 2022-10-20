@@ -24,6 +24,11 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 200);
     int stepNumber = 1;
 
+    // for saving zetas in a csv
+    ofstream myfile;
+    myfile.open ("zetas.csv");
+    myfile << "timestep,nodeID,zeta" << std::endl;
+
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
 
@@ -32,9 +37,16 @@ void StandaloneRunner::simulate() {
         }
         step.first->solve();
         sim.printMassBalances(debug);
+
+        // for saving zetas in a csv
+        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+            double zeta = sim.getNodes()->at(j)->getZetas()[1].value();
+            myfile << stepNumber << "," << j << "," << zeta << std::endl;
+        }
+
         stepNumber++;
     }
-
+    myfile.close(); // for saving zetas in a csv
     DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();
     //sim.save();
 }

@@ -1204,7 +1204,7 @@ Modify Properties
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID);
                 //LOG(debug) << "tipToeFlow (in getRHS_zeta): " << tipToeFlow.value() << std::endl;
                 t_vol_t out = - porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta + tipToeFlow;
-                LOG(debug) << "out (in getRHS_zeta): " << out.value() << std::endl;
+                //LOG(debug) << "out (in getRHS_zeta): " << out.value() << std::endl;
                 NANChecker(out.value(), "getRHS_zeta");
                 return out;
             }
