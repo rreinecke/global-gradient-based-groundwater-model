@@ -370,7 +370,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
                 A_zetas.makeCompressed();
             }
         }
-    LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
+    //LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
     LOG(debug) << "b_zetas (= rhs_zeta):\n" << b_zetas << std::endl;
     }
 
@@ -616,7 +616,7 @@ Equation::solve() {
                 x = cg.solveWithGuess(b, x);
             }
         }
-        LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
+        //LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
@@ -812,8 +812,7 @@ Equation::solve_zetas(){
                     x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
                 /*}
             }*/
-            LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration "
-                       << iterations << "):\n" << x_zetas << std::endl;
+            //LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
             updateIntermediateZetas(localZetaID);
             int innerItter{0};
