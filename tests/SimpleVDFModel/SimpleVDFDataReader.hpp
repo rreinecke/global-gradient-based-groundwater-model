@@ -45,7 +45,7 @@ namespace GlobalFlow {
                 readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the zones of sources and sinks";
-                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()));
+                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getNumberOfDensityZones());
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
@@ -173,17 +173,29 @@ namespace GlobalFlow {
                 readTwoColumns(path, [this](double data, int pos) {
                     nodes->at(pos)->addExternalFlow(Model::RECHARGE,
                                                     0 * Model::si::meter,
-                                                    data * nodes->at(pos)->getProperties().get<Model::quantity<
-                                                            Model::SquareMeter>,
-                                                            Model::Area>().value(),
+                                                    data * nodes->at(pos)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
                                                     0 * Model::si::meter);
                 });
             }
 
-            void readZonesSourcesSinks(std::string path) {
-                readTwoColumns(path, [this](int data, int pos) {
-                    nodes->at(pos)->setZoneOfSourcesAndSinks(data);
-                });
+            void readZonesSourcesSinks(std::string path, int numOfZones) {
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "arcID", "zoneOfSinks", "zoneOfSources");
+                int arcid{0};
+                double zoneOfSinks{0};
+                double zoneOfSources{0};
+
+                while (in.read_row(arcid, zoneOfSinks, zoneOfSources)) {
+                    int pos = 0;
+                    try {
+                        pos = lookuparcIDtoID.at(arcid);
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    nodes->at(pos)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, numOfZones);
+                }
             }
 
             void readInitialZetas(bool densityVariable, double densityFresh, std::string pathZetas, double aquiferDepth) {
