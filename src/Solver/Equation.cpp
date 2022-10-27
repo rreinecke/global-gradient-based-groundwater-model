@@ -129,7 +129,7 @@ Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int loc
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
-    map = node->getConductance_ZetaMovement(localZetaID); // gets matrix entries (zone conductances and porosity term)
+    map = node->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         zoneConductance = entry.second;
@@ -336,7 +336,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
             //---------------------Left
             addToA_zeta(nodes->at(j), localZetaID, globalZetaID, isCached);
             //---------------------Right
-            b_zetas(globalZetaID - numberOfNodes) = nodes->at(j)->getRHS_zeta(localZetaID).value();
+            b_zetas(globalZetaID - numberOfNodes) = nodes->at(j)->getZetaRHS(localZetaID).value();
             globalZetaID++;
         }
 
@@ -434,7 +434,6 @@ Equation::updateIntermediateHeads() {
     } else {
         changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
     }
-    //LOG(debug) << "Head changes (updateIntermediateHeads):\n" << changes << std::endl;
 
     bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
@@ -812,7 +811,7 @@ Equation::solve_zetas(){
                     x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
                 /*}
             }*/
-            //LOG(debug) << "x_zetas (potential new zeta heights) before updating and convergence check (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+            LOG(debug) << "x_zetas (potential new zeta heights, outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
             updateIntermediateZetas(localZetaID);
             int innerItter{0};

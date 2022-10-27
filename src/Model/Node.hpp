@@ -326,10 +326,9 @@ Modify Properties
              * @brief Set slope from data on all layers
              * Slope input is in % but is required as absolut
              * thus: slope = slope_percent / 100
-             * @param slope
+             * @param slope_percent
              */
-            void
-            setSlope(double slope_percent) {
+            void setSlope(double slope_percent) {
                 set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
                 applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
                     try { // todo: should slope be added to the nodeInterace? currently only in PhyscalProperties
@@ -385,24 +384,12 @@ Modify Properties
 
             template<class HeadType>
             FlowInputHor createDataTuple(map_itter got) {
-                t_meter edgeLength_self = 0 * si::meter;
-                t_meter edgeLength_neig = 0 * si::meter;
-                t_meter edgeWidth_self = 0 * si::meter;
-                if (got->first == LEFT or got->first == RIGHT){
-                    edgeLength_self = get<t_meter, EdgeLengthFrontBack>();
-                    edgeLength_neig = getAt<t_meter, EdgeLengthFrontBack>(got);
-                    edgeWidth_self = get<t_meter, EdgeLengthLeftRight>();
-                } else { // if (got->first == FRONT or got->first == BACK)
-                    edgeLength_self = get<t_meter, EdgeLengthLeftRight>();
-                    edgeLength_neig = getAt<t_meter, EdgeLengthLeftRight>(got);
-                    edgeWidth_self = get<t_meter, EdgeLengthFrontBack>();
-                }
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       edgeLength_neig, // length in front/back direction of neighbour node
-                                       edgeLength_self, // length in front/back direction of this node
-                        //getAt<t_meter, EdgeLengthLeftRight>(got), // width in left/right direction of neighbour node
-                                       edgeWidth_self, // width in left/right direction of this node
+                                       getLengthNeig(got), // length of neighbour node
+                                       getLengthSelf(got), // length of this node
+                                       //getWidthNeig(got), // width of neighbour node
+                                       getWidthSelf(got), // width of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -483,7 +470,7 @@ Modify Properties
 
             /**
              * Get the current lateral flow
-             * @return
+             * @return lateral flows
              */
             t_vol_t getLateralFlows() {
                 return calcLateralFlows<Head>(false) * get<t_dim, StepModifier>();
@@ -491,7 +478,7 @@ Modify Properties
 
             /**
              * Get the current lateral out flows
-             * @return
+             * @return lateral outflows
              */
             t_vol_t getLateralOutFlows() {
                 return calcLateralFlows<Head>(true) * get<t_dim, StepModifier>();
@@ -561,7 +548,7 @@ Modify Properties
 
             /**
              * @brief Modify hydraulic conductivity (applied to all layers below)
-             * @param New conductivity (if e-folding enabled scaled on layers)
+             * @param conduct conductivity (if e-folding enabled scaled on layers)
              */
             void setK(t_vel conduct) {
                 setK_direct(conduct);
@@ -572,7 +559,7 @@ Modify Properties
 
             /**
              * @brief Modify hydraulic conductivity (no e-folding, no layers)
-             * @param New conductivity
+             * @param conduct conductivity
              */
             void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
@@ -841,7 +828,7 @@ Modify Properties
 
             /**
              * @brief Remove an external flow to the cell by id
-             * @param ID The flow id
+             * @param type The flow id
              */
             void removeExternalFlow(FlowType type) {
                 if (externalFlows.erase(type)) {
@@ -857,8 +844,9 @@ Modify Properties
 
             /**
              * @brief The number of external flows
+             * @return int
              */
-            int getNumOfExternalFlows(){return numOfExternalFlows;}
+            int getNumOfExternalFlows(){ return numOfExternalFlows; }
 
 
             /**
@@ -899,7 +887,7 @@ Modify Properties
 
             /**
              * @brief Update zetas after one or multiple inner iteration
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
              * @param delta
              */
             virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
@@ -921,17 +909,20 @@ Modify Properties
             }
 
             /**
-            * @brief get zeta surfaces
-            */
+             * @brief get zeta surfaces
+             * @return vector
+             */
             std::vector<t_meter> getZetas() noexcept { return Zetas;}
 
             /**
-            * @brief get zeta surfaces change
-            */
+             * @brief get zeta surfaces change
+             * @return vector
+             */
             std::vector<t_meter> getZetasChange() noexcept { return ZetasChange;}
 
             /**
              * @brief Update the current zeta change (in comparison to last time step)
+             * @param localZetaID zeta surface id in this node
              * @note Should only be called at end of time step
              */
             void updateZetaChange(int localZetaID) noexcept {
@@ -939,10 +930,15 @@ Modify Properties
                 Zetas_TZero[localZetaID] = Zetas[localZetaID];
             }
 
+            /**
+             * @brief
+             * @param localZetaID zeta surface id in this node
+             * @return
+             */
             large_num getGlobalZetaID(int localZetaID) noexcept {  return GlobalZetaID[localZetaID];}
 
             /**
-             * from SWI2 doc:
+             *  @brief from SWI2 doc:
              * - ISOURCE > 0: sources and sinks are of the same type as water in zone ISOURCE. If such a zone is not present in the cell, sources and sinks interact with the zone at the top of the aquifer.
              * - ISOURCE = 0: sources and sinks are of the same type as water at top of aquifer.
              * - ISOURCE < 0: for submarine groundwater discharge (SGD)
@@ -956,6 +952,9 @@ Modify Properties
              * - zoneOfSources: an integer between 1 and the number of zones (brackish/saline water)
              * - zoneOfSinks: 0 (fresh water)
              * Example for submarine groundwater discharge: zoneOfSources=1 (saline), zoneOfSinks=0 (required)
+             *  @param zoneSinks
+             *  @param zoneSources
+             *  @param numOfZones
              */
             void setZoneOfSinksAndSources(int zoneSinks, int zoneSources, int numOfZones) {
                 if (zoneSinks > zoneSources) {
@@ -980,7 +979,7 @@ Modify Properties
             }
             /**
              * @brief Modify effective porosity (applied to all layers below)
-             * @param New effective porosity
+             * @param effectivePorosity effective porosity
              */
             void setEffectivePorosity(t_dim effectivePorosity) {
                 setEffectivePorosity_direct(effectivePorosity);
@@ -1163,24 +1162,23 @@ Modify Properties
             }
 
             /**
-             * @brief
-             * @param localZetaID
-             * @return volume over time
+             * @brief calculate the right hand side for zeta surface equation (b_zetas)
+             * @param localZetaID zeta surface id in this node
+             * @return right hand side for zeta surface equation (b_zetas)
              */
-            t_vol_t getRHS_zeta(int localZetaID){ // todo: debugging
+            t_vol_t getZetaRHS(int localZetaID){ // todo: test
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
                 //if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
                     porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID];
                 //}
-                //LOG(debug) << "porosityTerm (in getRHS_zeta): " << porosityTerm.value() << std::endl;
-                t_vol_t sourceTermBelowZeta = getSourceTermBelowZeta(localZetaID); // in SWI2 code: SWIHCOF, part of BRHS; in SWI2 doc: G or known source term below zeta
-                //LOG(debug) << "sourceTermBelowZeta (in getRHS_zeta): " << sourceTermBelowZeta.value() << std::endl;
+                LOG(debug) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                t_vol_t sourcesBelowZeta = getSourcesBelowZeta(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
+                LOG(debug) << "sourcesBelowZeta: " << sourcesBelowZeta.value() << std::endl;
                 t_vol_t pseudoSource_Zeta = getZetaPseudoSource(localZetaID);
-                //LOG(debug) << "pseudoSource_Zeta (in getRHS_zeta): " << pseudoSource_Zeta.value() << std::endl;
+                LOG(debug) << "pseudoSource_Zeta: " << pseudoSource_Zeta.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID);
-                //LOG(debug) << "tipToeFlow (in getRHS_zeta): " << tipToeFlow.value() << std::endl;
-                t_vol_t out = - porosityTerm - sourceTermBelowZeta + pseudoSource_Zeta + tipToeFlow;
-                //LOG(debug) << "out (in getRHS_zeta): " << out.value() << std::endl;
+                LOG(debug) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                t_vol_t out = - porosityTerm - sourcesBelowZeta + pseudoSource_Zeta + tipToeFlow;
                 NANChecker(out.value(), "getRHS_zeta");
                 return out;
             }
@@ -1191,7 +1189,7 @@ Modify Properties
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() *
-                                   (get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>())) /
+                                   get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>()) /
                                   (day * get<t_dim, StepModifier>());
                 //LOG(debug) << "effective porosity: " << out.value() << std::endl;
                 NANChecker(out.value(), "getEffectivePorosityTerm");
@@ -1199,13 +1197,12 @@ Modify Properties
             }
 
             /**
-             * @brief The matrix entry for the zeta surface
-             * @param localZetaID
+             * @brief The matrix entry for the left hand side of the zeta surface equation
+             * @param localZetaID zeta surface id in this node
              * @return map <CellID,Conductance>
-             * The left hand side of the equation
              */
-            std::unordered_map<large_num, t_s_meter_t> getConductance_ZetaMovement(int localZetaID) { // Question: Rename to getLeftHandSide_Zeta?
-                // todo: debugging
+            std::unordered_map<large_num, t_s_meter_t> getZetaConductance(int localZetaID) { // Question: Rename to getLeftHandSide_Zeta?
+                // todo: test
                 size_t numC = 5;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
@@ -1225,18 +1222,20 @@ Modify Properties
                     zetaMovementConductance = 0 * (si::square_meter / day);
                     if (got == neighbours.end()) { // no neighbour at position
                     } else { // there is a neighbour at position
-                        if (ZetaPosInNode[localZetaID] == "between" and
-                            at(got)->ZetaPosInNode[localZetaID] == "between") {
-                            zoneConductances = calculateZoneConductances(
-                                    got,
-                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
+                        if (hasGHB()) { // not at boundary nodes
+                        } else {
+                            if (ZetaPosInNode[localZetaID] == "between" and
+                                at(got)->ZetaPosInNode[localZetaID] == "between") {
+                                zoneConductances = calculateZoneConductances(
+                                        got,
+                                        mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got)));
 
-                            zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
-                            zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
-                            //LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
+                                zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
+                                zetaMovementConductance +=
+                                        delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
+                                //LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
+                            }
                         }
-                        //LOG(debug) << "ZetaPosInNode[localZetaID]: " << ZetaPosInNode[localZetaID] << std::endl;
-                        //LOG(debug) << "at(got)->ZetaPosInNode[localZetaID]: " << at(got)->ZetaPosInNode[localZetaID] << std::endl;
 
                         if (eps[localZetaID] != 0 * si::si_dimensionless) {
                             zoneConductances = calculateZoneConductances(
@@ -1271,8 +1270,9 @@ Modify Properties
             };
 
             /**
-             * @brief in SWI2: NUTOP (lines 1230-1249)
-             * @return dimensionless
+             * @brief calculate dimensionless density (nus) at the top of this node
+             * @return dimensionless density
+             * @note in SWI2: NUTOP, lines 1230-1249
              */
             t_dim getNusTop(){
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
@@ -1288,8 +1288,9 @@ Modify Properties
             }
 
             /**
-             * @brief in SWI2: NUBOT (lines 1230-1249)
-             * @return dimensionless
+             * @brief calculate dimensionless density (nus) at the bottom of this node
+             * @return dimensionless density
+             * @note in SWI2: NUBOT, lines 1230-1249
              */
             t_dim getNusBot(){
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
@@ -1305,10 +1306,11 @@ Modify Properties
             }
 
             /**
-             * @brief set the zeta position in the node as at top, bottom or between depending on the location of the first and last zeta value
+             * @brief set the zeta position in the node as at top/bottom/between the first and last zeta value
              * @param localZetaID zeta surface id in this node
+             * @note in SWI2: lines 4358-4383
              */
-            void setZetaPosInNode(int localZetaID){ // adapted from SWI2 lines 4358-4383
+            void setZetaPosInNode(int localZetaID){ //
                 std::string tmp;
                 if (localZetaID == 0) {
                     tmp = "between"; // todo: this does not really make sense (SWI2 line 4362)
@@ -1330,15 +1332,14 @@ Modify Properties
             }
 
             /**
-             * @brief The source term below a zeta surface (in SWI2: G without vertical leakage, in SWI2 code: lines 3523-3569)
-             * @param localZetaID
-             * @return volume per time
+             * @brief Calculates the sources below a zeta surface
+             * @param localZetaID zeta surface id in this node
+             * @return source flow below zeta surface
+             * @note like G in SWI2 doc, but without vertical leakage; in SWI2 code: lines 3523-3569
              */
-            t_vol_t getSourceTermBelowZeta(int localZetaID){ //todo: debug
+            t_vol_t getSourcesBelowZeta(int localZetaID){ //todo: debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 t_vol_t boundaryFlux = 0.0 * (si::cubic_meter / day);
-                t_vol_t RHSConstantDensity_old = 0 * (si::cubic_meter / day);
-                t_s_meter_t hcof = 0 * (si::square_meter / day);
                 int zoneToUse = zoneOfSources; // zone of sources in node (for SGD larger than zoneOfSinks)
 
                 if (ZetaPosInNode[localZetaID] == "between") {
@@ -1346,9 +1347,9 @@ Modify Properties
 
                     if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) { // lines 3532-3536
                         // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
-                        RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                        t_vol_t RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
                         // get HCOF of NEW time step
-                        hcof = mechanics.getHCOF(steadyState, get<t_dim, StepModifier>(), getStorageCapacity(), getP());
+                        t_s_meter_t hcof = mechanics.getHCOF(steadyState, get<t_dim, StepModifier>(), getStorageCapacity(), getP());
                         // calculate the boundary flux
                         boundaryFlux = RHSConstantDensity_old - hcof * get<t_meter, Head>();
                         //LOG(numerics) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
@@ -1363,20 +1364,22 @@ Modify Properties
 
                     // G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
                     if (localZetaID <= zoneToUse and boundaryFlux != 0 * (si::cubic_meter / day)) {
-                        out += boundaryFlux; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR if IZONENR > 100
+                        out = boundaryFlux; // in SWI2 code, (rhs_old - hcof * get<t_meter, Head>())) is multiplied by "fact = thickb / thick" that depends on IZONENR if IZONENR > 100
                     }
                 }
 
-                NANChecker(out.value(), "getSourceTermBelowZeta");
-                //LOG(numerics) << "getSourceTermBelowZeta: " << out.value() << std::endl;
+                NANChecker(out.value(), "getSourcesBelowZeta");
+                //LOG(numerics) << "getSourcesBelowZeta: " << out.value() << std::endl;
                 return out;
             }
 
             /**
-             * lines x to y in SWI2 code (includes usage of SSWI2_SD and SSWI2_SR)
+             * @brief
+             * @param localZetaID zeta surface id in this node
+             * @return
+             * @note in SWI2 code lines 3574-3635, using SSWI2_SD and SSWI2_SR)
              */
-            t_vol_t getZetaPseudoSource(int localZetaID) {
-                // todo debug
+            t_vol_t getZetaPseudoSource(int localZetaID) { // todo test
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> eps = densityProps.getEps();
@@ -1454,7 +1457,8 @@ Modify Properties
             /**
              * @brief
              * @param got
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
+             * @return
              */
             t_vol_t tipToeFlow(map_itter got, int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
@@ -1502,11 +1506,10 @@ Modify Properties
             }
 
             /**
-             * Specification of boundary condition at tips and toes
-             * adapted from SWI2 code lines 3637-3703 (includes usage of SSWI2_QR and SSWI2_QC)
-             * @brief
+             * @brief Specification of boundary condition at tips and toes
              * @param
              * @return
+             * @note adapted from SWI2 code lines 3637-3703 (includes usage of SSWI2_QR and SSWI2_QC)
              */
             t_vol_t getTipToeFlow(int localZetaID){ // todo: debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
@@ -1635,17 +1638,17 @@ Modify Properties
             }
 
             /**
-             * @brief
-             * @param curLocalZetaID
+             * @brief Sum of conductances of zones below current local zeta id
+             * @param localZetaID
              * @param zoneConductances
-             * @return
+             * @return sum of conductances of zones below
              */
-            t_s_meter_t calculateZoneConductanceCum(int curLocalZetaID, std::vector<t_s_meter_t> zoneConductances) {
+            t_s_meter_t calculateZoneConductanceCum(int localZetaID, std::vector<t_s_meter_t> zoneConductances) {
                 // calculate the sum of density zone conductances below a zeta surface n and add to vector out
                 t_s_meter_t out = 0 * si::square_meter / day;
 
-                for (int localZetaID = curLocalZetaID; localZetaID < Zetas.size() - 1; localZetaID++) {
-                    out += zoneConductances[localZetaID];
+                for (int zoneID = localZetaID; zoneID < Zetas.size() - 1; zoneID++) {
+                    out += zoneConductances[zoneID];
                 };
                 //LOG(debug) << "zoneConductanceCum (in calculateZoneConductanceCum):" << out.value() << std::endl;
                 NANChecker(out.value(), "calculateZoneConductanceCum");
@@ -1653,10 +1656,9 @@ Modify Properties
             }
 
             /**
-             * The pseudo source term for the flow equation, only used if variable density flow is active:
-             * This accounts for the effects of variable density flow (in SWI2 code: QREXTRA/QFEXTRA)
-             * @brief
-             * @return volume per time
+             * @brief The pseudo source for the flow equation, only used if variable density flow is active
+             * @return pseudo source for the flow equation
+             * @note This accounts for the effects of variable density flow (in SWI2 code: QREXTRA/QFEXTRA)
              */
             t_vol_t getFlowPseudoSource() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
@@ -1699,11 +1701,11 @@ Modify Properties
             }
 
             /**
-             * @brief calculates the flux correction term in vertical direction
-             * (in SWI2 documentation: CV*BOUY; in code: QLEXTRA)
-             * @return out meter
+             * @brief The flux correction term in vertical direction
+             * @return vertical flux correction
+             * @note in SWI2 documentation: CV*BOUY; in code: QLEXTRA
              */
-            t_vol_t verticalFluxCorrection(){ // todo debug
+            t_vol_t verticalFluxCorrection(){ // todo debug/test
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> nusZones = densityProps.getNusZones();
                 t_meter headdiff = 0 * si::meter;
@@ -1727,8 +1729,9 @@ Modify Properties
             }
 
             /**
-             * @brief Calculates the vertical flux correction for variable density flow (in SWI2 code: qztop)
-             * @return volume per time
+             * @brief Calculates the upward vertical flux correction for variable density flow
+             * @return upward vertical flux correction
+             * @note in SWI2 code: qztop
              */
             t_vol_t fluxCorrTop() { // todo test
                 t_vol_t out = 0 * (si::cubic_meter / day);
@@ -1744,8 +1747,9 @@ Modify Properties
             }
 
             /**
-             * @brief Calculates the vertical flux correction for variable density flow (in SWI2 code: qzbot)
-             * @return volume per time
+             * @brief Calculates the downward vertical flux correction for variable density flow
+             * @return downward vertical flux correction
+             * @note in SWI2 code: qzbot
              */
             t_vol_t fluxCorrDown() { // todo test
                 t_vol_t out = 0 * (si::cubic_meter / day);
@@ -1761,7 +1765,7 @@ Modify Properties
 
             /**
              * @brief Updating zeta surface heights at the top after the flow/head solution is found
-             * Zeta surface heights at the top are set to the new groundwater heads. (in SWI2: SWI2_UPZ1)
+             * @note Zeta surface heights at the top are set to the new groundwater heads. In SWI2: SWI2_UPZ1
              */
             void clipTopZetasToHeads(){
                 if (get<bool, Confinement>()){
@@ -1802,7 +1806,7 @@ Modify Properties
 
             /**
              * @brief adjust zeta surface heights after the zeta solution is found
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
              */
             void adjustZetaHeights(int localZetaID){
                 verticalZetaMovement(localZetaID); // movement through top of this node
@@ -1814,8 +1818,9 @@ Modify Properties
 
 
             /**
-             * @brief vertical movement of zeta surfaces through top of this node (in SWI2 code: SSWI2_VERTMOVE)
-             * @param localZetaID
+             * @brief vertical movement of zeta surfaces through top of this node
+             * @param localZetaID zeta surface id in this node
+             * @note in SWI2 code: SSWI2_VERTMOVE
              */
             void verticalZetaMovement(int localZetaID) { // todo: call this, debug
                 // skip nodes where head is below the bottom of the node
@@ -1855,11 +1860,10 @@ Modify Properties
                 }
             }
 
-
             /**
              * @brief tracking the tips and toes of the zeta surfaces (at top and bottom of the current node)
-             * in SWI2 code: SSWI2_HORZMOVE, in documentation: "Tip and Toe Tracking"
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
+             * @note in SWI2 documentation: "Tip and Toe Tracking", in SWI2 code: SSWI2_HORZMOVE
              */
             void horizontalZetaMovement(int localZetaID){
                 if (hasGHB()) { return; } // do nothing at boundary nodes
@@ -1964,8 +1968,8 @@ Modify Properties
 
             /**
              * @brief clip zeta surfaces that are outside of the bounds (bounds: first and last zeta surface)
-             * in SWI2: SSWI2_ZETACLIP
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
+             * @note in SWI2 code: SSWI2_ZETACLIP
              */
             void clipZetaHeights(int localZetaID) {
                 if (ZetaPosInNode[localZetaID] == "between") {
@@ -1981,8 +1985,8 @@ Modify Properties
 
             /**
              * @brief adjust zeta surfaces if they have crossed or their height difference is below a minimum value
-             * in SWI2: SSWI2_ZETACROSS
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
+             * @note in SWI2 code: SSWI2_ZETACROSS
              */
             void correctCrossingZetas(int localZetaID){
                 // todo: debug with this info:
@@ -2028,8 +2032,8 @@ Modify Properties
 
             /**
              * @brief Avoid zeta surface locking
-             * in SWI2: SSWI2_ANTILOCKMIN
-             * @param localZetaID
+             * @param localZetaID zeta surface id in this node
+             * @note in SWI2 code: SSWI2_ANTILOCKMIN
              */
             void preventZetaLocking(int localZetaID){
                 if (hasGHB()) { return; } // do nothing at boundary nodes
@@ -2086,6 +2090,11 @@ Modify Properties
                 }
             }
 
+            /**
+             * @brief
+             * @param got
+             * @return
+             */
             t_meter getLengthNeig(map_itter got){
                 if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
                     return getAt<t_meter, EdgeLengthFrontBack>(got);
@@ -2096,11 +2105,31 @@ Modify Properties
                 }
             }
 
+            /**
+             * @brief
+             * @param got
+             * @return
+             */
             t_meter getLengthSelf(map_itter got){
                 if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
                     return get<t_meter, EdgeLengthFrontBack>();
                 } else if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK){
                     return get<t_meter, EdgeLengthLeftRight>();
+                } else {
+                    throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
+                }
+            }
+
+            /**
+             * @brief
+             * @param got
+             * @return
+             */
+            t_meter getWidthSelf(map_itter got) {
+                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
+                    return get<t_meter, EdgeLengthLeftRight>();
+                } else if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK){
+                    return get<t_meter, EdgeLengthFrontBack>();
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
                 }
@@ -2295,22 +2324,23 @@ Modify Properties
              * @return volume per time
              */
             t_vol_t getRHS() {
-
                 t_vol_t out = getRHSConstantDensity();
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                if (densityProps.isDensityVariable()) { // todo maybe make condition: zones.size() > 1
+                if (densityProps.isDensityVariable()) {
                     // save constant density RHS (without variable density terms) for calculation of zeta movement
                     set<t_vol_t, RHSConstantDensity_TZero>(out);
 
-                    // calculate variable density terms Pseudo-Source Flow and Vertical Flux Correction; add them to RHS
-                    t_vol_t pseudoSourceFlow = getFlowPseudoSource();
-                    //LOG(debug) << "pseudoSourceFlow: " << pseudoSourceFlow.value() << std::endl;
+                    // calculate variable density terms Pseudo-Source Flow
+                    t_vol_t flowPseudoSource = getFlowPseudoSource();
+                    //LOG(debug) << "flowPseudoSource: " << flowPseudoSource.value() << std::endl;
+
+                    // calculate Vertical Flux Correction
                     t_vol_t fluxCorrectionTop = fluxCorrTop();
                     t_vol_t fluxCorrectionDown = fluxCorrDown();
+                    //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                    //LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
 
-                    //LOG(debug) << "vertFluxCorrection: " << vertFluxCorrection.value() << std::endl;
-                    out += pseudoSourceFlow + fluxCorrectionTop + fluxCorrectionDown;
-                    //LOG(debug) << "RHS variable density: " << out.value() << std::endl;
+                    out += flowPseudoSource + fluxCorrectionTop + fluxCorrectionDown;
                 }
                 NANChecker(out.value(), "RHS");
                 return out;
