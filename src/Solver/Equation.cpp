@@ -488,7 +488,7 @@ Equation::updateFinalHeads() {
 }
 
 void inline
-Equation::updateFinalZetaChange(int localZetaID) {
+Equation::updateZetaChanges(int localZetaID) {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->updateZetaChange(localZetaID);
@@ -522,16 +522,34 @@ Equation::checkAllZetaSlopes(int localZetaID) {
 }*/
 
 void inline
-Equation::adjustAllZetaHeights(int localZetaID) {
+Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->adjustZetaHeights(localZetaID);
+            nodes->at(k)->verticalZetaMovement();
+        }
+
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            nodes->at(k)->horizontalZetaMovement();
+        }
+
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            nodes->at(k)->clipZetaHeights();
+        }
+
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            nodes->at(k)->correctCrossingZetas();
+        }
+
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            nodes->at(k)->preventZetaLocking();
         }
 
         LOG(debug)<< "node, zeta" << std::endl;
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            LOG(debug)<< k << ", " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
+                LOG(debug) << k << ", " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+            }
         }
     }
 
@@ -741,7 +759,7 @@ Equation::solve_zetas(){
             //nodes->at(i)->initHead_t0();
         }
 
-        LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID <<")";
+        LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
         updateMatrix_zetas(localZetaID);
 
         if (!isCached_zetas) {
@@ -760,8 +778,8 @@ Equation::solve_zetas(){
         if (disable_dry_cells) {
             adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
         } else {*/
-            // needed for updateIntermediateZetas:
-            adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
+        // needed for updateIntermediateZetas:
+        adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
         //}
 
         LOG(numerics) << "Running Time Step (zetas)";
@@ -777,8 +795,10 @@ Equation::solve_zetas(){
 #pragma omp parallel for
             for (large_num k = 0; k < totalNumberOfZetas; ++k) {
                 double val;
-                for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) { // need to define localZetaID inside "isZetaChangeGreater"
-                    val = std::abs(nodes->at(k)->getZetasChange()[localZetaID].value()); // todo improve for loop (by getting rid of it)
+                for (int localZetaID = 1; localZetaID <
+                                          numberOfZones; localZetaID++) { // need to define localZetaID inside "isZetaChangeGreater"
+                    val = std::abs(nodes->at(
+                            k)->getZetasChange()[localZetaID].value()); // todo improve for loop (by getting rid of it)
                     //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                     changeMax = (val > changeMax) ? val : changeMax;
                 }
@@ -808,17 +828,18 @@ Equation::solve_zetas(){
                 if (disable_dry_cells) {
                     _x__zetas = cg_zetas.solveWithGuess(_b__zetas, _x__zetas);
                 } else {*/
-                    x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                /*}
-            }*/
-            LOG(debug) << "x_zetas (potential new zeta heights, outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+            x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
+            /*}
+        }*/
+            LOG(debug) << "x_zetas (potential new zeta heights, outer iteration " << iterations << "):\n" << x_zetas
+                       << std::endl;
 
             updateIntermediateZetas(localZetaID);
             int innerItter{0};
             /*if (nwt) {
                 innerItter = bicgstab_zetas.iterations();
             } else {*/
-                innerItter = cg_zetas.iterations();
+            innerItter = cg_zetas.iterations();
             //}
 
             if (innerItter == 0 and iterations == 0) {
@@ -901,19 +922,16 @@ Equation::solve_zetas(){
                 LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
             }
         }
-
-        //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
-        // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
-
-        LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
-        adjustAllZetaHeights(localZetaID);
-        // updateZetaBudget(); // Question: calculate zeta budgets?
-
-        updateFinalZetaChange(localZetaID);
-
+        updateZetaChanges(localZetaID);
         __itter = iterations;
         __error = nwt ? bicgstab_zetas.error() : cg_zetas.error_inf();
     }
+    //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
+    // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
+
+    LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
+    adjustZetaHeights();
+    // updateZetaBudget(); // Question: calculate zeta budgets?
 }
 
 

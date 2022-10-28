@@ -290,7 +290,7 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateFinalZetaChange(int localZetaID);
+        void inline updateZetaChanges(int localZetaID);
 
         /**
          * Write the final zeta surface heights to the nodes
@@ -301,7 +301,7 @@ namespace GlobalFlow {
 
         void inline checkAllZetaSlopes(int localZetaID);
 
-        void inline adjustAllZetaHeights(int localZetaID);
+        void inline adjustZetaHeights();
 
         bool SteadyState = false;
         //Only for testing purposes
