@@ -1,14 +1,14 @@
-cmake_minimum_required(VERSION 3.15.3)
-if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
-    message(STATUS "You need to upgrade CMake! Minimum required version is 3.15.3.")
+cmake_minimum_required(VERSION 3.25.0)
+if(${CMAKE_VERSION} VERSION_LESS "3.25.0")
+    message(STATUS "You need to upgrade CMake! Minimum required version is 3.25.0.")
 endif()
 
-set(CMAKE_C_COMPILER "clang") # !!! should be able to compile with clang-13, but it is not
-set(CMAKE_CXX_COMPILER "clang++") # !!! should be able to compile with clang++-13, but it is not
+set(CMAKE_C_COMPILER "clang-13")
+set(CMAKE_CXX_COMPILER "clang++-13")
 
 # CMAKE flags
 set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
 project(GW)
@@ -22,15 +22,10 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 ################# Libs ################
 
 # Boost
-find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
-IF (Boost_FOUND)
-    message(STATUS "Boost found")
-    set(Boost_INCLUDE_DIR /usr/include/boost/) # !!!  should not be necessary
-    # set(Boost_LIBRARY_DIR /usr/include/boost/libs/)
-    include_directories(${Boost_INCLUDE_DIR})
-    link_directories(${Boost_LIBRARY_DIR})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
-ENDIF()
+find_package(Boost 1.80.0 COMPONENTS system filesystem serialization log REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+link_directories(${Boost_LIBRARY_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 
 # OpenMP
 FIND_PACKAGE(OpenMP)
