@@ -51,7 +51,7 @@ namespace GlobalFlow {
                 readHeadBoundary(buildDir(op.getKGHBDir()));
 
                 LOG(userinfo) << "Reading parameters for variable density flow";
-                readInitialZetas(op.isDensityVariable(), op.getDensityFresh(),buildDir(op.getInitialZetasDir()), op.getAquiferDepth()[0]);
+                readInitialZetas(buildDir(op.getInitialZetasDir()));
                 readEffectivePorosity(buildDir(op.getEffectivePorosity()));
 
                 LOG(userinfo) << "Initializing head";
@@ -198,28 +198,25 @@ namespace GlobalFlow {
                 }
             }
 
-            void readInitialZetas(bool densityVariable, double densityFresh, std::string pathZetas, double aquiferDepth) {
-                if (densityVariable){
-                    int arcid{0};
-                    double density{0};
-                    double height{0};
-                    unsigned long int globalZetaID{0};
+            void readInitialZetas(std::string pathZetas) {
+                int arcid{0};
+                double height{0};
+                unsigned long int globalZetaID{0}; // must be same type as large_num in Units.hpp
 
-                    // read initial data for density surfaces
-                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                    inZetas.read_header(io::ignore_no_column, "arcID", "density", "height");
-                    while (inZetas.read_row(arcid, density, height)) {
-                        int pos = 0;
-                        try {
-                            pos = lookuparcIDtoID.at(arcid);
-                        }
-                        catch (const std::out_of_range &ex) {
-                            //if Node does not exist ignore entry
-                            continue;
-                        }
-                        nodes->at(pos)->addInitialZeta(height * Model::si::meter, globalZetaID);
-                        globalZetaID++;
+                // read initial data for density surfaces
+                io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                inZetas.read_header(io::ignore_no_column, "arcID", "height");
+                while (inZetas.read_row(arcid, height)) {
+                    int pos = 0;
+                    try {
+                        pos = lookuparcIDtoID.at(arcid);
                     }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    nodes->at(pos)->addInitialZeta(height * Model::si::meter, globalZetaID);
+                    globalZetaID++;
                 }
             }
 

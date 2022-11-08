@@ -21,7 +21,7 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TEN_DAYS, 40);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 200);
     int stepNumber = 1;
 
     // for saving zetas in a csv
