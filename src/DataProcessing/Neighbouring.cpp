@@ -216,7 +216,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                 Model::quantity<Model::Meter> edgeLengthLeftRight = 1 * Model::si::meter;
                 Model::quantity<Model::Meter> edgeLengthFrontBack = 1 * Model::si::meter;
                 vector<double> densityZetas{1012.5};
-                Model::DensityProperties densityProps = Model::DensityProperties::setDensityProperties(true, false, 1000.0, densityZetas, 2, 0.2, 0.2);
+                Model::DensityProperties densityProps = Model::DensityProperties::setDensityProperties(true, densityZetas, 0.2, 0.2);
                 nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area, edgeLengthLeftRight,
                                                               edgeLengthFrontBack, densityProps));
 

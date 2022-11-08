@@ -102,10 +102,7 @@ namespace GlobalFlow {
             vector<bool> CONFINED{};
             // density information
             bool DENSITY_VARIABLE{false};
-            bool DENSITY_STRATIFIED{false};
-            double DENSITY_FRESH{1000.0};
             vector<double> DENSITY_ZONES{1000.0};
-            int NUMBER_OF_DENSITY_ZONES{1};
             double MAX_TOE_SLOPE{0.2};
             double MAX_TIP_SLOPE{0.2};
 
@@ -232,21 +229,9 @@ namespace GlobalFlow {
 
             bool isDensityVariable() { return DENSITY_VARIABLE; }
 
-            bool isDensityStratified() { return DENSITY_STRATIFIED; }
-
-            double
-            getDensityFresh() {
-                return DENSITY_FRESH;
-            }
-
             vector<double>
             getDensityZones() {
                 return DENSITY_ZONES;
-            }
-
-            int
-            getNumberOfDensityZones() {
-                return NUMBER_OF_DENSITY_ZONES;
             }
 
             double

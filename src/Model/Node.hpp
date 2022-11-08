@@ -979,6 +979,8 @@ Modify Properties
                 }
             }
 
+            string getZetaPosInNode(int localZetaID){ return ZetaPosInNode; }
+
             /**
              * @brief Set effective porosity (applied to all layers below)
              * @param effectivePorosity effective porosity

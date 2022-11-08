@@ -69,7 +69,7 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
 
     if(vdf) {
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
-        this->numberOfZones = options.getNumberOfDensityZones();
+        this->numberOfZones = options.getDensityZones().size();
         this->totalNumberOfZetas = numberOfNodes * (numberOfZones - 1);
         this->maxZetaChange = options.getMaxZetaChange();
         long_vector __x_zetas(totalNumberOfZetas);
@@ -125,20 +125,22 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, large_num globalZetaID, bool cached) {
+Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, int numInactive, bool cached) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
+    large_num globalZetaID;
     quantity<Model::MeterSquaredPerTime> zoneConductance;
+    auto nodeID = node->getProperties().get<large_num, Model::ID>();
 
     map = node->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
-
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
+        globalZetaID = entry.first; // the id of the zeta surface in the respective (neighbour) node
         zoneConductance = entry.second;
-        //LOG(debug) << "globalZetaID row: " + std::to_string(globalZetaID) + "| col: " + std::to_string(entry.first) + " (in addToA_zetas)" << std::endl;
-        // conductance.first is the zetaID of the zeta surface in the respective neighbour node
+        //LOG(debug) << "globalZetaID row: " + std::to_string(nodeID) + "| col: " + std::to_string(globalZetaID) + " (in addToA_zetas)" << std::endl;
+
         if (cached) {
-            A_zetas.coeffRef(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
+            A_zetas.coeffRef(nodeID - numInactive, globalZetaID - numberOfNodes - numInactive) = zoneConductance.value();
         } else {
-            A_zetas.insert(globalZetaID - numberOfNodes, entry.first - numberOfNodes) = zoneConductance.value();
+            A_zetas.insert(nodeID - numInactive, globalZetaID - numberOfNodes - numInactive) = zoneConductance.value();
         }
     }
 }
@@ -325,19 +327,23 @@ Equation::updateMatrix_zetas(int localZetaID) {
         Index n = A_zetas.outerSize();
         std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
         disabled_nodes.clear();
+        int numInactive = 0;
 
-        large_num globalZetaID = numberOfNodes; // because we start with localZetaID = 1 (and not 0) todo this needs to be documented well (implications for initial_zetas.csv)
 #ifdef EIGEN_HAS_OPENMP
         Eigen::initParallel();
         Index threads = Eigen::nbThreads();
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
         for (large_num j = 0; j < numberOfNodes; ++j) {
-            //---------------------Left
-            addToA_zeta(nodes->at(j), localZetaID, globalZetaID, isCached);
-            //---------------------Right
-            b_zetas(globalZetaID - numberOfNodes) = nodes->at(j)->getZetaRHS(localZetaID).value();
-            globalZetaID++;
+            if (nodes->at(j)->getZetaPosInNode(localZetaID) == "between") {
+                //---------------------Left
+                addToA_zeta(nodes->at(j), localZetaID, numInactive, isCached);
+                //---------------------Right
+                b_zetas(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = nodes->at(j)->getZetaRHS(
+                        localZetaID).value();
+            } else {
+                numInactive++;
+            }
         }
 
         if (not disable_dry_cells) {

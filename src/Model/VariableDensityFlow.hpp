@@ -29,22 +29,20 @@ namespace GlobalFlow {
             int numOfZones;
 
         public:
-
-
-            static DensityProperties setDensityProperties(bool densityVariable, bool densityStratified, double densityFresh,
-                                                          vector<double> densityZones, int numberOfDensityZones,
+            static DensityProperties setDensityProperties(bool densityVariable, vector<double> densityZones,
                                                           double maxToeSlope, double maxTipSlope){
                 DensityProperties densityProps;
                 densityProps.densityVariable = densityVariable;
+                double densityFresh = densityZones.front();
                 vector<t_dim> nusZetaVec;
                 vector<t_dim> nusZoneVec;
                 vector<t_dim> delnusVec;
                 double densityZeta;
 
-                for (int id = 0; id <= numberOfDensityZones; id++) {
+                for (int id = 0; id <= densityZones.size(); id++) {
                     if (id == 0) {
                         densityZeta = densityZones[id];
-                    } else if (id == numberOfDensityZones) {
+                    } else if (id == densityZones.size()) {
                         densityZeta = densityZones[id-1];
                     } else {
                         densityZeta = (densityZones[id-1] + densityZones[id]) * 0.5;
@@ -52,13 +50,10 @@ namespace GlobalFlow {
                     nusZetaVec.push_back((densityZeta - densityFresh ) / densityFresh * Model::si::si_dimensionless);
                 }
 
-                for (int id = 0; id < numberOfDensityZones; id++) {
+                for (int id = 0; id < densityZones.size(); id++) {
 
-                    if (densityStratified) {
-                        nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
-                    } else { // if continuous todo: test for continuous case whether the results are correct
-                        nusZoneVec.push_back((nusZetaVec[id] + nusZetaVec[id+1]) * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces at top and bottom
-                    }
+                    nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
+
                     if (id == 0) {
                         delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
                     } else {
@@ -72,7 +67,7 @@ namespace GlobalFlow {
                 densityProps.delnus = delnusVec;
                 densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
                 densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
-                densityProps.numOfZones = numberOfDensityZones;
+                densityProps.numOfZones = densityZones.size();
                 return densityProps;
             }
 
