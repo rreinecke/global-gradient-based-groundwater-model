@@ -1212,7 +1212,6 @@ Modify Properties
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                std::vector<t_dim> eps = densityProps.getEps();
                 std::vector<t_dim> delnus = densityProps.getDelnus();
 
                 std::vector<t_s_meter_t> zoneConductances;
@@ -1236,11 +1235,6 @@ Modify Properties
                             }
                         }
 
-                        if (eps[localZetaID] != 0 * si::si_dimensionless) {
-                            zoneConductances = calculateZoneConductances(got);
-                            zetaMovementConductance -= (eps[localZetaID] *
-                                                        zoneConductances[localZetaID]); // in SWI2: SWISOLCC/R
-                        }
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                         out[nodes->at(got->second)->GlobalZetaID[localZetaID]] = move(zetaMovementConductance);
@@ -1381,13 +1375,12 @@ Modify Properties
             t_vol_t getZetaPseudoSource(int localZetaID) { // todo test
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> eps = densityProps.getEps();
                 vector<t_dim> delnus = densityProps.getDelnus();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
-                // pseudo source term calculation (in 3 parts)
+                // pseudo source term calculation (in 2 parts)
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
                     if (got == neighbours.end()) {
@@ -1410,27 +1403,7 @@ Modify Properties
                             //LOG(debug) << "get<t_meter, Head>(): " << get<t_meter, Head>().value() << std::endl;
                         }
 
-                        //%% eps part 1%%
-                        if (at(got)->ZetaPosInNode[localZetaID] == "between") { // adapted from SWI2 code lines 3589-3594 (NOT in documentation):
-                            t_vol_t eps_part1 = -eps[localZetaID] * (zoneConductances[localZetaID] *
-                                                                     (at(got)->Zetas[localZetaID + 1] -
-                                                                      Zetas[localZetaID + 1]));
-                            out += eps_part1;
-                            //LOG(debug) << "eps_part1: " << eps_part1.value() << std::endl;
-                        }
-
-
                         for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                            //%% eps part 2%%
-                            if (zetaID > localZetaID) { // adapted from SWI2 code lines 3607-3634
-                                t_vol_t eps_part2 = eps[zetaID] *
-                                                      (zoneConductances[zetaID] *
-                                                       ((at(got)->Zetas[zetaID] - Zetas[zetaID]) -
-                                                        (at(got)->Zetas[zetaID + 1] - Zetas[zetaID + 1])));
-                                out += eps_part2;
-                                //LOG(debug) << "eps_part2: " << eps_part2.value() << std::endl;
-                            }
-
                             //%% delnus part %%
                             if (zetaID != localZetaID and
                                 ZetaPosInNode[localZetaID] == "between" and
@@ -1457,7 +1430,6 @@ Modify Properties
             t_vol_t tipToeFlow(map_itter got, int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> eps = densityProps.getEps();
                 vector<t_dim> delnus = densityProps.getDelnus();
 
                 std::vector<t_s_meter_t> zoneConductances = calculateZoneConductances(got);
@@ -1470,16 +1442,8 @@ Modify Properties
                 //LOG(debug) << "with getAt<t_meter, Head>(got): " << getAt<t_meter, Head>(got).value() << std::endl;
                 //LOG(debug) << "get<t_meter, Head>(): " << get<t_meter, Head>().value() << std::endl;
 
-                // 3rd part: delnus part for left/back neighbour
+                // 2nd part: delnus part for left/back neighbour
                 for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
-                    // 2nd part: eps part for left/back neighbour
-                    if (zetaID >= localZetaID and eps[zetaID] != 0) {
-                        t_vol_t eps_part = eps[zetaID] * zoneConductances[zetaID] *
-                                            (-(at(got)->Zetas[zetaID] - Zetas[zetaID]) +
-                                             (at(got)->Zetas[zetaID + 1] - Zetas[zetaID + 1]));
-                        out += eps_part;
-                        //LOG(debug) << "eps_part (in tipToeFlow): " << eps_part.value() << std::endl;
-                    }
 
                     t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
                                                                                 zoneConductances);
@@ -1652,7 +1616,6 @@ Modify Properties
                 if (hasGHB()) { return out; } // return 0 at boundary nodes
 
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> eps = densityProps.getEps();
                 vector<t_dim> delnus = densityProps.getDelnus();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
@@ -1669,11 +1632,6 @@ Modify Properties
                     for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++){
                         t_s_meter_t zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
                         //LOG(debug) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
-                        if (eps[localZetaID] > 0) {
-                            out += eps[localZetaID] * (zoneConductances[localZetaID] *
-                                                       ((at(got)->Zetas[localZetaID] - at(got)->Zetas[localZetaID+1]) -
-                                                        (Zetas[localZetaID] - Zetas[localZetaID+1])));
-                        }
                         if (delnus[localZetaID] > 0) {
                             out -= delnus[localZetaID] * (zoneConductanceCum *
                                                           (at(got)->Zetas[localZetaID] - Zetas[localZetaID]));

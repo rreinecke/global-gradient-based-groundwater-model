@@ -24,7 +24,6 @@ namespace GlobalFlow {
             vector<t_dim> nusZetas; // dimensionless density on the zeta surfaces
             vector<t_dim> nusZones; // dimensionless density in the density zones between successive zeta surfaces
             vector<t_dim> delnus; // difference in dimensionless density between successive zeta surfaces
-            vector<t_dim> eps; // variation of dimensionless density over a density zone (for continuous option)
             t_dim maxToeSlope;
             t_dim maxTipSlope;
             int numOfZones;
@@ -40,7 +39,6 @@ namespace GlobalFlow {
                 vector<t_dim> nusZetaVec;
                 vector<t_dim> nusZoneVec;
                 vector<t_dim> delnusVec;
-                vector<t_dim> epsVec;
                 double densityZeta;
 
                 for (int id = 0; id <= numberOfDensityZones; id++) {
@@ -58,12 +56,9 @@ namespace GlobalFlow {
 
                     if (densityStratified) {
                         nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
-                        epsVec.push_back(0 * Model::si::si_dimensionless);
                     } else { // if continuous todo: test for continuous case whether the results are correct
                         nusZoneVec.push_back((nusZetaVec[id] + nusZetaVec[id+1]) * 0.5 * Model::si::si_dimensionless); // nus of zones is mean of zeta surfaces at top and bottom
-                        epsVec.push_back((( nusZetaVec[id+1] - nusZetaVec[id] ) / 6));
                     }
-                    //LOG(debug) << "eps (for zone " << id << "): " << epsVec[id].value() << std::endl;
                     if (id == 0) {
                         delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
                     } else {
@@ -75,7 +70,6 @@ namespace GlobalFlow {
                 densityProps.nusZetas = nusZetaVec;
                 densityProps.nusZones = nusZoneVec;
                 densityProps.delnus = delnusVec;
-                densityProps.eps = epsVec;
                 densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
                 densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
                 densityProps.numOfZones = numberOfDensityZones;
@@ -85,8 +79,6 @@ namespace GlobalFlow {
             vector<t_dim> getNusZones(){return nusZones;}
 
             vector<t_dim> getDelnus(){return delnus;}
-
-            vector<t_dim> getEps(){return eps;}
 
             bool isDensityVariable(){return densityVariable;}
 
