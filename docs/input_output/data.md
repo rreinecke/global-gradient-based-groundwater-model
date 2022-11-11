@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Data
+title: Input - Data
 nav_order: 2
 parent: Input and Outputs
 ---
