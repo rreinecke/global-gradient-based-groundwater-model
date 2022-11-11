@@ -196,26 +196,6 @@ The model parameters (e.g. aquifer settings, convergence criteria, location of i
 }
 ```
 
-## Deployment in other models
-The main steps towards your own model is to implement the GW_interface and provide a DataReader.
-A standalone version can be easily implemented by extending the simple example provided above.
-
-### In memory coupling
-G³M-f is written with the coupling to other models in mind.
-In contrast to other model coupling efforts, it is not necessary to write out files in one model and read them in in another model.
-You can directly link G³M-f with your existing executable and by providing a class in your already existing model code that implements the gw_interface, you are free to call the simulate() function at any timestep you like.
-Furthermore, the interface provides pointer containers and callbacks to transfer data in memory without the need to waste time on I/O.
-
-Please contact us if you need advice.
-
-## Running the tests
-Automated tests consists of gunit test which are compiled automatically with the attached cmake file.
-You can run them by executing the test executable.
-
-```
-runUnitTests
-```
-
 ## Further documentation:
 
 [The full documentation](html_doku/index.html)
