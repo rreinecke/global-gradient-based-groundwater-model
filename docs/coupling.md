@@ -15,5 +15,3 @@ Furthermore, the interface provides pointer containers and callbacks to transfer
 [Here](http://globalgroundwatermodel.org/getting_started/coupling) you can find a turorial
 
 Please contact us if you need advice.
-
-
