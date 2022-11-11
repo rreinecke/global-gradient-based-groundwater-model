@@ -20,6 +20,8 @@ Its main feature compared to MODFLOW is its extensibility, speed, and in-memory 
 
 For collaboration on coupling this model to other hydrological models, please contact Dr. Robert Reinecke (rreinecke on github).
 
+# Check out the project on [GitHub](https://github.com/rreinecke/global-gradient-based-groundwater-model)
+
 # Publications
 
 [Global model description in GMD](https://www.geosci-model-dev.net/12/2401/2019/)
@@ -32,10 +34,6 @@ Code publication in JOSS: [![DOI](https://zenodo.org/badge/109667597.svg)](https
 
 Outputs of Reinecke et al 2019 in GMD: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1315471.svg)](https://doi.org/10.5281/zenodo.1315471)
 
-# Check out the project on GitHub
-[GitHub](https://github.com/rreinecke/global-gradient-based-groundwater-model)
-
-
 # Prerequisites
 
 To compile the program, you will need:
@@ -47,8 +45,6 @@ libGMP
 libGtest
 lcov
 ```
-
-
 
 ## Built With
 
@@ -65,9 +61,6 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
-## Authors and Contributors
-
 
 ## Authors and Contributors
 
