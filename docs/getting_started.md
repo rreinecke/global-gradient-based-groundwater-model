@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Getting Started
-nav_order: 3
+nav_order: 10
 has_children: true
 description: "How to use the model"
 permalink: /getstarted
