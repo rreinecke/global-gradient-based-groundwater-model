@@ -6,11 +6,11 @@ parent: Input and Outputs
 ---
 
 
-### Model configuration
+# Model configuration
 
 The model parameters (e.g. aquifer settings, convergence criteria, location of input files) can be configured by changing the config.json (an example is shown below).
 
-#### Main config parameters
+## Main config parameters
 
 * model_config
   * nodes: A file describing the input grid
@@ -29,7 +29,7 @@ The model parameters (e.g. aquifer settings, convergence criteria, location of i
   * default_data: specifiy default parameters
   * data: Inputdata - can be modified according to the users need. The shown inputs are the supported defaults
 
-#### Example config.json file 
+## Example config.json file 
 This is the same as in Tutorial 1 - a simple model.
 ```
 {
