@@ -14,7 +14,7 @@ The following picture shows the conceptual example model:
 
 ## Running the model
 
-After compilation (see [here](http://globalgroundwatermodel.org/getstarted/)):
+After compilation (see [here](http://globalgroundwatermodel.org/getstarted)):
 ```
 simple_model
 ```
