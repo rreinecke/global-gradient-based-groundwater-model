@@ -157,7 +157,6 @@ namespace GlobalFlow {
         bool initalized = false;
 
         large_num numberOfNodes;
-        large_num totalNumberOfZetas;
         int initialHead;
 
         /**
@@ -173,12 +172,8 @@ namespace GlobalFlow {
         SparseMatrix<pr_t> _A_;
 
         long_vector x_zetas;
-        long_vector _x__zetas;
         long_vector b_zetas;
-        long_vector _b__zetas;
         SparseMatrix<pr_t> A_zetas;
-        SparseMatrix<pr_t> _A__zetas;
-
 
         const Simulation::Options options;
 
@@ -209,6 +204,7 @@ namespace GlobalFlow {
         std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index mapping for zetas?
 
         bool dry_have_changed{true};
+        bool inactive_have_changed{true};
 
         template<typename Set>
         bool set_compare(Set const &lhs, Set const &rhs) {

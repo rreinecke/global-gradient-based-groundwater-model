@@ -979,7 +979,7 @@ Modify Properties
                 }
             }
 
-            string getZetaPosInNode(int localZetaID){ return ZetaPosInNode; }
+            vector<std::string> getZetaPosInNode(){ return ZetaPosInNode; }
 
             /**
              * @brief Set effective porosity (applied to all layers below)

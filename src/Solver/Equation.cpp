@@ -70,27 +70,21 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     if(vdf) {
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getDensityZones().size();
-        this->totalNumberOfZetas = numberOfNodes * (numberOfZones - 1);
         this->maxZetaChange = options.getMaxZetaChange();
-        long_vector __x_zetas(totalNumberOfZetas);
-        long_vector __b_zetas(totalNumberOfZetas);
+        long_vector __x_zetas(numberOfNodes);
+        long_vector __b_zetas(numberOfNodes);
 
         x_zetas = std::move(__x_zetas);
         b_zetas = std::move(__b_zetas);
 
-        Eigen::SparseMatrix<pr_t> __A_zetas(totalNumberOfZetas, totalNumberOfZetas);
+        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodes, numberOfNodes);
 
         A_zetas = std::move(__A_zetas);
-        A_zetas.reserve(long_vector::Constant(totalNumberOfZetas, 5));
+        A_zetas.reserve(long_vector::Constant(numberOfNodes, 5));
 
-        if (nwt) {
-            bicgstab_zetas.setMaxIterations(inner_iterations);
-            bicgstab_zetas.setTolerance(RCLOSE);
-        } else {
-            //set inner iterations
-            cg_zetas.setMaxIterations(inner_iterations);
-            cg_zetas.setTolerance(RCLOSE);
-        }
+        //set inner iterations
+        cg_zetas.setMaxIterations(inner_iterations);
+        cg_zetas.setTolerance(RCLOSE);
     }
 }
 
@@ -125,22 +119,34 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, int numInactive, bool cached) {
+Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, bool cached) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     large_num globalZetaID;
+    large_num rowID;
+    large_num colID;
+
     quantity<Model::MeterSquaredPerTime> zoneConductance;
+
     auto nodeID = node->getProperties().get<large_num, Model::ID>();
+    rowID = nodeID;
+    //LOG(debug) << "rowID: " << rowID << std::endl;
 
     map = node->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
+
+    if (node->getZetaPosInNode()[localZetaID] != "between") {
+        disabled_nodes.insert(node->getProperties().get<large_num, Model::ID>());
+    }
+
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         globalZetaID = entry.first; // the id of the zeta surface in the respective (neighbour) node
-        zoneConductance = entry.second;
-        //LOG(debug) << "globalZetaID row: " + std::to_string(nodeID) + "| col: " + std::to_string(globalZetaID) + " (in addToA_zetas)" << std::endl;
+        colID = globalZetaID - numberOfNodes;
+        //LOG(debug) << "colID: " << colID << std::endl;
 
+        zoneConductance = entry.second;
         if (cached) {
-            A_zetas.coeffRef(nodeID - numInactive, globalZetaID - numberOfNodes - numInactive) = zoneConductance.value();
+            A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
         } else {
-            A_zetas.insert(nodeID - numInactive, globalZetaID - numberOfNodes - numInactive) = zoneConductance.value();
+            A_zetas.insert(rowID, colID) = zoneConductance.value();
         }
     }
 }
@@ -203,60 +209,50 @@ void inline Equation::reallocateMatrix() {
 }
 
 void inline Equation::reallocateMatrix_zetas() {
-    if (not disable_dry_cells) {
-        return;
-    }
-
-    if (disabled_nodes.empty()) { // todo disabled zetas?
-        _A__zetas = A_zetas;
-        _b__zetas = b_zetas;
-        _x__zetas = x_zetas;
-        return;
-    }
-
     large_num __missing{0};
-    long size = A_zetas.rows() - disabled_nodes.size();
-    Matrix<pr_t, 2, Dynamic> new_matrix_zetas(size, size);
 
+    const long size_new = A_zetas.rows() - disabled_nodes.size();
 
-    if (dry_have_changed) {
-        index_mapping.clear(); // todo index mappping zetas?
+    Eigen::SparseMatrix<pr_t, RowMajor> new_matrix_zetas(size_new, size_new); // A_zetas.cols()
+
+    if (inactive_have_changed) {
+        index_mapping.clear();
     }
-
     for (large_num i = 0; i < A_zetas.rows(); i++) {
-        if (not dry_have_changed) {
-            auto m = index_mapping[i];
-            if (m != -1) {
-                new_matrix_zetas.row(i) = A_zetas.row(i);
-            }
-        } else {
-            const bool is_in = disabled_nodes.find(i) != disabled_nodes.end();
-            if (not is_in) {
-                //Save all non-zero
-                new_matrix_zetas.row(i) = A_zetas.row(i);
+        if (inactive_have_changed) {
+            const bool is_active = (disabled_nodes.find(i) == disabled_nodes.end());
+            if (is_active) {
                 index_mapping[i] = i - __missing;
+                auto new_row = index_mapping[i];
+                //Save all non-zero
+                new_matrix_zetas.row(new_row) = A_zetas.block(i, __missing, 1, size_new); // A_zetas.row(i)
             } else {
                 __missing++;
                 index_mapping[i] = -1;
             }
-        }
-    }
-    _A__zetas = new_matrix_zetas.sparseView();
-
-    long_vector buffer_b_zetas;
-    long_vector buffer_x_zetas;
-    for (int j = 0; j < b_zetas.size(); ++j) {
-        auto m = index_mapping[j];
-        if (m != -1) {
-            buffer_b_zetas[m] = b_zetas[j];
-            if (dry_have_changed) {
-                buffer_x_zetas[m] = x_zetas[j];
+        } else {
+            auto m = index_mapping[i];
+            if (m != -1) {
+                new_matrix_zetas.row(m) = A_zetas.row(i);
             }
         }
     }
-    _b__zetas = buffer_b_zetas;
-    if (dry_have_changed) {
-        _x__zetas = buffer_x_zetas;
+    A_zetas = new_matrix_zetas;
+
+    long_vector buffer_b_zetas(size_new);
+    long_vector buffer_x_zetas(size_new);
+    for (int j = 0; j < b_zetas.size(); ++j) {
+        auto m = index_mapping[j];
+        if (m != -1) {
+            buffer_b_zetas(m) = b_zetas(j);
+            if (inactive_have_changed) {
+                buffer_x_zetas(m) = x_zetas(j);
+            }
+        }
+    }
+    b_zetas = buffer_b_zetas;
+    if (inactive_have_changed) {
+        x_zetas = buffer_x_zetas;
     }
 }
 
@@ -324,61 +320,47 @@ Equation::updateMatrix() {
 
 void inline
 Equation::updateMatrix_zetas(int localZetaID) {
-        Index n = A_zetas.outerSize();
-        std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
-        disabled_nodes.clear();
-        int numInactive = 0;
+    // todo find more elegant way for the following reset
+    Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodes, numberOfNodes);
+    A_zetas = std::move(__A_zetas);
+    A_zetas.reserve(long_vector::Constant(numberOfNodes, 5));
+    long_vector __x_zetas(numberOfNodes);
+    long_vector __b_zetas(numberOfNodes);
+    x_zetas = std::move(__x_zetas);
+    b_zetas = std::move(__b_zetas);
+
+    Index n = A_zetas.outerSize();
+    std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
+    disabled_nodes.clear();
 
 #ifdef EIGEN_HAS_OPENMP
-        Eigen::initParallel();
-        Index threads = Eigen::nbThreads();
+    Eigen::initParallel();
+    Index threads = Eigen::nbThreads();
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-        for (large_num j = 0; j < numberOfNodes; ++j) {
-            if (nodes->at(j)->getZetaPosInNode(localZetaID) == "between") {
-                //---------------------Left
-                addToA_zeta(nodes->at(j), localZetaID, numInactive, isCached);
-                //---------------------Right
-                b_zetas(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = nodes->at(j)->getZetaRHS(
-                        localZetaID).value();
-            } else {
-                numInactive++;
-            }
-        }
-
-        if (not disable_dry_cells) {
-            dry_have_changed = not set_compare(tmp_disabled_nodes, disabled_nodes);
-        }
-
-        //some nodes are in dried condition
-        //reallocate matrix, and a,b
-        reallocateMatrix_zetas(); // Question: is this needed with zetas?
-
-        //A is up to date and b contains only rhs term
-        //Update with current heads
-        if (nwt) {
-            if (disable_dry_cells) {
-                _b__zetas = _b__zetas + _A__zetas * _x__zetas;
-            } else {
-                b_zetas = b_zetas + A_zetas * x_zetas;
-            }
-        }
-
-        //Check if after iteration former 0 values turned to non-zero
-        if (disable_dry_cells) {
-            if ((not _A__zetas.isCompressed()) and isCached) {
-                LOG(numerics) << "Recompressing Matrix";
-                _A__zetas.makeCompressed();
-            }
-        } else {
-            if ((not A_zetas.isCompressed()) and isCached) {
-                LOG(numerics) << "Recompressing Matrix";
-                A_zetas.makeCompressed();
-            }
-        }
-    //LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
-    LOG(debug) << "b_zetas (= rhs_zeta):\n" << b_zetas << std::endl;
+    for (large_num j = 0; j < numberOfNodes; ++j) {
+            //---------------------Left
+            addToA_zeta(nodes->at(j), localZetaID, isCached_zetas);
+            //---------------------Right
+            b_zetas(nodes->at(j)->getProperties().get<large_num, Model::ID>()) =
+                    nodes->at(j)->getZetaRHS(localZetaID).value();
     }
+    LOG(debug) << "A_zetas full:\n" << A_zetas << std::endl;
+    LOG(debug) << "b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
+    inactive_have_changed = not set_compare(tmp_disabled_nodes, disabled_nodes);
+
+    //in some nodes, the zeta surface is inactive
+    //reallocate A_zetas, x_zetas, b_zetas
+    reallocateMatrix_zetas();
+
+    //Check if after iteration former 0 values turned to non-zero
+    if ((not A_zetas.isCompressed()) and isCached_zetas) {
+        LOG(numerics) << "Recompressing Matrix";
+        A_zetas.makeCompressed();
+    }
+
+
+}
 
 void inline
 Equation::preconditioner() {
@@ -409,26 +391,11 @@ Equation::preconditioner() {
 void inline
 Equation::preconditioner_zetas() {
     LOG(numerics) << "Decomposing Matrix (zetas)";
-    if (nwt) {
-        if (disable_dry_cells) {
-            bicgstab_zetas.compute(_A__zetas);
-        } else {
-            bicgstab_zetas.compute(A_zetas);
-        }
-        if (bicgstab_zetas.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix (zetas)";
-            throw "Fail in decomposing matrix (zetas)";
-        }
-    } else {
-        if (disable_dry_cells) {
-            cg_zetas.compute(_A__zetas);
-        } else {
-            cg_zetas.compute(A_zetas);
-        }
-        if (cg_zetas.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix (zetas)";
-            throw "Fail in decomposing matrix (zetas)";
-        }
+    cg_zetas.compute(A_zetas);
+
+    if (cg_zetas.info() != Success) {
+        LOG(numerics) << "Fail in decomposing matrix (zetas)";
+        throw "Fail in decomposing matrix (zetas)";
     }
 }
 
@@ -460,26 +427,29 @@ Equation::updateIntermediateHeads() {
 void inline
 Equation::updateIntermediateZetas(int localZetaID) {
     long_vector changes;
-    if (disable_dry_cells) {
-        changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), _x__zetas, isAdaptiveDamping);
-    } else {
-        changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
-    }
+    changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
+    LOG(debug) << "changes: " << changes << std::endl;
 
-    //LOG(debug) << "Zeta changes (updateIntermediateZetas):\n" << changes << std::endl;
-    bool reduced = disabled_nodes.empty();
+    bool all_nodes_active = disabled_nodes.empty();
+    large_num missing{0};
+    large_num n{0};
 
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
+        //large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
 
-        if (reduced) {
-            nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // setZeta
+        if (all_nodes_active) {
+            n = globalZetaID - numberOfNodes;
+            nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[n] * si::meter);
         } else {
-            auto m = index_mapping[id];
+            auto m = index_mapping[k];
             if (m != -1) {
-                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[globalZetaID-numberOfNodes] * si::meter); // setZeta
+                n = globalZetaID - numberOfNodes - missing;
+                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[n] * si::meter);
+                LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+            } else {
+                missing++;
             }
         }
     }
@@ -606,8 +576,7 @@ Equation::solve() {
         double changeMax = 0;
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            double
-                    val = std::abs(
+            double val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             //LOG(debug) << "val (in solve): " << val << std::endl;
             changeMax = (val > changeMax) ? val : changeMax;
@@ -762,7 +731,6 @@ Equation::solve_zetas(){
         for (int i = 0; i < numberOfNodes; ++i) {
             x_zetas[nodes->at(i)->getProperties().get<large_num, Model::ID>()] =
                     nodes->at(i)->getZetas()[localZetaID].value();
-            //nodes->at(i)->initHead_t0();
         }
 
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
@@ -770,23 +738,16 @@ Equation::solve_zetas(){
 
         if (!isCached_zetas) {
             LOG(numerics) << "Compressing matrix (zetas)";
-            if (disable_dry_cells) {
-                _A__zetas.makeCompressed();
-            } else {
-                A_zetas.makeCompressed();
-            }
+            A_zetas.makeCompressed();
+
             LOG(numerics) << "Cached Matrix (zetas)";
             isCached_zetas = true;
         }
 
+
         preconditioner_zetas();
-        /*
-        if (disable_dry_cells) {
-            adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, _x__zetas);
-        } else {*/
-        // needed for updateIntermediateZetas:
+
         adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
-        //}
 
         LOG(numerics) << "Running Time Step (zetas)";
 
@@ -799,12 +760,11 @@ Equation::solve_zetas(){
             double lowerBound = maxZetaChange;
             double changeMax = 0;
 #pragma omp parallel for
-            for (large_num k = 0; k < totalNumberOfZetas; ++k) {
+            for (large_num k = 0; k < numberOfNodes; ++k) {
                 double val;
-                for (int localZetaID = 1; localZetaID <
-                                          numberOfZones; localZetaID++) { // need to define localZetaID inside "isZetaChangeGreater"
+                for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
                     val = std::abs(nodes->at(
-                            k)->getZetasChange()[localZetaID].value()); // todo improve for loop (by getting rid of it)
+                            k)->getZetasChange()[l].value()); // todo improve for loop (by getting rid of it)
                     //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                     changeMax = (val > changeMax) ? val : changeMax;
                 }
@@ -820,33 +780,17 @@ Equation::solve_zetas(){
         bool zetaConverged{false};
 
         while (iterations < IITER) {
-
             LOG(numerics) << "Outer iteration (zetas): " << iterations;
 
             //Solve inner iterations
-            /*if (nwt) {
-                if (disable_dry_cells) {
-                    _x__zetas = bicgstab_zetas.solveWithGuess(_b__zetas, _x__zetas);
-                } else {
-                    x_zetas = bicgstab_zetas.solveWithGuess(b_zetas, x_zetas);
-                }
-            } else {
-                if (disable_dry_cells) {
-                    _x__zetas = cg_zetas.solveWithGuess(_b__zetas, _x__zetas);
-                } else {*/
             x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-            /*}
-        }*/
-            LOG(debug) << "x_zetas (potential new zeta heights, outer iteration " << iterations << "):\n" << x_zetas
-                       << std::endl;
+            LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
+            LOG(debug) << "b_zetas:\n" << b_zetas << std::endl;
+            LOG(debug) << "x_zetas (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
             updateIntermediateZetas(localZetaID);
-            int innerItter{0};
-            /*if (nwt) {
-                innerItter = bicgstab_zetas.iterations();
-            } else {*/
-            innerItter = cg_zetas.iterations();
-            //}
+
+            int innerItter = cg_zetas.iterations();
 
             if (innerItter == 0 and iterations == 0) {
                 LOG(numerics) << "Zeta surfaces: convergence criterion to small - no iterations";
@@ -889,34 +833,21 @@ Equation::solve_zetas(){
             /**
              * @brief residual norm convergence // todo make function of this (need to
              */
-            if (nwt) {
-                LOG(numerics) << "Inner iterations (zetas): " << innerItter;
-                if (bicgstab_zetas.info() == Success) {
-                    LOG(numerics) << "bicgstab_zetas success";
-                    break;
-                }
-            } else {
-                LOG(numerics) << "Inner iterations (zetas): " << innerItter;
-                if (cg_zetas.info() == Success and iterations != 0) {
-                    LOG(numerics) << "cg_zetas success";
-                    break;
-                }
+
+            LOG(numerics) << "Inner iterations (zetas): " << innerItter;
+            if (cg_zetas.info() == Success and iterations != 0) {
+                LOG(numerics) << "cg_zetas success";
+                break;
             }
 
-            if (nwt) {
-                LOG(numerics) << "Residual squared norm error (zetas)" << bicgstab_zetas.error();
-                LOG(numerics) << "Zeta change bigger: " << zetaFail;
-            } else {
-                LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
-                LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
-                LOG(numerics) << "Zeta change bigger: " << zetaFail;
-            }
+            LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
+            LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
+            LOG(numerics) << "Zeta change bigger: " << zetaFail;
 
             updateMatrix_zetas(localZetaID);
             preconditioner_zetas();
 
             iterations++;
-
         }
 
         if (iterations == IITER) {
