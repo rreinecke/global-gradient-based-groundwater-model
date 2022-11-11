@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Tutorial 1
+title: "Tutorial 1 - a simple model"
 parent: Getting Started
 nav_order: 1
 ---
