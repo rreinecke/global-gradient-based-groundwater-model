@@ -28,7 +28,7 @@ make
 ```
 
 
-Check out [here](http://globalgroundwatermodel.org/tutorial/tut1) how to set up a simple model.
+Check out [here](http://globalgroundwatermodel.org/getting_started/tut1) how to set up a simple model.
 
 
 
