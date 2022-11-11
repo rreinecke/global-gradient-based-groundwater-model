@@ -5,7 +5,7 @@ nav_order: 2
 parent: Input and Outputs 
 ---
 
-### Write out data
+# Write out data
 Data is written into a file depending on the settings in build/data/out_*modelname*.json:
 * "name": name of the created  output file
 * "type": file type (current options are "csv" and "gfs-json", help for netCDF output implementation is appreciated)
