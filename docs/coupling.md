@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Model Coupling
+title: Coupling with GHMs
 nav_order: 4
 description: "How to use the model"
 permalink: /coupling
