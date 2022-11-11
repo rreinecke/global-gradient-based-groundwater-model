@@ -2,8 +2,7 @@
 layout: default
 title: Outputs
 nav_order: 2
-parent: Outputs 
-description: ""
+parent: Input and Outputs 
 ---
 
 # TODO
