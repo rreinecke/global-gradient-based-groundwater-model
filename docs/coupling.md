@@ -12,6 +12,8 @@ In contrast to other model coupling efforts, it is not necessary to write out fi
 You can diretly link G³M-f with your existing executable and by providing a class in your already existing model code that implements the gw_interface, you are free to call the simulate() function at any timestep you like.
 Furthermore, the interface provides pointer containers and callbacks to transfer data in memory without the need to waste time on I/O.
 
+[Here](http://globalgroundwatermodel.org/getting_started/coupling) you can find a turorial
+
 Please contact us if you need advice.
 
 
