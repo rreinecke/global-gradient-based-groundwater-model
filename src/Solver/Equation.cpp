@@ -119,34 +119,30 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, bool cached) {
+Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID, bool cached) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
-    large_num globalZetaID;
-    large_num rowID;
+    large_num nodeID;
+    large_num rowID = index_mapping[nodeIter];
     large_num colID;
 
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
-    auto nodeID = node->getProperties().get<large_num, Model::ID>();
-    rowID = nodeID;
-    //LOG(debug) << "rowID: " << rowID << std::endl;
-
-    map = node->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
-
-    if (node->getZetaPosInNode()[localZetaID] != "between") {
-        disabled_nodes.insert(node->getProperties().get<large_num, Model::ID>());
-    }
+    map = nodes->at(nodeIter)->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
-        globalZetaID = entry.first; // the id of the zeta surface in the respective (neighbour) node
-        colID = globalZetaID - numberOfNodes;
-        //LOG(debug) << "colID: " << colID << std::endl;
+        nodeID = entry.first; // the id of the zeta surface in the respective (neighbour) node
+        const bool is_active = (inactive_nodes.find(nodeID) == inactive_nodes.end());
 
-        zoneConductance = entry.second;
-        if (cached) {
-            A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
-        } else {
-            A_zetas.insert(rowID, colID) = zoneConductance.value();
+        if (is_active) {
+            colID = nodeID - numInactive;
+            //LOG(debug) << "colID: " << colID << std::endl;
+
+            zoneConductance = entry.second;
+            if (cached) {
+                A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
+            } else {
+                A_zetas.insert(rowID, colID) = zoneConductance.value();
+            }
         }
     }
 }
@@ -211,7 +207,7 @@ void inline Equation::reallocateMatrix() {
 void inline Equation::reallocateMatrix_zetas() {
     large_num __missing{0};
 
-    const long size_new = A_zetas.rows() - disabled_nodes.size();
+    const long size_new = A_zetas.rows() - inactive_nodes.size();
 
     Eigen::SparseMatrix<pr_t, RowMajor> new_matrix_zetas(size_new, size_new); // A_zetas.cols()
 
@@ -220,7 +216,7 @@ void inline Equation::reallocateMatrix_zetas() {
     }
     for (large_num i = 0; i < A_zetas.rows(); i++) {
         if (inactive_have_changed) {
-            const bool is_active = (disabled_nodes.find(i) == disabled_nodes.end());
+            const bool is_active = (inactive_nodes.find(i) == inactive_nodes.end());
             if (is_active) {
                 index_mapping[i] = i - __missing;
                 auto new_row = index_mapping[i];
@@ -320,38 +316,54 @@ Equation::updateMatrix() {
 
 void inline
 Equation::updateMatrix_zetas(int localZetaID) {
-    // todo find more elegant way for the following reset
-    Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodes, numberOfNodes);
-    A_zetas = std::move(__A_zetas);
-    A_zetas.reserve(long_vector::Constant(numberOfNodes, 5));
-    long_vector __x_zetas(numberOfNodes);
-    long_vector __b_zetas(numberOfNodes);
-    x_zetas = std::move(__x_zetas);
-    b_zetas = std::move(__b_zetas);
-
     Index n = A_zetas.outerSize();
-    std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
-    disabled_nodes.clear();
+    inactive_nodes.clear();
+    large_num numInactive{0};
+    bool isActive;
+    index_mapping.clear();
 
 #ifdef EIGEN_HAS_OPENMP
     Eigen::initParallel();
     Index threads = Eigen::nbThreads();
 #endif
+    // finding inactive nodes
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-    for (large_num j = 0; j < numberOfNodes; ++j) {
+    for (large_num i = 0; i < numberOfNodes; ++i) {
+        isActive = (nodes->at(i)->getZetaPosInNode()[localZetaID] == "between");
+        if (isActive) {
+            index_mapping[i] = i - numInactive;
+        } else {
+            numInactive++;
+            index_mapping[i] = -1; // tracking how many have been set inactive
+            inactive_nodes.insert(nodes->at(i)->getProperties().get<large_num, Model::ID>());
+        }
+    }
+
+    const long numActive = numberOfNodes - numInactive;
+    Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
+    A_zetas = std::move(__A_zetas);
+    A_zetas.reserve(long_vector::Constant(numActive, 5));
+    long_vector __b_zetas(numActive);
+    b_zetas = std::move(__b_zetas);
+    long_vector __x_zetas(numActive);
+    x_zetas = std::move(__x_zetas);
+
+    numInactive = 0;
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+    for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
+        if (index_mapping[nodeIter] >= 0) {
+            //---------------------initiating x_zetas
+            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetas()[localZetaID].value();
             //---------------------Left
-            addToA_zeta(nodes->at(j), localZetaID, isCached_zetas);
+            addToA_zeta(nodeIter, numInactive, localZetaID, isCached_zetas);
             //---------------------Right
-            b_zetas(nodes->at(j)->getProperties().get<large_num, Model::ID>()) =
-                    nodes->at(j)->getZetaRHS(localZetaID).value();
+            b_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetaRHS(localZetaID).value();
+        } else {
+            numInactive++;
+        }
     }
     LOG(debug) << "A_zetas full:\n" << A_zetas << std::endl;
     LOG(debug) << "b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
-    inactive_have_changed = not set_compare(tmp_disabled_nodes, disabled_nodes);
-
-    //in some nodes, the zeta surface is inactive
-    //reallocate A_zetas, x_zetas, b_zetas
-    reallocateMatrix_zetas();
 
     //Check if after iteration former 0 values turned to non-zero
     if ((not A_zetas.isCompressed()) and isCached_zetas) {
@@ -426,30 +438,23 @@ Equation::updateIntermediateHeads() {
 
 void inline
 Equation::updateIntermediateZetas(int localZetaID) {
-    long_vector changes;
-    changes = adaptiveDamping_zetas.getDamping(getResiduals_zetas(), x_zetas, isAdaptiveDamping);
-    LOG(debug) << "changes: " << changes << std::endl;
-
-    bool all_nodes_active = disabled_nodes.empty();
-    large_num missing{0};
+    bool all_nodes_active = inactive_nodes.empty();
+    large_num numInactive{0};
     large_num n{0};
 
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-        //large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
-        large_num globalZetaID = nodes->at(k)->getGlobalZetaID(localZetaID);
 
         if (all_nodes_active) {
-            n = globalZetaID - numberOfNodes;
-            nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[n] * si::meter);
+            nodes->at(k)->setZeta(localZetaID, (double) x_zetas[k] * si::meter);
         } else {
             auto m = index_mapping[k];
             if (m != -1) {
-                n = globalZetaID - numberOfNodes - missing;
-                nodes->at(k)->addDeltaToZeta(localZetaID, (double) changes[n] * si::meter);
-                LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+                n = k - numInactive;
+                nodes->at(k)->setZeta(localZetaID, (double) x_zetas[n] * si::meter);
+                //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
             } else {
-                missing++;
+                numInactive++;
             }
         }
     }
@@ -727,12 +732,6 @@ Equation::solve_zetas(){
     setZetaPosInNodes();
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-        //Init first result vector x_zetas by writing initial zetas
-        for (int i = 0; i < numberOfNodes; ++i) {
-            x_zetas[nodes->at(i)->getProperties().get<large_num, Model::ID>()] =
-                    nodes->at(i)->getZetas()[localZetaID].value();
-        }
-
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
         updateMatrix_zetas(localZetaID);
 
@@ -744,13 +743,9 @@ Equation::solve_zetas(){
             isCached_zetas = true;
         }
 
-
         preconditioner_zetas();
 
-        adaptiveDamping_zetas = AdaptiveDamping(dampMin, dampMax, maxZetaChange, x_zetas);
-
         LOG(numerics) << "Running Time Step (zetas)";
-
         double maxZeta{0};
         double oldMaxZeta{0};
         int itterScale{0};
@@ -843,6 +838,7 @@ Equation::solve_zetas(){
             LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
             LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
             LOG(numerics) << "Zeta change bigger: " << zetaFail;
+
 
             updateMatrix_zetas(localZetaID);
             preconditioner_zetas();

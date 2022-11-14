@@ -200,6 +200,7 @@ namespace GlobalFlow {
         bool disable_dry_cells{false};
         //Maybe rename me :D
         std::unordered_set<large_num> disabled_nodes;
+        std::unordered_set<large_num> inactive_nodes;
         //Real -> Current
         std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index mapping for zetas?
 
@@ -232,7 +233,7 @@ namespace GlobalFlow {
          */
         void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-        void addToA_zeta(std::unique_ptr<Model::NodeInterface> const &node, int localZetaID, bool cached);
+        void addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID, bool cached);
 
         /**
          * Update the matrix for the current iteration

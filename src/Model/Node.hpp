@@ -153,7 +153,6 @@ namespace GlobalFlow {
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             vector<t_meter> Zetas; // zeta surfaces (dimensionless density and elevation) of current node at t
             vector<std::string> ZetaPosInNode;
-            vector<large_num> GlobalZetaID;
             vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
             vector<t_meter> ZetasChange;
             vector<t_meter> ZetasChange_TZero;
@@ -864,24 +863,24 @@ Modify Properties
             /**
              * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
              * @param initialZeta the zeta surface height in meters
-             * @param globalZetaID the global zeta surface id (unique value)
              */
-            void addInitialZeta(t_meter initialZeta, large_num globalZetaID){
+            void addInitialZeta(t_meter height){
+                NANChecker(height.value(), "height (in setZeta)");
+
                 // in SWI2: lines 660-680
                 t_meter swismall = 0.001 * si::meter; // SWISMALL
                 t_meter topOfNode = get<t_meter, Elevation>();
                 t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
-                if (initialZeta > topOfNode - swismall) {
-                    initialZeta = topOfNode;
-                } else if (initialZeta < bottomOfNode + swismall){
-                    initialZeta = bottomOfNode;
+                if (height > topOfNode - swismall) {
+                    height = topOfNode;
+                } else if (height < bottomOfNode + swismall){
+                    height = bottomOfNode;
                 }
 
-                Zetas.push_back(initialZeta);
-                Zetas_TZero.push_back(initialZeta);
+                Zetas.push_back(height);
+                Zetas_TZero.push_back(height);
                 ZetasChange.push_back(0 * si::meter); // todo improve?
                 ZetasChange_TZero.push_back(0 * si::meter); // todo improve?
-                GlobalZetaID.push_back(globalZetaID);
                 //todo throw error if height not in correct order
             }
 
@@ -890,18 +889,17 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @param delta difference between new and old zeta surface height
              */
-            virtual void addDeltaToZeta(int localZetaID, t_meter delta) {
-                NANChecker(delta.value(), "delta (in addDeltaToZeta)");
+            virtual void setZeta(int localZetaID, t_meter height) {
+                NANChecker(height.value(), "height (in setZeta)");
                 if (localZetaID < ZetasChange.size()) {
-                    ZetasChange[localZetaID] = delta; // - Zetas[localZetaID];
+                    ZetasChange[localZetaID] = height - Zetas[localZetaID];
                     //LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
                 } else {
                     LOG(debug) << "localZetaID larger than ZetasChange.size() (in addDeltaToZeta)" << std::endl;
-                    ZetasChange.push_back(delta); // - Zetas[localZetaID]); // add delta as new entry in ZetasChange
+                    ZetasChange.push_back(height - Zetas[localZetaID]);
                 }
                 if (localZetaID < Zetas.size()) {
-                    t_meter current_zeta = Zetas[localZetaID];
-                    Zetas[localZetaID] = current_zeta + delta;
+                    Zetas[localZetaID] = height;
                     //LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
                 NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
@@ -929,13 +927,6 @@ Modify Properties
                 ZetasChange_TZero[localZetaID] = Zetas[localZetaID] - Zetas_TZero[localZetaID];
                 Zetas_TZero[localZetaID] = Zetas[localZetaID];
             }
-
-            /**
-             * @brief The global zeta surface id of a zeta surface in this node
-             * @param localZetaID zeta surface id in this node
-             * @return large_num
-             */
-            large_num getGlobalZetaID(int localZetaID) noexcept {  return GlobalZetaID[localZetaID];}
 
             /**
              *  @brief set the zone(s) of sources and sinks
@@ -1239,7 +1230,7 @@ Modify Properties
 
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
-                        out[nodes->at(got->second)->GlobalZetaID[localZetaID]] = move(zetaMovementConductance);
+                        out[nodes->at(got->second)->get<large_num, ID>()] = move(zetaMovementConductance);
                     }
                 }
 
@@ -1255,7 +1246,7 @@ Modify Properties
                 //LOG(debug) << "effectivePorosityTerm = " << getEffectivePorosityTerm().value() << std::endl;
 
                 // add conductance of this node to out, the key in the unordered map is the ID of this node
-                out[GlobalZetaID[localZetaID]] = tmp_c;
+                out[get<large_num, ID>()] = tmp_c;
                 return out;
             };
 
