@@ -30,10 +30,7 @@ namespace GlobalFlow {
                                 op.getEdgeLengthFrontBack(),
                                 op.isConfined(0),
                                 op.isDensityVariable(),
-                                op.isDensityStratified(),
-                                op.getDensityFresh(),
                                 op.getDensityZones(),
-                                op.getNumberOfDensityZones(),
                                 op.getMaxToeSlope(),
                                 op.getMaxTipSlope());
 
@@ -44,15 +41,13 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
 
-                LOG(userinfo) << "Reading the zones of sources and sinks";
-                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getNumberOfDensityZones());
-
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
 
                 LOG(userinfo) << "Reading parameters for variable density flow";
                 readInitialZetas(buildDir(op.getInitialZetasDir()));
                 readEffectivePorosity(buildDir(op.getEffectivePorosity()));
+                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getDensityZones());
 
                 LOG(userinfo) << "Initializing head";
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -76,11 +71,8 @@ namespace GlobalFlow {
                      double edgeLengthLeftRight,
                      double edgeLengthFrontBack,
                      bool confined,
-                     bool densityVariable, // todo: not needed?
-                     bool densityStratified,
-                     double densityFresh,
+                     bool densityVariable,
                      vector<double> densityZones,
-                     int numberOfDensityZones,
                      double maxToeSlope,
                      double maxTipSlope) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
@@ -96,13 +88,9 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookuparcIDtoID.reserve(numberOfNodes);
-                LOG(debug) << "numberOfDensityZones: " << numberOfDensityZones << std::endl;
                 Model::DensityProperties densityProperties =
                         Model::DensityProperties::setDensityProperties(densityVariable,
-                                                                       densityStratified,
-                                                                       densityFresh,
-                                                                       densityZones,
-                                                                       numberOfDensityZones, maxToeSlope, maxTipSlope);
+                                                                       densityZones,maxToeSlope, maxTipSlope);
 
                 while (in.read_row(arcID, x, y, area, row, col)) {
                     out[row][col] = i;
@@ -178,7 +166,7 @@ namespace GlobalFlow {
                 });
             }
 
-            void readZonesSourcesSinks(std::string path, int numOfZones) {
+            void readZonesSourcesSinks(std::string path, vector<double> densityZones) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "arcID", "zoneOfSinks", "zoneOfSources");
                 int arcid{0};
@@ -194,14 +182,13 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(pos)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, numOfZones);
+                    nodes->at(pos)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                 }
             }
 
             void readInitialZetas(std::string pathZetas) {
                 int arcid{0};
                 double height{0};
-                unsigned long int globalZetaID{0}; // must be same type as large_num in Units.hpp
 
                 // read initial data for density surfaces
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
@@ -215,8 +202,7 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(pos)->addInitialZeta(height * Model::si::meter, globalZetaID);
-                    globalZetaID++;
+                    nodes->at(pos)->addInitialZeta(height * Model::si::meter);
                 }
             }
 

@@ -16,9 +16,6 @@
         "true"
       ],
       "density_variable": "true",
-      "density_stratified": "true",
-      "number_of_density_zones": 2,
-      "density_fresh": 1000,
       "density_zones": [
         1000,
         1025

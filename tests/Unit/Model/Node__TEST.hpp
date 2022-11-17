@@ -54,7 +54,7 @@ TEST_F(StandardNodeFixture, setElevation) {
 TEST_F(StandardNodeFixture, setSlope) {
     at(0)->setSlope(10);
     ASSERT_EQ((at(0)->getProperties().get<t_dim, Slope>().value()), 0.1);
-    ASSERT_EQ((at(2)->getProperties().get<t_dim, Slope>().value()), 0.1);
+    //ASSERT_EQ((at(2)->getProperties().get<t_dim, Slope>().value()), 0.1); // todo not implemented yet
 }
 
 TEST_F(StandardNodeFixture, setEfolding) {
@@ -191,9 +191,17 @@ TEST_F(StandardNodeFixture, getConductance) {
     ASSERT_NEAR((at(0)->getConductance()[1].value()), 1.33, 0.01);
 }
 
-TEST_F(StandardNodeFixture, getJacobian) {
+/*TEST_F(StandardNodeFixture, getJacobian) {
     ASSERT_NEAR((at(0)->getJacobian()[0].value()), -1.54, 0.01);
     ASSERT_NEAR((at(0)->getJacobian()[1].value()), 0, 0.01);
+}*/
+
+TEST_F(StandardNodeFixture, getRHSConstantDensity) {
+    at(0)->setHead_direct(1);
+    at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
+    at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
+    at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
+    ASSERT_EQ((at(0)->getRHSConstantDensity().value()), -50);
 }
 
 TEST_F(StandardNodeFixture, getRHS) {
@@ -212,6 +220,4 @@ TEST_F(StandardNodeFixture, getRHS__NWT) {
     ASSERT_EQ((at(0)->getRHS().value()), -50);
 }
 
-TEST_F(StandardNodeFixture, setHead__NWT) {
-    ASSERT_EQ(0, 0);
-}
+

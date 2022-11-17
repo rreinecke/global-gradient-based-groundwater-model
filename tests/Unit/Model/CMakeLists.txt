@@ -8,6 +8,7 @@ set(HEADERS
    ${CMAKE_CURRENT_SOURCE_DIR}/ExternalFlows__TEST.hpp
    ${CMAKE_CURRENT_SOURCE_DIR}/FluidMechanics__TEST.hpp
    ${CMAKE_CURRENT_SOURCE_DIR}/Node__TEST.hpp
+   ${CMAKE_CURRENT_SOURCE_DIR}/NodeVDF__TEST.hpp
    ${CMAKE_CURRENT_SOURCE_DIR}/PhysicalProperties__TEST.hpp
    PARENT_SCOPE
 )
