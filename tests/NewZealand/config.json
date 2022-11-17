@@ -1,0 +1,64 @@
+{
+  "config": {
+    "model_config": {
+      "nodes": "mother_NZ.csv",
+      "stadystate": "true",
+      "numberofnodes": 4603,
+      "row_cols": "false",
+      "threads": 1,
+      "layers": 2,
+      "one_layer_approach": "false",
+      "confinement": [
+        "true",
+        "true"
+      ],
+      "cache": "false",
+      "adaptivestepsize": "false",
+      "boundarycondition": "SeaLevel",
+      "sensitivity": "false"
+    },
+    "numerics": {
+      "solver": "PCG",
+      "iterations": 50000,
+      "inner_itter": 20,
+      "closingcrit": 1e-2,
+      "headchange": 1,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.8,
+      "stepsize": "daily",
+      "wetting_approach": "nwt"
+    },
+  "input": {
+    "data_config": {
+      "k_from_lith": "true",
+      "k_ocean_from_file": "false",
+      "specificstorage_from_file": "false",
+      "specificyield_from_file": "false",
+      "k_river_from_file": "false",
+      "aquifer_depth_from_file": "false",
+      "initial_head_from_file": "true",
+      "data_as_array": "true"
+    },
+    "default_data": {
+      "initial_head": 0,
+      "K": 0.1,
+      "oceanK": 10,
+      "aquifer_thickness": [
+        100,
+        100
+      ],
+      "anisotropy": 10,
+      "specificyield": 0.15,
+      "specificstorage": 0.000015
+    },
+    "data": {
+      "blue_cells": "blue_NZ.csv",
+      "elevation": "elevation_NZ.csv",
+      "lithology": "litho_NZ.csv",
+      "recharge": "recharge_NZ.csv",
+      "eq_wtd": "wtd_NZ.csv"
+    }
+  }
+  } 
+}
