@@ -47,21 +47,16 @@ void StandaloneRunner::simulate() {
         stepNumber++;
     }
     myfile.close(); // for saving zetas in a csv
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();
     //sim.save();
 }
 
-void StandaloneRunner::getResults() {
+void StandaloneRunner::getResults() {}
 
+void StandaloneRunner::writeData() {
+    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();
 }
 
-void StandaloneRunner::writeData(std::string) {
-
-}
-
-StandaloneRunner::StandaloneRunner() {
-
-}
+StandaloneRunner::StandaloneRunner() {}
 
 }//ns
 
@@ -71,5 +66,6 @@ int main() {
     runner.loadSettings();
     runner.setupSimulation();
     runner.simulate();
+    runner.writeData();
     return EXIT_SUCCESS;
 }

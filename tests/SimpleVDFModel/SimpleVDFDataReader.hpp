@@ -8,7 +8,6 @@
 namespace GlobalFlow {
     namespace DataProcessing {
 
-
         class SimpleVDFDataReader : public DataReader {
         public:
             SimpleVDFDataReader(int step) { stepMod = step; }
@@ -62,7 +61,11 @@ namespace GlobalFlow {
             using Matrix = std::vector<std::vector<T>>;
 
             Matrix<int>
-            readGrid(NodeVector nodes, std::string path, int numberOfNodes, int numberOfRows, int numberOfCols,
+            readGrid(NodeVector nodes,
+                     std::string path,
+                     int numberOfNodes,
+                     int numberOfRows,
+                     int numberOfCols,
                      double defaultK,
                      double aquiferDepth,
                      double anisotropy,
@@ -78,21 +81,21 @@ namespace GlobalFlow {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "arcID", "X", "Y", "cell_area", "row", "col");
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "row", "col");
 
                 double x{0};
                 double y{0};
                 double area{0};
-                int arcID{0};
+                int spatID{0};
                 int i{0};
                 int row{0};
                 int col{0};
-                lookuparcIDtoID.reserve(numberOfNodes);
+                lookupGlobalIDtoID.reserve(numberOfNodes);
                 Model::DensityProperties densityProperties =
                         Model::DensityProperties::setDensityProperties(densityVariable,
                                                                        densityZones,maxToeSlope, maxTipSlope);
 
-                while (in.read_row(arcID, x, y, area, row, col)) {
+                while (in.read_row(spatID, x, y, area, row, col)) {
                     out[row][col] = i;
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
@@ -100,7 +103,7 @@ namespace GlobalFlow {
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) arcID,
+                                                                (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 stepMod,
@@ -110,8 +113,8 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 densityProperties
-                    ));
-                    lookuparcIDtoID[arcID] = i;
+                                                                ));
+                    lookupGlobalIDtoID[spatID] = i;
                     i++;
                 }
 
@@ -121,7 +124,7 @@ namespace GlobalFlow {
             void readConduct(std::string path) {
                 readTwoColumns(path, [this](double data, int pos) {
                     if (data > 10) {
-                        LOG(debug) << "Very high conductance value at arcID "<<pos<<". Possible Data Error";
+                        LOG(debug) << "Very high conductance value at spatID "<<pos<<". Possible Data Error";
                     }
                     nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
                 });
@@ -136,15 +139,15 @@ namespace GlobalFlow {
 
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "arcID", "elevation", "conduct");
-                int arcid{0};
+                in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
+                int spatID{0};
                 double elevation{0};
                 double conduct{0};
 
-                while (in.read_row(arcid, elevation, conduct)) {
+                while (in.read_row(spatID, elevation, conduct)) {
                     int pos = 0;
                     try {
-                        pos = lookuparcIDtoID.at(arcid);
+                        pos = lookupGlobalIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -168,15 +171,15 @@ namespace GlobalFlow {
 
             void readZonesSourcesSinks(std::string path, vector<double> densityZones) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "arcID", "zoneOfSinks", "zoneOfSources");
-                int arcid{0};
+                in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
+                int spatID{0};
                 double zoneOfSinks{0};
                 double zoneOfSources{0};
 
-                while (in.read_row(arcid, zoneOfSinks, zoneOfSources)) {
+                while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
                     int pos = 0;
                     try {
-                        pos = lookuparcIDtoID.at(arcid);
+                        pos = lookupGlobalIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -187,16 +190,16 @@ namespace GlobalFlow {
             }
 
             void readInitialZetas(std::string pathZetas) {
-                int arcid{0};
+                int spatID{0};
                 double height{0};
 
                 // read initial data for density surfaces
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                inZetas.read_header(io::ignore_no_column, "arcID", "height");
-                while (inZetas.read_row(arcid, height)) {
+                inZetas.read_header(io::ignore_no_column, "spatID", "height");
+                while (inZetas.read_row(spatID, height)) {
                     int pos = 0;
                     try {
-                        pos = lookuparcIDtoID.at(arcid);
+                        pos = lookupGlobalIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry

@@ -210,7 +210,7 @@ namespace GlobalFlow {
                         case FieldType::ARCID : {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::ArcID>());
+                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::SpatID>());
                             });
                         }
                         case FieldType::AREA : {

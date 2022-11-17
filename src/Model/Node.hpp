@@ -298,7 +298,7 @@ namespace GlobalFlow {
 
             virtual ~NodeInterface() = default;
 
-            large_num getID() { return get<large_num, ArcID>(); }
+            large_num getID() { return get<large_num, SpatID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -797,23 +797,19 @@ Modify Properties
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                      cond * (si::cubic_meter / day))));
-                }
-                    // TODO Implementation of FLOODPLAIN_DRAIN
-                    /* else if (type == FLOODPLAIN_DRAIN) {
-                        externalFlows.insert(std::make_pair(type,
-                                                            ExternalFlow(numOfExternalFlows, type,
-                                                                            get<t_meter, Elevation>(),
-                                                                            get<t_vel, K>() * get<t_meter,
-                                                                            VerticalSize>(),
-                                                                            bottom));
-
-                    } */ else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+                } else if (type == FLOODPLAIN_DRAIN) {  // TODO adapt to rectangular nodes (change bottom)
                     externalFlows.insert(std::make_pair(type,
-                                                        ExternalFlow(numOfExternalFlows,
-                                                                     type,
-                                                                     flowHead,
-                                                                     cond * (si::square_meter / day),
-                                                                     bottom)));
+                                                        ExternalFlow(numOfExternalFlows, type,
+                                                                        get<t_meter, Elevation>(),
+                                                                        get<t_vel, K>() * get<t_meter, VerticalSize>(),
+                                                                        bottom))); // todo add edge lenth in different directions
+                } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+                externalFlows.insert(std::make_pair(type,
+                                                    ExternalFlow(numOfExternalFlows,
+                                                                 type,
+                                                                 flowHead,
+                                                                 cond * (si::square_meter / day),
+                                                                 bottom)));
                 }
                 numOfExternalFlows++;
                 if(numOfExternalFlows != externalFlows.size()){

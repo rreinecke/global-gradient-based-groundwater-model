@@ -60,11 +60,25 @@ project(simpleVDF)
 
 set(simple_vdf_hrd ${HEADERS})
 set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 
 add_subdirectory(tests/SimpleVDFModel)
 add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${simple_vdf_hrd})
 target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+
+################################
+# New Zealand model
+################################
+project(NewZealand)
+
+set(new_zealand_hrd ${HEADERS})
+set(new_zealand_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+
+add_subdirectory(tests/NewZealand)
+add_executable(new_zealand_model tests/NewZealand/runner.cpp ${new_zealand_src} ${new_zealand_hrd})
+target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Unit Tests
@@ -100,6 +114,8 @@ set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/NewZealand/runner.cpp)
+
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)

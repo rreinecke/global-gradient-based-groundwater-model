@@ -74,7 +74,7 @@ class SimpleDataReader : public DataReader {
             int i{0};
             int row{0};
             int col{0};
-            lookuparcIDtoID.reserve(numberOfNodes);
+            lookupspatIDtoID.reserve(numberOfNodes);
             Model::DensityProperties densityProperties;
 
             while (in.read_row(globid, x, y, area, row, col)) {
@@ -94,7 +94,7 @@ class SimpleDataReader : public DataReader {
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage, confined, densityProperties));
-                lookuparcIDtoID[globid] = i;
+                lookupspatIDtoID[globid] = i;
                 i++;
             }
 
@@ -120,15 +120,15 @@ class SimpleDataReader : public DataReader {
         void readRiver(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
-            int arcid{0};
+            int spatID{0};
             double head{0};
             double conduct{0};
             double bottom{0};
 
-            while (in.read_row(arcid, head, bottom, conduct)) {
+            while (in.read_row(spatID, head, bottom, conduct)) {
                 int i = 0;
                 try {
-                    i = lookuparcIDtoID.at(arcid);
+                    i = lookupspatIDtoID.at(spatID);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry

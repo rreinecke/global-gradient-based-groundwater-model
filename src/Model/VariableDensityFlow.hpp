@@ -29,8 +29,8 @@ namespace GlobalFlow {
             int numOfZones;
 
         public:
-            static DensityProperties setDensityProperties(bool densityVariable, vector<double> densityZones,
-                                                          double maxToeSlope, double maxTipSlope){
+            static DensityProperties setDensityProperties(bool densityVariable=false, vector<double> densityZones={},
+                                                          double maxToeSlope=0, double maxTipSlope=0){
                 DensityProperties densityProps;
                 densityProps.densityVariable = densityVariable;
                 double densityFresh = densityZones.front();

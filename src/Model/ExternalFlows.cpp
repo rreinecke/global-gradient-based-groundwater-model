@@ -175,7 +175,7 @@ t_vol_t ExternalFlow::calculateFloodplainDrainage(t_meter head) const noexcept {
     if (headAboveFloodplain > 0 * si::meter) {
         const double PI = std::atan(1.0) * 4;
         double J = (PI * conductance.value()) / (4 * 0.15 * (500 * 500));
-        return bottom * bottom * headAboveFloodplain * (J * 1 / day);
+        return bottom * bottom * headAboveFloodplain * (J * 1 / day); // todo adapt to rectangular nodes
     }
     return out;
 }

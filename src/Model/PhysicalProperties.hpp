@@ -137,7 +137,7 @@ namespace GlobalFlow {
  * Each represents a physical property
  */
         struct ID;
-        struct ArcID;
+        struct SpatID;
         struct Lat;
         struct Lon;
         struct Layer;
@@ -175,7 +175,7 @@ namespace GlobalFlow {
  */
         using PhysicalProperties = PropertyRepository<
                 PhysicalProperty<large_num, ID>,
-                PhysicalProperty<large_num, ArcID>,
+                PhysicalProperty<large_num, SpatID>,
                 PhysicalProperty<double, Lat>, //TODO use boost unit
                 PhysicalProperty<double, Lon>,
                 PhysicalProperty<int, Layer>,
