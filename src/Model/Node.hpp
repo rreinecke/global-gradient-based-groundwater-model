@@ -437,8 +437,8 @@ Modify Properties
                         //}
 
                         /*if (Zetas.size() > 0) { // Question: add fluxCorrection here?
-                            t_vol_t fluxCorrectionTop = fluxCorrTop();
-                            t_vol_t fluxCorrectionDown = fluxCorrDown();
+                            t_vol_t fluxCorrectionTop = getFluxCorrTop();
+                            t_vol_t fluxCorrectionDown = getFluxCorrDown();
 
                             t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got) -
                                                           fluxCorrectionTop - fluxCorrectionDown);
@@ -1220,8 +1220,8 @@ Modify Properties
                         } else {
                             if (ZetaPosInNode[localZetaID] == "between" and
                                 at(got)->ZetaPosInNode[localZetaID] == "between") {
-                                zoneConductances = calculateZoneConductances(got);
-                                zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
+                                zoneConductances = getZoneConductances(got);
+                                zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                                 zetaMovementConductance +=
                                         delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                                 //LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
@@ -1381,12 +1381,12 @@ Modify Properties
                     } else {
                         // calculating zone conductances for pseudo source term calculation
                         std::vector<t_s_meter_t> zoneConductances =
-                                calculateZoneConductances(got);
+                                getZoneConductances(got);
 
                         //%% head part %%
                         if (ZetaPosInNode[localZetaID] == "between" and
                             at(got)->ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
-                            t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID,
+                            t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID,
                                                                                   zoneConductances);
                             t_vol_t head_part = -zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                             out += head_part;
@@ -1401,7 +1401,7 @@ Modify Properties
                             if (zetaID != localZetaID and
                                 ZetaPosInNode[localZetaID] == "between" and
                                 at(got)->ZetaPosInNode[localZetaID] == "between") {
-                                t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID, zoneConductances);
+                                t_s_meter_t zoneCondCumZetaID = getZoneConductanceCum(zetaID, zoneConductances);
                                 t_vol_t delnus_part = -delnus[zetaID] *
                                                      (zoneCondCumZetaID * (at(got)->Zetas[zetaID] - Zetas[zetaID]));
                                 out += delnus_part;
@@ -1425,8 +1425,8 @@ Modify Properties
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> delnus = densityProps.getDelnus();
 
-                std::vector<t_s_meter_t> zoneConductances = calculateZoneConductances(got);
-                t_s_meter_t zoneCondCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
+                std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
+                t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID, zoneConductances);
                 // 1st part: head part for left/back neighbour
                 t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                 out += head_part;
@@ -1438,7 +1438,7 @@ Modify Properties
                 // 2nd part: delnus part for left/back neighbour
                 for (int zetaID = 0; zetaID < Zetas.size() - 1; zetaID++) {
 
-                    t_s_meter_t zoneCondCumZetaID = calculateZoneConductanceCum(zetaID,
+                    t_s_meter_t zoneCondCumZetaID = getZoneConductanceCum(zetaID,
                                                                                 zoneConductances);
                     t_vol_t delnus_part = delnus[zetaID] *
                                           (zoneCondCumZetaID *
@@ -1496,22 +1496,22 @@ Modify Properties
                                     // todo: debug/test
                                     DensityProperties densityProps = get<DensityProperties, densityProperties>();
                                     vector<t_dim> nusZones = densityProps.getNusZones();
-                                    if (fluxCorrTop() < 0 * (si::cubic_meter / day) and
+                                    if (getFluxCorrTop() < 0 * (si::cubic_meter / day) and
                                         at(got)->getNusBot() >= nusZones[localZetaID] and
                                         getNusBot() >= at(got)->getNusBot()) { // IF ((qztop.LT.0).AND.(NUBOT(i,j,k-1).GE.NUS(iz)).AND.(NUBOT(j,i,k).GE.NUBOT(i,j,k-1))) THEN
-                                        out += fluxCorrTop(); // in SWI2: qztop
+                                        out += getFluxCorrTop(); // in SWI2: qztop
                                     }
                                 } else if (position == NeighbourPosition::DOWN) {
                                     // 8th part: vertical leakage to DOWN neighbour
                                     // todo: debug/test
                                     DensityProperties densityProps = get<DensityProperties, densityProperties>();
                                     vector<t_dim> nusZones = densityProps.getNusZones();
-                                    if(fluxCorrDown() < 0 * (si::cubic_meter / day) and
+                                    if(getFluxCorrDown() < 0 * (si::cubic_meter / day) and
                                         at(got)->getNusTop() < nusZones[localZetaID] and
                                         getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
                                         continue;
                                     } else{
-                                        out += fluxCorrDown(); // in SWI2: qzbot
+                                        out += getFluxCorrDown(); // in SWI2: qzbot
                                     }
                                 }
                             }
@@ -1526,7 +1526,7 @@ Modify Properties
              * @param got neighbouring node
              * @return vector with entries in square meter per time
              */
-            std::vector<t_s_meter_t> calculateZoneConductances(map_itter got) {
+            std::vector<t_s_meter_t> getZoneConductances(map_itter got) {
                 std::vector<t_s_meter_t> out;
                 t_s_meter_t conductance;
                 t_s_meter_t zoneConductance;
@@ -1550,7 +1550,6 @@ Modify Properties
                                         ((getLengthSelf(got) * deltaZeta_neig) / (getLengthNeig(got) + getLengthSelf(got)));
                         sumOfZoneThicknesses += zoneThickness;
                     }
-                    //LOG(debug) << "zoneThickness (in calculateZoneThicknesses):" << zoneThickness.value() << std::endl;
                     NANChecker(zoneThickness.value(), "zoneThickness");
                     zoneThicknesses.push_back(zoneThickness);
                 }
@@ -1587,15 +1586,15 @@ Modify Properties
              * @param zoneConductances density zone conductances
              * @return square meter per time
              */
-            t_s_meter_t calculateZoneConductanceCum(int localZetaID, std::vector<t_s_meter_t> zoneConductances) {
+            t_s_meter_t getZoneConductanceCum(int localZetaID, std::vector<t_s_meter_t> zoneConductances) {
                 // calculate the sum of density zone conductances below a zeta surface n and add to vector out
                 t_s_meter_t out = 0 * si::square_meter / day;
 
                 for (int zoneID = localZetaID; zoneID < Zetas.size() - 1; zoneID++) {
                     out += zoneConductances[zoneID];
                 };
-                //LOG(debug) << "zoneConductanceCum (in calculateZoneConductanceCum):" << out.value() << std::endl;
-                NANChecker(out.value(), "calculateZoneConductanceCum");
+                //LOG(debug) << "zoneConductanceCum:" << out.value() << std::endl;
+                NANChecker(out.value(), "getZoneConductanceCum");
                 return out;
             }
 
@@ -1620,10 +1619,10 @@ Modify Properties
                     if (got == neighbours.end()) { // no neighbour at position
                         continue;
                     }
-                    std::vector<t_s_meter_t> zoneConductances = calculateZoneConductances(got);
+                    std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
                     for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++){
-                        t_s_meter_t zoneConductanceCum = calculateZoneConductanceCum(localZetaID, zoneConductances);
+                        t_s_meter_t zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                         //LOG(debug) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
                         if (delnus[localZetaID] > 0) {
                             out -= delnus[localZetaID] * (zoneConductanceCum *
@@ -1640,7 +1639,7 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 documentation: CV*BOUY; in code: QLEXTRA
              */
-            t_vol_t verticalFluxCorrection(){ // todo debug/test
+            t_vol_t getVerticalFluxCorrection(){ // todo debug/test
                 DensityProperties densityProps = get<DensityProperties, densityProperties>();
                 vector<t_dim> nusZones = densityProps.getNusZones();
                 t_meter headdiff = 0 * si::meter;
@@ -1668,14 +1667,14 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code: qztop
              */
-            t_vol_t fluxCorrTop() { // todo test
+            t_vol_t getFluxCorrTop() { // todo test
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 map_itter got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) -
-                           at(got)->verticalFluxCorrection();
+                           at(got)->getVerticalFluxCorrection();
                 }
                 return out;
             }
@@ -1685,14 +1684,14 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code: qzbot
              */
-            t_vol_t fluxCorrDown() { // todo test
+            t_vol_t getFluxCorrDown() { // todo test
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 map_itter got = neighbours.find(NeighbourPosition::DOWN);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) +
-                           verticalFluxCorrection();
+                           getVerticalFluxCorrection();
                 }
                 return out;
             }
@@ -1770,7 +1769,7 @@ Modify Properties
                         getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
 
                         // calculate flux through the top
-                        fluxCorretionTop = fluxCorrTop();
+                        fluxCorretionTop = getFluxCorrTop();
 
                         for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
@@ -2276,8 +2275,8 @@ Modify Properties
                     t_vol_t flowPseudoSource = getFlowPseudoSource(); //LOG(debug) << "flowPseudoSource: " << flowPseudoSource.value() << std::endl;
 
                     // calculate Vertical Flux Correction (for top and down neighbour)
-                    t_vol_t fluxCorrectionTop = fluxCorrTop(); //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
-                    t_vol_t fluxCorrectionDown = fluxCorrDown(); //LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
+                    t_vol_t fluxCorrectionTop = getFluxCorrTop(); //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                    t_vol_t fluxCorrectionDown = getFluxCorrDown(); //LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
 
                     out += flowPseudoSource + fluxCorrectionTop + fluxCorrectionDown;
                 }

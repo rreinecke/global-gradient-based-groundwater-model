@@ -327,7 +327,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
     Index threads = Eigen::nbThreads();
 #endif
     // finding inactive nodes
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+#pragma omp parallel for
     for (large_num i = 0; i < numberOfNodes; ++i) {
         isActive = (nodes->at(i)->getZetaPosInNode()[localZetaID] == "between");
         if (isActive) {
@@ -349,13 +349,13 @@ Equation::updateMatrix_zetas(int localZetaID) {
     x_zetas = std::move(__x_zetas);
 
     numInactive = 0;
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+
+#pragma omp parallel for
     for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
         if (index_mapping[nodeIter] >= 0) {
-            //---------------------initiating x_zetas
-            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetas()[localZetaID].value();
-            //---------------------Left
+            //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, numInactive, localZetaID, isCached_zetas);
+            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetas()[localZetaID].value(); // todo could fill with zeros?
             //---------------------Right
             b_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetaRHS(localZetaID).value();
         } else {
@@ -509,23 +509,28 @@ Equation::adjustZetaHeights() {
             nodes->at(k)->verticalZetaMovement();
         }
 
+#pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->horizontalZetaMovement();
         }
 
+#pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->clipZetaHeights();
         }
 
+#pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->correctCrossingZetas();
         }
 
+#pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->preventZetaLocking();
         }
 
         LOG(debug)<< "node, zeta" << std::endl;
+
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
