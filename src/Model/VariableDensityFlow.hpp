@@ -33,41 +33,44 @@ namespace GlobalFlow {
                                                           double maxToeSlope=0, double maxTipSlope=0){
                 DensityProperties densityProps;
                 densityProps.densityVariable = densityVariable;
-                double densityFresh = densityZones.front();
-                vector<t_dim> nusZetaVec;
-                vector<t_dim> nusZoneVec;
-                vector<t_dim> delnusVec;
-                double densityZeta;
+                if (densityVariable) {
+                    double densityFresh = densityZones.front();
+                    vector<t_dim> nusZetaVec;
+                    vector<t_dim> nusZoneVec;
+                    vector<t_dim> delnusVec;
+                    double densityZeta;
 
-                for (int id = 0; id <= densityZones.size(); id++) {
-                    if (id == 0) {
-                        densityZeta = densityZones[id];
-                    } else if (id == densityZones.size()) {
-                        densityZeta = densityZones[id-1];
-                    } else {
-                        densityZeta = (densityZones[id-1] + densityZones[id]) * 0.5;
+                    for (int id = 0; id <= densityZones.size(); id++) {
+                        if (id == 0) {
+                            densityZeta = densityZones[id];
+                        } else if (id == densityZones.size()) {
+                            densityZeta = densityZones[id - 1];
+                        } else {
+                            densityZeta = (densityZones[id - 1] + densityZones[id]) * 0.5;
+                        }
+                        nusZetaVec.push_back((densityZeta - densityFresh) / densityFresh * Model::si::si_dimensionless);
                     }
-                    nusZetaVec.push_back((densityZeta - densityFresh ) / densityFresh * Model::si::si_dimensionless);
-                }
 
-                for (int id = 0; id < densityZones.size(); id++) {
+                    for (int id = 0; id < densityZones.size(); id++) {
 
-                    nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh * Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
+                        nusZoneVec.push_back((densityZones[id] - densityFresh) / densityFresh *
+                                             Model::si::si_dimensionless); // nus of zones is equal to nus of zeta surface below
 
-                    if (id == 0) {
-                        delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
-                    } else {
-                        delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id-1]));
+                        if (id == 0) {
+                            delnusVec.push_back(nusZoneVec[id]); // density difference in top zone
+                        } else {
+                            delnusVec.push_back((nusZoneVec[id] - nusZoneVec[id - 1]));
+                        }
+                        //LOG(debug) << "delnus (for zone " << id << "): " << delnusVec[id].value() << std::endl;
                     }
-                    //LOG(debug) << "delnus (for zone " << id << "): " << delnusVec[id].value() << std::endl;
+                    // todo sort nusZetas and nusZones ascending or throw error if not ascending
+                    densityProps.nusZetas = nusZetaVec;
+                    densityProps.nusZones = nusZoneVec;
+                    densityProps.delnus = delnusVec;
+                    densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
+                    densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
+                    densityProps.numOfZones = densityZones.size();
                 }
-                // todo sort nusZetas and nusZones ascending or throw error if not ascending
-                densityProps.nusZetas = nusZetaVec;
-                densityProps.nusZones = nusZoneVec;
-                densityProps.delnus = delnusVec;
-                densityProps.maxToeSlope = maxToeSlope * Model::si::si_dimensionless;
-                densityProps.maxTipSlope = maxTipSlope * Model::si::si_dimensionless;
-                densityProps.numOfZones = densityZones.size();
                 return densityProps;
             }
 

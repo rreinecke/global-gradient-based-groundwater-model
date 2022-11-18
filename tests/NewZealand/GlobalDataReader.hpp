@@ -79,9 +79,6 @@ namespace GlobalFlow {
                 //LOG(userinfo) << "Defining rivers";
                 //readRiver(buildDir(op.getKRiverDir()));
 
-                //LOG(userinfo) << "Reading slope";
-                //readSlope(buildDir(op.getSlope()));
-
                 //LOG(userinfo) << "Reading efolding";
                 //readEfold(buildDir(op.getEfolding()));
 
@@ -124,20 +121,26 @@ namespace GlobalFlow {
                      double edgeLengthLeftRight,
                      double edgeLengthFrontBack,
                      bool confined) {
-                Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
+                Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
-                io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "globalID", "X", "Y", "area");
+                io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area","col","row");
 
                 double x{0};
                 double y{0};
                 double area{0};
-                int globalID{0};
+                int spatID{0};
                 int i{0};
+                int row{0};
+                int col{0};
                 lookupGlobalIDtoID.reserve(numberOfNodes);
 
                 Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
-                while (in.read_row(globalID, x, y, area)) {
+                LOG(debug) << "path: " << path << std::endl;
+
+                while (in.read_row(spatID, x, y, area, col, row)) {
+                    out[col][row] = i;
                     //area is in km needs to be in m
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
@@ -145,7 +148,7 @@ namespace GlobalFlow {
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) globalID,
+                                                                (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 stepMod,
@@ -155,7 +158,7 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 densityProperties));
-                    lookupGlobalIDtoID[globalID] = i;
+                    lookupGlobalIDtoID[spatID] = i;
                     i++;
                 }
 
@@ -163,7 +166,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * @brief Initial readin of node definitions - without col and row
+             * @brief Initial reading of node definitions - without col and row
              * @note Without col and row
              * Reads a csv file with x and y coordinates for predefined grid of cells
              * @param nodes Vector of nodes
@@ -186,15 +189,15 @@ namespace GlobalFlow {
                          double edgeLengthFrontBack,
                          bool confined) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "globalID", "X", "Y", "cell_area");
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area");
                 double x = 0;
                 double y = 0;
                 double area = 0;
-                int globalID = 0;
+                int spatID = 0;
                 int i = 0;
                 lookupGlobalIDtoID.reserve(numberOfNodes);
                 Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
-                while (in.read_row(globalID, x, y, area)) {
+                while (in.read_row(spatID, x, y, area)) {
                     //area is in km needs to be in m
                     //TODO implement a container for these parameters
                     nodes->emplace_back(new Model::StandardNode(nodes,
@@ -203,7 +206,7 @@ namespace GlobalFlow {
                                                                 1e+6 * area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) globalID,
+                                                                (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 stepMod,
@@ -214,7 +217,7 @@ namespace GlobalFlow {
                                                                 confined,
                                                                 densityProperties
                                                                 ));
-                    lookupGlobalIDtoID[globalID] = i;
+                    lookupGlobalIDtoID[spatID] = i;
                     i++;
                 }
                 //Return number of total top nodes
@@ -245,16 +248,16 @@ namespace GlobalFlow {
              */
             void readRiver(std::string path) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "globalID", "Head", "Bottom", "Conduct");
-                int globalID{0};
+                in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
+                int spatID{0};
                 double head{0};
                 double conduct{0};
                 double bottom{0};
 
-                while (in.read_row(globalID, head, bottom, conduct)) {
+                while (in.read_row(spatID, head, bottom, conduct)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at(globalID);
+                        i = lookupGlobalIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -339,20 +342,20 @@ namespace GlobalFlow {
              */
             std::unordered_map<int, std::array<double, 3>> calculateRiverStage(std::string path) {
                 io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "POINTID", "Lenght", "Bankfull", "globalID", "Width");
+                in.read_header(io::ignore_no_column, "POINTID", "Lenght", "Bankfull", "spatID", "Width");
 
                 int id = 0;
                 double lenght = 0;
                 double bankfull = 0;
                 double width = 0;
-                int globalID = 0;
+                int spatID = 0;
 
                 std::unordered_map<int, std::array<double, 3>> out;
 
-                while (in.read_row(id, lenght, bankfull, globalID, width)) {
+                while (in.read_row(id, lenght, bankfull, spatID, width)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at(globalID);
+                        i = lookupGlobalIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -373,22 +376,22 @@ namespace GlobalFlow {
                                std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
                 LOG(debug) << "reading from" << file;
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
-                in.read_header(io::ignore_no_column, "globalID", "data");
-                double globalID = 0;
+                in.read_header(io::ignore_no_column, "spatID", "data");
+                double spatID = 0;
                 double elevation = 0;
 
-                while (in.read_row(globalID, elevation)) {
+                while (in.read_row(spatID, elevation)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at((int) globalID);
+                        i = lookupGlobalIDtoID.at((int) spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         //cout << "ID in elevation that has no corresponding node";
                         continue;
                     }
-                    if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != globalID) {
-                        throw "Error in reading globalID";
+                    if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                        throw "Error in reading spatID";
                     }
 
                     double flowHead = elevation;
@@ -427,21 +430,21 @@ namespace GlobalFlow {
                 int itter = 0;
                 for (std::string path : paths) {
                     io::CSVReader<2, io::trim_chars<'"', '\t'>, io::no_quote_escape<','>> in(path);
-                    in.read_header(io::ignore_no_column, "globalID", "Value");
+                    in.read_header(io::ignore_no_column, "spatID", "Value");
 
                     double percentage = 0;
-                    float globalID = 0;
-                    while (in.read_row(globalID, percentage)) {
+                    float spatID = 0;
+                    while (in.read_row(spatID, percentage)) {
                         int i = 0;
                         try {
-                            i = lookupGlobalIDtoID.at((int) globalID);
+                            i = lookupGlobalIDtoID.at((int) spatID);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != (int) globalID) {
-                            throw "Error in reading globalID";
+                        if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != (int) spatID) {
+                            throw "Error in reading spatID";
                         }
 
                         if (percentage == 0) {
@@ -470,7 +473,7 @@ namespace GlobalFlow {
                         //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
                         double conduct = (K_s * A_s) / M;
                         //if(conduct > 1e6){
-                        //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << globalID <<"\n";
+                        //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
                         //}
 
                         if (itter == 0) {

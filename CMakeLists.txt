@@ -44,40 +44,42 @@ MESSAGE(STATUS "GMP libs: " ${GMP_LIBRARIES} " " ${GMPXX_LIBRARIES})
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 
+project(tests)
 ################################
 # Simple Demo Model
 ################################
 # project(simple)
 
 # add_subdirectory(tests/SimpleModel)
-# add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
+ #add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 # target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Simple Demo Model for Variable Density Flow (VDF)
 ################################
-project(simpleVDF)
+# project(simpleVDF)
 
-set(simple_vdf_hrd ${HEADERS})
-set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+# list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
 
-add_subdirectory(tests/SimpleVDFModel)
-add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${simple_vdf_hrd})
-target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+#set(simple_vdf_hrd ${HEADERS})
+#set(simple_vdf_src ${SOURCE})
 
+#add_subdirectory(tests/SimpleVDFModel)
+#add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${SOURCE} ${HEADERS})
+#target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # New Zealand model
 ################################
-project(NewZealand)
+# project(NewZealand)
+
+# list(REMOVE_ITEM simple_vdf_model ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 set(new_zealand_hrd ${HEADERS})
 set(new_zealand_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 
 add_subdirectory(tests/NewZealand)
-add_executable(new_zealand_model tests/NewZealand/runner.cpp ${new_zealand_src} ${new_zealand_hrd})
+add_executable(new_zealand_model tests/NewZealand/runner.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################

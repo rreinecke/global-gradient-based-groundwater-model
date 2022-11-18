@@ -15,6 +15,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
+    LOG(debug) << "cols: " << cols << "rows: " << rows << std::endl;
 
     auto check = [grid](int i, int j) {
         try {
@@ -28,7 +29,11 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
     for (int layer = 0; layer < layers; ++layer) {
         //id->row,col
         for (int i = 0; i < cols; ++i) {
+            LOG(debug) << "i: " << i  << std::endl;
+
             for (int j = 0; j < rows; ++j) {
+                LOG(debug) << "j: " << j << std::endl;
+
                 int id = grid[i][j];
                 int l_mult = layer * (rows * cols);
                 if (check(i + 1, j)) {

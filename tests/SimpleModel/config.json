@@ -16,6 +16,12 @@
         "true",
         "true"
       ],
+      "density_variable": "false",
+      "density_zones": [
+        1000
+      ],
+      "max_toe_slope": 0.0,
+      "max_tip_slope": 0.0,
       "cache": "false",
       "adaptivestepsize": "false",
       "boundarycondition": "GeneralHeadBoundary",
@@ -27,6 +33,7 @@
       "inner_itter": 10,
       "closingcrit": 1e-90,
       "headchange": 0.000001,
+      "zetachange": 0,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,

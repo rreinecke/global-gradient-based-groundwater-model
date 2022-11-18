@@ -8,16 +8,24 @@ namespace GlobalFlow {
 
     void NZRunner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config.json");
+        op.load("data/config_nz.json");
     }
 
     void NZRunner::setupSimulation() {
         reader = new DataProcessing::GlobalDataReader(op.getStepsizeModifier());
+        LOG(debug) << "reader initiated" << std::endl;
+
         sim = Simulation::Simulation(op, reader);
+        LOG(debug) << "sim initiated" << std::endl;
+
         //disabling e-folding
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
+            LOG(debug) << "setting simple k" << std::endl;
+
             sim.getNodes()->at(j)->setSimpleK();
         }
+        LOG(debug) << "simple k set" << std::endl;
+
         _eq = sim.getEquation();
     }
 
@@ -35,7 +43,7 @@ namespace GlobalFlow {
     }
 
     void NZRunner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out_NewZealand.json", sim).write();
+	DataProcessing::DataOutput::OutputManager("data/out_nz.json", sim).write();
     }
 
     NZRunner::NZRunner() {}
@@ -45,9 +53,13 @@ namespace GlobalFlow {
 int main() {
     std::cout << FBLU("Starting Simulation") << std::endl;
     GlobalFlow::NZRunner runner;
+    std::cout << FBLU("- loading settings...") << std::endl;
     runner.loadSettings();
+    std::cout << FBLU("- simulation setup...") << std::endl;
     runner.setupSimulation();
+    std::cout << FBLU("- simulating...") << std::endl;
     runner.simulate();
+    std::cout << FBLU("- writing output...") << std::endl;
     runner.writeData();
     return EXIT_SUCCESS;
 }

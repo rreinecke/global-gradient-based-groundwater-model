@@ -21,8 +21,6 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-
-
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running a steady state step";
@@ -82,7 +80,7 @@ void StandaloneRunner::getResults() {
 
 }
 
-void StandaloneRunner::writeData(std::string) {
+void StandaloneRunner::writeData() {
 
 }
 
