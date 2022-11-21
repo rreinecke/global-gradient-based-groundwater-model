@@ -18,13 +18,10 @@ namespace GlobalFlow {
         sim = Simulation::Simulation(op, reader);
         LOG(debug) << "sim initiated" << std::endl;
 
-        //disabling e-folding
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            LOG(debug) << "setting simple k" << std::endl;
-
             sim.getNodes()->at(j)->setSimpleK();
         }
-        LOG(debug) << "simple k set" << std::endl;
+        LOG(debug) << "simple k set for all nodes" << std::endl;
 
         _eq = sim.getEquation();
     }

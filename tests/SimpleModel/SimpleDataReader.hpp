@@ -17,6 +17,8 @@ class SimpleDataReader : public DataReader {
             grid = readGrid(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodes(),
+                            op.getNumberOfRows(),
+                            op.getNumberOfCols(),
                             op.getInitialK(),
                             op.getAquiferDepth()[0],
                             op.getAnisotropy(),
@@ -46,7 +48,8 @@ class SimpleDataReader : public DataReader {
             readRiver(buildDir(op.getKRiverDir()));
 
             LOG(userinfo) << "Connecting the layers";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
+                                        op.getGHBConduct(),
                                         op.getBoundaryCondition());
         }
 
@@ -55,17 +58,23 @@ class SimpleDataReader : public DataReader {
         using Matrix = std::vector<std::vector<T>>;
 
         Matrix<int>
-        readGrid(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
+        readGrid(NodeVector nodes,
+                 std::string path,
+                 int numberOfNodes,
+                 int numberOfRows,
+                 int numberOfCols,
+                 double defaultK,
+                 double aquiferDepth,
                  double anisotropy,
                  double specificYield,
                  double specificStorage,
                  double edgeLengthLeftRight,
                  double edgeLengthFrontBack,
                  bool confined) {
-            Matrix<int> out = Matrix<int>(sqrt(numberOfNodes), std::vector<int>(sqrt(numberOfNodes)));
+            Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "row", "col");
+            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "col", "row");
 
             double x{0};
             double y{0};
@@ -77,8 +86,8 @@ class SimpleDataReader : public DataReader {
             lookupGlobalIDtoID.reserve(numberOfNodes);
             Model::DensityProperties densityProperties;
 
-            while (in.read_row(globid, x, y, area, row, col)) {
-                out[row][col] = i;
+            while (in.read_row(globid, x, y, area, col, row)) {
+                out[col][row] = i;
                 //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
@@ -156,8 +165,6 @@ class SimpleDataReader : public DataReader {
             nodes->at(pos)->setHead_direct(data);
         });
     }
-
-
 };
 }
 }

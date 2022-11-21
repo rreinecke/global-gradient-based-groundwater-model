@@ -52,7 +52,7 @@ namespace GlobalFlow {
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
                 LOG(userinfo) << "Connecting the model cells";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
+                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(), op.getGHBConduct(),
                                             op.getBoundaryCondition());
             }
 
@@ -81,7 +81,7 @@ namespace GlobalFlow {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "row", "col");
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "col", "row");
 
                 double x{0};
                 double y{0};
@@ -95,8 +95,8 @@ namespace GlobalFlow {
                         Model::DensityProperties::setDensityProperties(densityVariable,
                                                                        densityZones,maxToeSlope, maxTipSlope);
 
-                while (in.read_row(spatID, x, y, area, row, col)) {
-                    out[row][col] = i;
+                while (in.read_row(spatID, x, y, area, col, row)) {
+                    out[col][row] = i;
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
                                                                 y,

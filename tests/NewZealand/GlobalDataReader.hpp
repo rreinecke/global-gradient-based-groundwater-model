@@ -58,6 +58,12 @@ namespace GlobalFlow {
                                 op.getEdgeLengthFrontBack(),
                                 op.isConfined(0));
 
+                LOG(userinfo) << "Building the bottom layers";
+                DataProcessing::buildBottomLayers(nodes,
+                                                  op.getNumberOfLayers(),
+                                                  op.getConfinements(),
+                                                  op.getAquiferDepth());
+
                 LOG(userinfo) << "Reading hydraulic parameters";
                 readConduct(buildDir(op.getLithology()));
                 readElevation(buildDir(op.getElevation()));
@@ -86,7 +92,8 @@ namespace GlobalFlow {
                 readEqWTD(buildDir(op.getEqWTD()));
 
                 LOG(userinfo) << "Connecting the model cells";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfLayers(), op.getGHBConduct(),
+                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
+                                            op.getGHBConduct(),
                                             op.getBoundaryCondition());
             }
 
@@ -135,9 +142,7 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookupGlobalIDtoID.reserve(numberOfNodes);
-
                 Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
-                LOG(debug) << "path: " << path << std::endl;
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     out[col][row] = i;
