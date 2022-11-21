@@ -7,11 +7,11 @@ set(CMAKE_C_COMPILER "clang-13")
 set(CMAKE_CXX_COMPILER "clang++-13")
 
 # CMAKE flags
-set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-project(GW)
+project(3GM)
 
 # Build folder structure
 add_subdirectory(src)
@@ -20,7 +20,6 @@ add_subdirectory(lib)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 
 ################# Libs ################
-
 # Boost
 find_package(Boost 1.80.0 COMPONENTS system filesystem serialization log REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
@@ -44,49 +43,35 @@ MESSAGE(STATUS "GMP libs: " ${GMP_LIBRARIES} " " ${GMPXX_LIBRARIES})
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 
-project(tests)
 ################################
 # Simple Demo Model
 ################################
-# project(simple)
-
-# add_subdirectory(tests/SimpleModel)
- #add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
-# target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+add_subdirectory(tests/SimpleModel)
+add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
+target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Simple Demo Model for Variable Density Flow (VDF)
 ################################
-# project(simpleVDF)
-
-# list(REMOVE_ITEM simple_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-
-#set(simple_vdf_hrd ${HEADERS})
-#set(simple_vdf_src ${SOURCE})
-
-#add_subdirectory(tests/SimpleVDFModel)
-#add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${SOURCE} ${HEADERS})
-#target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+add_subdirectory(tests/SimpleVDFModel)
+set(simple_vdf_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
+target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # New Zealand model
 ################################
-# project(NewZealand)
-
-# list(REMOVE_ITEM simple_vdf_model ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
-
-set(new_zealand_hrd ${HEADERS})
-set(new_zealand_src ${SOURCE})
-
 add_subdirectory(tests/NewZealand)
-add_executable(new_zealand_model tests/NewZealand/runner.cpp ${SOURCE} ${HEADERS})
+set(new_zealand_model_src ${SOURCE})
+list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+add_executable(new_zealand_model tests/NewZealand/runner.cpp ${new_zealand_model_src} ${HEADERS})
 target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Unit Tests
 ################################
-project(Testing)
-
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest
 # Download and unpack googletest at configure time
 configure_file(CMakeLists_GTest.txt googletest-download/CMakeLists.txt)
