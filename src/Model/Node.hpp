@@ -63,10 +63,9 @@ namespace std {
     struct hash<GlobalFlow::Model::NeighbourPosition> {
         typedef GlobalFlow::Model::NeighbourPosition argument_type;
         typedef std::underlying_type<argument_type>::type underlying_type;
-        typedef std::hash<underlying_type>::result_type result_type;
+        //typedef std::hash<underlying_type>::result_type result_type; // todo can this be removed?
 
-        result_type
-        operator()(const argument_type &arg) const {
+        std::size_t operator()(const argument_type &arg) const { // todo correct implementation?
             std::hash<underlying_type> hasher;
             return hasher(static_cast< underlying_type >( arg ));
         }
