@@ -11,11 +11,11 @@ namespace DataProcessing {
  * @param ghbConduct // Question: what is this required for?
  * @param staticHeadBoundary // Question: what is this required for?
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers, double ghbConduct, bool staticHeadBoundary) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
-    LOG(debug) << "cols: " << cols << "rows: " << rows << std::endl;
+    LOG(debug) << "cols: " << cols << ", rows: " << rows << ", nodes per layer: " << nodesPerLayer << ", layers: " << layers << std::endl;
 
     auto check = [grid](int i, int j) {
         try {
@@ -29,13 +29,9 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
     for (int layer = 0; layer < layers; ++layer) {
         //id->row,col
         for (int i = 0; i < cols; ++i) {
-            LOG(debug) << "i: " << i  << std::endl;
-
             for (int j = 0; j < rows; ++j) {
-                LOG(debug) << "j: " << j << std::endl;
-
                 int id = grid[i][j];
-                int l_mult = layer * (rows * cols);
+                int l_mult = layer * nodesPerLayer;
                 if (check(i + 1, j)) {
                     nodes->at(id + l_mult)->setNeighbour(grid[i + 1][j] + l_mult, Model::RIGHT);
                 }
