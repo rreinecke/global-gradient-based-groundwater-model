@@ -102,8 +102,6 @@ namespace GlobalFlow {
             aquifer_depth_from_file = data_config.get<bool>("aquifer_depth_from_file");
             //heads_from_file = data_config.get<bool>("initial_head_from_file");
 
-            bool asArray = data_config.get<bool>("data_as_array");
-
             pt::ptree default_data = input.get_child("default_data");
             K = default_data.get<double>("K");
             INITAL_HEAD = default_data.get<double>("initial_head");
@@ -118,22 +116,27 @@ namespace GlobalFlow {
             MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
             MAX_TIP_SLOPE = config.get<double>("max_tip_slope");
 
+            bool slopeAsArray = data_config.get<bool>("slope_as_array");
+            bool efoldAsArray = data_config.get<bool>("efold_as_array");
             pt::ptree data = input.get_child("data");
 
-            if (asArray) {
-                //ELEVATION_a = getArray("Elevation", data.get_child("elevation"));
+            if (slopeAsArray) {
                 SLOPE_a = getArray("Slope", data.get_child("slope"));
+                //ELEVATION_a = getArray("Elevation", data.get_child("elevation"));
                 //EQ_WTD_a = getArray("WTD", data.get_child("eq_wtd"));
-                EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));
-                //BLUE_ELEVATION_a = getArray("Blue", data.get_child("blue_cells"));
-            } else {
-                EFOLDING = getOptional("e-folding", data);
-                SLOPE = getOptional("slope", data);
+                //SURFACE_WATER_ELEVATION_a = getArray("SurfaceWaterElevation", data.get_child("surface_water_elevation"));
             }
+            SLOPE = getOptional("slope", data);
+
+
+            if (efoldAsArray){
+                EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));
+            }
+            EFOLDING = getOptional("e-folding", data);
 
             ELEVATION = getOptional("elevation", data);
             EQ_WTD = getOptional("eq_wtd", data);
-            BLUE_ELEVATION = getOptional("blue_cells", data);
+            SURFACE_WATER_ELEVATION = getOptional("surface_water_elevation", data);
 
 
             LITHOLOGY = getOptional("lithology", data);
@@ -143,8 +146,8 @@ namespace GlobalFlow {
             RIVERS = getOptional("rivers", data);
             GLOBAL_WETLANDS = getOptional("globalwetlands", data);
             GLOBAL_LAKES = getOptional("globallakes", data);
-            LOCAL_LAKES = getOptional("lokallakes", data);
-            LOCAL_WETLANDS = getOptional("lokalwetlands", data);
+            LOCAL_LAKES = getOptional("locallakes", data);
+            LOCAL_WETLANDS = getOptional("localwetlands", data);
 
             //Optional
             K_DIR = getOptional("conductance", data);

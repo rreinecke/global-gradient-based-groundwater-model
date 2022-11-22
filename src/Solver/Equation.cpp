@@ -680,7 +680,6 @@ Equation::solve() {
             if (cg.info() == Success and iterations != 0) {
                 LOG(numerics) << "cg solver success"; // this is always reached in outer iteration 1 (starts at 0)
 
-                // Question: why dont we iterate until convergence?? Or: what does cg.info() == Success mean?
                 break;
             }
         }
@@ -699,6 +698,9 @@ Equation::solve() {
 
         iterations++;
     }
+    //LOG(debug) << "A:\n" << A << std::endl;
+    LOG(debug) << "x:\n" << x << std::endl;
+    //LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations\n";

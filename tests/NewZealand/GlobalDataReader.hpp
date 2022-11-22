@@ -64,32 +64,43 @@ namespace GlobalFlow {
                                                   op.getConfinements(),
                                                   op.getAquiferDepth());
 
-                LOG(userinfo) << "Reading hydraulic parameters";
+                LOG(userinfo) << "Reading hydraulic conductivity";
                 readConduct(buildDir(op.getLithology()));
+
+                LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
+
+                LOG(userinfo) << "Reading efolding";
+                readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
+
+                LOG(userinfo) << "Reading slope";
+                readSlope(buildDir(op.getSlope()), op.getSlope_a());
 
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
 
-                //LOG(userinfo) << "Reading the boundary condition";
-                //readHeadBoundary(buildDir(op.getKGHBDir()));
+                LOG(userinfo) << "Reading the boundary condition";
+                readHeadBoundary(buildDir(op.getKGHBDir()));
 
                 //LOG(userinfo) << "Reading parameters for variable density flow";
                 //readInitialZetas(buildDir(op.getInitialZetasDir()));
                 //readEffectivePorosity(buildDir(op.getEffectivePorosity()));
                 //readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getDensityZones());
 
-                //LOG(userinfo) << "Initializing head";
-                //readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                LOG(userinfo) << "Reading initial head";
+                readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
-                //LOG(userinfo) << "Defining rivers";
-                //readRiver(buildDir(op.getKRiverDir()));
+                LOG(userinfo) << "Defining rivers";
+                readRiver(buildDir(op.getKRiverDir()));
 
-                //LOG(userinfo) << "Reading efolding";
-                //readEfold(buildDir(op.getEfolding()));
+                LOG(userinfo) << "Defining lakes and wetlands";
+                readLakesAndWetlands(buildDir(op.getLocalWetlands()),
+                                     buildDir(op.getGlobalWetlands()),
+                                     buildDir(op.getGlobalLakes()),
+                                     buildDir(op.getGlobalLakes()));
 
-                LOG(userinfo) << "Reading equal water table depth";
-                readEqWTD(buildDir(op.getEqWTD()));
+                //LOG(userinfo) << "Reading equal water table depth"; todo remove
+                //readEqWTD(buildDir(op.getEqWTD()));
 
                 LOG(userinfo) << "Connecting the model cells";
                 DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
@@ -101,7 +112,7 @@ namespace GlobalFlow {
             using Matrix = std::vector<std::vector<T>>;
 
             /**
-             * @brief Method for already gridded defintions - that is structered in row and column
+             * @brief Method for already gridded definitions - that is structured in row and column
              * @note Structured in row, col
              * @param nodes Vector of nodes
              * @param path Path to read definitions from
@@ -230,7 +241,7 @@ namespace GlobalFlow {
             };
 
             /**
-             * @brief Read in a custom defintion for the ocean boundary
+             * @brief Read in a custom definition for the ocean boundary
              * @param path Where to read from
              */
             void readHeadBoundary(std::string path) {
@@ -247,7 +258,17 @@ namespace GlobalFlow {
             }
 
             /**
-             * @brief Read in a custom river defintion file
+             * @brief Read in a custom definition file for initial heads
+             * @param path Where to read the file from
+             */
+            void readInitialHeads(std::string path) {
+                readTwoColumns(path, [this](double data, int pos) {
+                    nodes->at(pos)->setHead_direct(data);
+                });
+            }
+
+            /**
+             * @brief Read in a custom river definition file
              * Structured as: global_ID, Head, Bottom, Conduct
              * @param path Where to read the file from
              */
@@ -272,6 +293,31 @@ namespace GlobalFlow {
                 }
             }
 
+            /**
+             * @brief Read e-folding data from a specified path
+             * @param path Where to read the file from
+             * @param files If different files for different regions are given
+             */
+            void readEfold(std::string path, std::vector<std::string> files) {
+                loopFiles(path, files, [this](std::string path) {
+                    readTwoColumns(path, [this](double data, int pos) {
+                        nodes->at(pos)->setEfold(data);
+                    });
+                });
+            };
+
+            /**
+             * @brief Read slope data from a specified path
+             * @param path Where to read the file from
+             * @param files If different files for different regions are given
+             */
+            void readSlope(std::string path, std::vector<std::string> files) {
+                loopFiles(path, files, [this](std::string path) {
+                    readTwoColumns(path, [this](double data, int pos) {
+                        nodes->at(pos)->setSlope(data);
+                    });
+                });
+            };
 
             /**
              * @brief Read elevation data from a specified path
@@ -312,7 +358,7 @@ namespace GlobalFlow {
             };
 
             /**
-             * @brief Read difuse gw-recharge
+             * @brief Read diffuse gw-recharge
              * @param path Where to read the file from
              */
             void readGWRecharge(std::string path) {
@@ -327,7 +373,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * @brief Read cell conductance defintion
+             * @brief Read cell conductance definition
              * @note currently does check if val > 10 m/day
              * @param path Where to read the file from
              */
@@ -347,7 +393,7 @@ namespace GlobalFlow {
              */
             std::unordered_map<int, std::array<double, 3>> calculateRiverStage(std::string path) {
                 io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "POINTID", "Lenght", "Bankfull", "spatID", "Width");
+                in.read_header(io::ignore_no_column, "POINTID", "Length", "Bankfull", "spatID", "Width");
 
                 int id = 0;
                 double lenght = 0;
@@ -373,9 +419,9 @@ namespace GlobalFlow {
             }
 
             /**
-             * @brief Reads in river defintions based on a specific elevation data-set
+             * @brief Reads in river definitions based on a specific elevation data-set
              * @param file to read from
-             * @param bankfull_depth A map with addition information @see calulateRiverStage
+             * @param bankfull_depth A map with addition information @see calculateRiverStage
              */
             void readBlueCells(std::string file,
                                std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
@@ -421,21 +467,21 @@ namespace GlobalFlow {
              * @brief Reads in lakes and wetlands definitions based on @cite Lehner and Döll
              * @param pathGlobalLakes
              * @param pathGlobalWetlands
-             * @param pathLokalLakes
-             * @param pathLokalWetlands
+             * @param pathLocalLakes
+             * @param pathLocalWetlands
              */
-            void readLakesandWetlands(std::string pathGlobalLakes,
+            void readLakesAndWetlands(std::string pathGlobalLakes,
                                       std::string pathGlobalWetlands,
-                                      std::string pathLokalLakes,
-                                      std::string pathLokalWetlands) {
+                                      std::string pathLocalLakes,
+                                      std::string pathLocalWetlands) {
 
-                std::vector<std::string> paths = {pathGlobalLakes, pathGlobalWetlands, pathLokalLakes,
-                                                  pathLokalWetlands};
+                std::vector<std::string> paths = {pathGlobalLakes, pathGlobalWetlands, pathLocalLakes,
+                                                  pathLocalWetlands};
 
                 int itter = 0;
                 for (std::string path : paths) {
                     io::CSVReader<2, io::trim_chars<'"', '\t'>, io::no_quote_escape<','>> in(path);
-                    in.read_header(io::ignore_no_column, "spatID", "Value");
+                    in.read_header(io::ignore_no_column, "spatID", "data");
 
                     double percentage = 0;
                     float spatID = 0;
@@ -483,7 +529,7 @@ namespace GlobalFlow {
 
                         if (itter == 0) {
                             //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
-                            //Global lakes
+                            //Global LAKE
                             //flowHead -= 10;
                             bottom -= 100;
                             nodes->at(i)->addExternalFlow(Model::LAKE,
@@ -491,14 +537,14 @@ namespace GlobalFlow {
                                                           conduct,
                                                           bottom * Model::si::meter);
                         } else if (itter == 1) {
-                            //GLOBAL WETLANDS
+                            //Global WETLANDS
                             bottom -= 2;
                             nodes->at(i)->addExternalFlow(Model::GLOBAL_WETLAND,
                                                           flowHead * Model::si::meter,
                                                           conduct,
                                                           bottom * Model::si::meter);
                         } else if (itter == 2) {
-                            //Lokal lakes
+                            //Local LAKE
                             //flowHead -= 10;
                             bottom -= 10;
                             nodes->at(i)->addExternalFlow(Model::LAKE,

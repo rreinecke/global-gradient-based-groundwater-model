@@ -1,14 +1,14 @@
 {
   "config": {
     "model_config": {
-      "nodes": "mother_NZ_nz.csv",
+      "nodes": "grid_nz.csv",
       "row_cols": "false",
       "steadystate": "true",
       "number_of_nodes": 4603,
       "number_of_rows": 156,
       "number_of_cols": 146,
-      "edge_length_rows": 3.162277,
-      "edge_length_cols":3.162277,
+      "edge_length_rows": 9000.0,
+      "edge_length_cols": 9000.0,
       "threads": 1,
       "layers": 2,
       "one_layer_approach": "false",
@@ -40,36 +40,59 @@
       "stepsize": "daily",
       "wetting_approach": "nwt"
     },
-  "input": {
-    "data_config": {
-      "k_from_lith": "true",
-      "k_ghb_from_file": "false",
-      "specificstorage_from_file": "false",
-      "specificyield_from_file": "false",
-      "k_river_from_file": "false",
-      "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "false",
-      "data_as_array": "false"
-    },
-    "default_data": {
-      "initial_head": 0,
-      "K": 0.1,
-      "ghb_K": 10,
-      "aquifer_thickness": [
-        100,
-        100
-      ],
-      "anisotropy": 10,
-      "specificyield": 0.15,
-      "specificstorage": 0.000015
-    },
-    "data": {
-      "blue_cells": "blue_NZ_nz.csv",
-      "elevation": "elevation_NZ_nz.csv",
-      "lithology": "litho_NZ_nz.csv",
-      "recharge": "recharge_NZ_nz.csv",
-      "eq_wtd": "wtd_NZ_nz.csv"
+    "input": {
+      "data_config": {
+        "k_from_lith": "true",
+        "k_ghb_from_file": "false",
+        "specificstorage_from_file": "false",
+        "specificyield_from_file": "false",
+        "k_river_from_file": "false",
+        "aquifer_depth_from_file": "false",
+        "initial_head_from_file": "true",
+        "slope_as_array": "true",
+        "efold_as_array": "true"
+      },
+      "default_data": {
+        "initial_head": 0,
+        "K": 0.1,
+        "ghb_K": 10,
+        "aquifer_thickness": [
+          100,
+          100
+        ],
+        "anisotropy": 10,
+        "specificyield": 0.15,
+        "specificstorage": 0.000015
+      },
+      "data": {
+        "surface_water_elevation": "surface_water_elevation_nz.csv",
+        "elevation": "elevation_nz.csv",
+        "lithology": "lithology_nz.csv",
+        "recharge": "recharge_nz.csv",
+        "initial_head": "initial_head_nz.csv",
+        "globalwettlands": "G_GLOWET30.csv",
+        "globallakes": "G_GLOLAK30_v2.csv",
+        "lokallakes": "G_LOCLAK30_v2.csv",
+        "lokalwettlands": "G_LOCWET30_v2.csv",
+        "slope": {
+          "Slope": [
+            "Africa_slope.csv",
+            "Australia_slope.csv",
+            "Eurasia_slope.csv",
+            "N_America_slope.csv",
+            "S_America_slope.csv"
+          ]
+        },
+        "e-folding": {
+          "E-Folding": [
+            "Africa_F.csv",
+            "Australia_F.csv",
+            "Eurasia_F.csv",
+            "N_America_F.csv",
+            "S_America_F.csv"
+          ]
+        }
+      }
     }
-  }
   } 
 }

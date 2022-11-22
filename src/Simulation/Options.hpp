@@ -41,13 +41,13 @@ namespace GlobalFlow {
             vector<string> EFOLDING_a;
             vector<string> SLOPE_a;
             vector<string> EQ_WTD_a;
-            vector<string> BLUE_ELEVATION_a;
+            vector<string> SURFACE_WATER_ELEVATION_a;
 
             string ELEVATION{""};
             string EFOLDING{""};
             string SLOPE{""};
             string EQ_WTD{""};
-            string BLUE_ELEVATION{""};
+            string SURFACE_WATER_ELEVATION{""};
 
             string RECHARGE{""};
             string ZONES_SOURCES_SINKS{""};
@@ -297,8 +297,8 @@ namespace GlobalFlow {
                 return SLOPE;
             }
 
-            string getBlue() {
-                return BLUE_ELEVATION;
+            string getSurfaceWaterElevation() {
+                return SURFACE_WATER_ELEVATION;
             }
 
             vector<string>
@@ -322,8 +322,8 @@ namespace GlobalFlow {
             }
 
             vector<string>
-            getBlue_a() {
-                return BLUE_ELEVATION_a;
+            getSurfaceWaterElevation_a() {
+                return SURFACE_WATER_ELEVATION_a;
             }
 
             string
