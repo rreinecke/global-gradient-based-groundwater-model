@@ -53,13 +53,13 @@ namespace GlobalFlow {
             string ZONES_SOURCES_SINKS{""};
             string PSEUDO_SOURCE_FLOW{""};
             string LITHOLOGY{""};
-            string RIVERS{""};
+            string RIVER{""};
             string GLOBAL_LAKES{""};
             string GLOBAL_WETLANDS{""};
             string LOCAL_LAKES{""};
             string LOCAL_WETLANDS{""};
             string K_DIR{""};
-            string RIVER_K_DIR{""};
+            string RIVER_K{""};
             string GHB_K_DIR{""};
             string SS_FILE{""};
             string SY_FILE{""};
@@ -169,13 +169,13 @@ namespace GlobalFlow {
 
             bool isSpecificYieldFile() { return specificyield_from_file; }
 
-            bool isKRiverFile() { return k_river_from_file; }
+            bool isKRiverFromFile() { return k_river_from_file; }
 
             bool isAquiferDepthFile() { return aquifer_depth_from_file; }
 
             string getKDir() { return K_DIR; }
 
-            string getKRiverDir() { return RIVER_K_DIR; }
+            string getKRiver() { return RIVER_K; }
 
             string getKGHBDir() { return GHB_K_DIR; }
 
@@ -347,8 +347,8 @@ namespace GlobalFlow {
             }
 
             string
-            getRivers() {
-                return RIVERS;
+            getRiver() {
+                return RIVER;
             }
 
             string

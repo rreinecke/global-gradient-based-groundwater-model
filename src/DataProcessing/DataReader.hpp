@@ -53,9 +53,9 @@ namespace GlobalFlow {
         std::string basePath{"data"};
         fs::path data_dir{basePath};
         /** @var lookupspatIDtoID <GlobalID, ID>*/
-        std::unordered_map<int, int> lookupGlobalIDtoID;
+        std::unordered_map<int, int> lookupSpatIDtoID;
         /** @var lookupZeroPointFivetoFiveMinute <SpatID(0.5°), vector<GlobalID(5')>>*/
-        std::unordered_map<int, std::vector<int>> lookupZeroPointFivetoFiveMinute;
+        std::unordered_map<int, std::vector<int>> lookupSpatIDtoArcID;
     public:
         /** Virt destructor -> interface*/
         virtual ~DataReader() {}
@@ -96,7 +96,7 @@ namespace GlobalFlow {
         inline int check(int globalID) {
             int i{0};
             try {
-                i = lookupGlobalIDtoID.at(globalID);
+                i = lookupSpatIDtoID.at(globalID);
             }
             catch (const std::out_of_range &ex) {
                 return -1;
@@ -113,51 +113,51 @@ namespace GlobalFlow {
         void readTwoColumns(std::string path, ProcessDataFunction processData) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data");
-            int globid = 0;
+            int spatID = 0;
             double data = 0;
             int pos = 0;
-            while (in.read_row(globid, data)) {
-                pos = check(globid);
+            while (in.read_row(spatID, data)) {
+                pos = check(spatID);
                 if (pos == -1) {
                     continue;
                 }
-                if (nodes->at(pos)->getProperties().get<large_num, Model::SpatID>() != globid) {
-                    throw "Error in reading globID";
+                if (nodes->at(pos)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                    throw "Error in reading spatID";
                 }
                 processData(data, pos);
             }
         }
 
         /**
-         * @brief Creates a mapping of 0.5° SpatID to a list of contained 5' GlobIDs
+         * @brief Creates a mapping of 0.5° SpatID to a list of contained 5' ArcIDs
          * @param path to file
          */
-        void readZeroPointFiveToFiveMin(std::string path) {
+        void readSpatIDtoArcID(std::string path) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "ARC_ID");
-            int globID = 0;
+            in.read_header(io::ignore_no_column, "spatID", "arcID");
+            int arcID = 0;
             int spatID = 0;
 
-            while (in.read_row(globID, spatID)) {
-                lookupZeroPointFivetoFiveMinute[spatID].push_back(std::move(globID));
+            while (in.read_row(spatID, arcID)) {
+                lookupSpatIDtoArcID[spatID].push_back(std::move(arcID));
             }
         }
 
 
         /**
          * @brief provides acccess to mapping of different resolutions
-         * @return <SpatID(0.5°), vector<GlobalID(5')>>
+         * @return <ArcID(0.5°), vector<SpatID(5')>>
          */
-        const std::unordered_map<int, std::vector<int>> &getSpatIDMapping() {
-            return lookupZeroPointFivetoFiveMinute;
+        const std::unordered_map<int, std::vector<int>> &getMappinSpatIDtoArcID() {
+            return lookupSpatIDtoArcID;
         };
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, ID (internal array id)>
          */
-        const std::unordered_map<int, int> &getGlobIDMapping() {
-            return lookupGlobalIDtoID;
+        const std::unordered_map<int, int> &getMappingSpatIDtoID() {
+            return lookupSpatIDtoID;
         };
 
         /**

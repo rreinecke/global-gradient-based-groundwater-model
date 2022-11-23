@@ -143,7 +143,7 @@ namespace GlobalFlow {
             RECHARGE = getOptional("recharge", data);
             ZONES_SOURCES_SINKS = getOptional("zones_sources_sinks", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
-            RIVERS = getOptional("rivers", data);
+            RIVER = getOptional("river", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);
             GLOBAL_LAKES = getOptional("global_lakes", data);
             LOCAL_LAKES = getOptional("local_lakes", data);
@@ -151,7 +151,7 @@ namespace GlobalFlow {
 
             //Optional
             K_DIR = getOptional("conductance", data);
-            RIVER_K_DIR = getOptional("river_conductance", data);
+            RIVER_K = getOptional("river_conductance", data);
             GHB_K_DIR = getOptional("ghb_conductance", data);
             SS_FILE = getOptional("specificstorage", data);
             SY_FILE = getOptional("specificyield", data);
