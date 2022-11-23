@@ -144,10 +144,10 @@ namespace GlobalFlow {
             ZONES_SOURCES_SINKS = getOptional("zones_sources_sinks", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVERS = getOptional("rivers", data);
-            GLOBAL_WETLANDS = getOptional("globalwetlands", data);
-            GLOBAL_LAKES = getOptional("globallakes", data);
-            LOCAL_LAKES = getOptional("locallakes", data);
-            LOCAL_WETLANDS = getOptional("localwetlands", data);
+            GLOBAL_WETLANDS = getOptional("global_wetlands", data);
+            GLOBAL_LAKES = getOptional("global_lakes", data);
+            LOCAL_LAKES = getOptional("local_lakes", data);
+            LOCAL_WETLANDS = getOptional("local_wetlands", data);
 
             //Optional
             K_DIR = getOptional("conductance", data);

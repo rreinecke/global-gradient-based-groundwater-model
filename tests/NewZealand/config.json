@@ -70,10 +70,10 @@
         "lithology": "lithology_nz.csv",
         "recharge": "recharge_nz.csv",
         "initial_head": "initial_head_nz.csv",
-        "globalwettlands": "G_GLOWET30.csv",
-        "globallakes": "G_GLOLAK30_v2.csv",
-        "lokallakes": "G_LOCLAK30_v2.csv",
-        "lokalwettlands": "G_LOCWET30_v2.csv",
+        "global_wetlands": "G_GLOWET.csv",
+        "global_lakes": "G_GLOLAK.csv",
+        "local_lakes": "G_LOCLAK.csv",
+        "local_wetlands": "G_LOCWET.csv",
         "slope": {
           "Slope": [
             "Africa_slope.csv",

@@ -70,7 +70,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
 
-                LOG(userinfo) << "Reading efolding";
+                LOG(userinfo) << "Reading e-folding";
                 readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
 
                 LOG(userinfo) << "Reading slope";
@@ -79,8 +79,8 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
 
-                LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                //LOG(userinfo) << "Reading the boundary condition";
+                //readHeadBoundary(buildDir(op.getKGHBDir()));
 
                 //LOG(userinfo) << "Reading parameters for variable density flow";
                 //readInitialZetas(buildDir(op.getInitialZetasDir()));
@@ -90,8 +90,8 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading initial head";
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
-                LOG(userinfo) << "Defining rivers";
-                readRiver(buildDir(op.getKRiverDir()));
+                //LOG(userinfo) << "Defining rivers";
+                //readRiver(buildDir(op.getKRiverDir()));
 
                 LOG(userinfo) << "Defining lakes and wetlands";
                 readLakesAndWetlands(buildDir(op.getLocalWetlands()),
