@@ -123,7 +123,7 @@ namespace GlobalFlow {
             if (slopeAsArray) {
                 SLOPE_a = getArray("Slope", data.get_child("slope"));
                 //ELEVATION_a = getArray("Elevation", data.get_child("elevation"));
-                //EQ_WTD_a = getArray("WTD", data.get_child("eq_wtd"));
+                //EQUAL_WATER_TABLE_DEPTH_a = getArray("WTD", data.get_child("equal_water_table_depth"));
                 //SURFACE_WATER_ELEVATION_a = getArray("SurfaceWaterElevation", data.get_child("surface_water_elevation"));
             }
             SLOPE = getOptional("slope", data);
@@ -135,7 +135,7 @@ namespace GlobalFlow {
             EFOLDING = getOptional("e-folding", data);
 
             ELEVATION = getOptional("elevation", data);
-            EQ_WTD = getOptional("eq_wtd", data);
+            EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
             SURFACE_WATER_ELEVATION = getOptional("surface_water_elevation", data);
 
 
@@ -165,10 +165,7 @@ namespace GlobalFlow {
 
             EFFECTIVE_POROSITY = getOptional("effective_porosity", data);
 
-            boost::optional<pt::ptree &> mappings = input.get_child_optional("mapping");
-            if (mappings) {
-                NODEID_SPATID = mappings.value().get<string>("nodeID-spatID");
-            }
+            SPATID_ARCID = getOptional("spatID-arcID", data);
         }
 
     }

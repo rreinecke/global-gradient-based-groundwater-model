@@ -148,7 +148,7 @@ namespace GlobalFlow {
          * @brief provides acccess to mapping of different resolutions
          * @return <ArcID(0.5°), vector<SpatID(5')>>
          */
-        const std::unordered_map<int, std::vector<int>> &getMappinSpatIDtoArcID() {
+        const std::unordered_map<int, std::vector<int>> &getMappingSpatIDtoArcID() {
             return lookupSpatIDtoArcID;
         };
 

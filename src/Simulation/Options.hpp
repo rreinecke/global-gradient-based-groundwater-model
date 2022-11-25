@@ -40,13 +40,13 @@ namespace GlobalFlow {
             vector<string> ELEVATION_a;
             vector<string> EFOLDING_a;
             vector<string> SLOPE_a;
-            vector<string> EQ_WTD_a;
+            vector<string> EQUAL_WATER_TABLE_DEPTH_a;
             vector<string> SURFACE_WATER_ELEVATION_a;
 
             string ELEVATION{""};
             string EFOLDING{""};
             string SLOPE{""};
-            string EQ_WTD{""};
+            string EQUAL_WATER_TABLE_DEPTH{""};
             string SURFACE_WATER_ELEVATION{""};
 
             string RECHARGE{""};
@@ -70,7 +70,7 @@ namespace GlobalFlow {
             string EFFECTIVE_POROSITY{""};
 
             //++Special mappings++//
-            string NODEID_SPATID{""};
+            string SPATID_ARCID{""};
 
             //++General configuration++//
             long NUMBER_OF_NODES{0};
@@ -290,7 +290,7 @@ namespace GlobalFlow {
 
             string
             getEqWTD() {
-                return EQ_WTD;
+                return EQUAL_WATER_TABLE_DEPTH;
             }
 
             string getSlope() {
@@ -313,7 +313,7 @@ namespace GlobalFlow {
 
             vector<string>
             getEqWTD_a() {
-                return EQ_WTD_a;
+                return EQUAL_WATER_TABLE_DEPTH_a;
             }
 
             vector<string>
@@ -373,7 +373,7 @@ namespace GlobalFlow {
 
             string
             getMapping() {
-                return NODEID_SPATID;
+                return SPATID_ARCID;
             }
 
             int

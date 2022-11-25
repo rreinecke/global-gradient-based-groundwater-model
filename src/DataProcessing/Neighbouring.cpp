@@ -356,7 +356,7 @@ void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
  * @param layers
  */
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
-    assert(layers && "AsModel::signing 0 layers does not make any sense");
+    assert(layers && "0 layers does not make sense");
     if (layers == 1) {
         return;
     }

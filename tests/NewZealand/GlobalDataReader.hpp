@@ -42,27 +42,44 @@ namespace GlobalFlow {
             GlobalDataReader(int step) { stepMod = step; }
 
             virtual void readData(Simulation::Options op) {
-                LOG(userinfo) << "Building the initial model layer";
+                LOG(userinfo) << "Building the top model layer";
                 std::vector<std::vector<int>> grid;
-                grid = readGrid(nodes,
-                                buildDir(op.getNodesDir()),
-                                op.getNumberOfNodes(),
-                                op.getNumberOfRows(),
-                                op.getNumberOfCols(),
-                                op.getInitialK(),
-                                op.getAquiferDepth()[0],
-                                op.getAnisotropy(),
-                                op.getSpecificYield(),
-                                op.getSpecificStorage(),
-                                op.getEdgeLengthLeftRight(),
-                                op.getEdgeLengthFrontBack(),
-                                op.isConfined(0));
+                if (op.isRowCol()) {
+                    LOG(userinfo) << "- reading grid by rows and columns";
+                    grid = readGrid(nodes,
+                                    buildDir(op.getNodesDir()),
+                                    op.getNumberOfNodes(),
+                                    op.getNumberOfRows(),
+                                    op.getNumberOfCols(),
+                                    op.getInitialK(),
+                                    op.getAquiferDepth()[0],
+                                    op.getAnisotropy(),
+                                    op.getSpecificYield(),
+                                    op.getSpecificStorage(),
+                                    op.getEdgeLengthLeftRight(),
+                                    op.getEdgeLengthFrontBack(),
+                                    op.isConfined(0));
+                } else {
+                    LOG(userinfo) << "- reading land mask";
+                    readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodes(),
+                                 op.getInitialK(), op.getAquiferDepth()[0],
+                                 op.getAnisotropy(), op.getSpecificYield(), op.getSpecificStorage(),
+                                 op.isConfined(0));
+                    LOG(userinfo) << "- reading mapping";
+                    readSpatIDtoArcID(buildDir(op.getMapping()));
+                }
 
-                LOG(userinfo) << "Building the bottom layers";
+                LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
                                                   op.getAquiferDepth());
+
+                LOG(userinfo) << "Reading groundwater recharge";
+                //readGWRecharge(buildDir(op.getRecharge()));
+                readGWRechargeMapping(buildDir(op.getRecharge()),
+                                      [](const double &recharge, const double &area) {
+                                                return (((recharge / 1000) * area) / 365);});
 
                 LOG(userinfo) << "Reading hydraulic conductivity";
                 readConduct(buildDir(op.getLithology()));
@@ -76,9 +93,6 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading slope";
                 readSlope(buildDir(op.getSlope()), op.getSlope_a());
 
-                LOG(userinfo) << "Reading the groundwater recharge";
-                readGWRecharge(buildDir(op.getRecharge()));
-
                 //LOG(userinfo) << "Reading the boundary condition";
                 //readHeadBoundary(buildDir(op.getKGHBDir()));
 
@@ -87,25 +101,41 @@ namespace GlobalFlow {
                 //readEffectivePorosity(buildDir(op.getEffectivePorosity()));
                 //readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getDensityZones());
 
-                LOG(userinfo) << "Reading initial head";
-                readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                //LOG(userinfo) << "Reading initial head";
+                //readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
-                //LOG(userinfo) << "Defining rivers";
-                //readRiver(buildDir(op.getKRiverDir()));
+                LOG(userinfo) << "Reading rivers";
+                if (op.isKRiverFromFile()) {
+                    readRiver(buildDir(op.getKRiver()));
+                } else {
+                    readBlueCells(buildDir(op.getSurfaceWaterElevation()),
+                                  calculateRiverStage(buildDir(op.getRiver())));
+                }
 
-                LOG(userinfo) << "Defining lakes and wetlands";
+                LOG(userinfo) << "Reading lakes and wetlands";
                 readLakesAndWetlands(buildDir(op.getLocalWetlands()),
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalLakes()));
 
-                //LOG(userinfo) << "Reading equal water table depth"; todo remove
-                //readEqWTD(buildDir(op.getEqWTD()));
+                LOG(userinfo) << "Reading equal water table depth";
+                readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
 
-                LOG(userinfo) << "Connecting the model cells";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
-                                            op.getGHBConduct(),
-                                            op.getBoundaryCondition());
+
+                if (op.isRowCol()) {
+                    LOG(userinfo) << "Building grid by rows and columns";
+                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(), op.getGHBConduct(),
+                                                op.getBoundaryCondition());
+                } else {
+                    LOG(userinfo) << "Building grid by spatial ID";
+
+                    //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op
+                    //        .getBoundaryCondition());
+                    DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoID(), 60*5 , op.getNumberOfLayers(), op.getGHBConduct(), op.getBoundaryCondition());
+                }
+
+                LOG(userinfo) << "Copying neighbours to bottom layer(s)";
+                DataProcessing::copyNeighboursToBottomLayers(nodes,op.getNumberOfLayers());
             }
 
             template<class T>
@@ -152,7 +182,7 @@ namespace GlobalFlow {
                 int i{0};
                 int row{0};
                 int col{0};
-                lookupGlobalIDtoID.reserve(numberOfNodes);
+                lookupSpatIDtoID.reserve(numberOfNodes);
                 Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
@@ -174,7 +204,7 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 densityProperties));
-                    lookupGlobalIDtoID[spatID] = i;
+                    lookupSpatIDtoID[spatID] = i;
                     i++;
                 }
 
@@ -200,28 +230,28 @@ namespace GlobalFlow {
             readLandMask(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
                          double anisotropy,
                          double specificYield,
-                         double specificStorage,
-                         double edgeLengthLeftRight,
-                         double edgeLengthFrontBack,
-                         bool confined) {
-                io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area");
+                         double specificStorage, bool confined) {
+                io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "col", "row");
                 double x = 0;
                 double y = 0;
                 double area = 0;
-                int spatID = 0;
+                large_num col = 0; // todo remove
+                large_num row = 0; // todo remove
+                large_num spatID = 0;
                 int i = 0;
-                lookupGlobalIDtoID.reserve(numberOfNodes);
+                lookupSpatIDtoID.reserve(numberOfNodes);
                 Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
-                while (in.read_row(spatID, x, y, area)) {
+
+                while (in.read_row(spatID, x, y, area, col, row)) {
                     //area is in km needs to be in m
                     //TODO implement a container for these parameters
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
                                                                 y,
                                                                 1e+6 * area * Model::si::square_meter,
-                                                                edgeLengthLeftRight * Model::si::meter,
-                                                                edgeLengthFrontBack * Model::si::meter,
+                                                                std::sqrt(1e+6 * area)*Model::si::meter,
+                                                                std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
@@ -231,9 +261,8 @@ namespace GlobalFlow {
                                                                 specificYield,
                                                                 specificStorage,
                                                                 confined,
-                                                                densityProperties
-                                                                ));
-                    lookupGlobalIDtoID[spatID] = i;
+                                                                densityProperties));
+                    lookupSpatIDtoID[spatID] = i;
                     i++;
                 }
                 //Return number of total top nodes
@@ -269,7 +298,7 @@ namespace GlobalFlow {
 
             /**
              * @brief Read in a custom river definition file
-             * Structured as: global_ID, Head, Bottom, Conduct
+             * Structured as: spatID, Head, Bottom, Conduct
              * @param path Where to read the file from
              */
             void readRiver(std::string path) {
@@ -283,7 +312,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, head, bottom, conduct)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at(spatID);
+                        i = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -373,6 +402,70 @@ namespace GlobalFlow {
             }
 
             /**
+            * @brief Read diffuse groundwater recharge from a file and map the value using a conversion function
+            * @tparam ConversionFunction Allows the dynamic recalculation of recharge based on cell area
+            * @param path Where to read the file from
+            * @param convertToRate The conversion function
+            */
+            template<typename ConversionFunction>
+            void readGWRechargeMapping(std::string path, ConversionFunction convertToRate) {
+                io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "arcID", "data");
+
+                int ID = -1;
+                std::vector<int> tmp;
+
+                //Count missing mappings due to landmask diff
+                //int missingMapping = 0;
+
+                double recharge = 0;
+
+                while (in.read_row(ID, recharge)) {
+                    //lookup nodes which get the special_flow
+                    try {
+                        tmp = this->lookupSpatIDtoArcID.at(ID);
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        //missingMapping++;
+                        continue;
+                    }
+
+                    for (int id : tmp) {
+                        int i = 0;
+                        try {
+                            i = this->lookupSpatIDtoID.at(id);
+                        }
+                        catch (const std::out_of_range &ex) {
+                            //if Node does not exist ignore entry
+                            continue;
+                        }
+                        /**
+                        * GW Recharge is head independent
+                        * -> p = 0
+                        * Bottom is undefined and c is same as q for recharge flows
+                        */
+                        //double K = nodes->at(i)->getProperties().get<quantity<Model::Velocity>, Model::K>().value();
+                        //double size = nodes->at(
+                        //        i)->getProperties().get<quantity<Model::SquareMeter>, Model::SideSurface>().value();
+                        //double QMax = K * size;
+                        NANChecker(recharge, "Broken recharge value");
+                        double q_rech = convertToRate(recharge,
+                                                      nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value());
+                        //NANChecker(QMax, "QMax Problem");
+                        NANChecker(q_rech, "Recharge-init Problem");
+                        //LOG(debug) << QMax << "," << q_rech << "q,r";
+
+                        nodes->at(i)->addExternalFlow(Model::RECHARGE,
+                                                      0 * Model::si::meter,
+                                                      q_rech,
+                                                      0 * Model::si::meter);
+
+                    }
+                }
+            }
+
+            /**
              * @brief Read cell conductance definition
              * @note currently does check if val > 10 m/day
              * @param path Where to read the file from
@@ -393,7 +486,7 @@ namespace GlobalFlow {
              */
             std::unordered_map<int, std::array<double, 3>> calculateRiverStage(std::string path) {
                 io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "POINTID", "Length", "Bankfull", "spatID", "Width");
+                in.read_header(io::ignore_no_column, "POINTID", "length", "bankfull", "spatID", "width");
 
                 int id = 0;
                 double lenght = 0;
@@ -406,7 +499,7 @@ namespace GlobalFlow {
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at(spatID);
+                        i = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -425,7 +518,6 @@ namespace GlobalFlow {
              */
             void readBlueCells(std::string file,
                                std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
-                LOG(debug) << "reading from" << file;
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
                 double spatID = 0;
@@ -434,7 +526,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, elevation)) {
                     int i = 0;
                     try {
-                        i = lookupGlobalIDtoID.at((int) spatID);
+                        i = lookupSpatIDtoID.at((int) spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -488,7 +580,7 @@ namespace GlobalFlow {
                     while (in.read_row(spatID, percentage)) {
                         int i = 0;
                         try {
-                            i = lookupGlobalIDtoID.at((int) spatID);
+                            i = lookupSpatIDtoID.at((int) spatID);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry

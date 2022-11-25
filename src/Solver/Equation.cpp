@@ -310,7 +310,7 @@ Equation::updateMatrix() {
         }
     }
     //LOG(debug) << "A:\n" << A << std::endl;
-    //LOG(debug) << "x_zetas:\n" << x_zetas << std::endl;
+    //LOG(debug) << "x:\n" << x << std::endl;
     //LOG(debug) << "b (= rhs):\n" << b << std::endl;
 }
 

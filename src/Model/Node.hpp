@@ -260,6 +260,66 @@ namespace GlobalFlow {
                 ar & eq_flow;
             }
 
+            /**
+             * @brief Overload ostream operator "<<" to return various node properties
+             */
+            friend std::ostream& operator<< (std::ostream& stream, const p_node& pNode) {
+                stream << "Node properties:"
+                << "\nID [large_num]: "<< pNode->get<large_num, ID>()
+                << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
+                << "\nLat [double]: " << pNode->get<double, Lat>()
+                << "\nLon [double]: " << pNode->get<double, Lon>()
+                << "\nLayer [int]: " << pNode->get<int, Layer>()
+                << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
+                << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
+                << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
+                << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
+                << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
+                << "\nSlope [-]: " << pNode->get<t_dim, Slope>().value()
+                << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
+                << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
+                << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
+                << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
+                << "\nStepSize [d_time]: " << pNode->get<quantity < d_time>, StepSize>().value()
+                << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
+                << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
+                << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
+                << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
+                << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
+                << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
+                << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
+                << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
+                << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
+                << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
+                << "\nVolumeOfCell [m³]: " << pNode->get<t_c_meter, VolumeOfCell>().value();
+
+                unordered_map<NeighbourPosition, large_num> neighbourList = pNode->getListOfNeighbours();
+                if(neighbourList.find(DOWN) != neighbourList.end()) {
+                    stream << "\nDOWN neighbour lat [double]: " << pNode->getNeighbour(DOWN)->get<double, Lat>()
+                         << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
+                }
+                if(neighbourList.find(TOP) != neighbourList.end()) {
+                    stream << "\nTOP neighbour lat [double]: " << pNode->getNeighbour(TOP)->get<double, Lat>()
+                        << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
+                }
+                if(neighbourList.find(LEFT) != neighbourList.end()) {
+                    stream << "\nLEFT neighbour lat [double]: " << pNode->getNeighbour(LEFT)->get<double, Lat>()
+                         << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
+                }
+                if(neighbourList.find(RIGHT) != neighbourList.end()) {
+                    stream << "\nRIGHT neighbour lat [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lat>()
+                          << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
+                }
+                if(neighbourList.find(FRONT) != neighbourList.end()) {
+                    stream << "\nFRONT neighbour lat [double]: " << pNode->getNeighbour(FRONT)->get<double, Lat>()
+                        << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
+                }
+                if(neighbourList.find(BACK) != neighbourList.end()) {
+                    stream << "\nBACK neighbour lat [double]: " << pNode->getNeighbour(BACK)->get<double, Lat>()
+                         << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
+                }
+                return stream;
+            };
 
             /**
              * @brief Constructor of abstract class NodeInterface
@@ -757,6 +817,7 @@ Modify Properties
             unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
                 return neighbours;
             }
+
             /**
              * @brief Get a neighbour by position
              * @param neighbour The position relative to the cell
@@ -2418,7 +2479,6 @@ Modify Properties
                          DensityProperties densityProps)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
                                     stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityProps) {}
-
         private:
             // implementation
             friend class NodeInterface;
@@ -2462,38 +2522,38 @@ Modify Properties
                     }*/
             };
 
-            virtual t_meter
-            __calcInitialHead(t_meter initialParam) {
-                t_meter elevation = get<t_meter, TopElevation>();
-                if (elevation >= initialParam) {
-                    return elevation - initialParam; // todo check whether this is correct
-                }
-                return elevation;
+        virtual t_meter
+        __calcInitialHead(t_meter initialParam) {
+            t_meter elevation = get<t_meter, TopElevation>();
+            if (elevation >= initialParam) {
+                return elevation - initialParam; // todo check whether this is correct
             }
+            return elevation;
+        }
 
-            virtual bool
-            __isStaticNode() { return false; }
+        virtual bool
+        __isStaticNode() { return false; }
 
-            friend class boost::serialization::access;
-            template<class Archive>
-            void serialize(Archive & ar, const unsigned int version) {
-                boost::serialization::void_cast_register<NodeInterface, StandardNode>();
-                boost::serialization::void_cast_register<StandardNode, NodeInterface>();
-                boost::serialization::base_object<NodeInterface>(*this);
-                LOG(debug) << "Serializing Standard Node";
-                ar & nodes;
-                ar & neighbours;
-                ar & externalFlows;
-                ar & numOfExternalFlows;
-                ar & nwt;
-                ar & initial_head;
-                ar & simpleDistance;
-                ar & simpleK;
-                ar & steadyState;
-                ar & fields;
-                ar & cached;
-                ar & eq_flow;
-            }
+        friend class boost::serialization::access;
+        template<class Archive>
+        void serialize(Archive & ar, const unsigned int version) {
+            boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+            boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+            boost::serialization::base_object<NodeInterface>(*this);
+            LOG(debug) << "Serializing Standard Node";
+            ar & nodes;
+            ar & neighbours;
+            ar & externalFlows;
+            ar & numOfExternalFlows;
+            ar & nwt;
+            ar & initial_head;
+            ar & simpleDistance;
+            ar & simpleK;
+            ar & steadyState;
+            ar & fields;
+            ar & cached;
+            ar & eq_flow;
+        }
 
         };
 
@@ -2507,7 +2567,7 @@ Modify Properties
             StaticHeadNode(std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes,
                            large_num ID,
                            t_s_meter area,
-                           t_meter edgeLengthLeftRight,
+                            t_meter edgeLengthLeftRight,
                            t_meter edgeLengthFrontBack,
                            DensityProperties densityProps) // Question: densityProps required here? If yes: what values?
                     : NodeInterface(

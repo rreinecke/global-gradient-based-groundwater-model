@@ -31,7 +31,7 @@
       "solver": "PCG",
       "iterations": 50000,
       "inner_itter": 20,
-      "closingcrit": 1e-2,
+      "closingcrit": 1e-10,
       "headchange": 1,
       "zetachange": 0,
       "damping": "false",
@@ -65,11 +65,12 @@
         "specificstorage": 0.000015
       },
       "data": {
-        "surface_water_elevation": "surface_water_elevation_nz.csv",
-        "elevation": "elevation_nz.csv",
-        "lithology": "lithology_nz.csv",
-        "recharge": "recharge_nz.csv",
-        "initial_head": "initial_head_nz.csv",
+        "surface_water_elevation": "surface_water_elevation.csv",
+        "elevation": "elevation.csv",
+        "lithology": "lithology.csv",
+        "recharge": "recharge_withArcID.csv",
+        "river": "river.csv",
+        "equal_water_table_depth": "initial_head.csv",
         "global_wetlands": "G_GLOWET.csv",
         "global_lakes": "G_GLOLAK.csv",
         "local_lakes": "G_LOCLAK.csv",
@@ -91,7 +92,8 @@
             "N_America_F.csv",
             "S_America_F.csv"
           ]
-        }
+        },
+        "spatID-arcID": "spatID-arcID.csv"
       }
     }
   } 
