@@ -7,7 +7,8 @@ description: ""
 permalink: /concept
 ---
 
-### Equations
+# Model Concept
+## Equations
 The three-dimensional flow of water through the porous material between the cells is solved as a partial differential equation.
 Where K is the hydraulic conductivity [L/T] along the three axis, S the specific storage and W is the volumentric flux per unit volume in and out of the groundwater system.
 The hydraulic conductivity between two cells is calculated by using the harmonic mean.
@@ -17,7 +18,7 @@ The equation is solved using a conjugate gradient approach and an Incomplete LUT
 
 Additional information on the equations can be found in the very detailed MODFLOW documentation: [Modflow 2005](https://water.usgs.gov/ogw/modflow/MODFLOW.html)
 
-### Boundary Conditions
+## Boundary Conditions
 G³M support multiple boundary condition types:
 * No-flow boundary
 * Static head boundary
