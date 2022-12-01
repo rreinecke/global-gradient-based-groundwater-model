@@ -7,7 +7,7 @@ parent: Input and Outputs
 
 # Data Input
 
-## Model grid (grid.csv)
+## Model grid (e.g., grid.csv)
 1st column: "spatID" - spatial ID
 2nd column: "X" - longitude
 3rd column: "Y" - latitude
@@ -23,7 +23,7 @@ spatID,X,Y,area,col,row
 ...
 ```
 
-## Groundwater recharge (recharge.csv)
+## Groundwater recharge (e.g., recharge.csv)
 1st column: "spatID" - spatial ID
 2nd column: "data" - groundwater recharge in meters per day
 
@@ -35,7 +35,7 @@ spatID,data
 ...
 ```
 
-## Surface elevation (elevation.csv)
+## Surface elevation (e.g., elevation.csv)
 1st column: "spatID" - spatial ID
 2nd column: "data" - surface elevation in meters
 
@@ -47,7 +47,7 @@ spatID,data
 ...
 ```
 
-## Surface water elevation (elevation_30.csv)
+## Surface water elevation (e.g., elevation_30.csv)
 1st column: "spatID" - spatial ID
 2nd column: "data" - surface water elevation in meters (e.g., the 30th percentile of the elevation range on a finer resolution)
 
@@ -59,7 +59,7 @@ spatID,data
 ...
 ```
 
-## Rivers (rivers.csv)
+## Rivers (e.g., rivers.csv)
 1st column: "spatID" - spatial ID
 2nd column: "Head" - river head in meters
 3rd column: "Bottom" - river bottom elevation in meters
@@ -73,7 +73,7 @@ spatID,Head,Bottom,Conduct
 ...
 ```
 
-## Permeability (lithology.csv)
+## Permeability (e.g., lithology.csv)
 1st column: "spatID" - spatial ID
 2nd column: "data" - permeability in meters per day
 
@@ -85,7 +85,7 @@ spatID,data
 ...
 ```
 
-## Inital heads guess (otherwise the model assumes the surface elevation as best guess) ("initial_heads.csv")
+## Inital heads guess (otherwise the model assumes the surface elevation as best guess) (e.g., initial_heads.csv)
 1st column: "spatID" - spatial ID
 2nd column: "data" - initial head in meters
 
@@ -96,6 +96,36 @@ spatID,data
 2248179,-30
 ...
 ```
+
+## Water table depth (e.g., water_table_depth.csv)
+1st column: "spatID" - spatial ID
+2nd column: "data" - water table depth in meters
+
+```
+spatID,data
+2247710,-10
+2247711,-12
+2248179,-30
+...
+```
+
+## Slope (e.g., slope.csv)
+1st column: "spatID" - spatial ID
+2nd column: "data" - slope in degrees
+
+```
+spatID,data
+2247710,0.104
+2247711,0.186
+2248179,0.153
+...
+```
+
+## E-Folding (e.g., efolding.csv)
+
+
+
+
 
 ## CMakeLists for input data
 To ensure the right data is used in the current model, the CMakeLists file inside the model folder needs to contain a line copying each desired file to the data folder of the build directory:
@@ -117,5 +147,5 @@ configure_file(data/rivers.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/rivers_sim
 ```
 
 
-## Further information
-[] Further data can be used as an input, such as the slope, mean water table depth and information about aquifer folding.
+## Further data
+Further data can be used as an input, such as the slope, mean water table depth and information about aquifer folding.
