@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Input - Configuration file
+title: Configuration file
 nav_order: 1
 parent: Input and Outputs
 ---
