@@ -11,7 +11,7 @@ permalink: /inout
 ## Configuration file
 Information about the aquifer configuration, numerics and data input is read from a JSON file.
 
-## Data
+## Data input
 The data for the model cells is read from CSV files (e.g., groundwater recharge, surface elevation...).
 
 ## CMakeLists
