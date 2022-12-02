@@ -90,7 +90,7 @@ namespace GlobalFlow {
                 int i{0};
                 int row{0};
                 int col{0};
-                lookupGlobalIDtoID.reserve(numberOfNodes);
+                lookupSpatIDtoID.reserve(numberOfNodes);
                 Model::DensityProperties densityProperties =
                         Model::DensityProperties::setDensityProperties(densityVariable,
                                                                        densityZones,maxToeSlope, maxTipSlope);
@@ -114,7 +114,7 @@ namespace GlobalFlow {
                                                                 confined,
                                                                 densityProperties
                                                                 ));
-                    lookupGlobalIDtoID[spatID] = i;
+                    lookupSpatIDtoID[spatID] = i;
                     i++;
                 }
 
@@ -147,7 +147,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, elevation, conduct)) {
                     int pos = 0;
                     try {
-                        pos = lookupGlobalIDtoID.at(spatID);
+                        pos = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -179,7 +179,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
                     int pos = 0;
                     try {
-                        pos = lookupGlobalIDtoID.at(spatID);
+                        pos = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -199,7 +199,7 @@ namespace GlobalFlow {
                 while (inZetas.read_row(spatID, height)) {
                     int pos = 0;
                     try {
-                        pos = lookupGlobalIDtoID.at(spatID);
+                        pos = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry

@@ -49,7 +49,8 @@
         "k_river_from_file": "true",
         "aquifer_depth_from_file": "false",
         "initial_head_from_file": "true",
-        "data_as_array": "false"
+        "slope_as_array": "false",
+        "efold_as_array": "false"
       },
       "default_data": {
         "initial_head": 0,

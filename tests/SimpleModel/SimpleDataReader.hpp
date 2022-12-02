@@ -45,7 +45,7 @@ class SimpleDataReader : public DataReader {
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Defining rivers";
-            readRiver(buildDir(op.getKRiverDir()));
+            readRiver(buildDir(op.getKRiver()));
 
             LOG(userinfo) << "Connecting the layers";
             DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
@@ -83,7 +83,7 @@ class SimpleDataReader : public DataReader {
             int i{0};
             int row{0};
             int col{0};
-            lookupGlobalIDtoID.reserve(numberOfNodes);
+            lookupSpatIDtoID.reserve(numberOfNodes);
             Model::DensityProperties densityProperties;
 
             while (in.read_row(globid, x, y, area, col, row)) {
@@ -103,7 +103,7 @@ class SimpleDataReader : public DataReader {
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage, confined, densityProperties));
-                lookupGlobalIDtoID[globid] = i;
+                lookupSpatIDtoID[globid] = i;
                 i++;
             }
 
@@ -137,7 +137,7 @@ class SimpleDataReader : public DataReader {
             while (in.read_row(spatID, head, bottom, conduct)) {
                 int i = 0;
                 try {
-                    i = lookupGlobalIDtoID.at(spatID);
+                    i = lookupSpatIDtoID.at(spatID);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
