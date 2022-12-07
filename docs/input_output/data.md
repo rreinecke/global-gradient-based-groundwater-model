@@ -10,17 +10,12 @@ parent: Input and Outputs
 ## Model grid (e.g., grid.csv)
 Model grid definition. X/Y give the lon/lat position. The remaining data sets will read only data for spatIDs read from this file.  
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "X" - longitude
-
-[] 3rd column: "Y" - latitude
-
-[] 4th column: "area" - area
-
-[] (5th column: "col" - ID of column in grid - optional for small models)
-
-[] (6th column: "row" - ID of row in grid - optional for small models)
+* 1st column: "spatID" - spatial ID
+* 2nd column: "X" - longitude
+* 3rd column: "Y" - latitude
+* 4th column: "area" - area
+* (5th column: "col" - ID of column in grid - optional for small models)
+* (6th column: "row" - ID of row in grid - optional for small models)
 
 ```
 spatID,X,Y,area,col,row
@@ -33,9 +28,8 @@ spatID,X,Y,area,col,row
 ## Groundwater recharge (e.g., recharge.csv)
 Groundwater recharge rate.
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - groundwater recharge in meters per day
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - groundwater recharge in meters per day
 
 ```
 spatID,data
@@ -48,9 +42,8 @@ spatID,data
 ## Surface elevation (e.g., elevation.csv)
 Elevation of the earths surface.
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - surface elevation in meters
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - surface elevation in meters
 
 ```
 spatID,data
@@ -63,9 +56,8 @@ spatID,data
 ## Surface water elevation (e.g., elevation_30.csv)
 Elevation of surface waters: rivers, wetlands, lakes. The 30th percentile of the elevation range with in respective grid cell on a finer resolution gave reasonable results for the global model. 
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - surface water elevation in meters
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - surface water elevation in meters
 
 ```
 spatID,data
@@ -77,13 +69,10 @@ spatID,data
 
 ## Rivers (e.g., rivers.csv)
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "Head" - river head in meters
-
-[] 3rd column: "Bottom" - river bottom elevation in meters
-
-[] 4th column: "Conduct" - riverbed conductance in meters per day
+* 1st column: "spatID" - spatial ID
+* 2nd column: "Head" - river head in meters
+* 3rd column: "Bottom" - river bottom elevation in meters
+* 4th column: "Conduct" - riverbed conductance in meters per day
 
 ```
 spatID,Head,Bottom,Conduct
@@ -96,9 +85,8 @@ spatID,Head,Bottom,Conduct
 ## Permeability (e.g., lithology.csv)
 Permeability of the aquifer.
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - permeability in meters per day
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - permeability in meters per day
 
 ```
 spatID,data
@@ -111,9 +99,8 @@ spatID,data
 ## Initial heads (otherwise the model assumes the surface elevation as best guess) (e.g., initial_heads.csv)
 Initial head of the groundwater. May be a first guess and/or based on observations. 
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - initial head in meters
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - initial head in meters
 
 ```
 spatID,data
@@ -126,9 +113,8 @@ spatID,data
 ## Water table depth (e.g., water_table_depth.csv)
 Initial water table depth of the groundwater. May be a first guess and/or based on observations. Either water table depth OR initial heads should be used as input data. Water table depth and elevation are used to compute the initial heads.    
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - water table depth in meters
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - water table depth in meters
 
 ```
 spatID,data
@@ -141,9 +127,8 @@ spatID,data
 ## Slope (e.g., slope.csv)
 Terrain slope.
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - slope in degrees
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - slope in degrees
 
 ```
 spatID,data
@@ -154,11 +139,10 @@ spatID,data
 ```
 
 ## E-Folding (e.g., efolding.csv)
-E-folding factor f used by Fan et al. (2013)[https://www.science.org/doi/10.1126/science.1229881] to calculate the conductivity of lower layers by multiplying the upper layer value by exp(-50m f^-1)^-1.
+E-folding factor f used by [Fan et al. (2013)](https://www.science.org/doi/10.1126/science.1229881) to calculate the conductivity of lower layers by multiplying the upper layer value by exp(-50m f^-1)^-1.
 
-[] 1st column: "spatID" - spatial ID
-
-[] 2nd column: "data" - e-folding factor 
+* 1st column: "spatID" - spatial ID
+* 2nd column: "data" - e-folding factor 
 
 ```
 spatID,data
