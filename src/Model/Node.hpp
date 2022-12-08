@@ -1026,7 +1026,7 @@ Modify Properties
                 }
             }
 
-            vector<std::string> getZetaPosInNode(){ return ZetaPosInNode; }
+            std::string getZetaPosInNode(int localZetaID){ return ZetaPosInNode[localZetaID]; }
 
             /**
              * @brief Set effective porosity (applied to all layers below)
@@ -1056,7 +1056,7 @@ Modify Properties
                     if (hasTypeOfExternalFlow(RIVER_MM)) {
                         //get current recharge and lock it bevor setting new recharge
                         //in arid regions recharge might be 0
-                        t_vol_t recharge{0 * si::cubic_meter /day};
+                        t_vol_t recharge{0 * si::cubic_meter / day};
                         if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
                         getExternalFlowByName(RIVER_MM).setLock();
                         getExternalFlowByName(RIVER_MM).setLockRecharge(recharge);
@@ -1219,9 +1219,9 @@ Modify Properties
              */
             t_vol_t getZetaRHS(int localZetaID){ // todo: test
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
-                //if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
+                if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0 // todo remove if not required
                     porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID];
-                //}
+                }
                 //LOG(debug) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sourcesBelowZeta = getSourcesBelowZeta(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
                 //LOG(debug) << "sourcesBelowZeta: " << sourcesBelowZeta.value() << std::endl;
@@ -1241,7 +1241,7 @@ Modify Properties
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() *
                                    get<t_meter, EdgeLengthLeftRight>() * get<t_meter, EdgeLengthFrontBack>()) /
-                                  (day * get<t_dim, StepModifier>());
+                                  (day * 1); // todo add get<t_dim, StepModifier>()
                 //LOG(debug) << "effective porosity: " << out.value() << std::endl;
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
@@ -1373,7 +1373,7 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @return volume per time
              * @note like G in SWI2 doc, but without vertical leakage; in SWI2 code: lines 3523-3569
-             * G = RHS(before VDF) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
+             * G = RHS (of flow, for constant density) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
              */
             t_vol_t getSourcesBelowZeta(int localZetaID){ //todo: debug
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
@@ -1386,15 +1386,25 @@ Modify Properties
 
                     // if the new groundwater head is above or equal to the node bottom
                     if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) { // lines 3532-3536
-                        // get RHS of PREVIOUS time step, without VDF terms (pseudo source term and flux correction)
-                        t_vol_t RHSConstantDensity_old = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                        // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
+                        //t_vol_t RHSConstantDensity = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                        t_vol_t extFlows = -getQ(); //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
+                        t_vol_t dewateredFlow = calculateDewateredFlow(); //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
+                        t_vol_t rivers = calculateNotHeadDependandFlows(); //LOG(debug) << "rivers: " << rivers.value() << std::endl;
+                        t_vol_t storageFlow =
+                                getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * 1)); // todo add get<t_dim, StepModifier>()
+                        if (steadyState) {
+                            storageFlow = 0 * (si::cubic_meter / day);
+                        }
+
+                        t_vol_t RHSConstantDensity = extFlows + dewateredFlow - rivers - storageFlow;
                         // get HCOF of NEW time step
                         t_s_meter_t hcof = mechanics.getHCOF(steadyState,
-                                                             get<t_dim, StepModifier>(),
+                                                             1,
                                                              getStorageCapacity(),
-                                                             getP());
+                                                             getP()); // todo add get<t_dim, StepModifier>()
                         // calculate the boundary flux
-                        boundaryFlux = RHSConstantDensity_old - hcof * get<t_meter, Head>();
+                        boundaryFlux = RHSConstantDensity - hcof * get<t_meter, Head>();
                         //LOG(numerics) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
                     }
 
@@ -1609,10 +1619,12 @@ Modify Properties
                     NANChecker(zoneThickness.value(), "zoneThickness");
                     zoneThicknesses.push_back(zoneThickness);
                 }
-                //LOG(debug) << "sumOfZoneThicknesses:" + std::to_string(sumOfZoneThicknesses.value());
+
 
                 // calculate the density zone conductances
                 for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++) {
+                    //LOG(userinfo) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
+
                     if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
                         zoneConductance = 0 * si::square_meter / day; // zoneConductance is 0 if sum of thicknesses is 0
                     } else {
@@ -1620,13 +1632,16 @@ Modify Properties
                             ((ZetaPosInNode[localZetaID] != "between") + // adapted from SWI2 code lines 1212-1222
                              (at(got)->ZetaPosInNode[localZetaID] != "between") +
                              (ZetaPosInNode[localZetaID + 1] != "between") +
-                             (at(got)->ZetaPosInNode[localZetaID + 1] != "between")) > 0){
-                            // zoneConductance stays 0 if zone is not active in this AND neighbouring cell
+                             (at(got)->ZetaPosInNode[localZetaID + 1] != "between")) > 0){ // todo how to correctly set the ZetaPosInNode?
+                            // zoneConductance stays 0 if zeta is not active in this AND neighbouring cell
                             // this section is not reached if Zetas.size() < 4 and numberOfZones < 3
                             zoneConductance = 0 * si::square_meter / day;
                         } else {
+
                             conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                            //LOG(userinfo) << "conductance:" << conductance.value();
                             zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
+                            //LOG(userinfo) << "zoneConductance:" << zoneConductance.value();
                         }
                     }
                     //LOG(debug) << "zoneConductance:" << zoneConductance.value() << std::endl;
@@ -1835,14 +1850,14 @@ Modify Properties
                                 at(top)->ZetaPosInNode[localZetaID] == "bottom") {
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorretionTop > (0 * si::cubic_meter / day)) {
-                                    deltaZeta = (fluxCorretionTop * (day * get<t_dim, StepModifier>())) /
-                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top));
+                                    deltaZeta = (fluxCorretionTop * (day * 1)) /
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // todo add get<t_dim, StepModifier>() again
                                     // ...lift zeta height of the lowest zeta surface in this node
                                     at(top)->Zetas[localZetaID] = at(top)->Zetas.back() + deltaZeta;
                                     // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorretionTop < (0 * si::cubic_meter / day)) {
-                                    deltaZeta = (fluxCorretionTop * (day * get<t_dim, StepModifier>())) /
-                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>());
+                                    deltaZeta = (fluxCorretionTop * (day * 1)) /
+                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); // todo add get<t_dim, StepModifier>() again
                                     // ...lower zeta height of the highest zeta surface in this node
                                     Zetas[localZetaID] = Zetas.front() + deltaZeta;
                                 }
@@ -2328,13 +2343,16 @@ Modify Properties
                     set<t_vol_t, RHSConstantDensity_TZero>(out);
 
                     // calculate variable density terms Pseudo-Source Flow
-                    t_vol_t flowPseudoSource = getFlowPseudoSource(); //LOG(debug) << "flowPseudoSource: " << flowPseudoSource.value() << std::endl;
+                    t_vol_t flowPseudoSource = getFlowPseudoSource();
+                    LOG(debug) << "flowPseudoSource: " << flowPseudoSource.value() << std::endl;
 
                     // calculate Vertical Flux Correction (for top and down neighbour)
-                    t_vol_t fluxCorrectionTop = getFluxCorrTop(); //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
-                    t_vol_t fluxCorrectionDown = getFluxCorrDown(); //LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
+                    t_vol_t fluxCorrectionTop = getFluxCorrTop();
+                    LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                    t_vol_t fluxCorrectionDown = getFluxCorrDown();
+                    LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
 
-                    out += flowPseudoSource + fluxCorrectionTop + fluxCorrectionDown;
+                    out += flowPseudoSource;// + fluxCorrectionTop + fluxCorrectionDown;
                 }
                 NANChecker(out.value(), "RHS");
                 return out;

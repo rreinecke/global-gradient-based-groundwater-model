@@ -45,6 +45,10 @@ public:
         nodes->at(1)->setNeighbour(3, DOWN);
         nodes->at(3)->setNeighbour(1, TOP);
 
+        // set nodes 2 and 3 as horizontal neighbours
+        nodes->at(2)->setNeighbour(3, RIGHT);
+        nodes->at(3)->setNeighbour(2, LEFT);
+
         // zeta surface 0 (all at top of nodes)
         nodes->at(0)->addInitialZeta(10.0 * si::meter);
         nodes->at(1)->addInitialZeta(10.0 * si::meter);
@@ -75,8 +79,15 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
-TEST_F(StandardNodeVDFFixture, setZetaPosInZone) {
-
+TEST_F(StandardNodeVDFFixture, setZetaPosInNode) {
+    at(0)->setZetaPosInNode(0);
+    at(0)->setZetaPosInNode(1);
+    at(0)->setZetaPosInNode(2);
+    at(0)->setZetaPosInNode(3);
+    ASSERT_EQ((at(0)->getZetaPosInNode(0)), "between");
+    ASSERT_EQ((at(0)->getZetaPosInNode(1)), "between");
+    ASSERT_EQ((at(0)->getZetaPosInNode(2)), "bottom");
+    ASSERT_EQ((at(0)->getZetaPosInNode(3)), "bottom");
 }
 
 TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
@@ -90,7 +101,14 @@ TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
 TEST_F(StandardNodeVDFFixture, getZoneConductance) {
     unordered_map<NeighbourPosition, large_num> neighbourList = at(0)->getListOfNeighbours();
     std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbourList.find(RIGHT);
-    ASSERT_EQ((at(0)->getZoneConductances(got)[0].value()), 0); // todo compute correct result
+    for (int nodeID = 0; nodeID <= 1; nodeID++){
+        for(int zetaID = 0; zetaID <= 3; zetaID++) {
+            at(nodeID)->setZetaPosInNode(zetaID);
+        }
+    }
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[0].value()), 0.666, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[1].value()), 0.666, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[2].value()), 0, 0.01);
 }
 
 TEST_F(StandardNodeVDFFixture, getRHS) {

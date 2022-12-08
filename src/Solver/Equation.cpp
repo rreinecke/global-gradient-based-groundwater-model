@@ -329,7 +329,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
     // finding inactive nodes
 #pragma omp parallel for
     for (large_num i = 0; i < numberOfNodes; ++i) {
-        isActive = (nodes->at(i)->getZetaPosInNode()[localZetaID] == "between");
+        isActive = (nodes->at(i)->getZetaPosInNode(localZetaID) == "between");
         if (isActive) {
             index_mapping[i] = i - numInactive;
         } else {

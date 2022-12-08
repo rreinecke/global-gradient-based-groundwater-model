@@ -25,6 +25,7 @@ namespace GlobalFlow {
         enum TimeFrame {
             DAY = 1,
             TWO_DAYS = 2,
+            FOUR_DAYS = 4,
             WEEK = 7,
             TEN_DAYS = 10,
             FORTNIGHT = 15,

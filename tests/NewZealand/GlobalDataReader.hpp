@@ -673,27 +673,6 @@ namespace GlobalFlow {
                     }
                 }
             }
-
-            /**
-             * @brief A drainage component similar to @cite de Graaf 2014
-             */
-            void addDrainageHack() {
-                //iterate over all top nodes without a river above 300m elevation
-                for (const std::unique_ptr<Model::NodeInterface> &node : *nodes.get()) {
-                    if (node->getProperties().get<int, Model::Layer>() == 0) {
-                        //Add negative special_flow
-                        node->addExternalFlow(Model::FLOODPLAIN_DRAIN,
-                                              node->getProperties().get<Model::quantity<Model::Meter>,
-                                                      Model::Elevation>(),
-                                              node->getK().value() *
-                                              node->getProperties().get<Model::quantity<Model::Meter>,
-                                                      Model::VerticalSize>().value(),
-                                              node->getProperties().get<Model::quantity<Model::Meter>,
-                                                      Model::EdgeLengthLeftRight>()); // todo adapt to rectangular nodes
-                    }
-                }
-            }
         };
-
     }
 }
