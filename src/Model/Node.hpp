@@ -152,7 +152,7 @@ namespace GlobalFlow {
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             vector<t_meter> Zetas; // zeta surfaces (dimensionless density and elevation) of current node at t
             vector<std::string> ZetaPosInNode;
-            vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
+            //vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
             vector<t_meter> ZetasChange;
             vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
@@ -921,7 +921,7 @@ Modify Properties
              * @param initialZeta the zeta surface height in meters
              */
             void addInitialZeta(t_meter height){
-                NANChecker(height.value(), "height (in setZeta)");
+                NANChecker(height.value(), "height (in addInitialZeta)");
 
                 // in SWI2: lines 660-680
                 t_meter swismall = 0.001 * si::meter; // SWISMALL
@@ -934,7 +934,7 @@ Modify Properties
                 }
 
                 Zetas.push_back(height);
-                Zetas_TZero.push_back(height);
+                //Zetas_TZero.push_back(height);
                 ZetasChange.push_back(0 * si::meter); // todo improve?
                 ZetasChange_TZero.push_back(0 * si::meter); // todo improve?
                 //todo throw error if height not in correct order
@@ -943,46 +943,38 @@ Modify Properties
             /**
              * @brief Update zetas after one or multiple inner iteration
              * @param localZetaID zeta surface id in this node
-             * @param delta difference between new and old zeta surface height
+             * @param height zeta height
              */
             virtual void setZeta(int localZetaID, t_meter height) {
                 NANChecker(height.value(), "height (in setZeta)");
-                if (localZetaID < ZetasChange.size()) {
-                    ZetasChange[localZetaID] = height - Zetas[localZetaID];
-                    //LOG(debug) << "ZetasChange[localZetaID] (in adDeltaToZeta)" << ZetasChange[localZetaID].value() << std::endl;
-                } else {
-                    LOG(debug) << "localZetaID larger than ZetasChange.size() (in addDeltaToZeta)" << std::endl;
-                    ZetasChange.push_back(height - Zetas[localZetaID]);
-                }
                 if (localZetaID < Zetas.size()) {
                     Zetas[localZetaID] = height;
-                    //LOG(debug) << "Zetas[localZetaID] (in adDeltaToZeta)" << Zetas[localZetaID].value() << std::endl;
                 }
-                NANChecker(Zetas[localZetaID].value(), "Zetas[localZetaID] (in addDeltaToZeta)");
-                //LOG(debug) << "addDeltaToZeta: updated Zetas[" << localZetaID << "]:" << Zetas[localZetaID].value() << std::endl;
             }
 
             /**
-             * @brief get zeta surfaces
-             * @return vector of meters
-             */
-            std::vector<t_meter> getZetas() noexcept { return Zetas;}
-
-            /**
-             * @brief get zeta surfaces change
-             * @return vector of meters
-             */
-            std::vector<t_meter> getZetasChange() noexcept { return ZetasChange;}
-
-            /**
-             * @brief Update the current zeta change (in comparison to last time step)
+             * @brief Update zeta change after one or multiple inner iteration
              * @param localZetaID zeta surface id in this node
-             * @note Should only be called at end of time step
+             * @param height zeta height
              */
-            void updateZetaChange(int localZetaID) noexcept {
-                ZetasChange_TZero[localZetaID] = Zetas[localZetaID] - Zetas_TZero[localZetaID];
-                Zetas_TZero[localZetaID] = Zetas[localZetaID];
+            virtual void setZetaChange(int localZetaID, t_meter height){
+                NANChecker(height.value(), "height (in setZetaChange)");
+                if (localZetaID < ZetasChange.size()) {
+                    ZetasChange[localZetaID] = height - Zetas[localZetaID];
+                }
             }
+
+            /**
+             * @brief get zeta surface height
+             * @return meter
+             */
+            t_meter getZeta(int localZetaID) noexcept { return Zetas[localZetaID];}
+
+            /**
+             * @brief get zeta surface change
+             * @return meter
+             */
+            t_meter getZetaChange(int localZetaID) noexcept { return ZetasChange[localZetaID];}
 
             /**
              *  @brief set the zone(s) of sources and sinks
@@ -1252,7 +1244,7 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @return map <CellID,Conductance>
              */
-            std::unordered_map<large_num, t_s_meter_t> getZetaConductance(int localZetaID) { // Question: Rename to getLeftHandSide_Zeta?
+            std::unordered_map<large_num, t_s_meter_t> getVDFMatrixEntries(int localZetaID) { // Question: Rename to getLeftHandSide_Zeta?
                 // todo: test
                 size_t numC = 5;
                 std::unordered_map<large_num, t_s_meter_t> out;
@@ -1768,10 +1760,10 @@ Modify Properties
             }
 
             /**
-             * @brief Updating zeta surface heights at the top after the flow/head solution is found
-             * @note Zeta surface heights at the top are set to the new groundwater heads. In SWI2: SWI2_UPZ1
+             * @brief Updating top zeta surface height after the flow/head solution is found
+             * @note Top zeta surface height is set to the new groundwater head, only if unconfined. In SWI2: SSWI2_UPZ1
              */
-            void clipTopZetasToHeads(){
+            void setTopZetaToHead(){
                 if (get<bool, Confinement>()){
                     return;
                 } else { // only clip if node is unconfined
@@ -1790,36 +1782,20 @@ Modify Properties
                         }
                         // update the first zeta surface
                         Zetas.front() = updatedZeta;
-                        Zetas_TZero.front() = updatedZeta;
 
                         // update all other zeta surfaces that are ABOVE the updated first zeta surface
                         for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++) {
                             if (Zetas[localZetaID] > updatedZeta) {
                                 Zetas[localZetaID] = updatedZeta;
                             }
-                            Zetas_TZero[localZetaID] = updatedZeta;
                         }
                     // if groundwater head is ABOVE OR EQUAL to the top of the node
                     } else { // head >= topOfNode
                         // clip zeta to the top of the node
                         Zetas.front() = topOfNode;
-                        Zetas_TZero.front() = topOfNode;
                     }
                 }
             }
-
-
-            /**
-             * @brief adjust zeta surface heights after the zeta solution is found
-             * @param localZetaID zeta surface id in this node
-             */
-            /*void adjustZetaHeights(){
-                verticalZetaMovement(); // movement through top of this node
-                horizontalZetaMovement(); // tip and toe tracking
-                clipZetaHeights();
-                correctCrossingZetas();
-                preventZetaLocking();
-            }*/
 
 
             /**
@@ -1982,7 +1958,7 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @note in SWI2 code: SSWI2_ZETACLIP
              */
-            void clipZetaHeights() {
+            void clipInnerZetas() {
                 for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++) {
                     //LOG(debug) << "Zetas[localZetaID]: " << Zetas[localZetaID].value() << std::endl;
 

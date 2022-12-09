@@ -127,7 +127,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID
 
     quantity<Model::MeterSquaredPerTime> zoneConductance;
 
-    map = nodes->at(nodeIter)->getZetaConductance(localZetaID); // gets matrix entries (zone conductances and porosity term)
+    map = nodes->at(nodeIter)->getVDFMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
         nodeID = entry.first; // the id of the zeta surface in the respective (neighbour) node
@@ -355,7 +355,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
         if (index_mapping[nodeIter] >= 0) {
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, numInactive, localZetaID, isCached_zetas);
-            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetas()[localZetaID].value(); // todo could fill with zeros?
+            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZeta(localZetaID).value(); // todo could fill with zeros?
             //---------------------Right
             b_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetaRHS(localZetaID).value();
         } else {
@@ -447,12 +447,14 @@ Equation::updateIntermediateZetas(int localZetaID) {
 
         if (all_nodes_active) {
             nodes->at(k)->setZeta(localZetaID, (double) x_zetas[k] * si::meter);
+            nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[k] * si::meter);
         } else {
             auto m = index_mapping[k];
             if (m != -1) {
                 n = k - numInactive;
                 nodes->at(k)->setZeta(localZetaID, (double) x_zetas[n] * si::meter);
-                //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+                nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[k] * si::meter);
+                //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
             } else {
                 numInactive++;
             }
@@ -469,18 +471,10 @@ Equation::updateFinalHeads() {
 }
 
 void inline
-Equation::updateZetaChanges(int localZetaID) {
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->updateZetaChange(localZetaID);
-        }
-}
-
-void inline
 Equation::updateTopZetasToHeads() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->clipTopZetasToHeads();
+            nodes->at(k)->setTopZetaToHead();
         }
 }
 
@@ -516,7 +510,7 @@ Equation::adjustZetaHeights() {
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->clipZetaHeights();
+            nodes->at(k)->clipInnerZetas();
         }
 
 #pragma omp parallel for
@@ -534,7 +528,7 @@ Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-                LOG(debug) << k << ", " << nodes->at(k)->getZetas()[localZetaID].value() << std::endl;
+                LOG(debug) << k << ", " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
             }
         }
     }
@@ -766,7 +760,7 @@ Equation::solve_zetas(){
                 double val;
                 for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
                     val = std::abs(nodes->at(
-                            k)->getZetasChange()[l].value()); // todo improve for loop (by getting rid of it)
+                            k)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
                     //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                     changeMax = (val > changeMax) ? val : changeMax;
                 }
@@ -862,7 +856,6 @@ Equation::solve_zetas(){
                 LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
             }
         }
-        updateZetaChanges(localZetaID);
         __itter = iterations;
         __error = nwt ? bicgstab_zetas.error() : cg_zetas.error_inf();
     }

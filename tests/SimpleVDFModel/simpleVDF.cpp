@@ -40,7 +40,7 @@ void StandaloneRunner::simulate() {
 
         // for saving zetas in a csv
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            double zeta = sim.getNodes()->at(j)->getZetas()[1].value();
+            double zeta = sim.getNodes()->at(j)->getZeta(1).value();
             myfile << stepNumber << "," << j << "," << zeta << std::endl;
         }
 

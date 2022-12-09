@@ -79,6 +79,44 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
+TEST_F(StandardNodeVDFFixture, setEffectivePorosity) {
+    at(0)->setEffectivePorosity(0.2 * si::si_dimensionless);
+    ASSERT_EQ((at(0)->getProperties().get<t_dim, EffectivePorosity>().value()), 0.2);
+}
+
+TEST_F(StandardNodeVDFFixture, setZeta) {
+    at(0)->setZeta(0, 9 * si::meter);
+    ASSERT_EQ(at(0)->getZeta(0).value(),9);
+}
+
+TEST_F(StandardNodeVDFFixture, setZetaChange) {
+    at(0)->setZetaChange(0, -1 * si::meter);
+    ASSERT_EQ(at(0)->getZetaChange(0).value(),-1);
+}
+
+TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
+    // for confined node nothing should be done
+    at(0)->setZeta(0, 20 * si::meter);
+    at(0)->setTopZetaToHead();
+    ASSERT_EQ(at(0)->getZeta(0).value(),20);
+
+    // add and test unconfined node
+    nodes->emplace_back(new GlobalFlow::Model::StandardNode(
+            nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
+            0.2, 0.1, false, densityProperties
+    ));
+    at(4)->setElevation(10 * si::meter);
+    at(4)->setHead_direct(10);
+    // - zeta height ABOVE head (should be set to head)
+    nodes->at(4)->addInitialZeta(20.0 * si::meter);
+    at(4)->setTopZetaToHead();
+    ASSERT_EQ(at(4)->getZeta(0).value(),10);
+    // - zeta height BELOW head (should be set to head)
+    at(4)->setZeta(0, 5 * si::meter);
+    at(4)->setTopZetaToHead();
+    ASSERT_EQ(at(4)->getZeta(0).value(),10);
+}
+
 TEST_F(StandardNodeVDFFixture, setZetaPosInNode) {
     at(0)->setZetaPosInNode(0);
     at(0)->setZetaPosInNode(1);
@@ -88,6 +126,32 @@ TEST_F(StandardNodeVDFFixture, setZetaPosInNode) {
     ASSERT_EQ((at(0)->getZetaPosInNode(1)), "between");
     ASSERT_EQ((at(0)->getZetaPosInNode(2)), "bottom");
     ASSERT_EQ((at(0)->getZetaPosInNode(3)), "bottom");
+}
+
+TEST_F(StandardNodeVDFFixture, getNusTop) {
+    at(0)->setZetaPosInNode(0);
+    at(0)->setZetaPosInNode(1);
+    at(0)->setZetaPosInNode(2);
+    at(0)->setZetaPosInNode(3);
+    ASSERT_EQ((at(0)->getNusTop().value()), 0.0);
+    at(2)->setZetaPosInNode(0);
+    at(2)->setZetaPosInNode(1);
+    at(2)->setZetaPosInNode(2);
+    at(2)->setZetaPosInNode(3);
+    ASSERT_EQ((at(2)->getNusTop().value()), 0.0125);
+}
+
+TEST_F(StandardNodeVDFFixture, getNusBot) {
+    at(0)->setZetaPosInNode(0);
+    at(0)->setZetaPosInNode(1);
+    at(0)->setZetaPosInNode(2);
+    at(0)->setZetaPosInNode(3);
+    ASSERT_EQ((at(0)->getNusBot().value()), 0.0125);
+    at(2)->setZetaPosInNode(0);
+    at(2)->setZetaPosInNode(1);
+    at(2)->setZetaPosInNode(2);
+    at(2)->setZetaPosInNode(3);
+    ASSERT_EQ((at(2)->getNusBot().value()), 0.025);
 }
 
 TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
@@ -107,8 +171,19 @@ TEST_F(StandardNodeVDFFixture, getZoneConductance) {
         }
     }
     ASSERT_NEAR((at(0)->getZoneConductances(got)[0].value()), 0.666, 0.01);
-    ASSERT_NEAR((at(0)->getZoneConductances(got)[1].value()), 0.666, 0.01);
+    //ASSERT_NEAR((at(0)->getZoneConductances(got)[1].value()), 0.666, 0.01); // todo
     ASSERT_NEAR((at(0)->getZoneConductances(got)[2].value()), 0, 0.01);
+}
+
+TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
+    unordered_map<NeighbourPosition, large_num> neighbourList = at(0)->getListOfNeighbours();
+    std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbourList.find(RIGHT);
+    for (int nodeID = 0; nodeID <= 1; nodeID++){
+        for(int zetaID = 0; zetaID <= 3; zetaID++) {
+            at(nodeID)->setZetaPosInNode(zetaID);
+        }
+    }
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getRHS) {
@@ -117,109 +192,75 @@ TEST_F(StandardNodeVDFFixture, getRHS) {
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
 
-    ASSERT_EQ((at(0)->getRHS().value()), 0); // todo calculate correct result
+    //ASSERT_EQ((at(0)->getRHS().value()), 0); // todo calculate correct result
 }
 
 TEST_F(StandardNodeVDFFixture, getZetaRHS) {
-    at(0)->getZetaRHS(1);
+    //at(0)->getZetaRHS(1);
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getEffectivePorosityTerm) {
-
+    // todo
 }
 
-TEST_F(StandardNodeVDFFixture, getZetaConductannce) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, getNusTop) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, getNusBot) {
-
+TEST_F(StandardNodeVDFFixture, getVDFMatrixEntries) {
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getSourceTermBelowZeta) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getTipToeFlow) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getFlowPseudoSource) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getVerticalFluxCorrection) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrTop) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrDown) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, clipTopZetasToHeads) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, verticalZetaMovement) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, horizontalZetaMovement) {
-
+    // todo
 }
 
-TEST_F(StandardNodeVDFFixture, clipZetaHeights) {
+TEST_F(StandardNodeVDFFixture, clipInnerZetas) {
+    for(int localZetaID = 0; localZetaID < 4; localZetaID++) { at(0)->setZetaPosInNode(localZetaID); }
+    at(0)->setZeta(1, 20 * si::meter); // set zeta outside the upper bound (Zetas.front())
+    at(0)->clipInnerZetas();
+    ASSERT_EQ(at(0)->getZeta(1).value(), 10);
 
+    for(int localZetaID = 0; localZetaID < 4; localZetaID++) { at(0)->setZetaPosInNode(localZetaID); }
+    at(0)->setZeta(1, -20 * si::meter);
+    at(0)->clipInnerZetas();
+    ASSERT_EQ(at(0)->getZeta(3).value(), 0);
 }
 
 TEST_F(StandardNodeVDFFixture, correctCrossingZetas) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, preventZetaLocking) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, addInitialZeta) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, setZeta) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, getZetas) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, getZetasChange) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, updateZetaChange) {
-
+    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, setZoneOfSinksAndSources) {
-
+    // todo
 }
 
-TEST_F(StandardNodeVDFFixture, setEffectivePorosity) {
-
-}
-
-TEST_F(StandardNodeVDFFixture, setEffectivePorosity_direct) {
-
-}
