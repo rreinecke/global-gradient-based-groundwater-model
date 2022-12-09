@@ -152,7 +152,6 @@ namespace GlobalFlow {
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             vector<t_meter> Zetas; // zeta surfaces (dimensionless density and elevation) of current node at t
             vector<std::string> ZetaPosInNode;
-            //vector<t_meter> Zetas_TZero; // zeta surfaces (dimensionless density and elevation) of current node at t-1
             vector<t_meter> ZetasChange;
             vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
@@ -353,7 +352,7 @@ namespace GlobalFlow {
                           double specificYield,
                           double specificStorage,
                           bool confined,
-                          DensityProperties densityProperties);
+                          bool densityVariable);
 
             virtual ~NodeInterface() = default;
 
@@ -430,6 +429,20 @@ Modify Properties
                     catch (...) {}
                 });
             }
+
+            void setMaxToeSlope(t_dim maxToeSlope) {
+                set < t_dim, MaxToeSlope > (maxToeSlope);
+            }
+
+            void setMaxTipSlope(t_dim maxTipSlope) {
+                set < t_dim, MaxTipSlope > (maxTipSlope);
+            }
+
+            void setDelnus(vector<t_dim> delnusVec){ set<vector<t_dim>, Delnus>(delnusVec);
+                    // todo make this point to delnusVec (check all other node properties that are defined in config)
+            }
+
+            void setNusInZones(vector<t_dim> nusInZones){ set<vector<t_dim>, NusInZones>(nusInZones); }
 
             /**
              * Calculated equilibrium flow to neighbouring cells
@@ -1252,8 +1265,7 @@ Modify Properties
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                std::vector<t_dim> delnus = densityProps.getDelnus();
+                std::vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
 
                 std::vector<t_s_meter_t> zoneConductances;
                 t_s_meter_t zoneConductanceCum;
@@ -1304,12 +1316,11 @@ Modify Properties
              * @note in SWI2: NUTOP, lines 1230-1249
              */
             t_dim getNusTop(){
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> nusZones = densityProps.getNusZones();
-                t_dim out = nusZones.front();
+                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
+                t_dim out = nusInZones.front();
                 for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "top"){
-                        vector<t_dim> delnus = densityProps.getDelnus();
+                        vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
                         out += delnus[localZetaID];
                     }
                 }
@@ -1322,12 +1333,11 @@ Modify Properties
              * @note in SWI2: NUBOT, lines 1230-1249
              */
             t_dim getNusBot(){
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> nusZones = densityProps.getNusZones();
-                t_dim out = nusZones.back();
+                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
+                t_dim out = nusInZones.back();
                 for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "bottom"){
-                        vector<t_dim> delnus = densityProps.getDelnus();
+                        vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
                         out -= delnus[localZetaID];
                     }
                 }
@@ -1425,8 +1435,7 @@ Modify Properties
              */
             t_vol_t getZetaPseudoSource(int localZetaID) { // todo test
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> delnus = densityProps.getDelnus();
+                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -1480,8 +1489,7 @@ Modify Properties
              */
             t_vol_t tipToeFlow(map_itter got, int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> delnus = densityProps.getDelnus();
+                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
 
                 std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
                 t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID, zoneConductances);
@@ -1552,20 +1560,18 @@ Modify Properties
                                 } else if (position == NeighbourPosition::TOP) {
                                     // 7th part: vertical leakage to TOP neighbour
                                     // todo: debug/test
-                                    DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                                    vector<t_dim> nusZones = densityProps.getNusZones();
+                                    vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
                                     if (getFluxCorrTop() < 0 * (si::cubic_meter / day) and
-                                        at(got)->getNusBot() >= nusZones[localZetaID] and
+                                        at(got)->getNusBot() >= nusInZones[localZetaID] and
                                         getNusBot() >= at(got)->getNusBot()) { // IF ((qztop.LT.0).AND.(NUBOT(i,j,k-1).GE.NUS(iz)).AND.(NUBOT(j,i,k).GE.NUBOT(i,j,k-1))) THEN
                                         out += getFluxCorrTop(); // in SWI2: qztop
                                     }
                                 } else if (position == NeighbourPosition::DOWN) {
                                     // 8th part: vertical leakage to DOWN neighbour
                                     // todo: debug/test
-                                    DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                                    vector<t_dim> nusZones = densityProps.getNusZones();
+                                    vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
                                     if(getFluxCorrDown() < 0 * (si::cubic_meter / day) and
-                                        at(got)->getNusTop() < nusZones[localZetaID] and
+                                        at(got)->getNusTop() < nusInZones[localZetaID] and
                                         getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
                                         continue;
                                     } else{
@@ -1670,8 +1676,7 @@ Modify Properties
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 if (hasGHB()) { return out; } // return 0 at boundary nodes
 
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> delnus = densityProps.getDelnus();
+                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -1703,8 +1708,7 @@ Modify Properties
              * @note in SWI2 documentation: CV*BOUY; in code: QLEXTRA
              */
             t_vol_t getVerticalFluxCorrection(){ // todo debug/test
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                vector<t_dim> nusZones = densityProps.getNusZones();
+                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
                 t_meter headdiff = 0 * si::meter;
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
@@ -1714,7 +1718,7 @@ Modify Properties
                 } else {//Current node has a top node
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++){
-                        headdiff -= nusZones[localZetaID] * (at(got)->Zetas[localZetaID+1] - at(got)->Zetas[localZetaID]); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
+                        headdiff -= nusInZones[localZetaID] * (at(got)->Zetas[localZetaID+1] - at(got)->Zetas[localZetaID]); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
                     }
                     // second part of the flux correction term
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
@@ -1870,9 +1874,8 @@ Modify Properties
                 t_meter zetaChange_neig; // potential zeta height adjustment for this node
 
                 std::unordered_map<string, t_dim> maxSlopes;
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                maxSlopes["Toe"] = densityProps.getMaxToeSlope();
-                maxSlopes["Tip"] = densityProps.getMaxTipSlope();
+                maxSlopes["Toe"] = get<t_dim, MaxToeSlope>();
+                maxSlopes["Tip"] = get<t_dim, MaxTipSlope>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -2313,8 +2316,7 @@ Modify Properties
              */
             t_vol_t getRHS() {
                 t_vol_t out = getRHSConstantDensity();
-                DensityProperties densityProps = get<DensityProperties, densityProperties>();
-                if (densityProps.isDensityVariable()) {
+                if (get<bool, DensityVariable>()) {
                     // save constant density RHS (without variable density terms) for calculation of zeta movement
                     set<t_vol_t, RHSConstantDensity_TZero>(out);
 
@@ -2470,9 +2472,9 @@ Modify Properties
                          double specificYield,
                          double specificStorage,
                          bool confined,
-                         DensityProperties densityProps)
+                         bool densityVariable)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
-                                    stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityProps) {}
+                                    stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityVariable) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -2562,8 +2564,7 @@ Modify Properties
                            large_num ID,
                            t_s_meter area,
                             t_meter edgeLengthLeftRight,
-                           t_meter edgeLengthFrontBack,
-                           DensityProperties densityProps) // Question: densityProps required here? If yes: what values?
+                           t_meter edgeLengthFrontBack)
                     : NodeInterface(
                     nodes,
                     0,
@@ -2573,7 +2574,7 @@ Modify Properties
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, densityProps) {}
+                    0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, true) {}
 
         private:
             friend class NodeInterface;

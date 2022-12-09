@@ -26,13 +26,15 @@ class SimpleDataReader : public DataReader {
                             op.getSpecificStorage(),
                             op.getEdgeLengthLeftRight(),
                             op.getEdgeLengthFrontBack(),
-                            op.isConfined(0));
+                            op.isConfined(0),
+                            op.isDensityVariable);
 
             LOG(userinfo) << "Building the bottom layers";
             DataProcessing::buildBottomLayers(nodes,
                                               op.getNumberOfLayers(),
                                               op.getConfinements(),
-                                              op.getAquiferDepth());
+                                              op.getAquiferDepth(),
+                                              op.isDensityVariable());
 
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));
@@ -70,7 +72,8 @@ class SimpleDataReader : public DataReader {
                  double specificStorage,
                  double edgeLengthLeftRight,
                  double edgeLengthFrontBack,
-                 bool confined) {
+                 bool confined,
+                 bool isDensityVariable) {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -84,7 +87,6 @@ class SimpleDataReader : public DataReader {
             int row{0};
             int col{0};
             lookupSpatIDtoID.reserve(numberOfNodes);
-            Model::DensityProperties densityProperties;
 
             while (in.read_row(globid, x, y, area, col, row)) {
                 out[col][row] = i;
@@ -102,7 +104,9 @@ class SimpleDataReader : public DataReader {
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, confined, densityProperties));
+                                                            specificStorage,
+                                                            confined,
+                                                            isDensityVariable));
                 lookupSpatIDtoID[globid] = i;
                 i++;
             }

@@ -216,10 +216,8 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
                 Model::quantity<Model::SquareMeter> area = 1 * Model::si::square_meter;
                 Model::quantity<Model::Meter> edgeLengthLeftRight = 1 * Model::si::meter;
                 Model::quantity<Model::Meter> edgeLengthFrontBack = 1 * Model::si::meter;
-                vector<double> densityZetas{1012.5};
-                Model::DensityProperties densityProps = Model::DensityProperties::setDensityProperties(true, densityZetas, 0.2, 0.2);
                 nodes->emplace_back(new Model::StaticHeadNode(nodes, staticID, area, edgeLengthLeftRight,
-                                                              edgeLengthFrontBack, densityProps));
+                                                              edgeLengthFrontBack));
 
                 switch (positionOfBoundary) {
                     case Model::LEFT:
@@ -378,7 +376,7 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
  * @param conf
  * @param aquifer_thickness
  */
-void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness) {
+void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness, bool densityVariable) {
     assert(layers && "AsModel::signing 0 layers does not make any sense");
     if (layers == 1) {
         return;
@@ -401,7 +399,6 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double anisotropy;
     double specificYield;
     double specificStorage;
-    Model::DensityProperties densityProps;
 
     for (int j = 0; j < layers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
@@ -427,8 +424,6 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             specificStorage =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
-            densityProps =
-                    nodes->at(i)->getProperties().get<Model::DensityProperties, Model::densityProperties>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
@@ -447,7 +442,9 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, conf[j + 1], densityProps));
+                                                            specificStorage,
+                                                            conf[j + 1],
+                                                            densityVariable));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(j + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()

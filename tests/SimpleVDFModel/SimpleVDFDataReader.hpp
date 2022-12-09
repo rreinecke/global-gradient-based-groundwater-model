@@ -28,11 +28,14 @@ namespace GlobalFlow {
                                 op.getEdgeLengthLeftRight(),
                                 op.getEdgeLengthFrontBack(),
                                 op.isConfined(0),
-                                op.isDensityVariable(),
-                                op.getDensityZones(),
-                                op.getMaxToeSlope(),
-                                op.getMaxTipSlope());
+                                op.isDensityVariable()
+                                );
 
+                if (op.isDensityVariable()) {
+                    LOG(userinfo) << "Reading variable density info";
+                    readDensityConfig(op.getNumberOfNodes(), op.getDensityZones(),
+                                      op.getMaxToeSlope(), op.getMaxTipSlope());
+                }
                 LOG(userinfo) << "Reading hydraulic parameters";
                 readConduct(buildDir(op.getLithology()));
                 readElevation(buildDir(op.getElevation()));
@@ -74,10 +77,8 @@ namespace GlobalFlow {
                      double edgeLengthLeftRight,
                      double edgeLengthFrontBack,
                      bool confined,
-                     bool densityVariable,
-                     vector<double> densityZones,
-                     double maxToeSlope,
-                     double maxTipSlope) {
+                     bool densityVariable
+                     ) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -91,9 +92,6 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookupSpatIDtoID.reserve(numberOfNodes);
-                Model::DensityProperties densityProperties =
-                        Model::DensityProperties::setDensityProperties(densityVariable,
-                                                                       densityZones,maxToeSlope, maxTipSlope);
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     out[col][row] = i;
@@ -112,13 +110,39 @@ namespace GlobalFlow {
                                                                 specificYield,
                                                                 specificStorage,
                                                                 confined,
-                                                                densityProperties
+                                                                densityVariable
                                                                 ));
                     lookupSpatIDtoID[spatID] = i;
                     i++;
                 }
 
                 return out;
+            }
+
+            void readDensityConfig(int numberOfNodes,
+                                   vector<double> densityZones,
+                                   double maxToeSlope,
+                                   double maxTipSlope){
+                double densityFresh = 1000.0;
+                vector<Model::quantity<Model::Dimensionless>> nusInZones;
+                vector<Model::quantity<Model::Dimensionless>> delnus;
+
+                for (int id = 0; id < densityZones.size(); id++) {
+                    // nus of zones is equal to nus of zeta surface below
+                    nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
+                    if (id == 0) {
+                        delnus.push_back(nusInZones[id]); // density difference in top zone
+                    } else {
+                        delnus.push_back((nusInZones[id] - nusInZones[id - 1]));
+                    }
+                }
+
+                for (large_num k = 0; k < numberOfNodes; ++k) {
+                    nodes->at(k)->setDelnus(delnus);
+                    nodes->at(k)->setNusInZones(nusInZones);
+                    nodes->at(k)->setMaxTipSlope(maxTipSlope);
+                    nodes->at(k)->setMaxToeSlope(maxToeSlope);
+                }
             }
 
             void readConduct(std::string path) {

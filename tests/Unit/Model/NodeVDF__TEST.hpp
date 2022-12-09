@@ -6,29 +6,51 @@ using NodeVector = std::shared_ptr<std::vector<std::unique_ptr<GlobalFlow::Model
 class StandardNodeVDFFixture : public ::testing::Test {
 public:
     NodeVector nodes;
-    DensityProperties densityProperties;
 
     void SetUp() {
-        densityProperties = GlobalFlow::Model::DensityProperties::setDensityProperties(true, {1000.0, 1012.5, 1025.0}, 0.2, 0.2);
 
         NodeVector ptr(new vector <unique_ptr<GlobalFlow::Model::NodeInterface>>);
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, densityProperties
+                0.2, 0.1, true, true
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, densityProperties
+                0.2, 0.1, true, true
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, densityProperties
+                0.2, 0.1, true, true
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, densityProperties
+                0.2, 0.1, true, true
         ));
+
+        double densityFresh = 1000.0;
+        vector<quantity<Dimensionless>> densityZones = {1000.0, 1012.5, 1025};
+        vector<quantity<Dimensionless>> nusInZones;
+        vector<quantity<Dimensionless>> delnus;
+
+        for (int id = 0; id < densityZones.size(); id++) {
+            // nus of zones is equal to nus of zeta surface below
+            nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * si::si_dimensionless);
+            if (id == 0) {
+                delnus.push_back(nusInZones[id]); // density difference in top zone
+            } else {
+                delnus.push_back((nusInZones[id] - nusInZones[id - 1]));
+            }
+        }
+
+        large_num numberOfNodes = 4;
+        for (large_num k = 0; k < numberOfNodes; ++k) {
+            nodes->at(k)->setDelnus(delnus);
+            nodes->at(k)->setNusInZones(nusInZones);
+            nodes->at(k)->setMaxTipSlope(0.2 * si::si_dimensionless);
+            nodes->at(k)->setMaxToeSlope(0.2 * si::si_dimensionless);
+        }
+
 
         at(0)->setElevation(10 * si::meter);
         at(1)->setElevation(10 * si::meter);
@@ -90,8 +112,13 @@ TEST_F(StandardNodeVDFFixture, setZeta) {
 }
 
 TEST_F(StandardNodeVDFFixture, setZetaChange) {
-    at(0)->setZetaChange(0, -1 * si::meter);
+    at(0)->setZetaChange(0, 9 * si::meter);
     ASSERT_EQ(at(0)->getZetaChange(0).value(),-1);
+}
+
+TEST_F(StandardNodeVDFFixture, setDelnus) {
+    vector<t_dim> delnus_0 = at(0)->getProperties().get<vector<t_dim>, Delnus>();
+    ASSERT_EQ(delnus_0[1].value(),0.0125);
 }
 
 TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
@@ -103,7 +130,7 @@ TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
     // add and test unconfined node
     nodes->emplace_back(new GlobalFlow::Model::StandardNode(
             nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-            0.2, 0.1, false, densityProperties
+            0.2, 0.1, false, true
     ));
     at(4)->setElevation(10 * si::meter);
     at(4)->setHead_direct(10);

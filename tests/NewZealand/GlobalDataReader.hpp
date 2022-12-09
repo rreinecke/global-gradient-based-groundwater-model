@@ -58,13 +58,14 @@ namespace GlobalFlow {
                                     op.getSpecificStorage(),
                                     op.getEdgeLengthLeftRight(),
                                     op.getEdgeLengthFrontBack(),
-                                    op.isConfined(0));
+                                    op.isConfined(0),
+                                    op.isDensityVariable());
                 } else {
                     LOG(userinfo) << "- reading land mask";
                     readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodes(),
                                  op.getInitialK(), op.getAquiferDepth()[0],
                                  op.getAnisotropy(), op.getSpecificYield(), op.getSpecificStorage(),
-                                 op.isConfined(0));
+                                 op.isConfined(0), op.isDensityVariable());
                     LOG(userinfo) << "- reading mapping";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
                 }
@@ -73,7 +74,8 @@ namespace GlobalFlow {
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
-                                                  op.getAquiferDepth());
+                                                  op.getAquiferDepth(),
+                                                  op.isDensityVariable);
 
                 LOG(userinfo) << "Reading groundwater recharge";
                 //readGWRecharge(buildDir(op.getRecharge()));
@@ -168,7 +170,8 @@ namespace GlobalFlow {
                      double specificStorage,
                      double edgeLengthLeftRight,
                      double edgeLengthFrontBack,
-                     bool confined) {
+                     bool confined,
+                     bool isDensityVariable) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -183,7 +186,6 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookupSpatIDtoID.reserve(numberOfNodes);
-                Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     out[col][row] = i;
@@ -203,7 +205,7 @@ namespace GlobalFlow {
                                                                 specificYield,
                                                                 specificStorage,
                                                                 confined,
-                                                                densityProperties));
+                                                                isDensityVariable));
                     lookupSpatIDtoID[spatID] = i;
                     i++;
                 }
@@ -230,7 +232,7 @@ namespace GlobalFlow {
             readLandMask(NodeVector nodes, std::string path, int numberOfNodes, double defaultK, double aquiferDepth,
                          double anisotropy,
                          double specificYield,
-                         double specificStorage, bool confined) {
+                         double specificStorage, bool confined, bool isDensityVariable) {
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "col", "row");
                 double x = 0;
@@ -241,7 +243,6 @@ namespace GlobalFlow {
                 large_num spatID = 0;
                 int i = 0;
                 lookupSpatIDtoID.reserve(numberOfNodes);
-                Model::DensityProperties densityProperties = Model::DensityProperties::setDensityProperties();
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     //area is in km needs to be in m
@@ -261,7 +262,7 @@ namespace GlobalFlow {
                                                                 specificYield,
                                                                 specificStorage,
                                                                 confined,
-                                                                densityProperties));
+                                                                isDensityVariable));
                     lookupSpatIDtoID[spatID] = i;
                     i++;
                 }

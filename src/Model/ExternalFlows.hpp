@@ -25,7 +25,6 @@
 #define GLOBAL_FLOW_EXTERNALFLOWS_HPP
 
 #include "Units.hpp"
-#include "VariableDensityFlow.hpp"
 #include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {

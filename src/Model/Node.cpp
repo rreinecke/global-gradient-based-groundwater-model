@@ -53,7 +53,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificYield,
                              double specificStorage,
                              bool confined,
-                             Model::DensityProperties densityProps): nodes(nodes) { // unordered_map<quantity<Dimensionless>, quantity<Meter>> zetas)
+                             bool densityVariable): nodes(nodes) {
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
@@ -75,7 +75,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.emplace<DensityProperties, densityProperties>(densityProps);
+    fields.set<bool, DensityVariable>(densityVariable);
 }
 }
 }//ns

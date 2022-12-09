@@ -25,7 +25,6 @@
 #define GLOBAL_FLOW_PHYSICALPROPERTIES_HPP
 
 #include "Units.hpp"
-#include "VariableDensityFlow.hpp"
 
 namespace GlobalFlow {
     namespace Model {
@@ -167,7 +166,11 @@ namespace GlobalFlow {
         struct SurfaceFrontBack;
         struct VolumeOfCell;
         struct EffectivePorosity;
-        struct densityProperties; // variable density properties
+        struct Delnus;
+        struct DensityVariable;
+        struct MaxToeSlope;
+        struct MaxTipSlope;
+        struct NusInZones;
         struct RHSConstantDensity_TZero;
 
 /**
@@ -205,7 +208,11 @@ namespace GlobalFlow {
         PhysicalProperty<t_s_meter, SurfaceFrontBack>,
         PhysicalProperty<t_c_meter, VolumeOfCell>,
         PhysicalProperty<t_dim, EffectivePorosity>,
-        PhysicalProperty<DensityProperties, densityProperties>, // variable density properties
+        PhysicalProperty<std::vector<t_dim>, Delnus>,
+        PhysicalProperty<bool, DensityVariable>,
+        PhysicalProperty<t_dim, MaxToeSlope>,
+        PhysicalProperty<t_dim, MaxTipSlope>,
+        PhysicalProperty<std::vector<t_dim>,NusInZones>,
         PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
         >;
 
