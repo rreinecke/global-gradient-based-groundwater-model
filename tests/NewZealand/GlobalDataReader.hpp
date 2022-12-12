@@ -74,8 +74,7 @@ namespace GlobalFlow {
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
-                                                  op.getAquiferDepth(),
-                                                  op.isDensityVariable);
+                                                  op.getAquiferDepth());
 
                 LOG(userinfo) << "Reading groundwater recharge";
                 //readGWRecharge(buildDir(op.getRecharge()));

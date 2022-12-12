@@ -12,6 +12,5 @@ set(HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/Units.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ExternalFlows.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/FluidMechanics.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/VariableDensityFlow.hpp
         PARENT_SCOPE
         )

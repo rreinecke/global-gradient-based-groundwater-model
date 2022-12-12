@@ -376,7 +376,7 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
  * @param conf
  * @param aquifer_thickness
  */
-void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness, bool densityVariable) {
+void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness) {
     assert(layers && "AsModel::signing 0 layers does not make any sense");
     if (layers == 1) {
         return;
@@ -399,6 +399,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double anisotropy;
     double specificYield;
     double specificStorage;
+    bool densityVariable;
 
     for (int j = 0; j < layers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
@@ -424,6 +425,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             specificStorage =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
+            densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm

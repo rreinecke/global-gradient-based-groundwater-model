@@ -27,14 +27,13 @@ class SimpleDataReader : public DataReader {
                             op.getEdgeLengthLeftRight(),
                             op.getEdgeLengthFrontBack(),
                             op.isConfined(0),
-                            op.isDensityVariable);
+                            op.isDensityVariable());
 
             LOG(userinfo) << "Building the bottom layers";
             DataProcessing::buildBottomLayers(nodes,
                                               op.getNumberOfLayers(),
                                               op.getConfinements(),
-                                              op.getAquiferDepth(),
-                                              op.isDensityVariable());
+                                              op.getAquiferDepth());
 
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));

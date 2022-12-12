@@ -326,7 +326,7 @@ namespace GlobalFlow {
              * @param lat The latitude
              * @param lon The Longitude
              * @param area Area in m²
-             * @param ArcID Unique ARC-ID specified by Kassel
+             * @param SpatID Unique Spat-ID
              * @param ID Internal ID = Position in vector
              * @param K Hydraulic conductivity in meter/day (default)
              * @param stepModifier Modifies default step size of day (default=1)
@@ -343,7 +343,7 @@ namespace GlobalFlow {
                           t_s_meter area,
                           t_meter edgeLengthLeftRight,
                           t_meter edgeLengthFrontBack,
-                          large_num ArcID,
+                          large_num SpatID,
                           large_num ID,
                           t_vel K,
                           int stepModifier,
@@ -1265,7 +1265,7 @@ Modify Properties
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
-                std::vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                auto delnus = get<vector<t_dim>, Delnus>();
 
                 std::vector<t_s_meter_t> zoneConductances;
                 t_s_meter_t zoneConductanceCum;
@@ -1320,7 +1320,7 @@ Modify Properties
                 t_dim out = nusInZones.front();
                 for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "top"){
-                        vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                        auto delnus = get<vector<t_dim>, Delnus>();
                         out += delnus[localZetaID];
                     }
                 }
@@ -1337,7 +1337,7 @@ Modify Properties
                 t_dim out = nusInZones.back();
                 for (int localZetaID = 1; localZetaID < Zetas.size() - 1; localZetaID++){
                     if (ZetaPosInNode[localZetaID] == "bottom"){
-                        vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                        auto delnus = get<vector<t_dim>, Delnus>();
                         out -= delnus[localZetaID];
                     }
                 }
@@ -1435,7 +1435,7 @@ Modify Properties
              */
             t_vol_t getZetaPseudoSource(int localZetaID) { // todo test
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                auto delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -1489,7 +1489,7 @@ Modify Properties
              */
             t_vol_t tipToeFlow(map_itter got, int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                auto delnus = get<vector<t_dim>, Delnus>();
 
                 std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
                 t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID, zoneConductances);
@@ -1602,8 +1602,8 @@ Modify Properties
 
                 // calculate the zone thicknesses and their sum
                 for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++) {
-                    //LOG(debug) << "Zetas[" << localZetaID << "]:" << Zetas[localZetaID].value() << std::endl;
-                    //LOG(debug) << "Zetas[" << localZetaID+1 << "]:" << Zetas[localZetaID+1].value() << std::endl;
+                    //LOG(userinfo) << "Zetas[" << localZetaID << "]:" << Zetas[localZetaID].value() << std::endl;
+                    //LOG(userinfo) << "Zetas[" << localZetaID+1 << "]:" << Zetas[localZetaID+1].value() << std::endl;
 
                     deltaZeta = Zetas[localZetaID] - Zetas[localZetaID + 1];
                     deltaZeta_neig = at(got)->Zetas[localZetaID] - at(got)->Zetas[localZetaID + 1];
@@ -1618,7 +1618,6 @@ Modify Properties
                     zoneThicknesses.push_back(zoneThickness);
                 }
 
-
                 // calculate the density zone conductances
                 for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++) {
                     //LOG(userinfo) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
@@ -1626,14 +1625,15 @@ Modify Properties
                     if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
                         zoneConductance = 0 * si::square_meter / day; // zoneConductance is 0 if sum of thicknesses is 0
                     } else {
-                        if ((localZetaID > 0 and localZetaID < Zetas.size() - 2) and
-                            ((ZetaPosInNode[localZetaID] != "between") + // adapted from SWI2 code lines 1212-1222
-                             (at(got)->ZetaPosInNode[localZetaID] != "between") +
-                             (ZetaPosInNode[localZetaID + 1] != "between") +
-                             (at(got)->ZetaPosInNode[localZetaID + 1] != "between")) > 0){ // todo how to correctly set the ZetaPosInNode?
-                            // zoneConductance stays 0 if zeta is not active in this AND neighbouring cell
-                            // this section is not reached if Zetas.size() < 4 and numberOfZones < 3
-                            zoneConductance = 0 * si::square_meter / day;
+                        if (localZetaID > 0 and localZetaID < Zetas.size() - 2) {
+                            if((ZetaPosInNode[localZetaID] != "between") or // adapted from SWI2 code lines 1212-1222
+                            (at(got)->ZetaPosInNode[localZetaID] != "between") or
+                            (ZetaPosInNode[localZetaID + 1] != "between") or
+                            (at(got)->ZetaPosInNode[localZetaID + 1] != "between")) { // todo how to best set ZetaPosInNode?
+                                // zoneConductance stays 0 if zeta is not active in this AND neighbouring cell
+                                // this section is not reached if Zetas.size() < 4 and numberOfZones < 3
+                                zoneConductance = 0 * si::square_meter / day;
+                            }
                         } else {
 
                             conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
@@ -1676,7 +1676,7 @@ Modify Properties
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 if (hasGHB()) { return out; } // return 0 at boundary nodes
 
-                vector<t_dim> delnus = get<vector<t_dim>, Delnus>();
+                auto delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -1691,7 +1691,7 @@ Modify Properties
 
                     for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++){
                         t_s_meter_t zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
-                        //LOG(debug) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
+                        LOG(debug) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
                         if (delnus[localZetaID] > 0) {
                             out -= delnus[localZetaID] * (zoneConductanceCum *
                                                           (at(got)->Zetas[localZetaID] - Zetas[localZetaID]));
@@ -2463,7 +2463,7 @@ Modify Properties
                          t_s_meter area,
                          t_meter edgeLengthLeftRight,
                          t_meter edgeLengthFrontBack,
-                         large_num ArcID,
+                         large_num SpatID,
                          large_num ID,
                          t_vel K,
                          int stepmodifier,
@@ -2473,7 +2473,7 @@ Modify Properties
                          double specificStorage,
                          bool confined,
                          bool densityVariable)
-                    : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, ArcID, ID, K,
+                    : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityVariable) {}
         private:
             // implementation

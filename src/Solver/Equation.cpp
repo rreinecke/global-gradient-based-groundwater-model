@@ -453,7 +453,7 @@ Equation::updateIntermediateZetas(int localZetaID) {
             if (m != -1) {
                 n = k - numInactive;
                 nodes->at(k)->setZeta(localZetaID, (double) x_zetas[n] * si::meter);
-                nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[k] * si::meter);
+                nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[n] * si::meter);
                 //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
             } else {
                 numInactive++;
