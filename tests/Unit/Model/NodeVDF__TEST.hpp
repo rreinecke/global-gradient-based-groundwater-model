@@ -51,9 +51,6 @@ public:
             nodes->at(k)->setMaxToeSlope(0.2 * si::si_dimensionless);
         }
 
-
-
-
         // set nodes 0 and 1 as horizontal neighbours
         nodes->at(0)->setNeighbour(1, RIGHT);
         nodes->at(1)->setNeighbour(0, LEFT);
@@ -72,6 +69,10 @@ public:
 
         at(0)->setElevation(10 * si::meter);
         at(1)->setElevation(10 * si::meter);
+        at(0)->setHead_direct(10); // Question: what does that cause?
+        at(1)->setHead_direct(10);
+        at(2)->setHead_direct(0);
+        at(3)->setHead_direct(0);
 
         // zeta surface 0 (all at top of nodes)
         nodes->at(0)->addInitialZeta(10.0 * si::meter);
@@ -213,19 +214,30 @@ TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
 }
 
 TEST_F(StandardNodeVDFFixture, getFlowPseudoSource) {
-    ASSERT_EQ((at(0)->getFlowPseudoSource().value()), 0.041625); // todo why does it return 0?
+    ASSERT_EQ((at(0)->getFlowPseudoSource().value()), 0.0); // in zone 0: delnus=0, in zones 1 & 2: zoneCond=0
+    ASSERT_NEAR((at(2)->getFlowPseudoSource().value()), 0.02083333, 0.0000001); // zone 0 & 1: same zeta (at top)
 }
 
 TEST_F(StandardNodeVDFFixture, getVerticalFluxCorrection) {
-    // todo
+    ASSERT_NEAR((at(2)->getVerticalFluxCorrection().value()), 0.00062500, 0.0000001);
+    ASSERT_NEAR((at(3)->getVerticalFluxCorrection().value()), 0.00041666, 0.0000001);
+    // todo test unconfined node
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrTop) {
-    // todo
+    ASSERT_EQ((at(0)->getFluxCorrTop().value()), 0.0);
+    ASSERT_EQ((at(1)->getFluxCorrTop().value()), 0.0);
+    ASSERT_NEAR((at(2)->getFluxCorrTop().value()), -0.06729166, 0.0000001);
+    ASSERT_NEAR((at(3)->getFluxCorrTop().value()), -0.13375000, 0.0000001);
+    // todo test for unconfined node, are there SWI2 changes for confined nodes?
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrDown) {
-    // todo
+    ASSERT_EQ((at(2)->getFluxCorrDown().value()), 0.0);
+    ASSERT_EQ((at(3)->getFluxCorrDown().value()), 0.0);
+    ASSERT_NEAR((at(0)->getFluxCorrDown().value()), 0.06729166, 0.0000001);
+    ASSERT_NEAR((at(1)->getFluxCorrDown().value()), 0.13375000, 0.0000001);
+    // todo test for unconfined node, are there SWI2 changes for confined nodes?
 }
 
 TEST_F(StandardNodeVDFFixture, getRHS) {

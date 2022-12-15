@@ -1691,7 +1691,7 @@ Modify Properties
 
                     for (int localZetaID = 0; localZetaID < Zetas.size() - 1; localZetaID++){
                         t_s_meter_t zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
-                        LOG(debug) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
+                        //LOG(userinfo) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
                         if (delnus[localZetaID] > 0) {
                             out -= delnus[localZetaID] * (zoneConductanceCum *
                                                           (at(got)->Zetas[localZetaID] - Zetas[localZetaID]));
@@ -1739,9 +1739,10 @@ Modify Properties
                 map_itter got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
+                    t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) -
-                           at(got)->getVerticalFluxCorrection();
+                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) - fluxFromTopNode;
+
                 }
                 return out;
             }
@@ -1756,9 +1757,9 @@ Modify Properties
                 map_itter got = neighbours.find(NeighbourPosition::DOWN);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
+                    t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) +
-                           getVerticalFluxCorrection();
+                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) + fluxFromDownNode;
                 }
                 return out;
             }

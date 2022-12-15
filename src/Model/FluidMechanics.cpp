@@ -174,7 +174,6 @@ namespace GlobalFlow {
                      head_neig,
                      confined) = flowInputVer;
 
-
             quantity<MeterSquaredPerTime> out = 0.0 * si::square_meter / day;
             t_meter deltaV_self = verticalSize_self;
             t_meter deltaV_neig = depth_neig;
