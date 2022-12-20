@@ -185,9 +185,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
     };
 
     auto addBoundary = [nodes, ghbConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
-            large_num pos, int layer,
-            Model::NeighbourPosition
-            positionOfBoundary) {
+            large_num pos, int layer, Model::NeighbourPosition positionOfBoundary) {
         if (layer > 0) {
             return;
         }

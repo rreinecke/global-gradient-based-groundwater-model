@@ -49,6 +49,8 @@ public:
             nodes->at(k)->setNusInZones(nusInZones);
             nodes->at(k)->setMaxTipSlope(0.2 * si::si_dimensionless);
             nodes->at(k)->setMaxToeSlope(0.2 * si::si_dimensionless);
+            nodes->at(k)->setEffectivePorosity(0.2 * si::si_dimensionless);
+            nodes->at(k)->setZoneOfSinksAndSources(0, 2, 3);
         }
 
         // set nodes 0 and 1 as horizontal neighbours
@@ -110,8 +112,7 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
-TEST_F(StandardNodeVDFFixture, setEffectivePorosity) {
-    at(0)->setEffectivePorosity(0.2 * si::si_dimensionless);
+TEST_F(StandardNodeVDFFixture, getEffectivePorosity) {
     ASSERT_EQ((at(0)->getProperties().get<t_dim, EffectivePorosity>().value()), 0.2);
 }
 
@@ -213,9 +214,9 @@ TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
     ASSERT_EQ((at(0)->getRHSConstantDensity().value()), -50);
 }
 
-TEST_F(StandardNodeVDFFixture, getFlowPseudoSource) {
-    ASSERT_EQ((at(0)->getFlowPseudoSource().value()), 0.0); // in zone 0: delnus=0, in zones 1 & 2: zoneCond=0
-    ASSERT_NEAR((at(2)->getFlowPseudoSource().value()), 0.02083333, 0.0000001); // zone 0 & 1: same zeta (at top)
+TEST_F(StandardNodeVDFFixture, getPseudoSourceNode) {
+    ASSERT_EQ((at(0)->getPseudoSourceNode().value()), 0.0); // in zone 0: delnus=0, in zones 1 & 2: zoneCond=0
+    ASSERT_NEAR((at(2)->getPseudoSourceNode().value()), 0.02083333, 0.0000001); // zone 0 & 1: same zeta (at top)
 }
 
 TEST_F(StandardNodeVDFFixture, getVerticalFluxCorrection) {
@@ -233,10 +234,10 @@ TEST_F(StandardNodeVDFFixture, getFluxCorrTop) {
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrDown) {
-    ASSERT_EQ((at(2)->getFluxCorrDown().value()), 0.0);
-    ASSERT_EQ((at(3)->getFluxCorrDown().value()), 0.0);
     ASSERT_NEAR((at(0)->getFluxCorrDown().value()), 0.06729166, 0.0000001);
     ASSERT_NEAR((at(1)->getFluxCorrDown().value()), 0.13375000, 0.0000001);
+    ASSERT_EQ((at(2)->getFluxCorrDown().value()), 0.0);
+    ASSERT_EQ((at(3)->getFluxCorrDown().value()), 0.0);
     // todo test for unconfined node, are there SWI2 changes for confined nodes?
 }
 
@@ -245,16 +246,31 @@ TEST_F(StandardNodeVDFFixture, getRHS) {
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-
-    //ASSERT_EQ((at(0)->getRHS().value()), 0); // todo calculate correct result
+    ASSERT_NEAR((at(0)->getRHS().value()), -49.99270833, 0.0000001);
+    // with getRHSConstantDensity = -50; pseudoSourceNode = 0; fluxCorrectionTop = 0; fluxCorrectionDown = 0.00729166666
+    // (with fluxFromDownNode: 0.000625; verticalConductance: 0.00666667)
 }
 
 TEST_F(StandardNodeVDFFixture, getEffectivePorosityTerm) {
-    // todo
+    ASSERT_EQ((at(0)->getEffectivePorosityTerm().value()), 0.2);
+}
+
+TEST_F(StandardNodeVDFFixture, getZoneOfSources) {
+    ASSERT_EQ((at(0)->getZoneOfSources()), 2);
+}
+
+TEST_F(StandardNodeVDFFixture, getZoneOfSinks) {
+    ASSERT_EQ((at(0)->getZoneOfSinks()), 0);
 }
 
 TEST_F(StandardNodeVDFFixture, getSourcesBelowZeta) {
-    // todo
+    at(0)->setHead_direct(1);
+    at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
+    at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
+    at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
+
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(1).value()), 0.2);
+// todo
 }
 
 TEST_F(StandardNodeVDFFixture, getZetaPseudoSource) {
@@ -300,7 +316,5 @@ TEST_F(StandardNodeVDFFixture, preventZetaLocking) {
     // todo
 }
 
-TEST_F(StandardNodeVDFFixture, setZoneOfSinksAndSources) {
-    // todo
-}
+
 

@@ -45,7 +45,7 @@ namespace GlobalFlow {
  *     DOWN
  *
  * In Z (Top view):
- * FRONT (larger ID) * BACK (smaler ID)
+ * FRONT (larger ID) * BACK (smaller ID)
  */
         enum NeighbourPosition {
             TOP = 1,
@@ -388,7 +388,7 @@ Modify Properties
             void setSlope(double slope_percent) {
                 set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
                 applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
-                    try { // todo: should slope be added to the nodeInterace? currently only in PhyscalProperties
+                    try { // todo: should slope be added to the nodeInterface? currently only in PhysicalProperties
                         //nodeInterface->
                         //Slope(slope_percent);
                     }
@@ -647,7 +647,7 @@ Modify Properties
             t_c_meter getIN() noexcept { return get<t_c_meter, IN>(); }
 
             /**
-             * @brief Toogle steady state simulation
+             * @brief Toggle steady state simulation
              * @param onOFF true=on
              * Turns all storage equations to zero with no time steps
              */
@@ -1007,7 +1007,6 @@ Modify Properties
              * For simulation of submarine groundwater discharge:
              * - zoneOfSources: an integer between 1 and the number of zones (brackish/saline water)
              * - zoneOfSinks: 0 (fresh water)
-             * Example for submarine groundwater discharge: zoneOfSources=1 (saline), zoneOfSinks=0 (required)
              */
             void setZoneOfSinksAndSources(int zoneSinks, int zoneSources, int numOfZones) {
                 if (zoneSinks > zoneSources) {
@@ -1021,15 +1020,19 @@ Modify Properties
                 if (zoneSinks < numOfZones and zoneSinks >= 0) {
                     zoneOfSinks = zoneSinks;
                 } else {
-                    throw "Zone number of sinks needs to be between 0 and the number of density zones";
+                    throw "Zone number of sinks must be larger or equal to 0, and below the number of density zones";
                 }
 
                 if (zoneSources < numOfZones and zoneSources >= 0) {
                     zoneOfSources = zoneSources;
                 } else {
-                    throw "Zone number of sources needs to be between 0 and the number of density zones";
+                    throw "Zone number of sources must be larger or equal to 0, and below the number of density zones";
                 }
             }
+
+            int getZoneOfSources(){ return zoneOfSources;}
+
+            int getZoneOfSinks(){ return zoneOfSinks;}
 
             std::string getZetaPosInNode(int localZetaID){ return ZetaPosInNode[localZetaID]; }
 
@@ -1224,17 +1227,17 @@ Modify Properties
              */
             t_vol_t getZetaRHS(int localZetaID){ // todo: test
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
-                if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0 // todo remove if not required
+                if (ZetaPosInNode[localZetaID] == "between") { // if IPLPOS == 0
                     porosityTerm = getEffectivePorosityTerm() * Zetas[localZetaID];
                 }
                 //LOG(debug) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sourcesBelowZeta = getSourcesBelowZeta(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
                 //LOG(debug) << "sourcesBelowZeta: " << sourcesBelowZeta.value() << std::endl;
-                t_vol_t pseudoSource_Zeta = getZetaPseudoSource(localZetaID);
-                //LOG(debug) << "pseudoSource_Zeta: " << pseudoSource_Zeta.value() << std::endl;
+                t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID);
+                //LOG(debug) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID);
                 //LOG(debug) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
-                t_vol_t out = - porosityTerm - sourcesBelowZeta + pseudoSource_Zeta + tipToeFlow;
+                t_vol_t out = - porosityTerm - sourcesBelowZeta + pseudoSourceBelowZeta + tipToeFlow;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
             }
@@ -1407,7 +1410,9 @@ Modify Properties
                                                              getP()); // todo add get<t_dim, StepModifier>()
                         // calculate the boundary flux
                         boundaryFlux = RHSConstantDensity - hcof * get<t_meter, Head>();
-                        //LOG(numerics) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
+                        LOG(userinfo) << "RHSConstantDensity: " << RHSConstantDensity.value() << std::endl;
+                        LOG(userinfo) << "hcof: " << hcof.value() << std::endl;
+                        LOG(userinfo) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
                     }
 
                     if (zoneOfSources > zoneOfSinks and // if we intend to simulate submarine groundwater discharge
@@ -1423,7 +1428,7 @@ Modify Properties
                 }
 
                 NANChecker(out.value(), "getSourcesBelowZeta");
-                //LOG(numerics) << "getSourcesBelowZeta: " << out.value() << std::endl;
+                LOG(userinfo) << "getSourcesBelowZeta: " << out.value() << std::endl;
                 return out;
             }
 
@@ -1433,7 +1438,7 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code lines 3574-3635, using SSWI2_SD and SSWI2_SR)
              */
-            t_vol_t getZetaPseudoSource(int localZetaID) { // todo test
+            t_vol_t getPseudoSourceBelowZeta(int localZetaID) { // todo test
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
@@ -1477,7 +1482,7 @@ Modify Properties
                         }
                     }
                 }
-                NANChecker(out.value(), "getZetaPseudoSource");
+                NANChecker(out.value(), "getPseudoSourceBelowZeta");
                 return out;
             }
 
@@ -1672,7 +1677,7 @@ Modify Properties
              * @return volume per time
              * @note This accounts for the effects of variable density flow (in SWI2 code: QREXTRA/QFEXTRA)
              */
-            t_vol_t getFlowPseudoSource() {
+            t_vol_t getPseudoSourceNode() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 if (hasGHB()) { return out; } // return 0 at boundary nodes
 
@@ -1698,7 +1703,7 @@ Modify Properties
                         }
                     }
                 }
-                //LOG(debug) << "getFlowPseudoSource: " << out.value() << std::endl;
+                //LOG(debug) << "getPseudoSourceNode: " << out.value() << std::endl;
                 return out;
             }
 
@@ -1759,6 +1764,9 @@ Modify Properties
                 } else {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
+                    //LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
+                    //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
+
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) + fluxFromDownNode;
                 }
                 return out;
@@ -2084,7 +2092,7 @@ Modify Properties
             }
 
             /**
-             * @brief The length of the neigbouring node, in direction to the neihbouring node
+             * @brief The length of the neighbouring node, in direction to the neighbouring node
              * @param got neighbour node
              * @return meter
              */
@@ -2099,7 +2107,7 @@ Modify Properties
             }
 
             /**
-             * @brief The length of this node, in direction to the neihbouring node
+             * @brief The length of this node, in direction to the neighbouring node
              * @param got neighbour node
              * @return meter
              */
@@ -2114,8 +2122,8 @@ Modify Properties
             }
 
             /**
-             * @brief The width of this node, perpendicular to the direction to the neihgbouring node
-             * @param got neigbour node
+             * @brief The width of this node, perpendicular to the direction to the neighbouring node
+             * @param got neighbour node
              * @return meter
              */
             t_meter getWidthSelf(map_itter got) {
@@ -2317,21 +2325,23 @@ Modify Properties
              */
             t_vol_t getRHS() {
                 t_vol_t out = getRHSConstantDensity();
+                LOG(debug) << "getRHSConstantDensity: " << out.value() << std::endl;
+
                 if (get<bool, DensityVariable>()) {
                     // save constant density RHS (without variable density terms) for calculation of zeta movement
                     set<t_vol_t, RHSConstantDensity_TZero>(out);
 
                     // calculate variable density terms Pseudo-Source Flow
-                    t_vol_t flowPseudoSource = getFlowPseudoSource();
-                    LOG(debug) << "flowPseudoSource: " << flowPseudoSource.value() << std::endl;
+                    t_vol_t pseudoSourceNode = getPseudoSourceNode();
+                    //LOG(userinfo) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
 
                     // calculate Vertical Flux Correction (for top and down neighbour)
                     t_vol_t fluxCorrectionTop = getFluxCorrTop();
-                    LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                    //LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
                     t_vol_t fluxCorrectionDown = getFluxCorrDown();
-                    LOG(debug) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
+                    //LOG(userinfo) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
 
-                    out += flowPseudoSource;// + fluxCorrectionTop + fluxCorrectionDown;
+                    out += pseudoSourceNode + fluxCorrectionTop + fluxCorrectionDown;
                 }
                 NANChecker(out.value(), "RHS");
                 return out;
@@ -2417,7 +2427,7 @@ Modify Properties
             /**
              * @brief Calculate flow velocity for flow tracking
              * Vx and Vy represent the flow velocity in x and y direction.
-             * A negative value represents a flow in the oposite direction.
+             * A negative value represents a flow in the opposite direction.
              * @return Velocity vector (x,y)
              */
             std::pair<double, double> getVelocityVector() {

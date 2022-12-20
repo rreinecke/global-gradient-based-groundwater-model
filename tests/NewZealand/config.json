@@ -55,7 +55,7 @@
       "default_data": {
         "initial_head": 0,
         "K": 0.1,
-        "ghb_K": 10,
+        "ghb_K": 1000000000,
         "aquifer_thickness": [
           100,
           100
