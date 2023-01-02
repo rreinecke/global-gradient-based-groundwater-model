@@ -29,7 +29,7 @@ public:
         ));
 
         double densityFresh = 1000.0;
-        vector<quantity<Dimensionless>> densityZones = {1000.0, 1012.5, 1025};
+        vector<quantity<Dimensionless>> densityZones = {1000.0, 1010.0, 1020.0,1030.0};
         vector<quantity<Dimensionless>> nusInZones;
         vector<quantity<Dimensionless>> delnus;
 
@@ -83,25 +83,31 @@ public:
         nodes->at(3)->addInitialZeta(0.0 * si::meter);
 
         // zeta surface 1 (in nodes 0 & 1 between, in nodes 2 & 3 at top)
+        nodes->at(0)->addInitialZeta(9 * si::meter);
+        nodes->at(1)->addInitialZeta(8 * si::meter);
+        nodes->at(2)->addInitialZeta(0.0 * si::meter);
+        nodes->at(3)->addInitialZeta(0.0 * si::meter);
+
+        // zeta surface 2 (in nodes 0 & 1 between, in nodes 2 & 3 at top)
         nodes->at(0)->addInitialZeta(7.5 * si::meter);
         nodes->at(1)->addInitialZeta(2.5 * si::meter);
         nodes->at(2)->addInitialZeta(0.0 * si::meter);
         nodes->at(3)->addInitialZeta(0.0 * si::meter);
 
-        // zeta surface 2 (in nodes 0 & 1 at bottom, in nodes 2 & 3 between)
+        // zeta surface 3 (in nodes 0 & 1 at bottom, in nodes 2 & 3 between)
         nodes->at(0)->addInitialZeta(0.0 * si::meter);
         nodes->at(1)->addInitialZeta(0.0 * si::meter);
         nodes->at(2)->addInitialZeta(-2.5 * si::meter);
         nodes->at(3)->addInitialZeta(-7.5 * si::meter);
 
-        // zeta surface 3 (all at bottom of nodes)
+        // zeta surface 4 (all at bottom of nodes)
         nodes->at(0)->addInitialZeta(0.0 * si::meter);
         nodes->at(1)->addInitialZeta(0.0 * si::meter);
         nodes->at(2)->addInitialZeta(-10.0 * si::meter);
         nodes->at(3)->addInitialZeta(-10.0 * si::meter);
 
         for (int nodeID = 0; nodeID <= 3; nodeID++){
-            for(int zetaID = 0; zetaID <= 3; zetaID++) {
+            for(int zetaID = 0; zetaID <= 4; zetaID++) {
                 at(nodeID)->setZetaPosInNode(zetaID);
             }
         }
@@ -119,8 +125,8 @@ TEST_F(StandardNodeVDFFixture, getEffectivePorosity) {
 TEST_F(StandardNodeVDFFixture, getDelnus) {
     auto delnus_node_0 = at(0)->getProperties().get<vector<t_dim>, Delnus>();
     ASSERT_EQ(delnus_node_0[0].value(),0.0);
-    ASSERT_EQ(delnus_node_0[1].value(),0.0125);
-    ASSERT_EQ(delnus_node_0[2].value(),0.0125);
+    ASSERT_EQ(delnus_node_0[1].value(),0.01);
+    ASSERT_EQ(delnus_node_0[2].value(),0.01);
 }
 
 TEST_F(StandardNodeVDFFixture, setZeta) {
@@ -141,10 +147,12 @@ TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
     ));
     at(4)->setElevation(10 * si::meter);
     at(4)->setHead_direct(10);
-    // - zeta height ABOVE head (should be set to head)
+
+    // - zeta height ABOVE head (should be reset to head)
     nodes->at(4)->addInitialZeta(20.0 * si::meter);
     at(4)->setTopZetaToHead();
     ASSERT_EQ(at(4)->getZeta(0).value(),10);
+
     // - zeta height BELOW head (should be set to head)
     at(4)->setZeta(0, 5 * si::meter);
     at(4)->setTopZetaToHead();
@@ -157,38 +165,40 @@ TEST_F(StandardNodeVDFFixture, setZetaChange) {
 }
 
 TEST_F(StandardNodeVDFFixture, getZetaPosInNode) {
-    ASSERT_EQ((at(0)->getZetaPosInNode(0)), "between");
+    ASSERT_EQ((at(0)->getZetaPosInNode(0)), "top");
     ASSERT_EQ((at(0)->getZetaPosInNode(1)), "between");
-    ASSERT_EQ((at(0)->getZetaPosInNode(2)), "bottom");
+    ASSERT_EQ((at(0)->getZetaPosInNode(2)), "between");
     ASSERT_EQ((at(0)->getZetaPosInNode(3)), "bottom");
+    ASSERT_EQ((at(0)->getZetaPosInNode(4)), "bottom");
 }
 
 TEST_F(StandardNodeVDFFixture, getNusTop) {
     ASSERT_EQ((at(0)->getNusTop().value()), 0.0);
-    ASSERT_EQ((at(2)->getNusTop().value()), 0.0125);
+    ASSERT_EQ((at(2)->getNusTop().value()), 0.02);
 }
 
 TEST_F(StandardNodeVDFFixture, getNusBot) {
-    ASSERT_EQ((at(0)->getNusBot().value()), 0.0125);
-    ASSERT_EQ((at(2)->getNusBot().value()), 0.025);
+    ASSERT_EQ((at(0)->getNusBot().value()), 0.02);
+    ASSERT_EQ((at(2)->getNusBot().value()), 0.03);
 }
 
 TEST_F(StandardNodeVDFFixture, getZoneConductances) {
     std::unordered_map<NeighbourPosition, large_num>::const_iterator got;
     unordered_map<NeighbourPosition, large_num> neighbourList;
 
-
     neighbourList = at(0)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
-    ASSERT_NEAR((at(0)->getZoneConductances(got)[0].value()), 0.666, 0.01);
-    ASSERT_NEAR((at(0)->getZoneConductances(got)[1].value()), 0, 0.01); // zone is across layers -> 0
-    ASSERT_NEAR((at(0)->getZoneConductances(got)[2].value()), 0, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[0].value()), 0.199, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[1].value()), 0.466, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[2].value()), 0.0, 0.01); // zone is across layers -> 0
+    ASSERT_NEAR((at(0)->getZoneConductances(got)[3].value()), 0, 0.01); // zone height in node = 0
 
     neighbourList = at(2)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
-    ASSERT_NEAR((at(2)->getZoneConductances(got)[0].value()), 0, 0.01);
-    ASSERT_NEAR((at(2)->getZoneConductances(got)[1].value()), 0, 0.01); // zone is across layers -> 0
-    ASSERT_NEAR((at(2)->getZoneConductances(got)[2].value()), 0.333, 0.01);
+    ASSERT_NEAR((at(2)->getZoneConductances(got)[0].value()), 0, 0.01); // zone height in node = 0
+    ASSERT_NEAR((at(2)->getZoneConductances(got)[1].value()), 0, 0.01); // zone height in node = 0
+    ASSERT_NEAR((at(2)->getZoneConductances(got)[2].value()), 0, 0.01); // zone is across layers -> 0
+    ASSERT_NEAR((at(2)->getZoneConductances(got)[3].value()), 0.333, 0.01);
 }
 
 TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
@@ -198,8 +208,8 @@ TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
     neighbourList = at(0)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
     ASSERT_NEAR((at(0)->getZoneConductanceCum(0, at(0)->getZoneConductances(got)).value()), 0.666, 0.01);
-    ASSERT_NEAR((at(0)->getZoneConductanceCum(1, at(0)->getZoneConductances(got)).value()), 0, 0.01);
-
+    ASSERT_NEAR((at(0)->getZoneConductanceCum(1, at(0)->getZoneConductances(got)).value()), 0.466, 0.01);
+    ASSERT_NEAR((at(0)->getZoneConductanceCum(2, at(0)->getZoneConductances(got)).value()), 0.0, 0.01);
     neighbourList = at(2)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
     ASSERT_NEAR((at(2)->getZoneConductanceCum(0, at(2)->getZoneConductances(got)).value()), 0.333, 0.01);
@@ -215,27 +225,27 @@ TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
 }
 
 TEST_F(StandardNodeVDFFixture, getPseudoSourceNode) {
-    ASSERT_EQ((at(0)->getPseudoSourceNode().value()), 0.0); // in zone 0: delnus=0, in zones 1 & 2: zoneCond=0
-    ASSERT_NEAR((at(2)->getPseudoSourceNode().value()), 0.02083333, 0.0000001); // zone 0 & 1: same zeta (at top)
+    ASSERT_NEAR((at(0)->getPseudoSourceNode().value()), 0.00466666,0.0000001); // in zone 0: delnus=0, in zone 2,3: zoneConductance=0
+    ASSERT_NEAR((at(2)->getPseudoSourceNode().value()), 0.01666666, 0.0000001); // zone 0,1,2: same zeta (at top)
 }
 
 TEST_F(StandardNodeVDFFixture, getVerticalFluxCorrection) {
-    ASSERT_NEAR((at(2)->getVerticalFluxCorrection().value()), 0.00062500, 0.0000001);
-    ASSERT_NEAR((at(3)->getVerticalFluxCorrection().value()), 0.00041666, 0.0000001);
+    ASSERT_NEAR((at(2)->getVerticalFluxCorrection().value()), 0.00110000, 0.0000001);
+    ASSERT_NEAR((at(3)->getVerticalFluxCorrection().value()), 0.00140000, 0.0000001);
     // todo test unconfined node
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrTop) {
     ASSERT_EQ((at(0)->getFluxCorrTop().value()), 0.0);
     ASSERT_EQ((at(1)->getFluxCorrTop().value()), 0.0);
-    ASSERT_NEAR((at(2)->getFluxCorrTop().value()), -0.06729166, 0.0000001);
-    ASSERT_NEAR((at(3)->getFluxCorrTop().value()), -0.13375000, 0.0000001);
+    ASSERT_NEAR((at(2)->getFluxCorrTop().value()), -0.06776666, 0.0000001);
+    ASSERT_NEAR((at(3)->getFluxCorrTop().value()), -0.13473333, 0.0000001);
     // todo test for unconfined node, are there SWI2 changes for confined nodes?
 }
 
 TEST_F(StandardNodeVDFFixture, getFluxCorrDown) {
-    ASSERT_NEAR((at(0)->getFluxCorrDown().value()), 0.06729166, 0.0000001);
-    ASSERT_NEAR((at(1)->getFluxCorrDown().value()), 0.13375000, 0.0000001);
+    ASSERT_NEAR((at(0)->getFluxCorrDown().value()), 0.06776666, 0.0000001);
+    ASSERT_NEAR((at(1)->getFluxCorrDown().value()), 0.13473333, 0.0000001);
     ASSERT_EQ((at(2)->getFluxCorrDown().value()), 0.0);
     ASSERT_EQ((at(3)->getFluxCorrDown().value()), 0.0);
     // todo test for unconfined node, are there SWI2 changes for confined nodes?
@@ -269,12 +279,14 @@ TEST_F(StandardNodeVDFFixture, getSourcesBelowZeta) {
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
 
-    ASSERT_EQ((at(0)->getSourcesBelowZeta(1).value()), 0.2);
-// todo
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(1).value()), -49.8);
+    // todo test for unconfined node? (changes computation of HCOF)
 }
 
-TEST_F(StandardNodeVDFFixture, getZetaPseudoSource) {
-    // todo
+TEST_F(StandardNodeVDFFixture, getPseudoSourceBelowZeta) {
+    ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(1).value()), 0);
+    ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(2).value()), 0.002);
+    // todo test head part with two horizontal neighbor nodes that have different heads
 }
 
 TEST_F(StandardNodeVDFFixture, getTipToeFlow) {
