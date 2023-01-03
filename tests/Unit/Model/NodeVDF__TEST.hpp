@@ -50,7 +50,7 @@ public:
             nodes->at(k)->setMaxTipSlope(0.2 * si::si_dimensionless);
             nodes->at(k)->setMaxToeSlope(0.2 * si::si_dimensionless);
             nodes->at(k)->setEffectivePorosity(0.2 * si::si_dimensionless);
-            nodes->at(k)->setZoneOfSinksAndSources(0, 2, 3);
+            nodes->at(k)->setZoneOfSinksAndSources(0, 3, 4);
         }
 
         // set nodes 0 and 1 as horizontal neighbours
@@ -217,16 +217,19 @@ TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
 }
 
 TEST_F(StandardNodeVDFFixture, getRHSConstantDensity) {
-    at(0)->setHead_direct(1);
+    //at(0)->setHead_direct(1);
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_EQ((at(0)->getRHSConstantDensity().value()), -50);
+    ASSERT_EQ((at(0)->getRHSConstantDensity().value()), -150); // with head set to 1, this is -50
 }
 
 TEST_F(StandardNodeVDFFixture, getPseudoSourceNode) {
     ASSERT_NEAR((at(0)->getPseudoSourceNode().value()), 0.00466666,0.0000001); // in zone 0: delnus=0, in zone 2,3: zoneConductance=0
+    ASSERT_NEAR((at(1)->getPseudoSourceNode().value()), -0.00466666,0.0000001); // in zone 0: delnus=0, in zone 2,3: zoneConductance=0
+
     ASSERT_NEAR((at(2)->getPseudoSourceNode().value()), 0.01666666, 0.0000001); // zone 0,1,2: same zeta (at top)
+    ASSERT_NEAR((at(3)->getPseudoSourceNode().value()), -0.01666666, 0.0000001); // zone 0,1,2: same zeta (at top)
 }
 
 TEST_F(StandardNodeVDFFixture, getVerticalFluxCorrection) {
@@ -252,21 +255,31 @@ TEST_F(StandardNodeVDFFixture, getFluxCorrDown) {
 }
 
 TEST_F(StandardNodeVDFFixture, getRHS) {
-    at(0)->setHead_direct(1);
+    //at(0)->setHead_direct(1);
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_NEAR((at(0)->getRHS().value()), -49.99270833, 0.0000001);
-    // with getRHSConstantDensity = -50; pseudoSourceNode = 0; fluxCorrectionTop = 0; fluxCorrectionDown = 0.00729166666
-    // (with fluxFromDownNode: 0.000625; verticalConductance: 0.00666667)
+    ASSERT_NEAR((at(0)->getRHS().value()), -149.9275666, 0.0000001);
+    // with getRHSConstantDensity = -150; pseudoSourceNode = 0.00466666;
+    // fluxCorrectionTop = 0; fluxCorrectionDown = 0.06776666
+
+    at(1)->addExternalFlow(RECHARGE, 0, 50, 0);
+    at(1)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
+    at(1)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
+    ASSERT_NEAR((at(1)->getRHS().value()), -149.8699333, 0.0000001);
+    // with getRHSConstantDensity = -150; pseudoSourceNode = 0.00466666;
+    // fluxCorrectionTop = 0; fluxCorrectionDown = 0.134733333
 }
 
 TEST_F(StandardNodeVDFFixture, getEffectivePorosityTerm) {
     ASSERT_EQ((at(0)->getEffectivePorosityTerm().value()), 0.2);
+    ASSERT_EQ((at(0)->getEffectivePorosityTerm().value()), 0.2);
+    ASSERT_EQ((at(0)->getEffectivePorosityTerm().value()), 0.2);
+    ASSERT_EQ((at(0)->getEffectivePorosityTerm().value()), 0.2);
 }
 
 TEST_F(StandardNodeVDFFixture, getZoneOfSources) {
-    ASSERT_EQ((at(0)->getZoneOfSources()), 2);
+    ASSERT_EQ((at(0)->getZoneOfSources()), 3);
 }
 
 TEST_F(StandardNodeVDFFixture, getZoneOfSinks) {
@@ -274,36 +287,74 @@ TEST_F(StandardNodeVDFFixture, getZoneOfSinks) {
 }
 
 TEST_F(StandardNodeVDFFixture, getSourcesBelowZeta) {
-    at(0)->setHead_direct(1);
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
 
-    ASSERT_EQ((at(0)->getSourcesBelowZeta(1).value()), -49.8);
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(0).value()), 852); // sink of 852 m³/d (currently not actually used)
+    // Question: why is getSourcesBelowZeta(0) used according to the SWI2 code? (lines 3523-3569, more precisely 3555)
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(1).value()), 0);
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(2).value()), 0);
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(3).value()), 0);
+    ASSERT_EQ((at(0)->getSourcesBelowZeta(4).value()), 0);
     // todo test for unconfined node? (changes computation of HCOF)
 }
 
 TEST_F(StandardNodeVDFFixture, getPseudoSourceBelowZeta) {
+    ASSERT_NEAR((at(0)->getPseudoSourceBelowZeta(0).value()), 0.0046666, 0.0000001);
     ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(1).value()), 0);
-    ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(2).value()), 0.002);
+    ASSERT_NEAR((at(0)->getPseudoSourceBelowZeta(2).value()), 0.0046666, 0.0000001);
+    ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(3).value()), 0); // at bottom -> should be 0
+    ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(4).value()), 0); // at bottom -> should be 0
     // todo test head part with two horizontal neighbor nodes that have different heads
 }
 
 TEST_F(StandardNodeVDFFixture, getTipToeFlow) {
+    ASSERT_EQ((at(0)->getTipToeFlow(0).value()), 0); // no tip and toe tracking for the 0th surface
+    ASSERT_NEAR((at(0)->getTipToeFlow(1).value()), 0.0677666, 0.0000001); // only vertical
+    ASSERT_NEAR((at(0)->getTipToeFlow(2).value()), 0.0677666, 0.0000001); // only vertical
+    ASSERT_EQ((at(0)->getTipToeFlow(3).value()), 0); // not active in node 0
+    ASSERT_EQ((at(0)->getTipToeFlow(4).value()), 0); // not active in node 0
     // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getZetaRHS) {
-    //at(0)->getZetaRHS(1);
+    at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
+    at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
+    at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
+
+    ASSERT_NEAR((at(0)->getZetaRHS(0).value()), -853.9953333, 0.0000001);
+    ASSERT_NEAR((at(0)->getZetaRHS(1).value()), -1.7322333, 0.0000001);
+    ASSERT_NEAR((at(0)->getZetaRHS(2).value()), -1.4275666, 0.0000001);
+    ASSERT_NEAR((at(0)->getZetaRHS(3).value()), 0, 0.0000001);
+    ASSERT_NEAR((at(0)->getZetaRHS(4).value()), 0, 0.0000001);
     // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getVDFMatrixEntries) {
+    // node 0
+    // - localZetaID = 0
+    ASSERT_NEAR((at(0)->getVDFMatrixEntries(0)[0].value()), -0.2, 0.0000001);
+    ASSERT_NEAR((at(0)->getVDFMatrixEntries(0)[1].value()), 0, 0.0000001);
+    // - localZetaID = 1
+    ASSERT_NEAR((at(0)->getVDFMatrixEntries(1)[0].value()), -0.2046666, 0.0000001);
+    ASSERT_NEAR((at(0)->getVDFMatrixEntries(1)[1].value()), 0.0046666, 0.0000001);
+    // node 1 with localZetaID = 2
+    ASSERT_NEAR((at(1)->getVDFMatrixEntries(2)[1].value()), -0.2, 0.0000001);
+    ASSERT_NEAR((at(1)->getVDFMatrixEntries(2)[0].value()), 0, 0.0000001);
+    // node 2 with localZetaID = 3
+    ASSERT_NEAR((at(2)->getVDFMatrixEntries(3)[2].value()), -0.2033333, 0.0000001);
+    ASSERT_NEAR((at(2)->getVDFMatrixEntries(3)[3].value()), 0.0033333, 0.0000001);
     // todo
 }
 
 TEST_F(StandardNodeVDFFixture, verticalZetaMovement) {
-    // todo
+    at(2)->verticalZetaMovement();
+    ASSERT_EQ(at(2)->getZeta(0).value(), 0);
+    ASSERT_EQ(at(2)->getZeta(1).value(), 0);
+    ASSERT_EQ(at(2)->getZeta(2).value(), 0);
+    //ASSERT_NEAR(at(2)->getZeta(3).value(), -2.5, 0.0000001); // todo
+    //ASSERT_NEAR(at(2)->getZeta(4).value(), 0.0033333, 0.0000001); // todo
 }
 
 TEST_F(StandardNodeVDFFixture, horizontalZetaMovement) {
