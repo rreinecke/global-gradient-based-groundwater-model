@@ -328,7 +328,6 @@ TEST_F(StandardNodeVDFFixture, getZetaRHS) {
     ASSERT_NEAR((at(0)->getZetaRHS(2).value()), -1.4275666, 0.0000001);
     ASSERT_NEAR((at(0)->getZetaRHS(3).value()), 0, 0.0000001);
     ASSERT_NEAR((at(0)->getZetaRHS(4).value()), 0, 0.0000001);
-    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, getVDFMatrixEntries) {
@@ -345,20 +344,23 @@ TEST_F(StandardNodeVDFFixture, getVDFMatrixEntries) {
     // node 2 with localZetaID = 3
     ASSERT_NEAR((at(2)->getVDFMatrixEntries(3)[2].value()), -0.2033333, 0.0000001);
     ASSERT_NEAR((at(2)->getVDFMatrixEntries(3)[3].value()), 0.0033333, 0.0000001);
-    // todo
 }
 
 TEST_F(StandardNodeVDFFixture, verticalZetaMovement) {
+    at(2)->setZeta(3, 0 * si::meter);
+    at(2)->setZetaPosInNode(3);
     at(2)->verticalZetaMovement();
-    ASSERT_EQ(at(2)->getZeta(0).value(), 0);
-    ASSERT_EQ(at(2)->getZeta(1).value(), 0);
-    ASSERT_EQ(at(2)->getZeta(2).value(), 0);
-    //ASSERT_NEAR(at(2)->getZeta(3).value(), -2.5, 0.0000001); // todo
-    //ASSERT_NEAR(at(2)->getZeta(4).value(), 0.0033333, 0.0000001); // todo
+    ASSERT_EQ(at(2)->getZeta(0).value(), 0); // surface 0 is at the top of node 0 and 2
+    ASSERT_EQ(at(2)->getZeta(1).value(), 0); // surface 1 is between in node 0 and at the top of node 2
+    ASSERT_EQ(at(2)->getZeta(2).value(), 0); // surface 2 is at the bottom of node 0 and top of node 2 -> move
+    ASSERT_NEAR(at(0)->getZeta(3).value(), 0, 0.0000001); // getFluxCorrTop() < 0 -> do not move zeta 3 in node 0
+    ASSERT_NEAR(at(2)->getZeta(3).value(), -0.3388333, 0.0000001); // getFluxCorrTop() < 0 -> lower zeta 3 in node 2
+    ASSERT_EQ(at(2)->getZeta(4).value(), -10); // remains unchanged
 }
 
 TEST_F(StandardNodeVDFFixture, horizontalZetaMovement) {
-    // todo
+    ASSERT_NEAR(at(2)->getZeta(3).value(), -2.5, 0.0000001); // getFluxCorrTop() < 0 -> do not move zeta 3 in node 0
+
 }
 
 TEST_F(StandardNodeVDFFixture, clipInnerZetas) {
@@ -372,6 +374,10 @@ TEST_F(StandardNodeVDFFixture, clipInnerZetas) {
 }
 
 TEST_F(StandardNodeVDFFixture, correctCrossingZetas) {
+    at(0)->setZeta(1, 5 * si::meter); // set zeta 1 below zeta 2 (=7.5m)
+    at(0)->correctCrossingZetas();
+    ASSERT_EQ(at(0)->getZeta(1).value(), 7.5);
+    ASSERT_EQ(at(0)->getZeta(2).value(), 5);
     // todo
 }
 

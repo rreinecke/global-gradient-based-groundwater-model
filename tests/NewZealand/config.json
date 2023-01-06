@@ -3,7 +3,7 @@
     "model_config": {
       "nodes": "grid_nz.csv",
       "row_cols": "false",
-      "steadystate": "true",
+      "steady_state": "true",
       "number_of_nodes": 4603,
       "number_of_rows": 156,
       "number_of_cols": 146,
@@ -23,29 +23,29 @@
       "max_toe_slope": 0.0,
       "max_tip_slope": 0.0,
       "cache": "false",
-      "adaptivestepsize": "false",
-      "boundarycondition": "GeneralHeadBoundary",
+      "adaptive_stepsize": "false",
+      "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",
       "iterations": 50000,
       "inner_itter": 20,
-      "closingcrit": 1e-10,
-      "headchange": 1,
-      "zetachange": 0,
+      "closing_crit": 1e-10,
+      "head_change": 1,
+      "zeta_change": 0,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.8,
-      "stepsize": "daily",
+      "step_size": "daily",
       "wetting_approach": "nwt"
     },
     "input": {
       "data_config": {
         "k_from_lith": "true",
         "k_ghb_from_file": "false",
-        "specificstorage_from_file": "false",
-        "specificyield_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
         "k_river_from_file": "false",
         "aquifer_depth_from_file": "false",
         "initial_head_from_file": "true",
@@ -61,8 +61,8 @@
           100
         ],
         "anisotropy": 10,
-        "specificyield": 0.15,
-        "specificstorage": 0.000015
+        "specific_yield": 0.15,
+        "specific_storage": 0.000015
       },
       "data": {
         "surface_water_elevation": "surface_water_elevation.csv",

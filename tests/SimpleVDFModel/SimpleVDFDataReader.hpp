@@ -34,7 +34,8 @@ namespace GlobalFlow {
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading variable density info";
                     readDensityConfig(op.getNumberOfNodes(), op.getDensityZones(),
-                                      op.getMaxToeSlope(), op.getMaxTipSlope());
+                                      op.getMaxTipToeSlope(), op.getMinDepthFactor(),
+                                      op.getSlopeAdjFactor(), op.getVDFLock());
                 }
                 LOG(userinfo) << "Reading hydraulic parameters";
                 readConduct(buildDir(op.getLithology()));
@@ -121,8 +122,10 @@ namespace GlobalFlow {
 
             void readDensityConfig(int numberOfNodes,
                                    vector<double> densityZones,
-                                   double maxToeSlope,
-                                   double maxTipSlope){
+                                   double maxTipToeSlope,
+                                   double minDepthFactor,
+                                   double slopeAdjFactor,
+                                   double vdfLock){
                 double densityFresh = 1000.0;
                 vector<Model::quantity<Model::Dimensionless>> nusInZones;
                 vector<Model::quantity<Model::Dimensionless>> delnus;
@@ -140,8 +143,10 @@ namespace GlobalFlow {
                 for (large_num k = 0; k < numberOfNodes; ++k) {
                     nodes->at(k)->setDelnus(delnus);
                     nodes->at(k)->setNusInZones(nusInZones);
-                    nodes->at(k)->setMaxTipSlope(maxTipSlope);
-                    nodes->at(k)->setMaxToeSlope(maxToeSlope);
+                    nodes->at(k)->setMaxTipToeSlope(maxTipToeSlope);
+                    nodes->at(k)->setMinDepthFactor(minDepthFactor);
+                    nodes->at(k)->setSlopeAdjFactor(slopeAdjFactor);
+                    nodes->at(k)->setVDFLock(vdfLock * Model::si::meter);
                 }
             }
 

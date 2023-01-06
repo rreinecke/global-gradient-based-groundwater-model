@@ -24,7 +24,7 @@ namespace GlobalFlow {
 
         using namespace std;
 
-        enum Stepsize {
+        enum StepSize {
             DAILY,
             MONTHLY
         };
@@ -86,8 +86,8 @@ namespace GlobalFlow {
             string NODES{""};
             int THREADS{0};
             bool CACHE{false};
-            bool ADAPTIVE_STEPSIZE{false};
-            Stepsize stepsize{DAILY};
+            bool ADAPTIVE_STEP_SIZE{false};
+            StepSize step_size{DAILY};
             string WETTING_APPROACH{"nwt"};
             int INITAL_HEAD{0};
             double K{0.001};
@@ -103,8 +103,10 @@ namespace GlobalFlow {
             // density information
             bool DENSITY_VARIABLE{false};
             vector<double> DENSITY_ZONES{1000.0};
-            double MAX_TOE_SLOPE{0.2};
-            double MAX_TIP_SLOPE{0.2};
+            double MAX_TIP_TOE_SLOPE{0.2};
+            double MIN_DEPTH_FACTOR{0.1};
+            double SLOPE_ADJ_FACTOR{0.1};
+            double VDF_LOCK{0.001};
 
             string BASE_PATH{"data"};
             bool k_from_lith{true};
@@ -235,13 +237,23 @@ namespace GlobalFlow {
             }
 
             double
-            getMaxToeSlope() {
-                return MAX_TOE_SLOPE;
+            getMaxTipToeSlope() {
+                return MAX_TIP_TOE_SLOPE;
             }
 
             double
-            getMaxTipSlope() {
-                return MAX_TIP_SLOPE;
+            getMinDepthFactor() {
+                return MIN_DEPTH_FACTOR;
+            }
+
+            double
+            getSlopeAdjFactor() {
+                return SLOPE_ADJ_FACTOR;
+            }
+
+            double
+            getVDFLock() {
+                return VDF_LOCK;
             }
 
             int
@@ -382,20 +394,20 @@ namespace GlobalFlow {
             }
 
             const bool
-            adaptiveStepsizeEnabled() {
-                return ADAPTIVE_STEPSIZE;
+            adaptiveStepSizeEnabled() {
+                return ADAPTIVE_STEP_SIZE;
             }
 
             //Computations are all based on daily
             const int
-            getStepsizeModifier() {
-                switch (stepsize) {
+            getStepSizeModifier() {
+                switch (step_size) {
                     case DAILY:
                         return 1;
                     case MONTHLY:
                         return 31;
                 }
-                throw std::out_of_range("No valid stepsize\n");
+                throw std::out_of_range("No valid step size\n");
             }
 
             bool

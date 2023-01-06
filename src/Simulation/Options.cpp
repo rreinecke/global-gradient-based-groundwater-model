@@ -66,26 +66,26 @@ namespace GlobalFlow {
             //    exit(3);
             //}
             CACHE = config.get<bool>("cache");
-            ADAPTIVE_STEPSIZE = config.get<bool>("adaptivestepsize");
-            BOUNDARY_CONDITION = config.get<string>("boundarycondition");
+            ADAPTIVE_STEP_SIZE = config.get<bool>("adaptive_step_size");
+            BOUNDARY_CONDITION = config.get<string>("boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
             pt::ptree numerics = tree.get_child("numerics");
             SOLVER = numerics.get<string>("solver");
             IITER = numerics.get<int>("iterations");
             I_ITTER = numerics.get<int>("inner_itter");
-            RCLOSE = numerics.get<double>("closingcrit");
-            MAX_HEAD_CHANGE = numerics.get<double>("headchange");
-            MAX_ZETA_CHANGE = numerics.get<double>("zetachange");
+            RCLOSE = numerics.get<double>("closing_crit");
+            MAX_HEAD_CHANGE = numerics.get<double>("head_change");
+            MAX_ZETA_CHANGE = numerics.get<double>("zeta_change");
             DAMPING = numerics.get<bool>("damping");
             MIN_DAMP = numerics.get<double>("min_damp");
             MAX_DAMP = numerics.get<double>("max_damp");
-            string tmp = numerics.get<string>("stepsize");
+            string tmp = numerics.get<string>("step_size");
             if (tmp == "DAILY") {
-                stepsize = DAILY;
+                step_size = DAILY;
             }
             if (tmp == "MONTHLY") {
-                stepsize = MONTHLY;
+                step_size = MONTHLY;
             }
             WETTING_APPROACH = numerics.get<string>("wetting_approach");
 
@@ -96,8 +96,8 @@ namespace GlobalFlow {
             pt::ptree data_config = input.get_child("data_config");
             k_from_lith = data_config.get<bool>("k_from_lith");
             k_ghb_from_file = data_config.get<bool>("k_ghb_from_file");
-            specificstorage_from_file = data_config.get<bool>("specificstorage_from_file");
-            specificyield_from_file = data_config.get<bool>("specificyield_from_file");
+            specificstorage_from_file = data_config.get<bool>("specific_storage_from_file");
+            specificyield_from_file = data_config.get<bool>("specific_yield_from_file");
             k_river_from_file = data_config.get<bool>("k_river_from_file");
             aquifer_depth_from_file = data_config.get<bool>("aquifer_depth_from_file");
             //heads_from_file = data_config.get<bool>("initial_head_from_file");
@@ -108,13 +108,15 @@ namespace GlobalFlow {
             GHB_K = default_data.get<double>("ghb_K");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
             ANISOTROPY = default_data.get<double>("anisotropy");
-            SPECIFIC_YIELD = default_data.get<double>("specificyield");
-            SPECIFIC_STORAGE = default_data.get<double>("specificstorage");
+            SPECIFIC_YIELD = default_data.get<double>("specific_yield");
+            SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
             DENSITY_VARIABLE = config.get<bool>("density_variable");
             DENSITY_ZONES = getTypeArray<double>("density_zones", config);
-            MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
-            MAX_TIP_SLOPE = config.get<double>("max_tip_slope");
+            MAX_TIP_TOE_SLOPE = config.get<double>("max_tip_toe_slope");
+            MIN_DEPTH_FACTOR = config.get<double>("min_depth_factor");
+            SLOPE_ADJ_FACTOR = config.get<double>("slope_adj_factor");
+            VDF_LOCK = config.get<double>("vdf_lock");
 
             bool slopeAsArray = data_config.get<bool>("slope_as_array");
             bool efoldAsArray = data_config.get<bool>("efold_as_array");
@@ -153,9 +155,9 @@ namespace GlobalFlow {
             K_DIR = getOptional("conductance", data);
             RIVER_K = getOptional("river_conductance", data);
             GHB_K_DIR = getOptional("ghb_conductance", data);
-            SS_FILE = getOptional("specificstorage", data);
-            SY_FILE = getOptional("specificyield", data);
-            AQ_DEPTH = getOptional("aquiferdepth", data);
+            SS_FILE = getOptional("specific_storage", data);
+            SY_FILE = getOptional("specific_yield", data);
+            AQ_DEPTH = getOptional("aquifer_depth", data);
 
             INITIAL_HEADS = getOptional("initial_head", data);
 

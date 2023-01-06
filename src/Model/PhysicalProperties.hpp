@@ -168,8 +168,10 @@ namespace GlobalFlow {
         struct EffectivePorosity;
         struct Delnus;
         struct DensityVariable;
-        struct MaxToeSlope;
-        struct MaxTipSlope;
+        struct MaxTipToeSlope;
+        struct MinDepthFactor;
+        struct SlopeAdjFactor;
+        struct VDFLock;
         struct NusInZones;
         struct RHSConstantDensity_TZero;
 
@@ -210,9 +212,11 @@ namespace GlobalFlow {
         PhysicalProperty<t_dim, EffectivePorosity>,
         PhysicalProperty<std::vector<t_dim>, Delnus>,
         PhysicalProperty<bool, DensityVariable>,
-        PhysicalProperty<t_dim, MaxToeSlope>,
-        PhysicalProperty<t_dim, MaxTipSlope>,
-        PhysicalProperty<std::vector<t_dim>,NusInZones>,
+        PhysicalProperty<t_dim, MaxTipToeSlope>,
+        PhysicalProperty<t_dim, MinDepthFactor>,
+        PhysicalProperty<t_dim, SlopeAdjFactor>,
+        PhysicalProperty<t_meter, VDFLock>,
+        PhysicalProperty<std::vector<t_dim>, NusInZones>,
         PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
         >;
 
