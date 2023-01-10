@@ -20,10 +20,12 @@
       "density_zones": [
         1000
       ],
-      "max_toe_slope": 0.0,
-      "max_tip_slope": 0.0,
+      "max_tip_toe_slope": 0.2,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.001,
       "cache": "false",
-      "adaptive_stepsize": "false",
+      "adaptive_step_size": "false",
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },

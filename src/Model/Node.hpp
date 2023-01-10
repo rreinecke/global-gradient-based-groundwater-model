@@ -1349,12 +1349,12 @@ Modify Properties
             /**
              * @brief set the zeta position in the node as at top/bottom/between the first and last zeta surface
              * @param localZetaID zeta surface id in this node
-             * @note in SWI2: lines 4358-4383 (line 4362 is ignored since it does not make sense)
+             * @note in SWI2: SSWI2_SET_IPLPOS (lines 4358-4383; )
              */
             void setZetaPosInNode(int localZetaID){
                 std::string tmp;
                 /*if (localZetaID == 0) {
-                    tmp = "between"; // SWI2 line 4362
+                    tmp = "between"; // SWI2 line 4362: ignored here since it does not make sense
                 } else */if (Zetas[localZetaID] >= Zetas.front()){
                     tmp = "top";
                 } else if (Zetas[localZetaID] <= Zetas.back() or
@@ -1559,7 +1559,7 @@ Modify Properties
                                         thisNode = at(got)->neighbours.find(NeighbourPosition::BACK);
                                     }
                                     t_vol_t ttf_right = at(got)->tipToeFlow(thisNode, localZetaID);
-                                    LOG(userinfo) << "tipToeFlow(thisNode, localZetaID): " << ttf_right.value() << std::endl;
+                                    //LOG(userinfo) << "tipToeFlow(thisNode, localZetaID): " << ttf_right.value() << std::endl;
                                     out += ttf_right; // add tip/toe flow at RIGHT/FRONT neighbour
 
                                 } else if (position == NeighbourPosition::TOP) {
@@ -1876,8 +1876,8 @@ Modify Properties
 
                 t_meter maxDelta; // maximum height difference of a zeta surface n between adjacent nodes
                 t_meter delta_self; // potential zeta height adjustment for this node
-                t_meter delta_neig; // potential zeta height adjustment for this node
-
+                t_meter delta_neig; // potential zeta height adjustment for neighbour node
+                t_meter delta_opp; // potential zeta height adjustment for opposite neighbour node
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                          NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
@@ -1908,12 +1908,15 @@ Modify Properties
                                     //%% Toe tracking %%
                                     t_meter zetaDif = abs(Zetas[localZetaID] - at(got)->Zetas.back());
                                     //LOG(userinfo) << "zetaDif (toe): " << zetaDif.value() << std::endl;
-
                                     if (zetaDif > maxDelta) {
                                         Zetas[localZetaID] = Zetas[localZetaID] - delta_self;
-                                        //LOG(userinfo) << "zetaChange_self (toe): " << zetaChange_self.value() << std::endl;
-                                        at(got)->Zetas[localZetaID] = at(got)->Zetas.back() + delta_neig;
-                                        //LOG(userinfo) << "zetaChange_neig (toe): " << zetaChange_neig.value() << std::endl;
+                                        LOG(userinfo) << "zetaChange_self (toe): " << delta_self.value() << std::endl;
+                                        // the following if is not in line with SSWI2:
+                                        if (at(got)->hasGHB()){ // do not change zeta surface height
+                                        } else {
+                                            at(got)->Zetas[localZetaID] = at(got)->Zetas.back() + delta_neig;
+                                            LOG(userinfo) << "zetaChange_neig (toe): " << delta_neig.value() << std::endl;
+                                        }
                                     }
                                 } else if (at(got)->ZetaPosInNode[localZetaID] == "top") {
                                     //%% Tip tracking %%
@@ -1921,21 +1924,32 @@ Modify Properties
                                     //LOG(userinfo) << "zetaDif (tip): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         Zetas[localZetaID] = Zetas[localZetaID] + delta_self;
-                                        //LOG(userinfo) << "zetaChange_self (tip): " << zetaChange_self.value() << std::endl;
-                                        at(got)->Zetas[localZetaID] = at(got)->Zetas.front() - delta_neig;
-                                        //LOG(userinfo) << "zetaChange_neig (tip): " << -zetaChange_neig.value() << std::endl;
+                                        LOG(userinfo) << "zetaChange_self (tip): " << delta_self.value() << std::endl;
+                                        // the following if is not in line with SSWI2:
+                                        if (at(got)->hasGHB()){ // do not change zeta surface height
+                                        } else {
+                                            at(got)->Zetas[localZetaID] = at(got)->Zetas.front() - delta_neig;
+                                            LOG(userinfo) << "zetaChange_neig (tip): " << delta_neig.value() << std::endl;
+                                        }
+
                                     }
                                 }
 
                                 if ((Zetas[localZetaID] - Zetas.back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
                                     if (at(got_opp)->ZetaPosInNode[localZetaID] == "between") {
-                                        // change zeta in other direction neighbour
-                                        at(got_opp)->Zetas[localZetaID] =
-                                                at(got_opp)->Zetas[localZetaID] +
-                                                ((Zetas[localZetaID] - Zetas.back()) *
-                                                (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
-                                                (getLengthNeig(got_opp) * getAt<t_dim, EffectivePorosity>(got_opp)));
-                                        Zetas[localZetaID] = Zetas.back();
+                                        // the following if is not in line with SSWI2:
+                                        if (at(got_opp)->hasGHB()){ // do not change zeta surface height
+                                        } else {
+                                            // change zeta in other direction neighbour
+                                            delta_opp = ((Zetas[localZetaID] - Zetas.back()) *
+                                                         (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
+                                                         (getLengthNeig(got_opp) * getAt<t_dim, EffectivePorosity>(got_opp)));
+                                            at(got_opp)->Zetas[localZetaID] =
+                                                    at(got_opp)->Zetas[localZetaID] + delta_opp;
+
+                                            Zetas[localZetaID] = Zetas.back();
+                                            LOG(userinfo) << "delta_opp (toe): " << delta_opp.value() << std::endl;
+                                        }
                                     }
                                 }
                             }

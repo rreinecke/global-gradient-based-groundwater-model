@@ -12,7 +12,7 @@ namespace GlobalFlow {
     }
 
     void NZRunner::setupSimulation() {
-        reader = new DataProcessing::GlobalDataReader(op.getStepsizeModifier());
+        reader = new DataProcessing::GlobalDataReader(op.getStepSizeModifier());
         LOG(debug) << "reader initiated" << std::endl;
 
         sim = Simulation::Simulation(op, reader);

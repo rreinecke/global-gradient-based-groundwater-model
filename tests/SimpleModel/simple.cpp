@@ -11,7 +11,7 @@ void StandaloneRunner::loadSettings() {
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleDataReader(op.getStepsizeModifier());
+    reader = new DataProcessing::SimpleDataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
