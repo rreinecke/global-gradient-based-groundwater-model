@@ -47,8 +47,10 @@ public:
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->setDelnus(delnus);
             nodes->at(k)->setNusInZones(nusInZones);
-            nodes->at(k)->setMaxTipSlope(0.2 * si::si_dimensionless);
-            nodes->at(k)->setMaxToeSlope(0.2 * si::si_dimensionless);
+            nodes->at(k)->setMaxTipToeSlope(0.2 * si::si_dimensionless);
+            nodes->at(k)->setSlopeAdjFactor(0.1 * si::si_dimensionless);
+            nodes->at(k)->setMinDepthFactor(0.1 * si::si_dimensionless);
+            nodes->at(k)->setVDFLock(0.001 * si::meter);
             nodes->at(k)->setEffectivePorosity(0.2 * si::si_dimensionless);
             nodes->at(k)->setZoneOfSinksAndSources(0, 3, 4);
         }
@@ -359,7 +361,11 @@ TEST_F(StandardNodeVDFFixture, verticalZetaMovement) {
 }
 
 TEST_F(StandardNodeVDFFixture, horizontalZetaMovement) {
-    ASSERT_NEAR(at(2)->getZeta(3).value(), -2.5, 0.0000001); // getFluxCorrTop() < 0 -> do not move zeta 3 in node 0
+    at(3)->setZeta(3, 0 * si::meter);
+    at(3)->setZetaPosInNode(3);
+    at(2)->horizontalZetaMovement();
+    ASSERT_NEAR(at(2)->getZeta(3).value(), -2.49, 0.0000001); // moved zeta 3 in node 2 up
+    ASSERT_NEAR(at(3)->getZeta(3).value(), -0.01, 0.0000001); // moved zeta 3 in node 3 down
 
 }
 
@@ -376,13 +382,18 @@ TEST_F(StandardNodeVDFFixture, clipInnerZetas) {
 TEST_F(StandardNodeVDFFixture, correctCrossingZetas) {
     at(0)->setZeta(1, 5 * si::meter); // set zeta 1 below zeta 2 (=7.5m)
     at(0)->correctCrossingZetas();
-    ASSERT_EQ(at(0)->getZeta(1).value(), 7.5);
-    ASSERT_EQ(at(0)->getZeta(2).value(), 5);
-    // todo
+    ASSERT_EQ(at(0)->getZeta(1).value(), 6.25); // both zetas will be set to their average value
+    ASSERT_EQ(at(0)->getZeta(2).value(), 6.25); // both zetas will be set to their average value
 }
 
 TEST_F(StandardNodeVDFFixture, preventZetaLocking) {
-    // todo
+    at(2)->setZeta(3, -10 * si::meter);
+    at(3)->setZeta(3, 0 * si::meter);
+    at(2)->setZetaPosInNode(3);
+    at(3)->setZetaPosInNode(3);
+    at(2)->preventZetaLocking();
+    ASSERT_NEAR(at(2)->getZeta(3).value(), -9.9995, 0.0000001); // moved zeta 3 in node 2 up
+    ASSERT_NEAR(at(3)->getZeta(3).value(), -0.0005, 0.0000001); // moved zeta 3 in node 3 down
 }
 
 

@@ -362,8 +362,8 @@ Equation::updateMatrix_zetas(int localZetaID) {
             numInactive++;
         }
     }
-    LOG(debug) << "A_zetas full:\n" << A_zetas << std::endl;
-    LOG(debug) << "b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
+    //LOG(debug) << "A_zetas full:\n" << A_zetas << std::endl;
+    //LOG(debug) << "b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
 
     //Check if after iteration former 0 values turned to non-zero
     if ((not A_zetas.isCompressed()) and isCached_zetas) {
@@ -500,27 +500,28 @@ void inline
 Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->verticalZetaMovement();
+            nodes->at(k)->verticalZetaMovement(); // no effect in simpleVDF
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->horizontalZetaMovement();
+            // LOG(userinfo) << "node = " << k << std::endl;
+            nodes->at(k)->horizontalZetaMovement(); // effect only at tip and toe in simpleVDF model
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->clipInnerZetas();
+            nodes->at(k)->clipInnerZetas(); // no effect in simpleVDF time-step 1
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->correctCrossingZetas();
+            nodes->at(k)->correctCrossingZetas(); // no effect in simpleVDF
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->preventZetaLocking();
+            nodes->at(k)->preventZetaLocking(); // no effect in simpleVDF
         }
 
         LOG(debug)<< "node, zeta" << std::endl;
@@ -780,8 +781,8 @@ Equation::solve_zetas(){
 
             //Solve inner iterations
             x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-            LOG(debug) << "A_zetas:\n" << A_zetas << std::endl;
-            LOG(debug) << "b_zetas:\n" << b_zetas << std::endl;
+            LOG(debug) << "A_zetas (outer iteration " << iterations << "):\n" << A_zetas << std::endl;
+            LOG(debug) << "b_zetas (outer iteration " << iterations << "):\n" << b_zetas << std::endl;
             LOG(debug) << "x_zetas (outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
             updateIntermediateZetas(localZetaID);
