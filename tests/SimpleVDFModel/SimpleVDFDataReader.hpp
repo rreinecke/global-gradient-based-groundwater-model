@@ -230,8 +230,7 @@ namespace GlobalFlow {
                     try {
                         pos = lookupSpatIDtoID.at(spatID);
                     }
-                    catch (const std::out_of_range &ex) {
-                        //if Node does not exist ignore entry
+                    catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;
                     }
                     nodes->at(pos)->addInitialZeta(height * Model::si::meter);
