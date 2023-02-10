@@ -10,6 +10,7 @@ namespace DataProcessing {
  * @param layers
  * @param ghbConduct // Question: what is this required for?
  * @param staticHeadBoundary // Question: what is this required for?
+ * @param staticHeadBoundary // Question: what is this required for?
  */
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers, double ghbConduct, bool staticHeadBoundary) {
     //id->row,col

@@ -50,7 +50,7 @@ namespace GlobalFlow {
             string SURFACE_WATER_ELEVATION{""};
 
             string RECHARGE{""};
-            string ZONES_SOURCES_SINKS{""};
+            string ZONES_SOURCES_SINKS_FILE{""};
             string PSEUDO_SOURCE_FLOW{""};
             string LITHOLOGY{""};
             string RIVER{""};
@@ -65,9 +65,9 @@ namespace GlobalFlow {
             string SY_FILE{""};
             string AQ_DEPTH{""};
             string INITIAL_HEADS{""};
-            string INITIAL_ZETAS{""};
+            string INITIAL_ZETAS_FILE{""};
             string INITIAL_ZONES{""};
-            string EFFECTIVE_POROSITY{""};
+            string EFFECTIVE_POROSITY_FILE{""};
 
             //++Special mappings++//
             string SPATID_ARCID{""};
@@ -107,6 +107,7 @@ namespace GlobalFlow {
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
+            vector<int> ZONES_SOURCES_SINKS
 
             string BASE_PATH{"data"};
             bool k_from_lith{true};
@@ -115,6 +116,11 @@ namespace GlobalFlow {
             bool specificyield_from_file{false};
             bool k_river_from_file{false};
             bool aquifer_depth_from_file{false};
+            bool eq_wtd_from_file{false};
+            bool initial_head_from_file{false};
+            bool initial_zetas_from_file{false};
+            bool effective_porosity_from_file{false};
+            bool zones_sources_sinks_from_file{false};
 
             bool ROW_COLS{false};
             double MAX_HEAD_CHANGE{0.01};
@@ -174,6 +180,16 @@ namespace GlobalFlow {
             bool isKRiverFromFile() { return k_river_from_file; }
 
             bool isAquiferDepthFile() { return aquifer_depth_from_file; }
+
+            bool isEqWTDFromFile() { return eq_wtd_from_file;}
+
+            bool isInitialHeadFromFile() { return initial_head_from_file;}
+
+            bool isInitialZetasFromFile() { return initial_zetas_from_file;}
+
+            bool isEffectivePorosityFromFile() { return effective_porosity_from_file;}
+
+            bool isZonesSourcesSinksFromFile() { return zones_sources_sinks_from_file;}
 
             string getKDir() { return K_DIR; }
 

@@ -100,13 +100,19 @@ namespace GlobalFlow {
             specificyield_from_file = data_config.get<bool>("specific_yield_from_file");
             k_river_from_file = data_config.get<bool>("k_river_from_file");
             aquifer_depth_from_file = data_config.get<bool>("aquifer_depth_from_file");
-            //heads_from_file = data_config.get<bool>("initial_head_from_file");
+            eq_wtd_from_file = data_config.get<bool>("eq_wtd_from_file");
+            initial_head_from_file = data_config.get<bool>("initial_head_from_file");
+            initial_zetas_from_file = data_config.get<bool>("initial_zetas_from_file");
+            effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
+            zones_sources_sinks_from_file = data_config.get<bool>("zones_sources_sinks_from_file");
 
             pt::ptree default_data = input.get_child("default_data");
             K = default_data.get<double>("K");
             INITAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
+            INITIAL_ZETAS = getTypeArray<double>("initial_zetas", default_data);
+
             ANISOTROPY = default_data.get<double>("anisotropy");
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
@@ -117,6 +123,10 @@ namespace GlobalFlow {
             MIN_DEPTH_FACTOR = config.get<double>("min_depth_factor");
             SLOPE_ADJ_FACTOR = config.get<double>("slope_adj_factor");
             VDF_LOCK = config.get<double>("vdf_lock");
+
+            EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
+            ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
+
 
             bool slopeAsArray = data_config.get<bool>("slope_as_array");
             bool efoldAsArray = data_config.get<bool>("efold_as_array");
@@ -143,7 +153,7 @@ namespace GlobalFlow {
 
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
-            ZONES_SOURCES_SINKS = getOptional("zones_sources_sinks", data);
+            ZONES_SOURCES_SINKS_FILE = getOptional("zones_sources_sinks", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVER = getOptional("river", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);
@@ -161,11 +171,11 @@ namespace GlobalFlow {
 
             INITIAL_HEADS = getOptional("initial_head", data);
 
-            INITIAL_ZETAS = getOptional("initial_zetas", data);
+            INITIAL_ZETAS_FILE = getOptional("initial_zetas", data);
 
             INITIAL_ZONES = getOptional("initial_zones", data);
 
-            EFFECTIVE_POROSITY = getOptional("effective_porosity", data);
+            EFFECTIVE_POROSITY_FILE = getOptional("effective_porosity", data);
 
             SPATID_ARCID = getOptional("spatID-arcID", data);
         }

@@ -33,7 +33,7 @@
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-80,
+      "closing_crit": 1E-10,
       "head_change": 0.000001,
       "zeta_change": 9.9999997E-16,
       "damping": "false",
@@ -66,13 +66,13 @@
         "specific_storage": 0.000015
       },
       "data": {
-        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
-        "recharge": "recharge_simpleVDF.csv",
+        "effective_porosity": "effective_porosity_simpleVDF.csv",
         "elevation": "elevation_simpleVDF.csv",
-        "lithology": "lithology_simpleVDF.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
         "initial_head": "initial_head_simpleVDF.csv",
         "initial_zetas": "initial_zetas_simpleVDF.csv",
-        "effective_porosity": "effective_porosity_simpleVDF.csv",
+        "lithology": "lithology_simpleVDF.csv",
+        "recharge": "recharge_simpleVDF.csv",
         "zones_sources_sinks": "zones_sources_sinks_simpleVDF.csv"
       }
     }

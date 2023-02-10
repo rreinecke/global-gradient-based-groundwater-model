@@ -47,7 +47,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
 
-                LOG(userinfo) << "Reading parameters for variable density flow";
+                LOG(userinfo) << "Reading input for variable density flow";
                 readInitialZetas(buildDir(op.getInitialZetasDir()));
                 readEffectivePorosity(buildDir(op.getEffectivePorosity()));
                 readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinks()), op.getDensityZones());
