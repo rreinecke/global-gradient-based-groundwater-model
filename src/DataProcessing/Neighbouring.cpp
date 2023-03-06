@@ -399,6 +399,12 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double specificYield;
     double specificStorage;
     bool densityVariable;
+    std::vector<Model::quantity<Model::Dimensionless>> delnus;
+    std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
+    double maxTipToeSlope;
+    double minDepthFactor;
+    double slopeAdjFactor;
+    Model::quantity<Model::Meter> vdfLock;
 
     for (int j = 0; j < layers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
@@ -425,6 +431,16 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
             densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
+            delnus = nodes->at(i)->getProperties().
+                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::DensityVariable>();
+            nusInZones = nodes->at(i)->getProperties().
+                    get<Model::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
+            maxTipToeSlope = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MaxTipToeSlope>();
+            minDepthFactor = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
+            vdfLock = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Meter>, Model::VDFLock>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
@@ -445,7 +461,13 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             specificYield,
                                                             specificStorage,
                                                             conf[j + 1],
-                                                            densityVariable));
+                                                            densityVariable,
+                                                            delnus,
+                                                            nusInZones,
+                                                            maxTipToeSlope,
+                                                            minDepthFactor,
+                                                            slopeAdjFactor,
+                                                            vdfLock));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(j + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()

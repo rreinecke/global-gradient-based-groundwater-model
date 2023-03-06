@@ -53,7 +53,13 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificYield,
                              double specificStorage,
                              bool confined,
-                             bool densityVariable): nodes(nodes) {
+                             bool densityVariable,
+                             vector<t_dim> delnus,
+                             vector<t_dim> nusInZones,
+                             double maxTipToeSlope,
+                             double minDepthFactor,
+                             double slopeAdjFactor,
+                             quantity<Meter> vdfLock): nodes(nodes) {
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
@@ -75,7 +81,13 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.set<bool, DensityVariable>(densityVariable);
+    fields.set<bool, DensityVariable> (densityVariable);
+    fields.set<vector<quantity<Dimensionless>>, Delnus>(delnus);
+    fields.set<vector<quantity<Dimensionless>>, NusInZones>(nusInZones);
+    fields.set<quantity<Dimensionless>, MaxTipToeSlope> (maxTipToeSlope * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
+    fields.set<quantity<Meter>, VDFLock> (vdfLock * si::meter);
 }
 }
 }//ns

@@ -64,7 +64,7 @@ namespace GlobalFlow {
             string SS_FILE{""};
             string SY_FILE{""};
             string AQ_DEPTH{""};
-            string INITIAL_HEADS{""};
+            string INITIAL_HEAD_FILE{""};
             string INITIAL_ZETAS_FILE{""};
             string INITIAL_ZONES{""};
             string EFFECTIVE_POROSITY_FILE{""};
@@ -89,7 +89,7 @@ namespace GlobalFlow {
             bool ADAPTIVE_STEP_SIZE{false};
             StepSize step_size{DAILY};
             string WETTING_APPROACH{"nwt"};
-            int INITAL_HEAD{0};
+            int INITIAL_HEAD{0};
             double K{0.001};
             double GHB_K{0.1};
             vector<int> AQUIFER_DEPTH{100};
@@ -103,11 +103,13 @@ namespace GlobalFlow {
             // density information
             bool DENSITY_VARIABLE{false};
             vector<double> DENSITY_ZONES{1000.0};
+            vector<double> INITIAL_ZETAS{0.0};
+            double EFFECTIVE_POROSITY{0.0};
             double MAX_TIP_TOE_SLOPE{0.2};
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
-            vector<int> ZONES_SOURCES_SINKS
+            vector<int> ZONES_SOURCES_SINKS{0};
 
             string BASE_PATH{"data"};
             bool k_from_lith{true};
@@ -203,13 +205,11 @@ namespace GlobalFlow {
 
             string getAQDepthDir() { return AQ_DEPTH; }
 
-            string getInitialHeadsDir() {return INITIAL_HEADS;}
+            string getInitialHeadsDir() {return INITIAL_HEAD_FILE;}
 
-            string getInitialZetasDir() {return INITIAL_ZETAS;}
+            string getInitialZetasDir() {return INITIAL_ZETAS_FILE;}
 
-            string getInitialZonesDir() {return INITIAL_ZONES;}
-
-            string getEffectivePorosity() {return EFFECTIVE_POROSITY;}
+            string getEffectivePorosityDir() {return EFFECTIVE_POROSITY_FILE;}
 
             bool isRowCol() { return ROW_COLS; }
 
@@ -360,8 +360,8 @@ namespace GlobalFlow {
             }
 
             string
-            getZonesOfSourcesAndSinks() {
-                return ZONES_SOURCES_SINKS;
+            getZonesOfSourcesAndSinksDir() {
+                return ZONES_SOURCES_SINKS_FILE;
             }
 
             string
@@ -433,7 +433,7 @@ namespace GlobalFlow {
 
             int
             getInitialHead() {
-                return INITAL_HEAD;
+                return INITIAL_HEAD;
             }
 
             double

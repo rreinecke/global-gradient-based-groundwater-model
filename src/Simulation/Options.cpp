@@ -108,7 +108,7 @@ namespace GlobalFlow {
 
             pt::ptree default_data = input.get_child("default_data");
             K = default_data.get<double>("K");
-            INITAL_HEAD = default_data.get<double>("initial_head");
+            INITIAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
             INITIAL_ZETAS = getTypeArray<double>("initial_zetas", default_data);
@@ -169,7 +169,7 @@ namespace GlobalFlow {
             SY_FILE = getOptional("specific_yield", data);
             AQ_DEPTH = getOptional("aquifer_depth", data);
 
-            INITIAL_HEADS = getOptional("initial_head", data);
+            INITIAL_HEAD_FILE = getOptional("initial_head", data);
 
             INITIAL_ZETAS_FILE = getOptional("initial_zetas", data);
 

@@ -70,6 +70,17 @@ add_executable(new_zealand_model tests/NewZealand/runner.cpp ${new_zealand_model
 target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
+# New Zealand model with Variable Density Flow (VDF)
+################################
+add_subdirectory(tests/NewZealandVDF)
+set(new_zealand_model_vdf_src ${SOURCE})
+list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/NewZealand/runner.cpp)
+add_executable(new_zealand_model_vdf tests/NewZealandVDF/runner.cpp ${new_zealand_model_vdf_src} ${HEADERS})
+target_link_libraries(new_zealand_model_vdf pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+################################
 # Unit Tests
 ################################
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest

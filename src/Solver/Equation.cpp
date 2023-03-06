@@ -124,9 +124,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID
     large_num nodeID;
     large_num rowID = index_mapping[nodeIter];
     large_num colID;
-
     quantity<Model::MeterSquaredPerTime> zoneConductance;
-
     map = nodes->at(nodeIter)->getVDFMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
@@ -135,7 +133,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID
 
         if (is_active) {
             colID = nodeID - numInactive;
-            //LOG(debug) << "colID: " << colID << std::endl;
+            LOG(userinfo) << "colID: " << colID << std::endl;
 
             zoneConductance = entry.second;
             if (cached) {

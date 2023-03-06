@@ -352,7 +352,13 @@ namespace GlobalFlow {
                           double specificYield,
                           double specificStorage,
                           bool confined,
-                          bool densityVariable);
+                          bool densityVariable,
+                          vector<t_dim> delnus,
+                          vector<t_dim> nusInZones,
+                          double maxTipToeSlope,
+                          double minDepthFactor,
+                          double slopeAdjFactor,
+                          t_meter vdfLock);
 
             virtual ~NodeInterface() = default;
 
@@ -2483,9 +2489,16 @@ Modify Properties
                          double specificYield,
                          double specificStorage,
                          bool confined,
-                         bool densityVariable)
+                         bool densityVariable,
+                         vector<t_dim> delnus,
+                         vector<t_dim> nusInZones,
+                         double maxTipToeSlope,
+                         double minDepthFactor,
+                         double slopeAdjFactor,
+                         t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
-                                    stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined, densityVariable) {}
+                                    stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined,
+                                    densityVariable, delnus, nusInZones, maxTipToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -2585,7 +2598,8 @@ Modify Properties
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, true) {}
+                    0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, true, {0.0, 0.1}, {0.0, 0.1},
+                    0.2, 0.1, 0.1, 0.001 * si::meter) {}
 
         private:
             friend class NodeInterface;
