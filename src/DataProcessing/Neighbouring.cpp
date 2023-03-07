@@ -394,6 +394,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     Model::quantity<Model::Meter> edgeLengthLeftRight;
     Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
+    Model::quantity<Model::Meter> head;
     double aquiferDepth;
     double anisotropy;
     double specificYield;
@@ -419,6 +420,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             edgeLengthLeftRight = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
             edgeLengthFrontBack = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = nodes->at(i)->getK__pure();
+            head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             stepMod = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                     Model::StepModifier>();
             aquiferDepth = aquifer_thickness[j + 1];
@@ -431,8 +433,10 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
             densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
+            zetas = nodes->at(i)->getProperties().
+                    get<std::vector<Model::quantity<Model::Meter>>, Model::Zetas>();
             delnus = nodes->at(i)->getProperties().
-                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::DensityVariable>();
+                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
             nusInZones = nodes->at(i)->getProperties().
                     get<Model::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
             maxTipToeSlope = nodes->at(i)->getProperties().
@@ -455,6 +459,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             spatID,
                                                             id,
                                                             K,
+                                                            head,
                                                             stepMod,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -462,6 +467,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             specificStorage,
                                                             conf[j + 1],
                                                             densityVariable,
+                                                            zetas,
                                                             delnus,
                                                             nusInZones,
                                                             maxTipToeSlope,

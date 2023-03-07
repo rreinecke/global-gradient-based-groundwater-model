@@ -166,13 +166,14 @@ namespace GlobalFlow {
         struct SurfaceFrontBack;
         struct VolumeOfCell;
         struct EffectivePorosity;
+        struct Zetas;
         struct Delnus;
+        struct NusInZones;
         struct DensityVariable;
         struct MaxTipToeSlope;
         struct MinDepthFactor;
         struct SlopeAdjFactor;
         struct VDFLock;
-        struct NusInZones;
         struct RHSConstantDensity_TZero;
 
 /**
@@ -195,31 +196,31 @@ namespace GlobalFlow {
                 PhysicalProperty<t_vel, K>,
                 PhysicalProperty<t_dim, Anisotropy>,
                 PhysicalProperty<quantity < d_time>, StepSize>,
-        PhysicalProperty<t_c_meter, OUT>,
-        PhysicalProperty<t_c_meter, IN>,
-        PhysicalProperty<t_meter, Head>,
-        PhysicalProperty<t_meter, EQHead>,
-        PhysicalProperty<t_meter, HeadChange>,
-        PhysicalProperty<t_meter, Head_TZero>,
-        PhysicalProperty<t_meter, HeadChange_TZero>,
-        PhysicalProperty<t_dim, SpecificYield>,
-        PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
-        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
-        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
-        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
-        PhysicalProperty<t_c_meter, VolumeOfCell>,
-        PhysicalProperty<t_dim, EffectivePorosity>,
-        PhysicalProperty<std::vector<t_dim>, Delnus>,
-        PhysicalProperty<bool, DensityVariable>,
-        PhysicalProperty<t_dim, MaxTipToeSlope>,
-        PhysicalProperty<t_dim, MinDepthFactor>,
-        PhysicalProperty<t_dim, SlopeAdjFactor>,
-        PhysicalProperty<t_meter, VDFLock>,
-        PhysicalProperty<std::vector<t_dim>, NusInZones>,
-        PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
-        >;
-
+                PhysicalProperty<t_c_meter, OUT>,
+                PhysicalProperty<t_c_meter, IN>,
+                PhysicalProperty<t_meter, Head>,
+                PhysicalProperty<t_meter, EQHead>,
+                PhysicalProperty<t_meter, HeadChange>,
+                PhysicalProperty<t_meter, Head_TZero>,
+                PhysicalProperty<t_meter, HeadChange_TZero>,
+                PhysicalProperty<t_dim, SpecificYield>,
+                PhysicalProperty<quantity < perUnit>, SpecificStorage>,
+                PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+                PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+                PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+                PhysicalProperty<t_s_meter, SurfaceFrontBack>,
+                PhysicalProperty<t_c_meter, VolumeOfCell>,
+                PhysicalProperty<t_dim, EffectivePorosity>,
+                PhysicalProperty<bool, DensityVariable>,
+                PhysicalProperty<std::vector<t_meter>, Zetas>,
+                PhysicalProperty<std::vector<t_dim>, Delnus>,
+                PhysicalProperty<std::vector<t_dim>, NusInZones>,
+                PhysicalProperty<t_dim, MaxTipToeSlope>,
+                PhysicalProperty<t_dim, MinDepthFactor>,
+                PhysicalProperty<t_dim, SlopeAdjFactor>,
+                PhysicalProperty<t_meter, VDFLock>,
+                PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
+                >;
     }
 }//ns
 #endif

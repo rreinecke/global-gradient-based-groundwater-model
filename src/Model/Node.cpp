@@ -47,6 +47,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              unsigned long int spatID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
+                             quantity<Meter> head,
                              int stepModifier,
                              double aquiferDepth,
                              double anisotropy,
@@ -54,8 +55,9 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificStorage,
                              bool confined,
                              bool densityVariable,
-                             vector<t_dim> delnus,
-                             vector<t_dim> nusInZones,
+                             vector<quantity<Meter>> zetas,
+                             vector<quantity<Dimensionless>> delnus, // Question: or t_dim?
+                             vector<quantity<Dimensionless>> nusInZones,
                              double maxTipToeSlope,
                              double minDepthFactor,
                              double slopeAdjFactor,
@@ -67,6 +69,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set < unsigned long int, SpatID > (spatID);
     fields.set < unsigned long int, ID > (identifier);
     fields.set<quantity<Velocity>, K>(conduct);
+    fields.set<quantity<Meter>, Head>(head);
     fields.set<bool, Confinement>(confined);
     fields.set<quantity<Dimensionless>, StepModifier>(stepModifier * si::si_dimensionless);
     fields.emplace<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
@@ -82,12 +85,13 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<bool, DensityVariable> (densityVariable);
-    fields.set<vector<quantity<Dimensionless>>, Delnus>(delnus);
-    fields.set<vector<quantity<Dimensionless>>, NusInZones>(nusInZones);
+    fields.set<vector<quantity<Meter>>, Zetas> (zetas);
+    fields.set<vector<quantity<Dimensionless>>, Delnus> (delnus);
+    fields.set<vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
     fields.set<quantity<Dimensionless>, MaxTipToeSlope> (maxTipToeSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
-    fields.set<quantity<Meter>, VDFLock> (vdfLock * si::meter);
+    fields.emplace<quantity<Meter>, VDFLock> (vdfLock); // Question: set for t_dim, double etc., emplace for meter etc.?
 }
 }
 }//ns

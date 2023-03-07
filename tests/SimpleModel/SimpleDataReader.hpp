@@ -20,6 +20,7 @@ class SimpleDataReader : public DataReader {
                             op.getNumberOfRows(),
                             op.getNumberOfCols(),
                             op.getInitialK(),
+                            op.getInitialHead(),
                             op.getAquiferDepth()[0],
                             op.getAnisotropy(),
                             op.getSpecificYield(),
@@ -27,7 +28,12 @@ class SimpleDataReader : public DataReader {
                             op.getEdgeLengthLeftRight(),
                             op.getEdgeLengthFrontBack(),
                             op.isConfined(0),
-                            op.isDensityVariable());
+                            op.isDensityVariable(),
+                            op.getMaxTipToeSlope(),
+                            op.getMinDepthFactor(),
+                            op.getSlopeAdjFactor(),
+                            op.getVDFLock(),
+                            op.getDensityZones());
 
             LOG(userinfo) << "Building the bottom layers";
             DataProcessing::buildBottomLayers(nodes,
@@ -65,6 +71,7 @@ class SimpleDataReader : public DataReader {
                  int numberOfRows,
                  int numberOfCols,
                  double defaultK,
+                 double initialHead,
                  double aquiferDepth,
                  double anisotropy,
                  double specificYield,
@@ -72,7 +79,12 @@ class SimpleDataReader : public DataReader {
                  double edgeLengthLeftRight,
                  double edgeLengthFrontBack,
                  bool confined,
-                 bool isDensityVariable) {
+                 bool isDensityVariable,
+                 double maxTipToeSlope,
+                 double minDepthFactor,
+                 double slopeAdjFactor,
+                 double vdfLock,
+                 vector<double> densityZones) {
             Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
             io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -87,6 +99,9 @@ class SimpleDataReader : public DataReader {
             int col{0};
             lookupSpatIDtoID.reserve(numberOfNodes);
 
+            vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
+            vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
+
             while (in.read_row(globid, x, y, area, col, row)) {
                 out[col][row] = i;
                 //area is in km needs to be in m
@@ -99,13 +114,20 @@ class SimpleDataReader : public DataReader {
                                                             (unsigned long) globid,
                                                             i,
                                                             defaultK * (Model::si::meter / Model::day),
+                                                            initialHead * Model::si::meter,
                                                             stepMod,
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage,
                                                             confined,
-                                                            isDensityVariable));
+                                                            isDensityVariable,
+                                                            delnus,
+                                                            nusInZones,
+                                                            maxTipToeSlope,
+                                                            minDepthFactor,
+                                                            slopeAdjFactor,
+                                                            vdfLock * Model::si::meter));
                 lookupSpatIDtoID[globid] = i;
                 i++;
             }
@@ -167,6 +189,32 @@ class SimpleDataReader : public DataReader {
         readTwoColumns(path, [this](double data, int pos) {
             nodes->at(pos)->setHead_direct(data);
         });
+    }
+
+    vector<Model::quantity<Model::Dimensionless>> calcNusInZones(vector<double> densityZones){
+        double densityFresh = 1000.0;
+        vector<Model::quantity<Model::Dimensionless>> nusInZones;
+        for (int id = 0; id < densityZones.size(); id++) {
+            // nus of zones is equal to nus of zeta surface below
+            nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
+        }
+        return nusInZones;
+    }
+
+    vector<Model::quantity<Model::Dimensionless>> calcDelnus(vector<double> densityZones) {
+        double densityFresh = 1000.0;
+        vector<Model::quantity<Model::Dimensionless>> nusInZones;
+        vector<Model::quantity<Model::Dimensionless>> delnus;
+        for (int id = 0; id < densityZones.size(); id++) {
+            // nus of zones is equal to nus of zeta surface below
+            nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
+            if (id == 0) {
+                delnus.push_back(nusInZones[id]); // density difference in top zone
+            } else {
+                delnus.push_back((nusInZones[id] - nusInZones[id - 1]));
+            }
+        }
+        return delnus;
     }
 };
 }

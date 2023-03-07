@@ -89,7 +89,7 @@ namespace GlobalFlow {
             bool ADAPTIVE_STEP_SIZE{false};
             StepSize step_size{DAILY};
             string WETTING_APPROACH{"nwt"};
-            int INITIAL_HEAD{0};
+            double INITIAL_HEAD{0.0};
             double K{0.001};
             double GHB_K{0.1};
             vector<int> AQUIFER_DEPTH{100};
@@ -431,9 +431,14 @@ namespace GlobalFlow {
                 return CACHE;
             }
 
-            int
+            double
             getInitialHead() {
                 return INITIAL_HEAD;
+            }
+
+            vector<double>
+            getInitialZetas() {
+                return INITIAL_ZETAS;
             }
 
             double

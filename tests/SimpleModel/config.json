@@ -50,12 +50,20 @@
       "specific_yield_from_file": "false",
       "k_river_from_file": "true",
       "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "true",
+      "initial_head_from_file": "false",
       "slope_as_array": "false",
-      "efold_as_array": "false"
+      "efold_as_array": "false",
+      "eq_wtd_from_file": "false",
+      "initial_zetas_from_file": "false",
+      "effective_porosity_from_file": "false",
+      "zones_sources_sinks_from_file": "false"
     },
     "default_data": {
+      "effective_porosity": 0.2,
       "initial_head": 100,
+      "initial_zetas": [
+        0.0
+      ],
       "K": 0.008,
       "ghb_K": 800,
       "aquifer_thickness": [
@@ -64,7 +72,11 @@
       ],
       "anisotropy": 10,
       "specific_yield": 0.15,
-      "specific_storage": 0.000015
+      "specific_storage": 0.000015,
+      "zones_sources_sinks": [
+        0,
+        1
+      ]
     },
     "data": {
       "recharge": "recharge_simple.csv",

@@ -346,6 +346,7 @@ namespace GlobalFlow {
                           large_num SpatID,
                           large_num ID,
                           t_vel K,
+                          t_meter head,
                           int stepModifier,
                           double aquiferDepth,
                           double anisotropy,
@@ -353,6 +354,7 @@ namespace GlobalFlow {
                           double specificStorage,
                           bool confined,
                           bool densityVariable,
+                          vector<t_meter> zetas,
                           vector<t_dim> delnus,
                           vector<t_dim> nusInZones,
                           double maxTipToeSlope,
@@ -2483,6 +2485,7 @@ Modify Properties
                          large_num SpatID,
                          large_num ID,
                          t_vel K,
+                         t_meter head,
                          int stepmodifier,
                          double aquiferDepth,
                          double anisotropy,
@@ -2490,6 +2493,7 @@ Modify Properties
                          double specificStorage,
                          bool confined,
                          bool densityVariable,
+                         vector<t_meter> zetas,
                          vector<t_dim> delnus,
                          vector<t_dim> nusInZones,
                          double maxTipToeSlope,
@@ -2497,8 +2501,9 @@ Modify Properties
                          double slopeAdjFactor,
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
-                                    stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage, confined,
-                                    densityVariable, delnus, nusInZones, maxTipToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
+                                    head, stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage,
+                                    confined, densityVariable, zetas, delnus, nusInZones, maxTipToeSlope,
+                                    minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -2587,7 +2592,7 @@ Modify Properties
             StaticHeadNode(std::shared_ptr<std::vector<std::unique_ptr<NodeInterface>>> nodes,
                            large_num ID,
                            t_s_meter area,
-                            t_meter edgeLengthLeftRight,
+                           t_meter edgeLengthLeftRight,
                            t_meter edgeLengthFrontBack)
                     : NodeInterface(
                     nodes,
@@ -2598,8 +2603,9 @@ Modify Properties
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1, 100, 10, 0.15, 0.000015, true, true, {0.0, 0.1}, {0.0, 0.1},
-                    0.2, 0.1, 0.1, 0.001 * si::meter) {}
+                    0.3 * (si::meter / day), 1 * si::meter, 1, 100, 10, 0.15, 0.000015, true, true,
+                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.1, 0.1,
+                    0.001 * si::meter) {}
 
         private:
             friend class NodeInterface;

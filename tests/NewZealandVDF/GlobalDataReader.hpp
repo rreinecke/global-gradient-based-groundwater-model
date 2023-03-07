@@ -52,6 +52,7 @@ namespace GlobalFlow {
                                     op.getNumberOfRows(),
                                     op.getNumberOfCols(),
                                     op.getInitialK(),
+                                    op.getInitialHead(),
                                     op.getAquiferDepth()[0],
                                     op.getAnisotropy(),
                                     op.getSpecificYield(),
@@ -60,6 +61,7 @@ namespace GlobalFlow {
                                     op.getEdgeLengthFrontBack(),
                                     op.isConfined(0),
                                     op.isDensityVariable(),
+                                    op.getInitialZetas(),
                                     op.getMaxTipToeSlope(),
                                     op.getMinDepthFactor(),
                                     op.getSlopeAdjFactor(),
@@ -68,10 +70,11 @@ namespace GlobalFlow {
                 } else {
                     LOG(userinfo) << "- reading land mask";
                     readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodes(),
-                                 op.getInitialK(), op.getAquiferDepth()[0],
+                                 op.getInitialK(), op.getInitialHead(),op.getAquiferDepth()[0],
                                  op.getAnisotropy(), op.getSpecificYield(), op.getSpecificStorage(),
-                                 op.isConfined(0), op.isDensityVariable(), op.getMaxTipToeSlope(), op.getMinDepthFactor(),
-                                 op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                                 op.isConfined(0), op.isDensityVariable(), op.getInitialZetas(),
+                                 op.getMaxTipToeSlope(), op.getMinDepthFactor(), op.getSlopeAdjFactor(),
+                                 op.getVDFLock(), op.getDensityZones());
                     LOG(userinfo) << "- reading mapping";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
                 }
@@ -181,6 +184,7 @@ namespace GlobalFlow {
                      int numberOfRows,
                      int numberOfCols,
                      double defaultK,
+                     double initialHead,
                      double aquiferDepth,
                      double anisotropy,
                      double specificYield,
@@ -189,6 +193,7 @@ namespace GlobalFlow {
                      double edgeLengthFrontBack,
                      bool confined,
                      bool isDensityVariable,
+                     vector<double> initialZetas,
                      double maxTipToeSlope,
                      double minDepthFactor,
                      double slopeAdjFactor,
@@ -209,7 +214,10 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-
+                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                for (i = 0; i < initialZetas.size(); i++) {
+                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                }
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     out[col][row] = i;
                     //area is in km needs to be in m
@@ -222,6 +230,7 @@ namespace GlobalFlow {
                                                                 (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
+                                                                initialHead * Model::si::meter,
                                                                 stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
@@ -229,6 +238,7 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
+                                                                initialZetasDim,
                                                                 delnus,
                                                                 nusInZones,
                                                                 maxTipToeSlope,
@@ -262,12 +272,14 @@ namespace GlobalFlow {
                          std::string path,
                          int numberOfNodes,
                          double defaultK,
+                         double initialHead,
                          double aquiferDepth,
                          double anisotropy,
                          double specificYield,
                          double specificStorage,
                          bool confined,
                          bool isDensityVariable,
+                         vector<double> initialZetas,
                          double maxTipToeSlope,
                          double minDepthFactor,
                          double slopeAdjFactor,
@@ -285,6 +297,10 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
+                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                for (i = 0; i < initialZetas.size(); i++) {
+                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                }
 
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     //area is in km needs to be in m
@@ -298,6 +314,7 @@ namespace GlobalFlow {
                                                                 (unsigned long) spatID,
                                                                 i,
                                                                 defaultK * (Model::si::meter / Model::day),
+                                                                initialHead * Model::si::meter,
                                                                 stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
@@ -305,6 +322,7 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
+                                                                initialZetasDim,
                                                                 delnus,
                                                                 nusInZones,
                                                                 maxTipToeSlope,
