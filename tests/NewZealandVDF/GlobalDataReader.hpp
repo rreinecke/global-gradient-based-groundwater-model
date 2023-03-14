@@ -741,10 +741,30 @@ namespace GlobalFlow {
                 }
             }
 
-            void readInitialZetas(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->addInitialZeta(data * Model::si::meter);
-                });
+            void readInitialZetas(std::string pathZetas) {
+                int spatID{0};
+                double zeta0{0};
+                double zeta1{0};
+                double zeta2{0};
+
+                // read initial data for density surfaces
+                io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                inZetas.read_header(io::ignore_no_column, "spatID", "zeta0", "zeta1", "zeta2");
+                while (inZetas.read_row(spatID, zeta0, zeta1, zeta2)) {
+                    int pos = 0;
+                    try {
+                        pos = lookupSpatIDtoID.at(spatID);
+                    }
+                    catch (const std::out_of_range &ex) { // if node does not exist ignore entry
+                        continue;
+                    }
+
+                    vector<Model::quantity<Model::Meter>> initialZetas{zeta0 * Model::si::meter,
+                                                                       zeta1 * Model::si::meter,
+                                                                       zeta2 * Model::si::meter};
+
+                    nodes->at(pos)->setInitialZetas(initialZetas);
+                }
             }
 
             void readEffectivePorosity(std::string path) {

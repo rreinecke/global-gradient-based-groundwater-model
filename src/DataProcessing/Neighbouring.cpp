@@ -400,6 +400,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     double specificYield;
     double specificStorage;
     bool densityVariable;
+    std::vector<Model::quantity<Model::Meter>> zetas;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
     double maxTipToeSlope;
