@@ -21,6 +21,7 @@ namespace GlobalFlow {
                                 op.getNumberOfRows(),
                                 op.getNumberOfCols(),
                                 op.getInitialK(),
+                                op.getInitialHead(),
                                 op.getAquiferDepth()[0],
                                 op.getAnisotropy(),
                                 op.getSpecificYield(),
@@ -28,12 +29,20 @@ namespace GlobalFlow {
                                 op.getEdgeLengthLeftRight(),
                                 op.getEdgeLengthFrontBack(),
                                 op.isConfined(0),
-                                op.isDensityVariable()
-                                );
+                                op.isDensityVariable(),
+                                op.getInitialZetas(),
+                                op.getMaxTipToeSlope(),
+                                op.getMinDepthFactor(),
+                                op.getSlopeAdjFactor(),
+                                op.getVDFLock(),
+                                op.getDensityZones());
 
-                LOG(userinfo) << "Reading hydraulic parameters";
-                readConduct(buildDir(op.getLithology()));
+                LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
+
+                LOG(userinfo) << "Reading conductivity";
+                readConduct(buildDir(op.getLithology()));
+
 
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
@@ -46,9 +55,6 @@ namespace GlobalFlow {
                     readInitialZetas(buildDir(op.getInitialZetasDir()));
                     readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                     readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
-                    readDensityConfig(op.getNumberOfNodes(), op.getDensityZones(),
-                                      op.getMaxTipToeSlope(), op.getMinDepthFactor(),
-                                      op.getSlopeAdjFactor(), op.getVDFLock());
                 }
 
 
@@ -71,6 +77,7 @@ namespace GlobalFlow {
                      int numberOfRows,
                      int numberOfCols,
                      double defaultK,
+                     double initialHead,
                      double aquiferDepth,
                      double anisotropy,
                      double specificYield,
@@ -78,24 +85,35 @@ namespace GlobalFlow {
                      double edgeLengthLeftRight,
                      double edgeLengthFrontBack,
                      bool confined,
-                     bool densityVariable
-                     ) {
+                     bool isDensityVariable,
+                     vector<double> initialZetas,
+                     double maxTipToeSlope,
+                     double minDepthFactor,
+                     double slopeAdjFactor,
+                     double vdfLock,
+                     vector<double> densityZones) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "cell_area", "col", "row");
+                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area","col","row");
 
                 double x{0};
                 double y{0};
                 double area{0};
                 int spatID{0};
-                int i{0};
+                int nodeID{0};
                 int row{0};
                 int col{0};
                 lookupSpatIDtoID.reserve(numberOfNodes);
-
+                vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
+                vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
+                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                for (int i = 0; i < initialZetas.size(); i++) {
+                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                }
                 while (in.read_row(spatID, x, y, area, col, row)) {
-                    out[col][row] = i;
+                    out[col][row] = nodeID;
+                    //area is in km needs to be in m
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 x,
                                                                 y,
@@ -103,36 +121,44 @@ namespace GlobalFlow {
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
                                                                 (unsigned long) spatID,
-                                                                i,
+                                                                nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
+                                                                initialHead * Model::si::meter,
                                                                 stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,
                                                                 specificStorage,
                                                                 confined,
-                                                                densityVariable
-                                                                ));
-                    lookupSpatIDtoID[spatID] = i;
-                    i++;
+                                                                isDensityVariable,
+                                                                initialZetasDim,
+                                                                delnus,
+                                                                nusInZones,
+                                                                maxTipToeSlope,
+                                                                minDepthFactor,
+                                                                slopeAdjFactor,
+                                                                vdfLock * Model::si::meter));
+                    lookupSpatIDtoID[spatID] = nodeID;
+                    nodeID++;
                 }
 
                 return out;
-            }
+            };
 
             void readConduct(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
+
+                readTwoColumns(path, [this](double data, int nodeID) {
                     if (data > 10) {
-                        LOG(debug) << "Very high conductance value at spatID "<<pos<<". Possible Data Error";
+                        LOG(debug) << "Very high conductance value at spatID "<<nodeID<<". Possible Data Error";
                     }
-                    nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
+                    nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day));
                 });
             };
 
             void
             readElevation(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setElevation(data * Model::si::meter);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setElevation(data * Model::si::meter);
                 });
             };
 
@@ -144,15 +170,15 @@ namespace GlobalFlow {
                 double conduct{0};
 
                 while (in.read_row(spatID, elevation, conduct)) {
-                    int pos = 0;
+                    int nodeID = 0;
                     try {
-                        pos = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                    nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                     elevation * Model::si::meter,
                                                     conduct,
                                                     elevation * Model::si::meter);
@@ -160,17 +186,17 @@ namespace GlobalFlow {
             }
 
             void readGWRecharge(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->addExternalFlow(Model::RECHARGE,
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                     0 * Model::si::meter,
-                                                    data * nodes->at(pos)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
+                                                    data * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
                                                     0 * Model::si::meter);
                 });
             }
 
             void readInitialHeads(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setHead_direct(data);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setHead_direct(data);
                 });
             }
 
@@ -190,15 +216,15 @@ namespace GlobalFlow {
                 double zoneOfSources{0};
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    int pos = 0;
+                    int nodeID = 0;
                     try {
-                        pos = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(pos)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                 }
             }
 
@@ -212,9 +238,9 @@ namespace GlobalFlow {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
                 inZetas.read_header(io::ignore_no_column, "spatID", "zeta0", "zeta1", "zeta2");
                 while (inZetas.read_row(spatID, zeta0, zeta1, zeta2)) {
-                    int pos = 0;
+                    int nodeID = 0;
                     try {
-                        pos = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;
@@ -224,44 +250,41 @@ namespace GlobalFlow {
                                                                        zeta1 * Model::si::meter,
                                                                        zeta2 * Model::si::meter};
 
-                    nodes->at(pos)->setInitialZetas(initialZetas);
+                    nodes->at(nodeID)->setInitialZetas(initialZetas);
                 }
             }
 
             void readEffectivePorosity(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setEffectivePorosity(data * Model::si::si_dimensionless);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
                 });
             }
 
-            void readDensityConfig(int numberOfNodes,
-                                   vector<double> densityZones,
-                                   double maxTipToeSlope,
-                                   double minDepthFactor,
-                                   double slopeAdjFactor,
-                                   double vdfLock){
+            vector<Model::quantity<Model::Dimensionless>> calcNusInZones(vector<double> densityZones){
                 double densityFresh = 1000.0;
                 vector<Model::quantity<Model::Dimensionless>> nusInZones;
-                vector<Model::quantity<Model::Dimensionless>> delnus;
-
                 for (int id = 0; id < densityZones.size(); id++) {
                     // nus of zones is equal to nus of zeta surface below
                     nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
+                }
+                return nusInZones;
+            }
+
+            vector<Model::quantity<Model::Dimensionless>> calcDelnus(vector<double> densityZones) {
+                double densityFresh = 1000.0;
+                vector<Model::quantity<Model::Dimensionless>> nusInZones;
+                vector<Model::quantity<Model::Dimensionless>> delnus;
+                for (int id = 0; id < densityZones.size(); id++) {
+                    // nus of zones is equal to nus of zeta surface below
+                    nusInZones.push_back(
+                            ((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
                     if (id == 0) {
                         delnus.push_back(nusInZones[id]); // density difference in top zone
                     } else {
                         delnus.push_back((nusInZones[id] - nusInZones[id - 1]));
                     }
                 }
-
-                for (large_num k = 0; k < numberOfNodes; ++k) {
-                    nodes->at(k)->setDelnus(delnus);
-                    nodes->at(k)->setNusInZones(nusInZones);
-                    nodes->at(k)->setMaxTipToeSlope(maxTipToeSlope);
-                    nodes->at(k)->setMinDepthFactor(minDepthFactor);
-                    nodes->at(k)->setSlopeAdjFactor(slopeAdjFactor);
-                    nodes->at(k)->setVDFLock(vdfLock * Model::si::meter);
-                }
+                return delnus;
             }
         };
     }

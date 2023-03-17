@@ -758,8 +758,7 @@ Equation::solve_zetas(){
             for (large_num k = 0; k < numberOfNodes; ++k) {
                 double val;
                 for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
-                    val = std::abs(nodes->at(
-                            k)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
+                    val = std::abs(nodes->at(k)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
                     //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
                     changeMax = (val > changeMax) ? val : changeMax;
                 }

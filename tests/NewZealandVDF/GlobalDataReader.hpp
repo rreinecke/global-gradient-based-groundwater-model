@@ -178,7 +178,7 @@ namespace GlobalFlow {
              * @return A Matrix of computational nodes
              */
             Matrix<int>
-            readGrid(NodeVector nodes,
+                readGrid(NodeVector nodes,
                      std::string path,
                      int numberOfNodes,
                      int numberOfRows,
@@ -202,33 +202,33 @@ namespace GlobalFlow {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area","col","row");
+                in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area","col","row");
 
-                double x{0};
-                double y{0};
+                double lat{0};
+                double lon{0};
                 double area{0};
                 int spatID{0};
-                int i{0};
+                int nodeID{0};
                 int row{0};
                 int col{0};
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
                 vector<Model::quantity<Model::Meter>> initialZetasDim;
-                for (i = 0; i < initialZetas.size(); i++) {
+                for (int i = 0; i < initialZetas.size(); i++) {
                     initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
                 }
-                while (in.read_row(spatID, x, y, area, col, row)) {
-                    out[col][row] = i;
+                while (in.read_row(spatID, lon, lat, area, col, row)) {
+                    out[col][row] = nodeID;
                     //area is in km needs to be in m
                     nodes->emplace_back(new Model::StandardNode(nodes,
-                                                                x,
-                                                                y,
+                                                                lat,
+                                                                lon,
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
                                                                 (unsigned long) spatID,
-                                                                i,
+                                                                nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
                                                                 stepMod,
@@ -245,8 +245,8 @@ namespace GlobalFlow {
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
-                    lookupSpatIDtoID[spatID] = i;
-                    i++;
+                    lookupSpatIDtoID[spatID] = nodeID;
+                    nodeID++;
                 }
 
                 return out;
@@ -265,7 +265,7 @@ namespace GlobalFlow {
              * @param specificYield The default specific yield
              * @param specificStorage The default specific storage
              * @param confined If node is part of a confined layer?
-             * @return
+             * @return number of total top nodes // Question: why not a matrix as readGrid?
              */
             int
             readLandMask(NodeVector nodes,
@@ -286,33 +286,33 @@ namespace GlobalFlow {
                          double vdfLock,
                          vector<double> densityZones) {
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "col", "row");
-                double x = 0;
-                double y = 0;
-                double area = 0;
-                large_num col = 0; // todo remove
-                large_num row = 0; // todo remove
-                large_num spatID = 0;
-                int i = 0;
+                in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "col", "row");
+                double lon{0};
+                double lat{0};
+                double area{0};
+                large_num col{0}; // todo remove
+                large_num row{0}; // todo remove
+                large_num spatID{0};
+                int nodeID{0};
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
                 vector<Model::quantity<Model::Meter>> initialZetasDim;
-                for (i = 0; i < initialZetas.size(); i++) {
+                for (int i = 0; i < initialZetas.size(); i++) {
                     initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
                 }
 
-                while (in.read_row(spatID, x, y, area, col, row)) {
+                while (in.read_row(spatID, lon, lat, area, col, row)) {
                     //area is in km needs to be in m
                     //TODO implement a container for these parameters
                     nodes->emplace_back(new Model::StandardNode(nodes,
-                                                                x,
-                                                                y,
+                                                                lat,
+                                                                lon,
                                                                 1e+6 * area * Model::si::square_meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 (unsigned long) spatID,
-                                                                i,
+                                                                nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
                                                                 stepMod,
@@ -329,11 +329,11 @@ namespace GlobalFlow {
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
-                    lookupSpatIDtoID[spatID] = i;
-                    i++;
+                    lookupSpatIDtoID[spatID] = nodeID;
+                    nodeID++;
                 }
                 //Return number of total top nodes
-                return i - 1;
+                return nodeID - 1;
             };
 
             /**
@@ -341,11 +341,11 @@ namespace GlobalFlow {
              * @param path Where to read from
              */
             void readHeadBoundary(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    if (nodes->at(pos)->hasGHB()) {
-                        auto flow = nodes->at(pos)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
-                        nodes->at(pos)->removeExternalFlow(Model::GENERAL_HEAD_BOUNDARY);
-                        nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    if (nodes->at(nodeID)->hasGHB()) {
+                        auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
+                        nodes->at(nodeID)->removeExternalFlow(Model::GENERAL_HEAD_BOUNDARY);
+                        nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                         0 * Model::si::meter,
                                                         data,
                                                         0 * Model::si::meter);
@@ -358,8 +358,8 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              */
             void readInitialHeads(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setHead_direct(data);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setHead_direct(data);
                 });
             }
 
@@ -396,8 +396,8 @@ namespace GlobalFlow {
              */
             void readEfold(std::string path, std::vector<std::string> files) {
                 loopFiles(path, files, [this](std::string path) {
-                    readTwoColumns(path, [this](double data, int pos) {
-                        nodes->at(pos)->setEfold(data);
+                    readTwoColumns(path, [this](double data, int nodeID) {
+                        nodes->at(nodeID)->setEfold(data);
                     });
                 });
             };
@@ -409,8 +409,8 @@ namespace GlobalFlow {
              */
             void readSlope(std::string path, std::vector<std::string> files) {
                 loopFiles(path, files, [this](std::string path) {
-                    readTwoColumns(path, [this](double data, int pos) {
-                        nodes->at(pos)->setSlope(data);
+                    readTwoColumns(path, [this](double data, int nodeID) {
+                        nodes->at(nodeID)->setSlope(data);
                     });
                 });
             };
@@ -425,8 +425,8 @@ namespace GlobalFlow {
              */
             void readElevation(std::string path, std::vector<std::string> files) {
                 loopFiles(path, files, [this](std::string path) {
-                    readTwoColumns(path, [this](double data, int pos) {
-                        nodes->at(pos)->setElevation(data * Model::si::meter);
+                    readTwoColumns(path, [this](double data, int nodeID) {
+                        nodes->at(nodeID)->setElevation(data * Model::si::meter);
                     });
                 });
             };
@@ -438,8 +438,8 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              */
             void readElevation(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setElevation(data * Model::si::meter);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setElevation(data * Model::si::meter);
                 });
             };
 
@@ -448,8 +448,8 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              */
             void readEqWTD(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setEqHead(data * Model::si::meter);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setEqHead(data * Model::si::meter);
                 });
             };
 
@@ -458,11 +458,11 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              */
             void readGWRecharge(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->addExternalFlow(Model::RECHARGE,
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                     0 * Model::si::meter,
                                                     data *
-                                                    nodes->at(pos)->getProperties().get<Model::quantity<Model::SquareMeter>,
+                                                    nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,
                                                             Model::Area>().value(),
                                                     0 * Model::si::meter);
                 });
@@ -538,10 +538,10 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              */
             void readConduct(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
+                readTwoColumns(path, [this](double data, int nodeID) {
                     if (data != 0) {
                         //0 is possible data error, known to occur with Gleeson based map
-                        nodes->at(pos)->setK(data * (Model::si::meter / Model::day));
+                        nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day));
 		    }
                 });
             }
@@ -751,9 +751,9 @@ namespace GlobalFlow {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
                 inZetas.read_header(io::ignore_no_column, "spatID", "zeta0", "zeta1", "zeta2");
                 while (inZetas.read_row(spatID, zeta0, zeta1, zeta2)) {
-                    int pos = 0;
+                    int nodeID = 0;
                     try {
-                        pos = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;
@@ -763,13 +763,13 @@ namespace GlobalFlow {
                                                                        zeta1 * Model::si::meter,
                                                                        zeta2 * Model::si::meter};
 
-                    nodes->at(pos)->setInitialZetas(initialZetas);
+                    nodes->at(nodeID)->setInitialZetas(initialZetas);
                 }
             }
 
             void readEffectivePorosity(std::string path) {
-                readTwoColumns(path, [this](double data, int pos) {
-                    nodes->at(pos)->setEffectivePorosity(data * Model::si::si_dimensionless);
+                readTwoColumns(path, [this](double data, int nodeID) {
+                    nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
                 });
             }
 
@@ -789,15 +789,15 @@ namespace GlobalFlow {
                 double zoneOfSources{0};
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    int pos = 0;
+                    int nodeID = 0;
                     try {
-                        pos = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(pos)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                 }
             }
 

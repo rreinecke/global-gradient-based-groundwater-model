@@ -90,18 +90,18 @@ namespace GlobalFlow {
 
         /**
          * @brief Check weather id exists in the simulation
-         * @param globid Global identifier, can be different from position in node vector
-         * @return i the position in the node vector
+         * @param spatID Global identifier, can be different from position in node vector
+         * @return pos The position in the node vector
          */
-        inline int check(int globalID) {
-            int i{0};
+        inline int check(int spatID) {
+            int nodeID{0};
             try {
-                i = lookupSpatIDtoID.at(globalID);
+                nodeID = lookupSpatIDtoID.at(spatID);
             }
             catch (const std::out_of_range &ex) {
                 return -1;
             }
-            return i;
+            return nodeID;
         }
 
         /**
@@ -115,16 +115,16 @@ namespace GlobalFlow {
             in.read_header(io::ignore_no_column, "spatID", "data");
             int spatID = 0;
             double data = 0;
-            int pos = 0;
+            int nodeID = 0;
             while (in.read_row(spatID, data)) {
-                pos = check(spatID);
-                if (pos == -1) {
+                nodeID = check(spatID);
+                if (nodeID == -1) {
                     continue;
                 }
-                if (nodes->at(pos)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
                     throw "Error in reading spatID";
                 }
-                processData(data, pos);
+                processData(data, nodeID);
             }
         }
 

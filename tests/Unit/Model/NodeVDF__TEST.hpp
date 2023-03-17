@@ -45,13 +45,13 @@ public:
 
         large_num numberOfNodes = 4;
         for (large_num k = 0; k < numberOfNodes; ++k) {
-            nodes->at(k)->setDelnus(delnus);
-            nodes->at(k)->setNusInZones(nusInZones);
-            nodes->at(k)->setMaxTipToeSlope(0.2 * si::si_dimensionless);
-            nodes->at(k)->setSlopeAdjFactor(0.1 * si::si_dimensionless);
-            nodes->at(k)->setMinDepthFactor(0.1 * si::si_dimensionless);
-            nodes->at(k)->setVDFLock(0.001 * si::meter);
-            nodes->at(k)->setEffectivePorosity(0.2 * si::si_dimensionless);
+            nodes->at(k)->set<vector<Model::Dimensionless>, Delnus> (delnus); // Model::quantity<Model::Dimensionless>
+            nodes->at(k)->set<vector<Model::Dimensionless>, NusInZones> (nusInZones);
+            nodes->at(k)->set<Model::Dimensionless, MaxTipToeSlope>(0.2 * si::si_dimensionless);
+            nodes->at(k)->set<Model::Dimensionless, SlopeAdjFactor> (0.1 * si::si_dimensionless);
+            nodes->at(k)->set<Model::Dimensionless, MinDepthFactor> (0.1 * si::si_dimensionless);
+            nodes->at(k)->set<Model::Meter, VDFLock> (0.001 * si::meter);
+            nodes->at(k)->set<Model::Dimensionless, EffectivePorosity> (0.2 * si::si_dimensionless);
             nodes->at(k)->setZoneOfSinksAndSources(0, 3, 4);
         }
 

@@ -44,18 +44,28 @@
     },
     "input": {
       "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "false",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "false",
+        "initial_head_from_file": "true",
+        "initial_zetas_from_file": "true",
         "k_from_lith": "true",
         "k_ghb_from_file": "true",
+        "k_river_from_file": "true",
+        "slope_as_array": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
-        "k_river_from_file": "true",
-        "aquifer_depth_from_file": "false",
-        "initial_head_from_file": "true",
-        "slope_as_array": "false",
-        "efold_as_array": "false"
+        "zones_sources_sinks_from_file": "true"
       },
       "default_data": {
+        "effective_porosity": 0.2,
         "initial_head": 0,
+        "initial_zetas": [
+          0.0,
+          0.0,
+          0.0
+        ],
         "K": 2,
         "ghb_K": 800,
         "aquifer_thickness": [
@@ -63,7 +73,11 @@
         ],
         "anisotropy": 1,
         "specific_yield": 0.2,
-        "specific_storage": 0.000015
+        "specific_storage": 0.000015,
+        "zones_sources_sinks": [
+          0,
+          1
+        ]
       },
       "data": {
         "effective_porosity": "effective_porosity_simpleVDF.csv",
