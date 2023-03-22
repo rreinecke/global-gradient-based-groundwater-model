@@ -167,6 +167,8 @@ namespace GlobalFlow {
         struct VolumeOfCell;
         struct EffectivePorosity;
         struct Zetas;
+        struct ZetasChange;
+        struct ZetasPosInNode;
         struct Delnus;
         struct NusInZones;
         struct DensityVariable;
@@ -213,6 +215,8 @@ namespace GlobalFlow {
                 PhysicalProperty<t_dim, EffectivePorosity>,
                 PhysicalProperty<bool, DensityVariable>,
                 PhysicalProperty<std::vector<t_meter>, Zetas>,
+                PhysicalProperty<std::vector<t_meter>, ZetasChange>,
+                PhysicalProperty<std::vector<std::string>, ZetasPosInNode>,
                 PhysicalProperty<std::vector<t_dim>, Delnus>,
                 PhysicalProperty<std::vector<t_dim>, NusInZones>,
                 PhysicalProperty<t_dim, MaxTipToeSlope>,

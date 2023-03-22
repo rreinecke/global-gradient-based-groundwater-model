@@ -33,13 +33,13 @@
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-10,
+      "closing_crit": 1E-20,
       "head_change": 0.000001,
       "zeta_change": 9.9999997E-16,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
-      "step_size": "daily",
+      "step_size": "two_daily",
       "wetting_approach": "nwt"
     },
     "input": {

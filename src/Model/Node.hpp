@@ -95,7 +95,7 @@ namespace GlobalFlow {
         class NodeInterface {
         private:
             virtual void
-            __setHead(t_meter head) = 0;
+            __setHeadChange(t_meter head) = 0;
 
             virtual t_meter
             __calcInitialHead(t_meter initialParam) = 0;
@@ -150,9 +150,7 @@ namespace GlobalFlow {
             const std::shared_ptr<vector<std::unique_ptr<NodeInterface>>> nodes;
             unordered_map<NeighbourPosition, large_num> neighbours;
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
-            vector<string> ZetaPosInNode;
-            vector<t_meter> ZetasChange;
-            vector<t_meter> ZetasChange_TZero;
+            //vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
             bool nwt{false};
             bool initial_head{true};
@@ -514,7 +512,7 @@ Modify Properties
                         conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
                         //}
 
-                        /*if (get<vector<t_meter>, Zetas>().size() > 0) { // Question: add fluxCorrection here?
+                        /*if (getZetas().size() > 0) { // Question: add fluxCorrection here?
                             t_vol_t fluxCorrectionTop = getFluxCorrTop();
                             t_vol_t fluxCorrectionDown = getFluxCorrDown();
 
@@ -589,8 +587,7 @@ Modify Properties
              * @note Should only be called at end of time step
              */
             void updateHeadChange() noexcept {
-                set < t_meter, HeadChange_TZero > (
-                        get<t_meter, Head>() - get<t_meter, Head_TZero>());
+                set < t_meter, HeadChange_TZero > (get<t_meter, Head>() - get<t_meter, Head_TZero>());
                 set < t_meter, Head_TZero > (get<t_meter, Head>());
             }
 
@@ -945,7 +942,7 @@ Modify Properties
                     NANChecker(initialZetas[localZetaID].value(), "height (in addInitialZeta)");
 
                     // in SWI2: lines 660-680
-                    t_meter topOfNode = get<t_meter, Elevation>();
+                    auto topOfNode = get<t_meter, Elevation>();
                     t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
                     if (initialZetas[localZetaID] > topOfNode - get<t_meter, VDFLock>()) {
                         initialZetas[localZetaID] = topOfNode;
@@ -955,6 +952,7 @@ Modify Properties
                 }
 
                 set<vector<t_meter>,Zetas>(initialZetas);
+                set<vector<t_meter>,ZetasChange>(initialZetas); // todo make all 0
                 //todo throw error if height not in correct order
             }
 
@@ -963,11 +961,11 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @param height zeta height
              */
-            virtual void setZeta(int localZetaID, t_meter height) {
-                NANChecker(height.value(), "height (in setZeta)");
-                auto zetas = get<vector<t_meter>, Zetas>();
+            virtual void setZeta(int localZetaID, t_meter zeta) {
+                NANChecker(zeta.value(), "height (in setZeta)");
+                auto zetas = getZetas();
                 if (localZetaID < zetas.size()) {
-                    zetas[localZetaID] = height;
+                    zetas[localZetaID] = zeta;
                 }
                 set<vector<t_meter>, Zetas>(zetas); // Question: how to improve this?
             }
@@ -977,11 +975,13 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @param height zeta height
              */
-            virtual void setZetaChange(int localZetaID, t_meter height){
-                NANChecker(height.value(), "height (in setZetaChange)");
-                if (localZetaID < ZetasChange.size()) {
-                    ZetasChange[localZetaID] = height - get<vector<t_meter>, Zetas>()[localZetaID];
+            virtual void setZetaChange(int localZetaID, t_meter zeta){
+                NANChecker(zeta.value(), "zeta (in setZetaChange)");
+                auto zetasChange = getZetasChange();
+                if (localZetaID < zetasChange.size()) {
+                    zetasChange[localZetaID] = zeta - getZeta(localZetaID);
                 }
+                set<vector<t_meter>, ZetasChange>(zetasChange);
             }
 
             /**
@@ -998,10 +998,16 @@ Modify Properties
             t_meter getZeta(int localZetaID) noexcept { return get<vector<t_meter>, Zetas>()[localZetaID];}
 
             /**
+             * @brief get all zeta surface changes
+             * @return vector<meter>
+             */
+            vector<t_meter> getZetasChange() noexcept { return get<vector<t_meter>, ZetasChange>();}
+
+            /**
              * @brief get zeta surface change
              * @return meter
              */
-            t_meter getZetaChange(int localZetaID) noexcept { return ZetasChange[localZetaID];}
+            t_meter getZetaChange(int localZetaID) noexcept { return get<vector<t_meter>, ZetasChange>()[localZetaID];}
 
             /**
              *  @brief set the zone(s) of sources and sinks
@@ -1047,8 +1053,6 @@ Modify Properties
             int getZoneOfSources(){ return zoneOfSources;}
 
             int getZoneOfSinks(){ return zoneOfSinks;}
-
-            std::string getZetaPosInNode(int localZetaID){ return ZetaPosInNode[localZetaID]; }
 
             /**
              * @brief Set effective porosity (applied to all layers below)
@@ -1241,8 +1245,8 @@ Modify Properties
              */
             t_vol_t getZetaRHS(int localZetaID){ // todo: test
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
-                if (ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) { // if IPLPOS == 0
-                    porosityTerm = getEffectivePorosityTerm() * get<vector<t_meter>, Zetas>()[localZetaID];
+                if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) { // if IPLPOS == 0
+                    porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
                 //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sourcesBelowZeta = getSourcesBelowZeta(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
@@ -1295,8 +1299,8 @@ Modify Properties
                     } else { // there is a neighbour at position
                         if (hasGHB()) { // not at boundary nodes
                         } else {
-                            if ((ZetaPosInNode[localZetaID] == "between" and
-                                at(got)->ZetaPosInNode[localZetaID] == "between") or localZetaID == 0) {
+                            if ((getZetaPosInNode(localZetaID) == "between" and
+                                at(got)->getZetaPosInNode(localZetaID) == "between") or localZetaID == 0) {
                                 zoneConductances = getZoneConductances(got);
                                 zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                                 zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
@@ -1332,10 +1336,10 @@ Modify Properties
              * @note in SWI2: NUTOP, lines 1230-1249
              */
             t_dim getNusTop(){
-                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
+                auto nusInZones = get<vector<t_dim>, NusInZones>();
                 t_dim out = nusInZones.front();
-                for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++){
-                    if (ZetaPosInNode[localZetaID] == "top"){
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++){
+                    if (getZetaPosInNode(localZetaID) == "top"){
                         auto delnus = get<vector<t_dim>, Delnus>();
                         out += delnus[localZetaID];
                     }
@@ -1349,10 +1353,10 @@ Modify Properties
              * @note in SWI2: NUBOT, lines 1230-1249
              */
             t_dim getNusBot(){
-                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
+                auto nusInZones = get<vector<t_dim>, NusInZones>();
                 t_dim out = nusInZones.back();
-                for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++){
-                    if (ZetaPosInNode[localZetaID] == "bottom"){
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++){
+                    if (getZetaPosInNode(localZetaID) == "bottom"){
                         auto delnus = get<vector<t_dim>, Delnus>();
                         out -= delnus[localZetaID];
                     }
@@ -1363,30 +1367,29 @@ Modify Properties
             /**
              * @brief set the zeta position in the node as at top/bottom/between the first and last zeta surface
              * @param localZetaID zeta surface id in this node
-             * @note in SWI2: SSWI2_SET_IPLPOS (lines 4358-4383; )
+             * @note in SWI2: SSWI2_SET_IPLPOS (lines 4358-4383)
              */
-            void setZetaPosInNode(int localZetaID){
-                std::string tmp;
-                /*if (localZetaID == 0) {
-                    tmp = "between"; // SWI2 line 4362: worked around this by checking whether localZetaID == 0
-                } else */if (get<vector<t_meter>, Zetas>()[localZetaID] >= get<vector<t_meter>, Zetas>().front()){
-                    tmp = "top";
-                } else if (get<vector<t_meter>, Zetas>()[localZetaID] <= get<vector<t_meter>, Zetas>().back() or
-                           get<t_meter,Head>() < (get<t_meter,Elevation>() - get<t_meter,VerticalSize>())){
-                    tmp = "bottom";
-                } else { //if
-                    // (get<vector<t_meter>, Zetas>()[localZetaID] < get<vector<t_meter>, Zetas>().front() and
-                    //  get<vector<t_meter>, Zetas>()[localZetaID] > get<vector<t_meter>, Zetas>().back()){
-                    tmp = "between";
-                } // todo: if nodes can be inactive: additional else if
-
-                if (localZetaID >= ZetaPosInNode.size()){
-                    ZetaPosInNode.push_back(tmp);
-                } else {
-                    ZetaPosInNode[localZetaID] = tmp;
+            void setZetasPosInNode() {
+                vector<string> zetasPosInNode;
+                for (int localZetaID = 0; localZetaID < getZetas().size(); localZetaID++){
+                    /*if (localZetaID == 0) {
+                        tmp = "between"; // SWI2 line 4362: worked around this by checking whether localZetaID == 0
+                    } else */
+                    if (getZeta(localZetaID) >= getZetas().front()) {
+                        zetasPosInNode.emplace_back("top");
+                    } else if (getZeta(localZetaID) <= getZetas().back() or
+                               get<t_meter, Head>() < (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) {
+                        zetasPosInNode.emplace_back("bottom");
+                    } else { //if (getZeta(localZetaID) < getZetas().front() and getZetas(localZetaID) > getZetas().back()){
+                        zetasPosInNode.emplace_back("between");
+                    } // todo: if nodes can be inactive: additional else if
+                    //LOG(debug) << "getZetaPosInNode(localZetaID=" << localZetaID << ") = " << out << std::endl;
                 }
-                //LOG(debug) << "ZetaPosInNode[localZetaID=" << localZetaID << "]=" << ZetaPosInNode[localZetaID] << std::endl;
+                set<vector<string>, ZetasPosInNode>(zetasPosInNode);
             }
+
+            std::string getZetaPosInNode(int localZetaID){ return get<vector<string>, ZetasPosInNode>()[localZetaID]; }
+
 
             /**
              * @brief The source flow below a zeta surface (for the right hand side in the zeta equation)
@@ -1402,7 +1405,7 @@ Modify Properties
                 int zoneToUse = zoneOfSources; // zone of flow sources in node (for SGD: zoneOfSources > zoneOfSinks)
                 //LOG(userinfo) << "zoneToUse: " << zoneToUse << std::endl;
 
-                if (ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) {
+                if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) {
                     // Question: adapt functionality to deal with zone numbers over 100 from SWI2 code? lines 3548-3553
 
                     // if the new groundwater head is above or equal to the node bottom
@@ -1470,8 +1473,9 @@ Modify Properties
                         // calculating zone conductances for pseudo source term calculation
                         vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
-                        if ((ZetaPosInNode[localZetaID] == "between" and
-                            at(got)->ZetaPosInNode[localZetaID] == "between") or localZetaID == 0) { // if IPLPOS == 0
+                        if ((getZetaPosInNode(localZetaID) == "between" and
+                            at(got)->getZetaPosInNode(localZetaID) == "between") or
+                            localZetaID == 0) { // if IPLPOS == 0
                             //%% head part %%
                             t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
@@ -1481,16 +1485,16 @@ Modify Properties
                             //LOG(userinfo) << "getAt<t_meter, Head>(got): " << getAt<t_meter, Head>(got).value() << std::endl;
                             //LOG(userinfo) << "get<t_meter, Head>(): " << get<t_meter, Head>().value() << std::endl;
 
-                            for (int zetaID = 0; zetaID < get<vector<t_meter>, Zetas>().size() - 1; zetaID++) {
+                            for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
                                 //%% delnus part %%
                                 if (zetaID != localZetaID) {
                                     t_s_meter_t zoneCondCumZetaID = getZoneConductanceCum(zetaID,
                                                                                           zoneConductances);
                                     t_vol_t delnus_part = -delnus[zetaID] *
-                                                          (zoneCondCumZetaID * (getAt<vector<t_meter>, Zetas>(got)[zetaID] - get<vector<t_meter>, Zetas>()[zetaID]));
+                                                          (zoneCondCumZetaID * (at(got)->getZeta(zetaID) - getZeta(zetaID)));
                                     out += delnus_part;
-                                    //LOG(userinfo) << "get<vector<t_meter>, Zetas>()[zetaID]: " << get<vector<t_meter>, Zetas>()[zetaID].value() << std::endl;
-                                    //LOG(userinfo) << "getAt<vector<t_meter>, Zetas>(got)[zetaID]: " << getAt<vector<t_meter>, Zetas>(got)[zetaID].value() << std::endl;
+                                    //LOG(userinfo) << "getZetas(zetaID): " << getZetas(zetaID).value() << std::endl;
+                                    //LOG(userinfo) << "at(got)->getZeta(zetaID): " << at(got)->getZeta(zetaID).value() << std::endl;
                                     //LOG(userinfo) << "zoneCondCumZetaID: " << zoneCondCumZetaID.value() << std::endl;
                                     //LOG(userinfo) << "delnus_part: " << delnus_part.value() << std::endl;
                                 }
@@ -1526,16 +1530,15 @@ Modify Properties
                 //LOG(debug) << "get<t_meter, Head>(): " << get<t_meter, Head>().value() << std::endl;
 
                 // %%delnus part %% for left/back neighbour
-                for (int zetaID = 0; zetaID < get<vector<t_meter>, Zetas>().size() - 1; zetaID++) {
+                for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
                     t_s_meter_t zoneCondCumZetaID = getZoneConductanceCum(zetaID,zoneConductances);
                     t_vol_t delnus_part = delnus[zetaID] *
-                                          (zoneCondCumZetaID * (getAt<vector<t_meter>, Zetas>(got)[zetaID] -
-                                                                get<vector<t_meter>, Zetas>()[zetaID]));
+                                          (zoneCondCumZetaID * (at(got)->getZeta(zetaID) - getZeta(zetaID)));
                     out += delnus_part;
                     //LOG(debug) << "delnus_part: " << delnus_part.value() << std::endl;
                     //LOG(debug) << "with zoneCondCumZetaID = " << zoneCondCumZetaID.value() << std::endl;
-                    //LOG(debug) << "with Zetas[zetaID = " << zetaID << "] = " << get<vector<t_meter>, Zetas>()[zetaID].value() << std::endl;
-                    //LOG(debug) << "with aetAt<vector<t_meter>, Zetas>(got)[zetaID = " << zetaID << "] = " << getAt<vector<t_meter>, Zetas>(got)[zetaID].value() << std::endl;
+                    //LOG(debug) << "with Zetas[zetaID = " << zetaID << "] = " << getZetas(zetaID).value() << std::endl;
+                    //LOG(debug) << "with aetAt<vector<t_meter>, Zetas>(got)[zetaID = " << zetaID << "] = " << at(got)->getZeta(zetaID).value() << std::endl;
                 }
                 return out;
             }
@@ -1556,12 +1559,12 @@ Modify Properties
                          NeighbourPosition::TOP, NeighbourPosition::DOWN};
 
                 // tip and toe flow calculation (in 8 parts)
-                if (ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) { // if the Zeta surface at this node is between top and bottom of the node
+                if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) { // if the Zeta surface at this node is between top and bottom of the node
                     for (const auto &position: possible_neighbours) {
                         map_itter got = neighbours.find(position);
                         if (got == neighbours.end()) { // do nothing if neighbour does not exist
                         } else {
-                            if (at(got)->ZetaPosInNode[localZetaID] != "between" and localZetaID != 0) { // if the Zeta surface at neighbouring node is at top or bottom of the node
+                            if (at(got)->getZetaPosInNode(localZetaID) != "between" and localZetaID != 0) { // if the Zeta surface at neighbouring node is at top or bottom of the node
                                 if ((position == NeighbourPosition::LEFT) or
                                     (position == NeighbourPosition::BACK)) {
                                     out -= tipToeFlow(got, localZetaID); // subtract tip/toe flow at LEFT/BACK neighbour
@@ -1623,13 +1626,12 @@ Modify Properties
                 t_meter deltaZeta_neig;
 
                 // calculate the zone thicknesses and their sum
-                for (int localZetaID = 0; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
-                    //LOG(userinfo) << "get<vector<t_meter>, Zetas>()[" << localZetaID << "]:" << get<vector<t_meter>, Zetas>()[localZetaID].value() << std::endl;
-                    //LOG(userinfo) << "get<vector<t_meter>, Zetas>()[" << localZetaID+1 << "]:" << get<vector<t_meter>, Zetas>()[localZetaID+1].value() << std::endl;
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++) {
+                    //LOG(userinfo) << "getZeta(" << localZetaID << "): " << getZeta(localZetaID).value() << std::endl;
+                    //LOG(userinfo) << "getZeta(" << localZetaID+1 << "):" << getZeta(localZetaID+1).value() << std::endl;
 
-                    deltaZeta = get<vector<t_meter>, Zetas>()[localZetaID] - get<vector<t_meter>, Zetas>()[localZetaID + 1];
-                    deltaZeta_neig = getAt<vector<t_meter>, Zetas>(got)[localZetaID] -
-                                     getAt<vector<t_meter>, Zetas>(got)[localZetaID + 1];
+                    deltaZeta = getZeta(localZetaID) - getZeta(localZetaID + 1);
+                    deltaZeta_neig = at(got)->getZeta(localZetaID) - at(got)->getZeta(localZetaID + 1);
                     if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
                         zoneThickness = 0 * si::meter;
                     } else {
@@ -1642,18 +1644,18 @@ Modify Properties
                 }
 
                 // calculate the density zone conductances
-                for (int localZetaID = 0; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++) {
                     //LOG(userinfo) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
 
                     if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
                         zoneConductance = 0 * si::square_meter / day; // zoneConductance is 0 if sum of thicknesses is 0
                     } else {
-                        if (localZetaID != 0 and localZetaID < get<vector<t_meter>, Zetas>().size() - 2 and
-                            ((ZetaPosInNode[localZetaID] != "between") or // adapted from SWI2 code lines 1212-1222
-                            (at(got)->ZetaPosInNode[localZetaID] != "between") or
-                            (ZetaPosInNode[localZetaID + 1] != "between") or
-                            (at(got)->ZetaPosInNode[localZetaID + 1] != "between"))) {
-                                // this section is reached if get<vector<t_meter>, Zetas>().size() >= 4 and numberOfZones >= 3
+                        if (localZetaID != 0 and localZetaID < getZetas().size() - 2 and
+                            ((getZetaPosInNode(localZetaID) != "between") or // adapted from SWI2 code lines 1212-1222
+                            (at(got)->getZetaPosInNode(localZetaID) != "between") or
+                            (getZetaPosInNode(localZetaID + 1) != "between") or
+                            (at(got)->getZetaPosInNode(localZetaID + 1) != "between"))) {
+                                // this section is reached if getZetas().size() >= 4 and numberOfZones >= 3
                                 zoneConductance = 0 * si::square_meter / day; // zone is inactive or across layers
                         } else {
 
@@ -1680,7 +1682,7 @@ Modify Properties
                 // calculate the sum of density zone conductances below a zeta surface n and add to vector out
                 t_s_meter_t out = 0 * si::square_meter / day;
 
-                for (int zoneID = localZetaID; zoneID < get<vector<t_meter>, Zetas>().size() - 1; zoneID++) {
+                for (int zoneID = localZetaID; zoneID < getZetas().size() - 1; zoneID++) {
                     out += zoneConductances[zoneID];
                 };
                 //LOG(debug) << "zoneConductanceCum:" << out.value() << std::endl;
@@ -1710,12 +1712,12 @@ Modify Properties
                     }
                     vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
-                    for (int localZetaID = 0; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++){
+                    for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         t_s_meter_t zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                         //LOG(userinfo) << "zoneConductanceCum (localZetaID: " << localZetaID << "): " << zoneConductanceCum.value() << std::endl;
                         if (delnus[localZetaID] > 0) {
                             out -= delnus[localZetaID] * (zoneConductanceCum *
-                                                          (getAt<vector<t_meter>, Zetas>(got)[localZetaID] - get<vector<t_meter>, Zetas>()[localZetaID]));
+                                                          (at(got)->getZeta(localZetaID) - getZeta(localZetaID)));
                         }
                     }
                 }
@@ -1738,13 +1740,14 @@ Modify Properties
                 if (got == neighbours.end()) {//No top node
                 } else {//Current node has a top node
                     // first part of the flux correction term
-                    for (int localZetaID = 0; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++){
-                        headdiff -= nusInZones[localZetaID] * (getAt<vector<t_meter>, Zetas>(got)[localZetaID+1] - getAt<vector<t_meter>, Zetas>(got)[localZetaID]); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
+                    for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
+                        headdiff -= nusInZones[localZetaID] * (at(got)->getZeta(localZetaID + 1) -
+                                                               at(got)->getZeta(localZetaID)); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
                     }
                     // second part of the flux correction term
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
-                          (headdiff + 0.5 * (getAt<vector<t_meter>, Zetas>(got).back() - get<vector<t_meter>, Zetas>().front()) *
+                          (headdiff + 0.5 * (at(got)->getZetas().back() - getZetas().front()) *
                            (at(got)->getNusBot() + getNusTop())); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
                     //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
@@ -1812,18 +1815,18 @@ Modify Properties
                             updatedZeta = bottomOfNode;
                         }
                         // update the first zeta surface
-                        get<vector<t_meter>, Zetas>().front() = updatedZeta;
+                        getZetas().front() = updatedZeta;
 
                         // update all other zeta surfaces that are ABOVE the updated first zeta surface
-                        for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
-                            if (get<vector<t_meter>, Zetas>()[localZetaID] > updatedZeta) {
+                        for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
+                            if (getZetas()[localZetaID] > updatedZeta) {
                                 setZeta(localZetaID, updatedZeta);
                             }
                         }
                     // if groundwater head is ABOVE OR EQUAL to the top of the node
                     } else { // head >= topOfNode
                         // clip zeta to the top of the node
-                        get<vector<t_meter>, Zetas>().front() = topOfNode;
+                        setZeta(0, topOfNode);
                     }
                 }
             }
@@ -1851,12 +1854,12 @@ Modify Properties
                         getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
 
 
-                        for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
+                        for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
                             // - at the top of the current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
-                            if (ZetaPosInNode[localZetaID] == "top" and
-                                at(top)->ZetaPosInNode[localZetaID] == "bottom") {
+                            if (getZetaPosInNode(localZetaID) == "top" and
+                                at(top)->getZetaPosInNode(localZetaID) == "bottom") {
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxCorrTop();
                                 //LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
@@ -1865,13 +1868,14 @@ Modify Properties
                                     deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
                                                 (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // todo add get<t_dim, StepModifier>() again
                                     // ...lift zeta height of the lowest zeta surface in top node
-                                    getAt<vector<t_meter>, Zetas>(top)[localZetaID] = getAt<vector<t_meter>, Zetas>(top).back() + deltaZeta;
+                                    t_meter zeta_back_top = at(top)->getZetas().back();
+                                    at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); // todo add get<t_dim, StepModifier>() again
                                     // ...lower zeta height of the highest zeta surface in this node
-                                    setZeta(localZetaID, get<vector<t_meter>, Zetas>().front() + deltaZeta);
+                                    setZeta(localZetaID, getZetas().front() + deltaZeta);
                                 }
                             }
                         }
@@ -1905,8 +1909,8 @@ Modify Properties
                     auto got_opp = neighbours.find(oppositePositions[position]);
                     if (got == neighbours.end()) { // no neighbour at position or opposite side
                     } else {
-                        for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
-                            if (ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) {
+                        for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
+                            if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) {
                                 // get max delta of zeta between nodes
                                 maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxTipToeSlope>();
                                 //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
@@ -1922,53 +1926,55 @@ Modify Properties
                                                    ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
                                                     (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
 
-                                if (at(got)->ZetaPosInNode[localZetaID] == "bottom") {
+                                if (at(got)->getZetaPosInNode(localZetaID) == "bottom") {
                                     //%% Toe tracking %%
-                                    t_meter zetaDif = abs(get<vector<t_meter>, Zetas>()[localZetaID] - getAt<vector<t_meter>, Zetas>(got).back());
+                                    t_meter zetaDif = abs(getZeta(localZetaID) - at(got)->getZetas().back());
                                     //LOG(userinfo) << "zetaDif (toe): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
-                                        setZeta(localZetaID, get<vector<t_meter>, Zetas>()[localZetaID] - delta_self);
+                                        setZeta(localZetaID, getZeta(localZetaID) - delta_self);
                                         //LOG(userinfo) << "zetaChange_self (toe): " << delta_self.value() << std::endl;
                                         // the following if is not in line with SSWI2:
                                         if (at(got)->hasGHB()){ // do not change zeta surface height
                                         } else {
-                                            getAt<vector<t_meter>, Zetas>(got)[localZetaID] = getAt<vector<t_meter>, Zetas>(got).back() + delta_neig;
+                                            t_meter zeta_back_neig = at(got)->getZetas().back();
+                                            at(got)->setZeta(localZetaID, zeta_back_neig + delta_neig);
                                             //LOG(userinfo) << "zetaChange_neig (toe): " << delta_neig.value() << std::endl;
                                         }
                                     }
-                                } else if (at(got)->ZetaPosInNode[localZetaID] == "top") {
+                                } else if (at(got)->getZetaPosInNode(localZetaID) == "top") {
                                     //%% Tip tracking %%
-                                    t_meter zetaDif = abs(getAt<vector<t_meter>, Zetas>(got).front() - get<vector<t_meter>, Zetas>()[localZetaID]);
+                                    t_meter zetaDif = abs(at(got)->getZetas().front() - getZeta(localZetaID));
                                     //LOG(userinfo) << "zetaDif (tip): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
-                                        setZeta(localZetaID, get<vector<t_meter>, Zetas>()[localZetaID] + delta_self);
+                                        setZeta(localZetaID, getZeta(localZetaID) + delta_self);
                                         //LOG(userinfo) << "zetaChange_self (tip): " << delta_self.value() << std::endl;
                                         // the following if is not in line with SSWI2:
                                         if (at(got)->hasGHB()){ // do not change zeta surface height
                                         } else {
-                                            getAt<vector<t_meter>, Zetas>(got)[localZetaID] = getAt<vector<t_meter>, Zetas>(got).front() - delta_neig;
+                                            t_meter zeta_front_neig = at(got)->getZetas().front();
+                                            at(got)->setZeta(localZetaID, zeta_front_neig - delta_neig);
+
                                             //LOG(userinfo) << "zetaChange_neig (tip): " << delta_neig.value() << std::endl;
                                         }
 
                                     }
                                 }
 
-                                if ((get<vector<t_meter>, Zetas>()[localZetaID] - get<vector<t_meter>, Zetas>().back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
+                                if ((getZeta(localZetaID) - getZetas().back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
                                     if (got_opp == neighbours.end()){
                                     } else {
-                                        if (at(got_opp)->ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) {
+                                        if (at(got_opp)->getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) {
                                             // the following if is not in line with SSWI2:
                                             if (at(got_opp)->hasGHB()) { // do not change zeta surface height
                                             } else {
                                                 // change zeta in other direction neighbour
-                                                delta_opp = ((get<vector<t_meter>, Zetas>()[localZetaID] - get<vector<t_meter>, Zetas>().back()) *
+                                                delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
                                                              (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
                                                              (getLengthNeig(got_opp) *
                                                               getAt<t_dim, EffectivePorosity>(got_opp)));
-                                                getAt<vector<t_meter>, Zetas>(got_opp)[localZetaID] =
-                                                        getAt<vector<t_meter>, Zetas>(got_opp)[localZetaID] + delta_opp;
-
-                                                setZeta(localZetaID, get<vector<t_meter>, Zetas>().back());
+                                                t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
+                                                at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
+                                                setZeta(localZetaID, getZetas().back());
                                                 //LOG(userinfo) << "delta_opp (toe): " << delta_opp.value() << std::endl;
                                             }
                                         }
@@ -1986,13 +1992,13 @@ Modify Properties
              * @note in SWI2 code: SSWI2_ZETACLIP
              */
             void clipInnerZetas() {
-                for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
-                    //LOG(debug) << "get<vector<t_meter>, Zetas>()[localZetaID]: " << get<vector<t_meter>, Zetas>()[localZetaID].value() << std::endl;
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
+                    //LOG(debug) << "getZetas()[localZetaID]: " << getZetas()[localZetaID].value() << std::endl;
 
-                    if (ZetaPosInNode[localZetaID] == "between" or localZetaID == 0) {
-                        if (getZeta(localZetaID) < getZetas().back()) { setZeta(localZetaID, getZetas().back(); }
+                    if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) {
+                        if (getZeta(localZetaID) < getZetas().back()) { setZeta(localZetaID, getZetas().back()); }
 
-                        if (getZeta(localZetaID) > getZetas().front()) { setZeta(localZetaID, getZetas().front(); }
+                        if (getZeta(localZetaID) > getZetas().front()) { setZeta(localZetaID, getZetas().front()); }
                     }
                 }
             }
@@ -2014,11 +2020,11 @@ Modify Properties
                 t_meter zetaSum;
                 int n2_min;
                 int n2_max;
-                for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 2; localZetaID++) {
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 2; localZetaID++) {
                     // if zeta surface n is very close to or lower than the zeta surface that SHOULD be below (n+1)
-                    if (get<vector<t_meter>, Zetas>()[localZetaID] - get<vector<t_meter>, Zetas>()[localZetaID + 1] < zetaDifferenceCap) {
+                    if (getZeta(localZetaID) - getZeta(localZetaID + 1) < zetaDifferenceCap) {
                         // make the zeta height of both surfaces their average
-                        zetaAverage = 0.5 * (get<vector<t_meter>, Zetas>()[localZetaID] + get<vector<t_meter>, Zetas>()[localZetaID + 1]);
+                        zetaAverage = 0.5 * (getZeta(localZetaID) + getZeta(localZetaID + 1));
                         setZeta(localZetaID, zetaAverage);
                         setZeta(localZetaID + 1, zetaAverage);
                         // if there are zeta surfaces above that could possibly be crossing
@@ -2029,14 +2035,14 @@ Modify Properties
                                 n2_max = localZetaID + 1;
                                 // if a zeta surface above (n-x) crosses or is very close to zeta surface below (n+1)
                                 //  (which is now at the same, averaged, height of zeta surface n)
-                                if (get<vector<t_meter>, Zetas>()[n2_min] - get<vector<t_meter>, Zetas>()[n2_max] < zetaDifferenceCap) {
+                                if (getZeta(n2_min) - getZeta(n2_max) < zetaDifferenceCap) {
                                     // calculate the average height from that zeta surface above (n-x) until
                                     //  the zeta surface below (n+1)
-                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { zetaSum += get<vector<t_meter>, Zetas>()[n2]; }
+                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { zetaSum += getZeta(n2); }
                                     zetaAverage = zetaSum / ((n2_max - n2_min) *
                                                              si::si_dimensionless); // todo check whether that is true
                                     // set every zeta surface between n-1 and n+1 to the averaged value
-                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { get<vector<t_meter>, Zetas>()[n2] = zetaAverage; }
+                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { getZeta(n2) = zetaAverage; }
                                 }
                             }
                         }
@@ -2056,8 +2062,9 @@ Modify Properties
                 t_meter maxAdjustment_neig;
                 t_meter delta_self;
                 t_meter delta_neig;
-                for (int localZetaID = 1; localZetaID < get<vector<t_meter>, Zetas>().size() - 1; localZetaID++) {
-                    if (ZetaPosInNode[localZetaID] == "top" or ZetaPosInNode[localZetaID] == "bottom") {
+                t_meter zeta_neig;
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
+                    if (getZetaPosInNode(localZetaID) == "top" or getZetaPosInNode(localZetaID) == "bottom") {
                         // iterate through horizontal neighbours
                         std::forward_list<NeighbourPosition> possible_neighbours =
                                 {NeighbourPosition::BACK, NeighbourPosition::FRONT,
@@ -2088,16 +2095,18 @@ Modify Properties
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                                 // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour
-                                if (ZetaPosInNode[localZetaID] == "bottom" and // IPLPOS_self = 2
-                                    at(got)->ZetaPosInNode[localZetaID] == "top") { // IPLPOS_neig = 1
+                                if (getZetaPosInNode(localZetaID) == "bottom" and // IPLPOS_self = 2
+                                    at(got)->getZetaPosInNode(localZetaID) == "top") { // IPLPOS_neig = 1
                                     // adjust zeta surface heights
                                     setZeta(localZetaID, getZeta(localZetaID) + delta_self);
-                                    getAt<vector<t_meter>, Zetas>(got)[localZetaID] = getAt<vector<t_meter>, Zetas>(got)[localZetaID] - delta_neig;
-                                } else if (ZetaPosInNode[localZetaID] == "top" and // IPLPOS_self = 1
-                                           at(got)->ZetaPosInNode[localZetaID] == "bottom") {// IPLPOS_neig = 2
+                                    zeta_neig = at(got)->getZeta(localZetaID);
+                                    at(got)->setZeta(localZetaID, zeta_neig - delta_neig);
+                                } else if (getZetaPosInNode(localZetaID) == "top" and // IPLPOS_self = 1
+                                           at(got)->getZetaPosInNode(localZetaID) == "bottom") {// IPLPOS_neig = 2
                                     // adjust zeta surface heights
                                     setZeta(localZetaID, getZeta(localZetaID) - delta_self);
-                                    getAt<vector<t_meter>, Zetas>(got)[localZetaID] = getAt<vector<t_meter>, Zetas>(got)[localZetaID] + delta_neig;
+                                    zeta_neig = at(got)->getZeta(localZetaID);
+                                    at(got)->setZeta(localZetaID, zeta_neig + delta_neig);
                                 }
                             }
                         }
@@ -2389,8 +2398,8 @@ Modify Properties
                 return out;
             }
 
-            void setHead(t_meter delta) noexcept { // Question: change to "addDeltaToHead"?
-                __setHead(delta);
+            void setHeadChange(t_meter delta) noexcept { // Question: change to "addDeltaToHead"?
+                __setHeadChange(delta);
             }
 
             t_meter calcInitialHead(t_meter initialParam) noexcept { return __calcInitialHead(initialParam); }
@@ -2523,9 +2532,9 @@ Modify Properties
 
             /**
              * @brief Update heads after one or multiple inner iterations
-             * @param head
+             * @param delta
              */
-            virtual void __setHead(t_meter delta) {
+            virtual void __setHeadChange(t_meter delta) {
                 NANChecker(delta.value(), "Set Head");
                 //t_meter deltaH__old = get<t_meter, HeadChange>();
                 t_meter current_head = get<t_meter, Head>();
@@ -2620,7 +2629,7 @@ Modify Properties
         private:
             friend class NodeInterface;
 
-            virtual void __setHead(t_meter head) {
+            virtual void __setHeadChange(t_meter head) {
                 set<t_meter, HeadChange>(0 * si::meter);
             };
 

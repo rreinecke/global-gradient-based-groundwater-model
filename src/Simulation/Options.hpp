@@ -26,6 +26,7 @@ namespace GlobalFlow {
 
         enum StepSize {
             DAILY,
+            TWO_DAILY,
             MONTHLY
         };
 
@@ -420,6 +421,8 @@ namespace GlobalFlow {
                 switch (step_size) {
                     case DAILY:
                         return 1;
+                    case TWO_DAILY:
+                        return 2;
                     case MONTHLY:
                         return 31;
                 }

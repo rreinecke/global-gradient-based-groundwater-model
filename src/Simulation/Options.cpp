@@ -81,10 +81,13 @@ namespace GlobalFlow {
             MIN_DAMP = numerics.get<double>("min_damp");
             MAX_DAMP = numerics.get<double>("max_damp");
             string tmp = numerics.get<string>("step_size");
-            if (tmp == "DAILY") {
+            if (tmp == "daily") {
                 step_size = DAILY;
             }
-            if (tmp == "MONTHLY") {
+            if (tmp == "two_days") {
+                step_size = TWO_DAILY;
+            }
+            if (tmp == "monthly") {
                 step_size = MONTHLY;
             }
             WETTING_APPROACH = numerics.get<string>("wetting_approach");

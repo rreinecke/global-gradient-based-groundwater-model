@@ -133,7 +133,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID
 
         if (is_active) {
             colID = nodeID - numInactive;
-            LOG(userinfo) << "colID: " << colID << std::endl;
+            //LOG(userinfo) << "colID: " << colID << std::endl;
 
             zoneConductance = entry.second;
             if (cached) {
@@ -424,11 +424,11 @@ Equation::updateIntermediateHeads() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
 
         if (reduced) {
-            nodes->at(k)->setHead((double) changes[id] * si::meter);
+            nodes->at(k)->setHeadChange((double) changes[id] * si::meter);
         } else {
             auto m = index_mapping[id];
             if (m != -1) {
-                nodes->at(k)->setHead((double) changes[m] * si::meter);
+                nodes->at(k)->setHeadChange((double) changes[m] * si::meter);
             }
         }
     }
@@ -477,12 +477,10 @@ Equation::updateTopZetasToHeads() {
 }
 
 void inline
-Equation::setZetaPosInNodes() {
+Equation::setZetasPosInNodes() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-        for (int localZetaID = 0; localZetaID <= numberOfZones; localZetaID++) {
-            nodes->at(k)->setZetaPosInNode(localZetaID);
-        }
+        nodes->at(k)->setZetasPosInNode();
     }
 }
 
@@ -729,7 +727,7 @@ void
 Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
-    setZetaPosInNodes();
+    setZetasPosInNodes();
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
