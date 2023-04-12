@@ -105,8 +105,8 @@ namespace GlobalFlow {
 
                 if(op.isKGHBFile()) {
                     LOG(userinfo) << "Reading the boundary condition";
-                    readHeadBoundary(buildDir(op.getKGHBDir())); // todo set initial zeta and zones sink/sources at GHB
-                } // todo: in GHB def: include routine setting SGD at coast, fresh source/sink elsewhere
+                    readHeadBoundary(buildDir(op.getKGHBDir())); // todo set initial zeta at GHB
+                } // todo: in GHB def: set SGD (for two zones: source=zone0 (fresh), sink=zone1 (saline))
 
                 // read either initial head (default) or equal water table depth from file, if available
                 if (op.isInitialHeadFromFile()){
@@ -135,13 +135,13 @@ namespace GlobalFlow {
                     LOG(userinfo) << "Reading input for variable density flow";
                     if (op.isInitialZetasFromFile()) {
                         readInitialZetas(buildDir(op.getInitialZetasDir())); // requires elevation to be set
-                    } // todo: if not from file: set last zeta to bottom, at GHB/ocean nodes all but first zeta at bottom
+                    } // todo: if not from file: set last zeta to node bottom, at GHB/ocean nodes all but first zeta at bottom
                     if (op.isEffectivePorosityFromFile()) {
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                     }
                     if (op.isZonesSourcesSinksFromFile()) {
                         readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
-                    } // todo check correct values for typical fresh water recharge and let this be read
+                    }
                 }
 
                 if (op.isRowCol()) {

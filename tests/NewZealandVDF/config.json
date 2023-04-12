@@ -10,10 +10,9 @@
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 1,
-      "layers": 2,
+      "layers": 1,
       "one_layer_approach": "false",
       "confinement": [
-        "true",
         "true"
       ],
       "density_variable": "true",
@@ -78,7 +77,7 @@
         "specific_storage": 0.000015,
         "zones_sources_sinks": [
           0,
-          1
+          0
         ]
       },
       "data": {

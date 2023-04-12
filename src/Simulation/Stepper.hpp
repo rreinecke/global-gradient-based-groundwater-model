@@ -19,7 +19,7 @@
 namespace GlobalFlow {
     namespace Simulation {
 
-        /** @class Enum for stepsizes
+        /** @class Enum for step-sizes
          *  @bug cannot use double value e.g. for week: 7.5 should be a struct instead
          */
         enum TimeFrame {
@@ -37,12 +37,11 @@ namespace GlobalFlow {
 
         /**
          * @class AbstractStepper An iterator in order to iterate simply over simulation steps
-         * Holds a pointer to the equation and the choosen stepsize
+         * Holds a pointer to the equation and the chosen step-size
          */
         class AbstractStepper {
         public:
-            virtual Solver::Equation *
-            get(int col) const = 0;
+            virtual Solver::Equation *get(int col) const = 0;
         };
 
         /**
