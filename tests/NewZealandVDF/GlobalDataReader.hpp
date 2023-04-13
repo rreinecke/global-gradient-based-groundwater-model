@@ -91,8 +91,10 @@ namespace GlobalFlow {
                                       [](const double &recharge, const double &area) {
                                                 return (((recharge / 1000) * area) / 365);});
 
-                LOG(userinfo) << "Reading hydraulic conductivity";
-                readConduct(buildDir(op.getLithology()));
+                if (op.isKFromFile()) {
+                    LOG(userinfo) << "Reading hydraulic conductivity";
+                    readConduct(buildDir(op.getLithology()));
+                }
 
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));

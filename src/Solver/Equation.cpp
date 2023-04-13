@@ -689,9 +689,9 @@ Equation::solve() {
 
         iterations++;
     }
-    //LOG(debug) << "A:\n" << A << std::endl;
+    LOG(debug) << "A:\n" << A << std::endl;
     LOG(debug) << "x:\n" << x << std::endl;
-    //LOG(debug) << "b (= rhs):\n" << b << std::endl;
+    LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations\n";

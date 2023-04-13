@@ -97,7 +97,7 @@ namespace GlobalFlow {
 //BASE_PATH = input.get<string>("base_path");
 
             pt::ptree data_config = input.get_child("data_config");
-            k_from_lith = data_config.get<bool>("k_from_lith");
+            k_from_file = data_config.get<bool>("k_from_file");
             k_ghb_from_file = data_config.get<bool>("k_ghb_from_file");
             specificstorage_from_file = data_config.get<bool>("specific_storage_from_file");
             specificyield_from_file = data_config.get<bool>("specific_yield_from_file");

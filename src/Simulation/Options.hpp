@@ -113,7 +113,7 @@ namespace GlobalFlow {
             vector<int> ZONES_SOURCES_SINKS{0};
 
             string BASE_PATH{"data"};
-            bool k_from_lith{true};
+            bool k_from_file{false};
             bool k_ghb_from_file{false};
             bool specificstorage_from_file{false};
             bool specificyield_from_file{false};
@@ -172,7 +172,7 @@ namespace GlobalFlow {
 
             bool isSensitivity() { return SENSITIVITY; }
 
-            bool isKFromLith() { return k_from_lith; }
+            bool isKFromFile() { return k_from_file; }
 
             bool isKGHBFile() { return k_ghb_from_file; }
 

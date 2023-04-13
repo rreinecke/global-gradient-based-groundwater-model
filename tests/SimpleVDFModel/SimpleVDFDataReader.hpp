@@ -40,9 +40,10 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
 
-                LOG(userinfo) << "Reading conductivity";
-                readConduct(buildDir(op.getLithology()));
-
+                if (op.isKFromFile()) {
+                    LOG(userinfo) << "Reading hydraulic conductivity";
+                    readConduct(buildDir(op.getLithology()));
+                }
 
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
@@ -52,14 +53,21 @@ namespace GlobalFlow {
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading input for variable density flow";
-                    readInitialZetas(buildDir(op.getInitialZetasDir()));
-                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
+                    if (op.isInitialZetasFromFile()){
+                        readInitialZetas(buildDir(op.getInitialZetasDir()));
+                    }
+                    if (op.isEffectivePorosityFromFile()){
+                        readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+                    }
+                    if (op.isZonesSourcesSinksFromFile()){
+                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
+                    }
                 }
 
-
-                LOG(userinfo) << "Initializing head";
-                readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                if (op.isInitialHeadFromFile()){
+                    LOG(userinfo) << "Initializing head";
+                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                }
 
                 LOG(userinfo) << "Connecting the model cells";
                 DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(), op.getGHBConduct(),
