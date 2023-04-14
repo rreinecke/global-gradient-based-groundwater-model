@@ -22,7 +22,7 @@
 #include "set"
 #include <fstream>
 #include "../../src/Misc/colors.hpp"
-#include "SimpleVDFDataReader.hpp"
+#include "SimpleVDF2DataReader.hpp"
 
 namespace GlobalFlow {
 
@@ -52,7 +52,7 @@ namespace GlobalFlow {
             Solver::Equation *_eq;
             Simulation::Options op;
             Simulation::Simulation sim;
-            DataProcessing::SimpleVDFDataReader *reader;
+            DataProcessing::SimpleVDF2DataReader *reader;
     };
 
 }//ns

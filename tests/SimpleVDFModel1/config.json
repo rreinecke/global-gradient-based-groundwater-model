@@ -1,7 +1,7 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_simpleVDF.csv",
+      "nodes": "grid_simpleVDF1.csv",
       "row_cols": "true",
       "steady_state": "true",
       "number_of_nodes": 50,
@@ -17,8 +17,8 @@
       ],
       "density_variable": "true",
       "density_zones": [
-        1000,
-        1025
+        1000.0,
+        1025.0
       ],
       "max_tip_toe_slope": 0.2,
       "min_depth_factor": 0.1,
@@ -33,13 +33,13 @@
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-8,
+      "closing_crit": 1E-4,
       "head_change": 0.00001,
       "zeta_change": 0.00001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
-      "step_size": "two_daily",
+      "step_size": "daily",
       "wetting_approach": "nwt"
     },
     "input": {
@@ -80,12 +80,12 @@
         ]
       },
       "data": {
-        "effective_porosity": "effective_porosity_simpleVDF.csv",
-        "elevation": "elevation_simpleVDF.csv",
-        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
-        "initial_zetas": "initial_zetas_simpleVDF.csv",
-        "recharge": "recharge_simpleVDF.csv",
-        "zones_sources_sinks": "zones_sources_sinks_simpleVDF.csv"
+        "effective_porosity": "effective_porosity_simpleVDF1.csv",
+        "elevation": "elevation_simpleVDF1.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF1.csv",
+        "initial_zetas": "initial_zetas_simpleVDF1.csv",
+        "recharge": "recharge_simpleVDF1.csv",
+        "zones_sources_sinks": "zones_sources_sinks_simpleVDF1.csv"
       }
     }
   }

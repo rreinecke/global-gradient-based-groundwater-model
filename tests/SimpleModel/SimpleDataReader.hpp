@@ -29,6 +29,7 @@ class SimpleDataReader : public DataReader {
                             op.getEdgeLengthFrontBack(),
                             op.isConfined(0),
                             op.isDensityVariable(),
+                            op.getInitialZetas(),
                             op.getMaxTipToeSlope(),
                             op.getMinDepthFactor(),
                             op.getSlopeAdjFactor(),
@@ -80,6 +81,7 @@ class SimpleDataReader : public DataReader {
                  double edgeLengthFrontBack,
                  bool confined,
                  bool isDensityVariable,
+                 vector<double> initialZetas,
                  double maxTipToeSlope,
                  double minDepthFactor,
                  double slopeAdjFactor,
@@ -98,10 +100,12 @@ class SimpleDataReader : public DataReader {
             int row{0};
             int col{0};
             lookupSpatIDtoID.reserve(numberOfNodes);
-
             vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-
+            vector<Model::quantity<Model::Meter>> initialZetasDim;
+            for (int i = 0; i < initialZetas.size(); i++) {
+                initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+            }
             while (in.read_row(globid, x, y, area, col, row)) {
                 out[col][row] = i;
                 //area is in km needs to be in m
@@ -122,6 +126,7 @@ class SimpleDataReader : public DataReader {
                                                             specificStorage,
                                                             confined,
                                                             isDensityVariable,
+                                                            initialZetasDim,
                                                             delnus,
                                                             nusInZones,
                                                             maxTipToeSlope,

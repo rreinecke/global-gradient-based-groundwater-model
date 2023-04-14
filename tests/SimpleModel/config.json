@@ -44,7 +44,7 @@
     },
   "input": {
     "data_config": {
-      "k_from_lith": "true",
+      "k_from_file": "true",
       "k_ghb_from_file": "false",
       "specific_storage_from_file": "false",
       "specific_yield_from_file": "false",

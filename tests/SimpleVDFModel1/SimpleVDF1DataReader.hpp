@@ -1,5 +1,5 @@
-#ifndef TESTING_SIMPLEVDFDATAREADER_HPP
-#define TESTING_SIMPLEVDFDATAREADER_HPP
+#ifndef TESTING_SIMPLEVDF1DATAREADER_HPP
+#define TESTING_SIMPLEVDF1DATAREADER_HPP
 
 #include "../../src/DataProcessing/DataReader.hpp"
 #include "../../src/Model/Node.hpp"
@@ -8,9 +8,9 @@
 namespace GlobalFlow {
     namespace DataProcessing {
 
-        class SimpleVDFDataReader : public DataReader {
+        class SimpleVDF1DataReader : public DataReader {
         public:
-            SimpleVDFDataReader(int step) { stepMod = step; }
+            SimpleVDF1DataReader(int step) { stepMod = step; }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the initial model layer";
@@ -297,4 +297,4 @@ namespace GlobalFlow {
         };
     }
 }
-#endif //TESTING_SIMPLEVDFDATAREADER_HPP
+#endif //TESTING_SIMPLEVDF1DATAREADER_HPP

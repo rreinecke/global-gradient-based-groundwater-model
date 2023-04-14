@@ -1,4 +1,4 @@
-#include "simpleVDF.hpp"
+#include "simpleVDF1.hpp"
 
 
 namespace GlobalFlow {
@@ -7,11 +7,11 @@ using namespace std;
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_simpleVDF.json");
+    op.load("data/config_simpleVDF1.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDFDataReader(op.getStepSizeModifier());
+    reader = new DataProcessing::SimpleVDF1DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -53,7 +53,7 @@ void StandaloneRunner::simulate() {
 void StandaloneRunner::getResults() {}
 
 void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF.json", sim).write();
+    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF1.json", sim).write();
 }
 
 StandaloneRunner::StandaloneRunner() {}

@@ -51,13 +51,20 @@ add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
-# Simple Demo Model for Variable Density Flow (VDF)
+# Simple Demo Models for Variable Density Flow (VDF)
 ################################
-add_subdirectory(tests/SimpleVDFModel)
-set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
-target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+add_subdirectory(tests/SimpleVDFModel1)
+set(simple_vdf_src_1 ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src_1 ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_executable(simple_vdf_model_1 tests/SimpleVDFModel1/simpleVDF1.cpp ${simple_vdf_src_1} ${HEADERS})
+target_link_libraries(simple_vdf_model_1 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+add_subdirectory(tests/SimpleVDFModel2)
+set(simple_vdf_src_2 ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src_2 ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_src_2 ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+add_executable(simple_vdf_model_2 tests/SimpleVDFModel2/simpleVDF2.cpp ${simple_vdf_src_2} ${HEADERS})
+target_link_libraries(simple_vdf_model_2 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # New Zealand model
@@ -65,7 +72,8 @@ target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIE
 add_subdirectory(tests/NewZealand)
 set(new_zealand_model_src ${SOURCE})
 list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM new_zealand_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
 add_executable(new_zealand_model tests/NewZealand/runner.cpp ${new_zealand_model_src} ${HEADERS})
 target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
@@ -75,7 +83,8 @@ target_link_libraries(new_zealand_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARI
 add_subdirectory(tests/NewZealandVDF)
 set(new_zealand_model_vdf_src ${SOURCE})
 list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
 list(REMOVE_ITEM new_zealand_model_vdf_src ${CMAKE_SOURCE_DIR}/tests/NewZealand/runner.cpp)
 add_executable(new_zealand_model_vdf tests/NewZealandVDF/runner.cpp ${new_zealand_model_vdf_src} ${HEADERS})
 target_link_libraries(new_zealand_model_vdf pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
@@ -111,7 +120,8 @@ enable_testing()
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/NewZealand/runner.cpp)
 
 
