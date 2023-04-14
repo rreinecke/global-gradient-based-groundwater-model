@@ -94,6 +94,7 @@ Equation::~Equation() {
 
 void inline
 Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
+
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     if (nwt) {
         map = node->getJacobian();
@@ -107,7 +108,6 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
             disabled_nodes.insert(nodeID);
         }
     }
-
     for (const auto &conductance : map) {
         // conductance.first is the nodeID of the respective neighbour node
         if (cached) {
@@ -544,6 +544,10 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
+    if(vdf) {
+        setZetasPosInNodes();
+    }
+
     LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
@@ -727,7 +731,6 @@ void
 Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
-    setZetasPosInNodes();
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
