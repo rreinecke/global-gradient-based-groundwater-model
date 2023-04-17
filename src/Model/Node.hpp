@@ -1398,6 +1398,9 @@ Modify Properties
              */
             t_vol_t getSources(int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
+                /* if nodes can be inactive: return 0 at inactive nodes
+                if (nodeInactive) { return out; }
+                 */
                 if (hasGHB()) { return out; } // todo: compute BUFF with SSWI2_BDCH for constant head cells
                 t_vol_t sources = 0.0 * (si::cubic_meter / day);
                 //LOG(userinfo) << "zoneToUse: " << zoneToUse << std::endl;
@@ -1608,8 +1611,8 @@ Modify Properties
                     if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
                         zoneThickness = 0 * si::meter;
                     } else {
-                        zoneThickness = ((getLengthNeig(got) * deltaZeta) / (getLengthNeig(got) + getLengthSelf(got))) +
-                                        ((getLengthSelf(got) * deltaZeta_neig) / (getLengthNeig(got) + getLengthSelf(got)));
+                        zoneThickness = ((getLengthNeig(got) * deltaZeta) + (getLengthSelf(got) * deltaZeta_neig)) /
+                                        (getLengthNeig(got) + getLengthSelf(got));
                         sumOfZoneThicknesses += zoneThickness;
                     }
                     NANChecker(zoneThickness.value(), "zoneThickness");
@@ -1619,23 +1622,26 @@ Modify Properties
                 // calculate the density zone conductances
                 for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++) {
                     //LOG(userinfo) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
-                    if (sumOfZoneThicknesses == (0 * si::meter)) { // adapted from SWI2 code line 1159
-                        zoneConductance = 0 * si::square_meter / day; // zoneConductance is 0 if sum of thicknesses is 0
-                    } else {
-                        if (localZetaID != 0 and localZetaID < getZetas().size() - 2 and
-                            ((getZetaPosInNode(localZetaID) != "between") or // adapted from SWI2 code lines 1212-1222
-                            (at(got)->getZetaPosInNode(localZetaID) != "between") or
-                            (getZetaPosInNode(localZetaID + 1) != "between") or
-                            (at(got)->getZetaPosInNode(localZetaID + 1) != "between"))) {
+                    zoneConductance = 0 * si::square_meter / day;
+                    if (sumOfZoneThicknesses != (0 * si::meter)) { // adapted from SWI2 code line 1159
+                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        //LOG(userinfo) << "conductance:" << conductance.value();
+                        zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
+                        //LOG(userinfo) << "zoneConductance[" << localZetaID << "] :" << zoneConductance.value();
+                    }
+                    /* if nodes can be inactive:
+                    else {
+                    if (nodeInactive()){
+                        if (1 < localZetaID < (getZetas().size() - 2) {
+                            if((getZetaPosInNode(localZetaID) != "between") or // adapted from SWI2 code lines 1212-1222
+                               (at(got)->getZetaPosInNode(localZetaID) != "between") or
+                               (getZetaPosInNode(localZetaID + 1) != "between") or
+                               (at(got)->getZetaPosInNode(localZetaID + 1) != "between"))) {
                                 // this section is reached if getZetas().size() >= 4 and numberOfZones >= 3
                                 zoneConductance = 0 * si::square_meter / day; // zone is inactive or across layers
-                        } else {
-                            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                            //LOG(userinfo) << "conductance:" << conductance.value();
-                            zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
-                            //LOG(userinfo) << "zoneConductance[" << localZetaID << "] :" << zoneConductance.value();
+                            }
                         }
-                    }
+                    } */
                     //LOG(debug) << "zoneConductance[id = " << localZetaID << "] : " << zoneConductance.value() << std::endl;
                     out.push_back(zoneConductance);
                     NANChecker(zoneConductance.value(), "zoneConductance");
@@ -1668,6 +1674,10 @@ Modify Properties
              */
             t_vol_t getPseudoSourceNode() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
+                t_vol_t pseudoSource;
+                /* if nodes can be inactive: return 0 at inactive nodes
+                if (nodeInactive) { return out; }
+                 */
                 if (hasGHB()) { return out; } // return 0 at boundary nodes
                 auto delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
@@ -1681,11 +1691,16 @@ Modify Properties
                         continue;
                     }
                     vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
-
                     for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++){
                         t_s_meter_t zoneConductanceCum = getZoneConductanceCum(zetaID, zoneConductances);
-                        out -= delnus[zetaID] * zoneConductanceCum * (at(got)->getZeta(zetaID) - getZeta(zetaID));
-
+                        pseudoSource = delnus[zetaID] * zoneConductanceCum * (at(got)->getZeta(zetaID) - getZeta(zetaID));
+                        out -= pseudoSource;
+                        /*if (pseudoSource != 0 * (si::cubic_meter / day)) {
+                            LOG(userinfo) << "zoneConductanceCum[zetaID = " << zetaID << "]: " << zoneConductanceCum.value();
+                            LOG(userinfo) << "at(got)->getZeta(zetaID = " << zetaID << "): " << at(got)->getZeta(zetaID).value();
+                            LOG(userinfo) << "getZeta(zetaID = " << zetaID << "): " << getZeta(zetaID).value();
+                            LOG(userinfo) << "pseudoSourceNode[zetaID = " << zetaID << "]: " << pseudoSource.value();
+                        }*/
                     }
                 }
                 //LOG(debug) << "getPseudoSourceNode: " << out.value() << std::endl;
@@ -1701,7 +1716,9 @@ Modify Properties
                 vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
                 t_meter headdiff = 0 * si::meter;
                 t_vol_t out = 0 * (si::cubic_meter / day);
-
+                /* if nodes can be inactive: return 0 at inactive nodes
+                if (nodeInactive) { return out; }
+                 */
                 // find the top neighbor
                 map_itter got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) {//No top node
@@ -1856,6 +1873,9 @@ Modify Properties
              * @note in SWI2 documentation: "Tip and Toe Tracking", in SWI2 code: SSWI2_HORZMOVE
              */
             void horizontalZetaMovement(){
+                /* if nodes can be inactive: return at inactive nodes
+                if (nodeInactive) { return; }
+                 */
                 if (hasGHB()) { return; } // do nothing at boundary nodes: ADJUST TIPS AND TOES FOR EACH COLUMN/ROW BUT THE FIRST AND LAST (lines 2837/2902)
                 std::unordered_map<NeighbourPosition, NeighbourPosition> oppositePositions;
                 oppositePositions[NeighbourPosition::BACK] = NeighbourPosition::FRONT;
@@ -2022,6 +2042,9 @@ Modify Properties
              * @note in SWI2 code: SSWI2_ANTILOCKMIN
              */
             void preventZetaLocking(){
+                /* if nodes can be inactive: return at inactive nodes
+                if (nodeInactive) { return; }
+                 */
                 if (hasGHB()) { return; } // do nothing at boundary nodes: ADJUST TIPS AND TOES FOR EACH COLUMN/ROW BUT THE FIRST AND LAST (lines 2837/2902)
                 t_meter maxDelta;
                 t_meter maxAdjustment_self;
@@ -2039,6 +2062,9 @@ Modify Properties
                             map_itter got = neighbours.find(position);
                             if (got == neighbours.end()) { //No horizontal neighbouring node
                             } else {
+                                /* if nodes can be inactive: return at inactive nodes
+                                if (at(got)->nodeInactive) { return; }
+                                 */
                                 if (at(got)->hasGHB()) { return; } // do nothing if neighbouring node is boundary node todo is that correct?
 
                                 // determine max delta zeta
@@ -2315,7 +2341,7 @@ Modify Properties
              */
             t_vol_t getRHS() {
                 t_vol_t out = getRHSConstantDensity();
-                //"LOG(userinfo) << "getRHSConstantDensity: " << out.value() << std::endl;
+                //LOG(userinfo) << "getRHSConstantDensity: " << out.value() << std::endl;
 
                 if (get<bool, DensityVariable>()) {
                     // save constant density RHS (without variable density terms) for calculation of zeta movement

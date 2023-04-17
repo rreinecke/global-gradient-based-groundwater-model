@@ -262,6 +262,7 @@ Equation::updateMatrix() {
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodes; ++j) {
+        //LOG(userinfo) << "node: " << j;
         //---------------------Left
         addToA(nodes->at(j), isCached);
         //---------------------Right
@@ -519,15 +520,6 @@ Equation::adjustZetaHeights() {
         for (large_num k = 0; k < numberOfNodes; ++k) {
             nodes->at(k)->preventZetaLocking(); // no effect in simpleVDF
         }
-
-        LOG(debug)<< "node, zeta" << std::endl;
-
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
-            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-                LOG(debug) << k << ", " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
-            }
-        }
     }
 
 void inline
@@ -693,7 +685,7 @@ Equation::solve() {
 
         iterations++;
     }
-    LOG(debug) << "A:\n" << A << std::endl;
+    //LOG(debug) << "A:\n" << A << std::endl;
     LOG(debug) << "x:\n" << x << std::endl;
     LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
@@ -733,7 +725,8 @@ Equation::solve_zetas(){
     updateTopZetasToHeads();
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-        LOG(numerics) << "Updating Matrix (zeta surface " << localZetaID << ")";
+        LOG(numerics) << "Running Time Step (zeta surface " << localZetaID << ")";
+        LOG(numerics) << "Updating Matrix (zetas";
         updateMatrix_zetas(localZetaID);
 
         if (!isCached_zetas) {
@@ -746,7 +739,6 @@ Equation::solve_zetas(){
 
         preconditioner_zetas();
 
-        LOG(numerics) << "Running Time Step (zetas)";
         double maxZeta{0};
         double oldMaxZeta{0};
         int itterScale{0};
@@ -774,7 +766,7 @@ Equation::solve_zetas(){
         char smallZetaChanges{0};
         bool zetaConverged{false};
 
-        LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
+        //LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
         LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
         while (iterations < IITER) {
             LOG(numerics) << "Outer iteration (zetas): " << iterations;
