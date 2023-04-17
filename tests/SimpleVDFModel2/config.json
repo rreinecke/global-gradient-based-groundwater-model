@@ -21,22 +21,22 @@
         1012.5,
         1025
       ],
-      "max_tip_toe_slope": 0.4,
+      "max_tip_toe_slope": 0.2,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
       "vdf_lock": 0.001,
       "cache": "false",
       "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
+      "boundary_condition": "StaticHeadSeaLevel",
       "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-4,
-      "head_change": 0.00001,
-      "zeta_change": 0.00001,
+      "closing_crit": 1E-8,
+      "head_change": 0.000000001,
+      "zeta_change": 0.000000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
@@ -86,7 +86,6 @@
         "elevation": "elevation_simpleVDF2.csv",
         "ghb_conductance": "ghb_conductance_simpleVDF2.csv",
         "initial_zetas": "initial_zetas_simpleVDF2.csv",
-        "recharge": "recharge_simpleVDF2.csv",
         "zones_sources_sinks": "zones_sources_sinks_simpleVDF2.csv"
       }
     }

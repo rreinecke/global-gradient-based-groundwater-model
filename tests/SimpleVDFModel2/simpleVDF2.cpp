@@ -21,16 +21,16 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 2000);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 2);
     int stepNumber = 1;
 
     // for saving zetas in a csv
     ofstream myfile;
     myfile.open ("zetas.csv");
-    myfile << "timestep,nodeID,zeta" << std::endl;
+    myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
 
     for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
+        LOG(debug) << "Running steady state step " + std::to_string(stepNumber);
 
         if (stepNumber == 1) {
             step.first->toggleSteadyState();
@@ -39,9 +39,17 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
 
         // for saving zetas in a csv
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            double zeta = sim.getNodes()->at(j)->getZeta(1).value();
-            myfile << stepNumber << "," << j << "," << zeta << std::endl;
+        int zetaID;
+        double zeta;
+        zetaID = 1;
+        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
+            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
+            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
+        }
+        zetaID = 2;
+        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
+            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
+            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
         }
 
         stepNumber++;
