@@ -352,6 +352,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
 #pragma omp parallel for
     for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
         if (index_mapping[nodeIter] >= 0) {
+            LOG(userinfo) << "nodeID: " << nodeIter;
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, numInactive, localZetaID, isCached_zetas);
             x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZeta(localZetaID).value(); // todo could fill with zeros?

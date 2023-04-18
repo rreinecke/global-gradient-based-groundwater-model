@@ -106,7 +106,8 @@ namespace GlobalFlow {
             vector<double> DENSITY_ZONES{1000.0};
             vector<double> INITIAL_ZETAS{0.0};
             double EFFECTIVE_POROSITY{0.0};
-            double MAX_TIP_TOE_SLOPE{0.2};
+            double MAX_TIP_SLOPE{0.2};
+            double MAX_TOE_SLOPE{0.2};
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
@@ -254,8 +255,13 @@ namespace GlobalFlow {
             }
 
             double
-            getMaxTipToeSlope() {
-                return MAX_TIP_TOE_SLOPE;
+            getMaxTipSlope() {
+                return MAX_TIP_SLOPE;
+            }
+
+            double
+            getMaxToeSlope() {
+                return MAX_TOE_SLOPE;
             }
 
             double

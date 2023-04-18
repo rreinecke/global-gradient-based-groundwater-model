@@ -122,7 +122,8 @@ namespace GlobalFlow {
 
             DENSITY_VARIABLE = config.get<bool>("density_variable");
             DENSITY_ZONES = getTypeArray<double>("density_zones", config);
-            MAX_TIP_TOE_SLOPE = config.get<double>("max_tip_toe_slope");
+            MAX_TIP_SLOPE = config.get<double>("max_tip_slope");
+            MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
             MIN_DEPTH_FACTOR = config.get<double>("min_depth_factor");
             SLOPE_ADJ_FACTOR = config.get<double>("slope_adj_factor");
             VDF_LOCK = config.get<double>("vdf_lock");

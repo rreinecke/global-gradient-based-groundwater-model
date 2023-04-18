@@ -58,7 +58,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              vector<quantity<Meter>> zetas,
                              vector<quantity<Dimensionless>> delnus, // Question: or t_dim?
                              vector<quantity<Dimensionless>> nusInZones,
-                             double maxTipToeSlope,
+                             double maxTipSlope,
+                             double maxToeSlope,
                              double minDepthFactor,
                              double slopeAdjFactor,
                              quantity<Meter> vdfLock): nodes(nodes) {
@@ -88,7 +89,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<vector<quantity<Meter>>, Zetas> (zetas);
     fields.set<vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
-    fields.set<quantity<Dimensionless>, MaxTipToeSlope> (maxTipToeSlope * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MaxTipSlope> (maxTipSlope * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
     fields.emplace<quantity<Meter>, VDFLock> (vdfLock); // Question: set for t_dim, double etc., emplace for meter etc.?

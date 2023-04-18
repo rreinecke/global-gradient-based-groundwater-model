@@ -172,7 +172,8 @@ namespace GlobalFlow {
         struct Delnus;
         struct NusInZones;
         struct DensityVariable;
-        struct MaxTipToeSlope;
+        struct MaxTipSlope;
+        struct MaxToeSlope;
         struct MinDepthFactor;
         struct SlopeAdjFactor;
         struct VDFLock;
@@ -219,7 +220,8 @@ namespace GlobalFlow {
                 PhysicalProperty<std::vector<std::string>, ZetasPosInNode>,
                 PhysicalProperty<std::vector<t_dim>, Delnus>,
                 PhysicalProperty<std::vector<t_dim>, NusInZones>,
-                PhysicalProperty<t_dim, MaxTipToeSlope>,
+                PhysicalProperty<t_dim, MaxTipSlope>,
+                PhysicalProperty<t_dim, MaxToeSlope>,
                 PhysicalProperty<t_dim, MinDepthFactor>,
                 PhysicalProperty<t_dim, SlopeAdjFactor>,
                 PhysicalProperty<t_meter, VDFLock>,

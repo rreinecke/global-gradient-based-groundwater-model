@@ -7,9 +7,9 @@ namespace DataProcessing {
  * For regular grids (modflow like)
  * @param nodes
  * @param grid
+ * @param nodesPerLayer
  * @param layers
  * @param ghbConduct // Question: what is this required for?
- * @param staticHeadBoundary // Question: what is this required for?
  * @param staticHeadBoundary // Question: what is this required for?
  */
 void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers, double ghbConduct, bool staticHeadBoundary) {
@@ -28,11 +28,11 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
     };
 
     for (int layer = 0; layer < layers; ++layer) {
+        int l_mult = layer * nodesPerLayer;
         //id->row,col
         for (int i = 0; i < cols; ++i) {
             for (int j = 0; j < rows; ++j) {
                 int id = grid[i][j];
-                int l_mult = layer * nodesPerLayer;
                 if (check(i + 1, j)) {
                     nodes->at(id + l_mult)->setNeighbour(grid[i + 1][j] + l_mult, Model::RIGHT);
                 }
@@ -403,7 +403,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     std::vector<Model::quantity<Model::Meter>> zetas;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
-    double maxTipToeSlope;
+    double maxTipSlope;
+    double maxToeSlope;
     double minDepthFactor;
     double slopeAdjFactor;
     Model::quantity<Model::Meter> vdfLock;
@@ -440,8 +441,10 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
             nusInZones = nodes->at(i)->getProperties().
                     get<Model::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
-            maxTipToeSlope = nodes->at(i)->getProperties().
-                    get<Model::quantity<Model::Dimensionless>, Model::MaxTipToeSlope>();
+            maxTipSlope = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MaxTipSlope>();
+            maxToeSlope = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MaxToeSlope>();
             minDepthFactor = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
             vdfLock = nodes->at(i)->getProperties().
@@ -471,7 +474,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             zetas,
                                                             delnus,
                                                             nusInZones,
-                                                            maxTipToeSlope,
+                                                            maxTipSlope,
+                                                            maxToeSlope,
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock));

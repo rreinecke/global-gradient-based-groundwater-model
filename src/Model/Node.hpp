@@ -353,7 +353,8 @@ namespace GlobalFlow {
                           vector<t_meter> zetas,
                           vector<t_dim> delnus,
                           vector<t_dim> nusInZones,
-                          double maxTipToeSlope,
+                          double maxTipSlope,
+                          double maxToeSlope,
                           double minDepthFactor,
                           double slopeAdjFactor,
                           t_meter vdfLock);
@@ -434,7 +435,9 @@ Modify Properties
                 });
             }
 
-            void setMaxTipToeSlope(t_dim maxTipToeSlope) { set < t_dim, MaxTipToeSlope > (maxTipToeSlope); }
+            void setMaxTipSlope(t_dim maxTipSlope) { set < t_dim, MaxTipSlope > (maxTipSlope); }
+
+            void setMaxToeSlope(t_dim maxToeSlope) { set < t_dim, MaxToeSlope > (maxToeSlope); }
 
             void setDelnus(vector<t_dim> delnusVec){ set<vector<t_dim>, Delnus>(delnusVec); }
 
@@ -1246,13 +1249,13 @@ Modify Properties
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
-                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                //LOG(userinfo) << "sourcesBelowZeta: " << sourcesBelowZeta.value() << std::endl;
+                LOG(userinfo) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
@@ -1476,7 +1479,7 @@ Modify Properties
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                             out += head_part;
-                            //LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
+                            LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
 
                             t_s_meter_t zoneCondCumDelnus;
                             for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
@@ -1491,7 +1494,7 @@ Modify Properties
                                 t_vol_t delnus_part = -delnus[zetaID] * zoneCondCumDelnus *
                                                       (at(got)->getZeta(zetaID) - getZeta(zetaID));
                                 out += delnus_part;
-                                //LOG(userinfo) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
+                                LOG(userinfo) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
                             }
                         }
                     }
@@ -1899,7 +1902,11 @@ Modify Properties
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             if (getZetaPosInNode(localZetaID) == "between" or localZetaID == 0) {
                                 // get max delta of zeta between nodes
-                                maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxTipToeSlope>();
+                                if (at(got)->getZetaPosInNode(localZetaID) == "bottom") {
+                                    maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
+                                } else if (at(got)->getZetaPosInNode(localZetaID) == "top") {
+                                    maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
+                                }
                                 //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
 
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
@@ -2504,14 +2511,15 @@ Modify Properties
                          vector<t_meter> zetas,
                          vector<t_dim> delnus,
                          vector<t_dim> nusInZones,
-                         double maxTipToeSlope,
+                         double maxTipSlope,
+                         double maxToeSlope,
                          double minDepthFactor,
                          double slopeAdjFactor,
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    confined, densityVariable, zetas, delnus, nusInZones, maxTipToeSlope,
-                                    minDepthFactor, slopeAdjFactor, vdfLock) {}
+                                    confined, densityVariable, zetas, delnus, nusInZones,
+                                    maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -2612,7 +2620,7 @@ Modify Properties
                     ID,
                     ID,
                     0.3 * (si::meter / day), 1 * si::meter, 1, 100, 10, 0.15, 0.000015, true, true,
-                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.1, 0.1,
+                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.1, 0.1,
                     0.001 * si::meter) {}
 
         private:
