@@ -1,5 +1,5 @@
-#ifndef TESTING_SIMPLEVDF1DATAREADER_HPP
-#define TESTING_SIMPLEVDF1DATAREADER_HPP
+#ifndef TESTING_SIMPLEVDF2DATAREADER_HPP
+#define TESTING_SIMPLEVDF2DATAREADER_HPP
 
 #include "../../src/DataProcessing/DataReader.hpp"
 #include "../../src/Model/Node.hpp"
@@ -8,9 +8,9 @@
 namespace GlobalFlow {
     namespace DataProcessing {
 
-        class SimpleVDF1DataReader : public DataReader {
+        class SimpleVDF3DataReader : public DataReader {
         public:
-            SimpleVDF1DataReader(int step) { stepMod = step; }
+            SimpleVDF3DataReader(int step) { stepMod = step; }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the initial model layer";
@@ -46,8 +46,8 @@ namespace GlobalFlow {
                     readConduct(buildDir(op.getLithology()));
                 }
 
-                LOG(userinfo) << "Reading the groundwater recharge";
-                readGWRecharge(buildDir(op.getRecharge()));
+                //LOG(userinfo) << "Reading the groundwater recharge";
+                //readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
@@ -256,11 +256,9 @@ namespace GlobalFlow {
                     catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;
                     }
-
                     vector<Model::quantity<Model::Meter>> initialZetas{zeta0 * Model::si::meter,
                                                                        zeta1 * Model::si::meter,
                                                                        zeta2 * Model::si::meter};
-
                     nodes->at(nodeID)->setInitialZetas(initialZetas);
                 }
             }
@@ -300,4 +298,4 @@ namespace GlobalFlow {
         };
     }
 }
-#endif //TESTING_SIMPLEVDF1DATAREADER_HPP
+#endif //TESTING_SIMPLEVDF2DATAREADER_HPP

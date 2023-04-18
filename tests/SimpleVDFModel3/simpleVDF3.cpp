@@ -1,4 +1,4 @@
-#include "simpleVDF2.hpp"
+#include "simpleVDF3.hpp"
 
 
 namespace GlobalFlow {
@@ -7,11 +7,11 @@ using namespace std;
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_simpleVDF2.json");
+    op.load("data/config_simpleVDF3.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF2DataReader(op.getStepSizeModifier());
+    reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -21,7 +21,8 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 1);
+    LOG(userinfo) << "Running stress period 1";
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1);
     int stepNumber = 1;
 
     // for saving zetas in a csv
@@ -56,12 +57,22 @@ void StandaloneRunner::simulate() {
     }
     myfile.close(); // for saving zetas in a csv
     //sim.save();
+
+    /*
+    LOG(userinfo) << "Running stress period 2";
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 1);
+    for (Simulation::step step : stepper2) {
+        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
+        step.first->solve();
+        sim.printMassBalances(debug);
+        stepNumber++;
+    }*/
 }
 
 void StandaloneRunner::getResults() {}
 
 void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF2.json", sim).write();
+    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF3.json", sim).write();
 }
 
 StandaloneRunner::StandaloneRunner() {}

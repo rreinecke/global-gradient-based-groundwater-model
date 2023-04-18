@@ -8,7 +8,7 @@ namespace GlobalFlow {
 
     void NZRunner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_nz.json");
+        op.load("data/config_nzVDF.json");
     }
 
     void NZRunner::setupSimulation() {
@@ -18,7 +18,7 @@ namespace GlobalFlow {
         sim = Simulation::Simulation(op, reader);
         LOG(debug) << "sim initiated" << std::endl;
 
-        LOG(debug) << sim.getNodes()->at(1);
+        LOG(debug) << "NodeID 1:" << sim.getNodes()->at(1);
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();
@@ -42,7 +42,7 @@ namespace GlobalFlow {
     }
 
     void NZRunner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out_nz.json", sim).write();
+	DataProcessing::DataOutput::OutputManager("data/out_nzVDF.json", sim).write();
     }
 
     NZRunner::NZRunner() {}

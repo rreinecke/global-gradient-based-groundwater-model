@@ -18,7 +18,7 @@ namespace GlobalFlow {
         sim = Simulation::Simulation(op, reader);
         LOG(debug) << "sim initiated" << std::endl;
 
-        LOG(debug) << sim.getNodes()->at(1);
+        LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();

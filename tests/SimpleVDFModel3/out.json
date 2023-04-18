@@ -1,0 +1,17 @@
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "head",
+        "type": "csv",
+        "field": "Head",
+        "ID": "false",
+        "position": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}

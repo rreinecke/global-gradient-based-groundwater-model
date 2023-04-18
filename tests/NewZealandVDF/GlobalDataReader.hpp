@@ -62,7 +62,8 @@ namespace GlobalFlow {
                                     op.isConfined(0),
                                     op.isDensityVariable(),
                                     op.getInitialZetas(),
-                                    op.getMaxTipToeSlope(),
+                                    op.getMaxTipSlope(),
+                                    op.getMaxToeSlope(),
                                     op.getMinDepthFactor(),
                                     op.getSlopeAdjFactor(),
                                     op.getVDFLock(),
@@ -73,7 +74,7 @@ namespace GlobalFlow {
                                  op.getInitialK(), op.getInitialHead(),op.getAquiferDepth()[0],
                                  op.getAnisotropy(), op.getSpecificYield(), op.getSpecificStorage(),
                                  op.isConfined(0), op.isDensityVariable(), op.getInitialZetas(),
-                                 op.getMaxTipToeSlope(), op.getMinDepthFactor(), op.getSlopeAdjFactor(),
+                                 op.getMaxToeSlope(), op.getMaxToeSlope(), op.getMinDepthFactor(), op.getSlopeAdjFactor(),
                                  op.getVDFLock(), op.getDensityZones());
                     LOG(userinfo) << "- reading mapping";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
@@ -196,7 +197,8 @@ namespace GlobalFlow {
                      bool confined,
                      bool isDensityVariable,
                      vector<double> initialZetas,
-                     double maxTipToeSlope,
+                     double maxTipSlope,
+                     double maxToeSlope,
                      double minDepthFactor,
                      double slopeAdjFactor,
                      double vdfLock,
@@ -243,7 +245,8 @@ namespace GlobalFlow {
                                                                 initialZetasDim,
                                                                 delnus,
                                                                 nusInZones,
-                                                                maxTipToeSlope,
+                                                                maxTipSlope,
+                                                                maxToeSlope,
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
@@ -282,7 +285,8 @@ namespace GlobalFlow {
                          bool confined,
                          bool isDensityVariable,
                          vector<double> initialZetas,
-                         double maxTipToeSlope,
+                         double maxTipSlope,
+                         double maxToeSlope,
                          double minDepthFactor,
                          double slopeAdjFactor,
                          double vdfLock,
@@ -327,7 +331,8 @@ namespace GlobalFlow {
                                                                 initialZetasDim,
                                                                 delnus,
                                                                 nusInZones,
-                                                                maxTipToeSlope,
+                                                                maxTipSlope,
+                                                                maxToeSlope,
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
@@ -342,10 +347,11 @@ namespace GlobalFlow {
              * @brief Read in a custom definition for the ocean boundary
              * @param path Where to read from
              */
+             // todo think about this: does this implementation make sense?
             void readHeadBoundary(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
                     if (nodes->at(nodeID)->hasGHB()) {
-                        auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
+                        //auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
                         nodes->at(nodeID)->removeExternalFlow(Model::GENERAL_HEAD_BOUNDARY);
                         nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                         0 * Model::si::meter,
