@@ -286,7 +286,12 @@ namespace GlobalFlow {
                 << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
                 << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
                 << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
-                << "\nVolumeOfCell [m³]: " << pNode->get<t_c_meter, VolumeOfCell>().value();
+                << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
+                << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
+                << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
+                << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
+                << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
+                << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
 
                 unordered_map<NeighbourPosition, large_num> neighbourList = pNode->getListOfNeighbours();
                 if(neighbourList.find(DOWN) != neighbourList.end()) {
@@ -313,6 +318,15 @@ namespace GlobalFlow {
                     stream << "\nBACK neighbour lat [double]: " << pNode->getNeighbour(BACK)->get<double, Lat>()
                          << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
                 }
+
+                stream << "\nZeta size: " << pNode->get<vector<t_meter>, Zetas>().size();
+                for (int zetaID = 0; zetaID < pNode->get<vector<t_meter>, Zetas>().size(); ++zetaID){
+                    stream << "\nZeta[" << zetaID << "]: " << pNode->get<vector<t_meter>, Zetas>()[zetaID].value();
+                }
+
+                stream << "\nZone of sinks: " << pNode->zoneOfSinks;
+                stream << "\nZone of sources: " << pNode->zoneOfSources;
+
                 return stream;
             };
 
@@ -353,6 +367,7 @@ namespace GlobalFlow {
                           vector<t_meter> zetas,
                           vector<t_dim> delnus,
                           vector<t_dim> nusInZones,
+                          double effPorosity,
                           double maxTipSlope,
                           double maxToeSlope,
                           double minDepthFactor,
@@ -435,19 +450,13 @@ Modify Properties
                 });
             }
 
-            void setMaxTipSlope(t_dim maxTipSlope) { set < t_dim, MaxTipSlope > (maxTipSlope); }
-
-            void setMaxToeSlope(t_dim maxToeSlope) { set < t_dim, MaxToeSlope > (maxToeSlope); }
-
-            void setDelnus(vector<t_dim> delnusVec){ set<vector<t_dim>, Delnus>(delnusVec); }
-
-            void setNusInZones(vector<t_dim> nusInZones){ set<vector<t_dim>, NusInZones>(nusInZones); }
-
-            void setMinDepthFactor(t_dim minDepthFactor){ set<t_dim, MinDepthFactor>(minDepthFactor); }
-
-            void setSlopeAdjFactor(t_dim slopeAdjFactor){ set<t_dim, SlopeAdjFactor>(slopeAdjFactor); }
-
-            void setVDFLock(t_meter vdfLock){ set<t_meter, VDFLock>(vdfLock); }
+            //void setMaxTipSlope(t_dim maxTipSlope) { set < t_dim, MaxTipSlope > (maxTipSlope); }
+            //void setMaxToeSlope(t_dim maxToeSlope) { set < t_dim, MaxToeSlope > (maxToeSlope); }
+            //void setDelnus(vector<t_dim> delnusVec){ set<vector<t_dim>, Delnus>(delnusVec); }
+            //void setNusInZones(vector<t_dim> nusInZones){ set<vector<t_dim>, NusInZones>(nusInZones); }
+            //void setMinDepthFactor(t_dim minDepthFactor){ set<t_dim, MinDepthFactor>(minDepthFactor); }
+            //void setSlopeAdjFactor(t_dim slopeAdjFactor){ set<t_dim, SlopeAdjFactor>(slopeAdjFactor); }
+            //void setVDFLock(t_meter vdfLock){ set<t_meter, VDFLock>(vdfLock); }
 
             /**
              * Calculated equilibrium flow to neighbouring cells
@@ -970,6 +979,13 @@ Modify Properties
                 }
                 set<vector<t_meter>, Zetas>(zetas); // Question: how to improve this?
             }
+
+            /**
+             * @brief Update zetas after one or multiple inner iteration
+             * @param localZetaID zeta surface id in this node
+             * @param height zeta height
+             */
+            virtual void setZetas(vector<t_meter> zetas) { set<vector<t_meter>, Zetas>(zetas); }
 
             /**
              * @brief Update zeta change after one or multiple inner iteration
@@ -2511,6 +2527,7 @@ Modify Properties
                          vector<t_meter> zetas,
                          vector<t_dim> delnus,
                          vector<t_dim> nusInZones,
+                         double effPorosity,
                          double maxTipSlope,
                          double maxToeSlope,
                          double minDepthFactor,
@@ -2518,7 +2535,7 @@ Modify Properties
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    confined, densityVariable, zetas, delnus, nusInZones,
+                                    confined, densityVariable, zetas, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
@@ -2620,7 +2637,7 @@ Modify Properties
                     ID,
                     ID,
                     0.3 * (si::meter / day), 1 * si::meter, 1, 100, 10, 0.15, 0.000015, true, true,
-                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.1, 0.1,
+                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
                     0.001 * si::meter) {}
 
         private:

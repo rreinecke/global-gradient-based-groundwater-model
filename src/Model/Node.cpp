@@ -56,8 +56,9 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              bool confined,
                              bool densityVariable,
                              vector<quantity<Meter>> zetas,
-                             vector<quantity<Dimensionless>> delnus, // Question: or t_dim?
+                             vector<quantity<Dimensionless>> delnus,
                              vector<quantity<Dimensionless>> nusInZones,
+                             double effPorosity,
                              double maxTipSlope,
                              double maxToeSlope,
                              double minDepthFactor,
@@ -89,6 +90,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<vector<quantity<Meter>>, Zetas> (zetas);
     fields.set<vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
+    fields.set<quantity<Dimensionless>, EffectivePorosity> (effPorosity * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MaxTipSlope> (maxTipSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);

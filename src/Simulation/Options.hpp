@@ -255,6 +255,11 @@ namespace GlobalFlow {
             }
 
             double
+            getEffectivePorosity() {
+                return EFFECTIVE_POROSITY;
+            }
+
+            double
             getMaxTipSlope() {
                 return MAX_TIP_SLOPE;
             }

@@ -9,10 +9,8 @@ namespace DataProcessing {
  * @param grid
  * @param nodesPerLayer
  * @param layers
- * @param ghbConduct // Question: what is this required for?
- * @param staticHeadBoundary // Question: what is this required for?
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers, double ghbConduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
@@ -47,9 +45,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
                 }
             }
         }
-
     }
-
 }
 
 /**
@@ -65,10 +61,10 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
                    double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
     int nodes_per_layer = nodes->size() / layers;
 
+    // defining function to add boundaries to nodes with no neighbours (called later in code)
     auto addBoundary = [nodes, boundaryConduct, boundaryCondition](
-            large_num pos, int layer,
-            Model::NeighbourPosition
-            positionOfBoundary) {
+            large_num pos, int layer, Model::NeighbourPosition positionOfBoundary) {
+
         if (layer > 0) {
             return;
         }
@@ -77,17 +73,12 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
             case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
                 Model::quantity<Model::Meter> head =
                         nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
-                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                head,
-                                                boundaryConduct,
-                                                head);
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, head, boundaryConduct, head);
             }
                 break;
             case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
-                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                0 * Model::si::meter,
-                                                boundaryConduct,
-                                                0 * Model::si::meter);
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, 0 * Model::si::meter,
+                                                boundaryConduct, 0 * Model::si::meter);
             }
             default:
                 break;
@@ -106,7 +97,8 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
             if (id_mapping.count(nei[j]) > 0) {
                 //Neighbour id exists in landmask
                 nodes->at(i)->setNeighbour(id_mapping.at(nei[j]), lu[j]);
-            } else {
+            } else { // None of the neighbour ids is in landmask
+                // Calling function defined above to add boundary
                 addBoundary(i, 0, lu[j]);
             }
         }
@@ -403,6 +395,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     std::vector<Model::quantity<Model::Meter>> zetas;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
+    double effPorosity;
     double maxTipSlope;
     double maxToeSlope;
     double minDepthFactor;
@@ -441,6 +434,8 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
             nusInZones = nodes->at(i)->getProperties().
                     get<Model::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
+            effPorosity = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::EffectivePorosity>();
             maxTipSlope = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::MaxTipSlope>();
             maxToeSlope = nodes->at(i)->getProperties().
@@ -474,6 +469,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             zetas,
                                                             delnus,
                                                             nusInZones,
+                                                            effPorosity,
                                                             maxTipSlope,
                                                             maxToeSlope,
                                                             minDepthFactor,

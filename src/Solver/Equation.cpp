@@ -119,7 +119,7 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID, bool cached) {
+Equation::addToA_zeta(large_num nodeIter, int localZetaID, bool cached) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     large_num nodeID;
     large_num rowID = index_mapping[nodeIter];
@@ -127,14 +127,10 @@ Equation::addToA_zeta(large_num nodeIter, large_num numInactive, int localZetaID
     quantity<Model::MeterSquaredPerTime> zoneConductance;
     map = nodes->at(nodeIter)->getVDFMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
-    for (const auto &entry : map) { // entry contains: [1] node id of the horizontal neighbours, [2] conductance of zone n
-        nodeID = entry.first; // the id of the zeta surface in the respective (neighbour) node
-        const bool is_active = (inactive_nodes.find(nodeID) == inactive_nodes.end());
-
-        if (is_active) {
-            colID = nodeID - numInactive;
-            //LOG(userinfo) << "colID: " << colID << std::endl;
-
+    for (const auto &entry : map) { // entry: [1] node id of horizontal neighbours or this node, [2] conductance to neighbours in zeta zone
+        colID = index_mapping[entry.first];
+        if (colID != -1) {
+            //LOG(userinfo) << "colID " << colID;
             zoneConductance = entry.second;
             if (cached) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
@@ -202,7 +198,7 @@ void inline Equation::reallocateMatrix() {
     }
 }
 
-void inline Equation::reallocateMatrix_zetas() {
+/*void inline Equation::reallocateMatrix_zetas() {
     large_num __missing{0};
 
     const long size_new = A_zetas.rows() - inactive_nodes.size();
@@ -248,7 +244,7 @@ void inline Equation::reallocateMatrix_zetas() {
     if (inactive_have_changed) {
         x_zetas = buffer_x_zetas;
     }
-}
+}*/
 
 void inline
 Equation::updateMatrix() {
@@ -316,7 +312,6 @@ Equation::updateMatrix() {
 void inline
 Equation::updateMatrix_zetas(int localZetaID) {
     Index n = A_zetas.outerSize();
-    inactive_nodes.clear();
     large_num numInactive{0};
     bool isActive;
     index_mapping.clear();
@@ -332,9 +327,8 @@ Equation::updateMatrix_zetas(int localZetaID) {
         if (isActive) {
             index_mapping[i] = i - numInactive;
         } else {
-            numInactive++;
-            index_mapping[i] = -1; // tracking how many have been set inactive
-            inactive_nodes.insert(nodes->at(i)->getProperties().get<large_num, Model::ID>());
+            numInactive++; // tracking how many have been set inactive
+            index_mapping[i] = -1; // these entries will be ignored ( e.g. in loop filling A_zeta, x_zeta and b_zeta)
         }
     }
 
@@ -347,23 +341,20 @@ Equation::updateMatrix_zetas(int localZetaID) {
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
 
-    numInactive = 0;
-
 #pragma omp parallel for
     for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
-        if (index_mapping[nodeIter] >= 0) {
+        auto id = index_mapping[nodeIter];
+        if (id != -1) {
             LOG(userinfo) << "nodeID: " << nodeIter;
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
-            addToA_zeta(nodeIter, numInactive, localZetaID, isCached_zetas);
-            x_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZeta(localZetaID).value(); // todo could fill with zeros?
+            addToA_zeta(nodeIter, localZetaID, isCached_zetas);
+            x_zetas(id) = nodes->at(nodeIter)->getZeta(localZetaID).value(); // todo could fill with zeros?
             //---------------------Right
-            b_zetas(index_mapping[nodeIter]) = nodes->at(nodeIter)->getZetaRHS(localZetaID).value();
-        } else {
-            numInactive++;
+            b_zetas(id) = nodes->at(nodeIter)->getZetaRHS(localZetaID).value();
         }
     }
-    //LOG(debug) << "A_zetas full:\n" << A_zetas << std::endl;
-    //LOG(debug) << "b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
+    LOG(debug) << "updateMatrix: A_zetas full:\n" << A_zetas << std::endl;
+    LOG(debug) << "updateMatrix: b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
 
     //Check if after iteration former 0 values turned to non-zero
     if ((not A_zetas.isCompressed()) and isCached_zetas) {
@@ -438,26 +429,13 @@ Equation::updateIntermediateHeads() {
 
 void inline
 Equation::updateIntermediateZetas(int localZetaID) {
-    bool all_nodes_active = inactive_nodes.empty();
-    large_num numInactive{0};
-    large_num n{0};
-
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodes; ++k) {
-
-        if (all_nodes_active) {
-            nodes->at(k)->setZeta(localZetaID, (double) x_zetas[k] * si::meter);
-            nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[k] * si::meter);
-        } else {
-            auto m = index_mapping[k];
-            if (m != -1) {
-                n = k - numInactive;
-                nodes->at(k)->setZeta(localZetaID, (double) x_zetas[n] * si::meter);
-                nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[n] * si::meter);
-                //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
-            } else {
-                numInactive++;
-            }
+        auto id = index_mapping[k];
+        if (id != -1) {
+            nodes->at(k)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
+            nodes->at(k)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
+            //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
         }
     }
 }
@@ -727,7 +705,7 @@ Equation::solve_zetas(){
 #pragma omp parallel for
     for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
         LOG(numerics) << "Running Time Step (zeta surface " << localZetaID << ")";
-        LOG(numerics) << "Updating Matrix (zetas";
+        LOG(numerics) << "Updating Matrix (zetas)";
         updateMatrix_zetas(localZetaID);
 
         if (!isCached_zetas) {
