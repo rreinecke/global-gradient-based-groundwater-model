@@ -62,6 +62,7 @@ namespace GlobalFlow {
                                     op.isConfined(0),
                                     op.isDensityVariable(),
                                     op.getInitialZetas(),
+                                    op.getEffectivePorosity(),
                                     op.getMaxTipSlope(),
                                     op.getMaxToeSlope(),
                                     op.getMinDepthFactor(),
@@ -148,13 +149,11 @@ namespace GlobalFlow {
                 }
 
                 if (op.isRowCol()) {
-                    LOG(userinfo) << "Building grid by rows and columns";
-                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
-                                                op.getGHBConduct(), op.getBoundaryCondition());
+                    LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
                 } else {
                     LOG(userinfo) << "Building grid by spatial ID";
-                    //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op
-                    //        .getBoundaryCondition());
+                    //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
                     DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoID(), 60*5 , op.getNumberOfLayers(),
                                                   op.getGHBConduct(), op.getBoundaryCondition());
                 }
@@ -197,6 +196,7 @@ namespace GlobalFlow {
                      bool confined,
                      bool isDensityVariable,
                      vector<double> initialZetas,
+                     double effPorosity,
                      double maxTipSlope,
                      double maxToeSlope,
                      double minDepthFactor,
@@ -218,9 +218,9 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                vector<Model::quantity<Model::Meter>> initialZetasWithDim;
                 for (int i = 0; i < initialZetas.size(); i++) {
-                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                    initialZetasWithDim.push_back(initialZetas[i] * Model::si::meter);
                 }
                 while (in.read_row(spatID, lon, lat, area, col, row)) {
                     out[col][row] = nodeID;
@@ -242,9 +242,10 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
-                                                                initialZetasDim,
+                                                                initialZetasWithDim,
                                                                 delnus,
                                                                 nusInZones,
+                                                                effPorosity,
                                                                 maxTipSlope,
                                                                 maxToeSlope,
                                                                 minDepthFactor,
@@ -270,7 +271,7 @@ namespace GlobalFlow {
              * @param specificYield The default specific yield
              * @param specificStorage The default specific storage
              * @param confined If node is part of a confined layer?
-             * @return number of total top nodes // Question: why not a matrix as readGrid?
+             * @return number of total top nodes
              */
             int
             readLandMask(NodeVector nodes,
@@ -285,6 +286,7 @@ namespace GlobalFlow {
                          bool confined,
                          bool isDensityVariable,
                          vector<double> initialZetas,
+                         double effPorosity,
                          double maxTipSlope,
                          double maxToeSlope,
                          double minDepthFactor,
@@ -303,9 +305,9 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                vector<Model::quantity<Model::Meter>> initialZetasWithDim;
                 for (int i = 0; i < initialZetas.size(); i++) {
-                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                    initialZetasWithDim.push_back(initialZetas[i] * Model::si::meter);
                 }
 
                 while (in.read_row(spatID, lon, lat, area, col, row)) {
@@ -328,9 +330,10 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
-                                                                initialZetasDim,
+                                                                initialZetasWithDim,
                                                                 delnus,
                                                                 nusInZones,
+                                                                effPorosity,
                                                                 maxTipSlope,
                                                                 maxToeSlope,
                                                                 minDepthFactor,
@@ -347,10 +350,11 @@ namespace GlobalFlow {
              * @brief Read in a custom definition for the ocean boundary
              * @param path Where to read from
              */
+            // todo think about this: does this implementation make sense?
             void readHeadBoundary(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
                     if (nodes->at(nodeID)->hasGHB()) {
-                        auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
+                        //auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
                         nodes->at(nodeID)->removeExternalFlow(Model::GENERAL_HEAD_BOUNDARY);
                         nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                            0 * Model::si::meter,

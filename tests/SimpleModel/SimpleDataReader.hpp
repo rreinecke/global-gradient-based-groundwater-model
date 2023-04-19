@@ -56,10 +56,8 @@ class SimpleDataReader : public DataReader {
             LOG(userinfo) << "Defining rivers";
             readRiver(buildDir(op.getKRiver()));
 
-            LOG(userinfo) << "Connecting the layers";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
-                                        op.getGHBConduct(),
-                                        op.getBoundaryCondition());
+            LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
         }
 
     private:

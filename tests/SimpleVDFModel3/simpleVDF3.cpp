@@ -13,6 +13,9 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
+
+    LOG(debug) << sim.getNodes()->at(1);
+
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         sim.getNodes()->at(j)->setSimpleK();

@@ -30,7 +30,7 @@ namespace GlobalFlow {
                                 op.getEdgeLengthFrontBack(),
                                 op.isConfined(0),
                                 op.isDensityVariable(),
-                                op.getInitialZetas(),
+                                op.getEffectivePorosity(),
                                 op.getMaxTipSlope(),
                                 op.getMaxToeSlope(),
                                 op.getMinDepthFactor(),
@@ -55,7 +55,7 @@ namespace GlobalFlow {
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading input for variable density flow";
                     if (op.isInitialZetasFromFile()){
-                        readInitialZetas(buildDir(op.getInitialZetasDir()));
+                        readInitialZetas(op.getNumberOfNodes(), buildDir(op.getInitialZetasDir()));
                     }
                     if (op.isEffectivePorosityFromFile()){
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
@@ -70,9 +70,8 @@ namespace GlobalFlow {
                     readInitialHeads((buildDir(op.getInitialHeadsDir())));
                 }
 
-                LOG(userinfo) << "Connecting the model cells";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(), op.getGHBConduct(),
-                                            op.getBoundaryCondition());
+                LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
             }
 
         private:
@@ -95,7 +94,7 @@ namespace GlobalFlow {
                      double edgeLengthFrontBack,
                      bool confined,
                      bool isDensityVariable,
-                     vector<double> initialZetas,
+                     double effPorosity,
                      double maxTipSlope,
                      double maxToeSlope,
                      double minDepthFactor,
@@ -117,10 +116,7 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-                vector<Model::quantity<Model::Meter>> initialZetasDim;
-                for (int i = 0; i < initialZetas.size(); i++) {
-                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
-                }
+
                 while (in.read_row(spatID, x, y, area, col, row)) {
                     out[col][row] = nodeID;
                     //area is in km needs to be in m
@@ -141,9 +137,9 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
-                                                                initialZetasDim,
                                                                 delnus,
                                                                 nusInZones,
+                                                                effPorosity,
                                                                 maxTipSlope,
                                                                 maxToeSlope,
                                                                 minDepthFactor,
@@ -166,13 +162,16 @@ namespace GlobalFlow {
                 });
             };
 
-            void
-            readElevation(std::string path) {
+            void readElevation(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
                     nodes->at(nodeID)->setElevation(data * Model::si::meter);
                 });
             };
 
+            /**
+             * @brief Read in a custom definition for the general head boundary
+             * @param path Where to read from
+             */
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
@@ -239,16 +238,26 @@ namespace GlobalFlow {
                 }
             }
 
-            void readInitialZetas(std::string pathZetas) {
+            void readInitialZetas(int numberOfNodes, std::string pathZetas) {
+                double topOfNode;
+                double bottomOfNode;
                 int spatID{0};
-                double zeta0{0};
-                double zeta1{0};
-                double zeta2{0};
+                double localZetaID{0};
+                double zeta{0};
+
+                // add zeta surfaces to top and bottom of each node
+                for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter){
+                    topOfNode = nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
+                    bottomOfNode = topOfNode - nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::VerticalSize>().value();
+
+                    nodes->at(nodeIter)->addZeta(0, topOfNode * Model::si::meter);
+                    nodes->at(nodeIter)->addZeta(1, bottomOfNode * Model::si::meter);
+                }
 
                 // read initial data for density surfaces
-                io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                inZetas.read_header(io::ignore_no_column, "spatID", "zeta0", "zeta1", "zeta2");
-                while (inZetas.read_row(spatID, zeta0, zeta1, zeta2)) {
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
+                while (inZetas.read_row(spatID, localZetaID, zeta)) {
                     int nodeID = 0;
                     try {
                         nodeID = lookupSpatIDtoID.at(spatID);
@@ -256,12 +265,7 @@ namespace GlobalFlow {
                     catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;
                     }
-
-                    vector<Model::quantity<Model::Meter>> initialZetas{zeta0 * Model::si::meter,
-                                                                       zeta1 * Model::si::meter,
-                                                                       zeta2 * Model::si::meter};
-
-                    nodes->at(nodeID)->setInitialZetas(initialZetas);
+                    nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                 }
             }
 

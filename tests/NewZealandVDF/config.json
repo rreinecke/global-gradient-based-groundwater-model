@@ -32,9 +32,9 @@
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 50000,
+      "iterations": 50,
       "inner_itter": 20,
-      "closing_crit": 1e-10,
+      "closing_crit": 1e-6,
       "head_change": 0.000001,
       "zeta_change": 0.000001,
       "damping": "false",
@@ -64,13 +64,12 @@
         "initial_head": 0,
         "initial_zetas": [
           0.0,
-          0.0,
-          0.0
+          -10.0,
+          -100.0
         ],
         "K": 0.1,
         "ghb_K": 1000000000,
         "aquifer_thickness": [
-          100,
           100
         ],
         "anisotropy": 10,

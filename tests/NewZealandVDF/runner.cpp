@@ -13,12 +13,9 @@ namespace GlobalFlow {
 
     void NZRunner::setupSimulation() {
         reader = new DataProcessing::GlobalDataReader(op.getStepSizeModifier());
-        LOG(debug) << "reader initiated" << std::endl;
-
         sim = Simulation::Simulation(op, reader);
-        LOG(debug) << "sim initiated" << std::endl;
 
-        LOG(debug) << "NodeID 1:" << sim.getNodes()->at(1);
+        LOG(debug) << sim.getNodes()->at(1);
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();

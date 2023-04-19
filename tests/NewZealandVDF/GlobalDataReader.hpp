@@ -62,6 +62,7 @@ namespace GlobalFlow {
                                     op.isConfined(0),
                                     op.isDensityVariable(),
                                     op.getInitialZetas(),
+                                    op.getEffectivePorosity(),
                                     op.getMaxTipSlope(),
                                     op.getMaxToeSlope(),
                                     op.getMinDepthFactor(),
@@ -74,8 +75,8 @@ namespace GlobalFlow {
                                  op.getInitialK(), op.getInitialHead(),op.getAquiferDepth()[0],
                                  op.getAnisotropy(), op.getSpecificYield(), op.getSpecificStorage(),
                                  op.isConfined(0), op.isDensityVariable(), op.getInitialZetas(),
-                                 op.getMaxToeSlope(), op.getMaxToeSlope(), op.getMinDepthFactor(), op.getSlopeAdjFactor(),
-                                 op.getVDFLock(), op.getDensityZones());
+                                 op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
+                                 op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
                     LOG(userinfo) << "- reading mapping";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
                 }
@@ -106,11 +107,6 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading slope";
                 readSlope(buildDir(op.getSlope()), op.getSlope_a());
 
-                if(op.isKGHBFile()) {
-                    LOG(userinfo) << "Reading the boundary condition";
-                    readHeadBoundary(buildDir(op.getKGHBDir())); // todo set initial zeta at GHB
-                } // todo: in GHB def: set SGD (for two zones: source=zone0 (fresh), sink=zone1 (saline))
-
                 // read either initial head (default) or equal water table depth from file, if available
                 if (op.isInitialHeadFromFile()){
                     LOG(userinfo) << "Reading initial head";
@@ -135,28 +131,45 @@ namespace GlobalFlow {
                                      buildDir(op.getGlobalLakes()));
 
                 if (op.isDensityVariable()) {
-                    LOG(userinfo) << "Reading input for variable density flow";
+
                     if (op.isInitialZetasFromFile()) {
+                        LOG(userinfo) << "Reading initial zeta heights";
                         readInitialZetas(buildDir(op.getInitialZetasDir())); // requires elevation to be set
-                    } // todo: if not from file: set last zeta to node bottom, at GHB/ocean nodes all but first zeta at bottom
+                    } else {
+                        LOG(userinfo) << "Using default zeta values from configuration file."
+                                         "(Typically the first/last zeta needs to be at node top/bottom)";
+                    }
                     if (op.isEffectivePorosityFromFile()) {
+                        LOG(userinfo) << "Reading effective porosity";
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                     }
                     if (op.isZonesSourcesSinksFromFile()) {
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
+                        LOG(userinfo) << "Reading zones of sources and sinks";
+                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones().size());
                     }
                 }
 
                 if (op.isRowCol()) {
-                    LOG(userinfo) << "Building grid by rows and columns";
-                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers(),
-                                                op.getGHBConduct(), op.getBoundaryCondition());
+                    LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
                 } else {
                     LOG(userinfo) << "Building grid by spatial ID";
-                    //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op
-                    //        .getBoundaryCondition());
+                    //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
                     DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoID(), 60*5 , op.getNumberOfLayers(),
                                                   op.getGHBConduct(), op.getBoundaryCondition());
+                }
+
+                if(op.isKGHBFile()) {
+                    LOG(userinfo) << "Reading the boundary condition";
+                    readHeadBoundary(buildDir(op.getKGHBDir()));
+                }
+
+                if (op.isDensityVariable()) {
+                    LOG(userinfo) << "Setting the variable density conditions at general head boundaries";
+                    // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
+                    setVariableDensityConditionsAtBoundary(op.getNumberOfLayers(),
+                                                           op.getInitialZetas().size(),
+                                                           op.getAquiferDepth()[0]);
                 }
 
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
@@ -197,6 +210,7 @@ namespace GlobalFlow {
                      bool confined,
                      bool isDensityVariable,
                      vector<double> initialZetas,
+                     double effPorosity,
                      double maxTipSlope,
                      double maxToeSlope,
                      double minDepthFactor,
@@ -218,9 +232,9 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                vector<Model::quantity<Model::Meter>> initialZetasWithDim;
                 for (int i = 0; i < initialZetas.size(); i++) {
-                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                    initialZetasWithDim.push_back(initialZetas[i] * Model::si::meter);
                 }
                 while (in.read_row(spatID, lon, lat, area, col, row)) {
                     out[col][row] = nodeID;
@@ -242,9 +256,10 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
-                                                                initialZetasDim,
+                                                                initialZetasWithDim,
                                                                 delnus,
                                                                 nusInZones,
+                                                                effPorosity,
                                                                 maxTipSlope,
                                                                 maxToeSlope,
                                                                 minDepthFactor,
@@ -270,7 +285,7 @@ namespace GlobalFlow {
              * @param specificYield The default specific yield
              * @param specificStorage The default specific storage
              * @param confined If node is part of a confined layer?
-             * @return number of total top nodes // Question: why not a matrix as readGrid?
+             * @return number of total top nodes
              */
             int
             readLandMask(NodeVector nodes,
@@ -285,6 +300,7 @@ namespace GlobalFlow {
                          bool confined,
                          bool isDensityVariable,
                          vector<double> initialZetas,
+                         double effPorosity,
                          double maxTipSlope,
                          double maxToeSlope,
                          double minDepthFactor,
@@ -303,9 +319,9 @@ namespace GlobalFlow {
                 lookupSpatIDtoID.reserve(numberOfNodes);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-                vector<Model::quantity<Model::Meter>> initialZetasDim;
+                vector<Model::quantity<Model::Meter>> initialZetasWithDim;
                 for (int i = 0; i < initialZetas.size(); i++) {
-                    initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
+                    initialZetasWithDim.push_back(initialZetas[i] * Model::si::meter);
                 }
 
                 while (in.read_row(spatID, lon, lat, area, col, row)) {
@@ -328,9 +344,10 @@ namespace GlobalFlow {
                                                                 specificStorage,
                                                                 confined,
                                                                 isDensityVariable,
-                                                                initialZetasDim,
+                                                                initialZetasWithDim,
                                                                 delnus,
                                                                 nusInZones,
+                                                                effPorosity,
                                                                 maxTipSlope,
                                                                 maxToeSlope,
                                                                 minDepthFactor,
@@ -344,21 +361,52 @@ namespace GlobalFlow {
             };
 
             /**
-             * @brief Read in a custom definition for the ocean boundary
+             * @brief Read in a custom definition for the general head boundary
              * @param path Where to read from
              */
-             // todo think about this: does this implementation make sense?
             void readHeadBoundary(std::string path) {
-                readTwoColumns(path, [this](double data, int nodeID) {
-                    if (nodes->at(nodeID)->hasGHB()) {
-                        //auto flow = nodes->at(nodeID)->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY);
-                        nodes->at(nodeID)->removeExternalFlow(Model::GENERAL_HEAD_BOUNDARY);
-                        nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                        0 * Model::si::meter,
-                                                        data,
-                                                        0 * Model::si::meter);
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
+                int spatID{0};
+                double elevation{0};
+                double conduct{0};
+
+                while (in.read_row(spatID, elevation, conduct)) {
+                    int nodeID = 0;
+                    try {
+                        nodeID = lookupSpatIDtoID.at(spatID);
                     }
-                });
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                       elevation * Model::si::meter,
+                                                       conduct,
+                                                       elevation * Model::si::meter);
+                }
+            }
+
+            void setVariableDensityConditionsAtBoundary(int layers, int numZetas, double aquiferDepth){
+                vector<Model::quantity<Model::Meter>> zetas;
+                Model::quantity<Model::Meter> zeta;
+                large_num nodes_per_layer = nodes->size() / layers;
+
+                for (int nodeID = 0; nodeID < nodes_per_layer; ++nodeID) {
+                    if (nodes->at(nodeID)->hasGHB()){
+                        for (int zetaID = 0; zetaID < numZetas; ++zetaID){
+                            double elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
+
+                            if (zetaID == numZetas-1){
+                                zeta = (elevation - aquiferDepth) * Model::si::meter;
+                            } else {
+                                zeta = elevation * Model::si::meter;
+                            }
+                            nodes->at(nodeID)->setZeta(zetaID, zeta);
+                        }
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZetas-2, numZetas-1);
+                    }
+                }
             }
 
             /**
@@ -671,8 +719,7 @@ namespace GlobalFlow {
 
                         percentage = percentage / 100;
 
-                        double elevation = nodes->at(
-                                i)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
+                        double elevation = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
                         try {
                             elevation = nodes->at(i)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value();
                         } catch (const std::out_of_range &ex) {}
@@ -781,7 +828,7 @@ namespace GlobalFlow {
                 });
             }
 
-            void readZonesSourcesSinks(std::string path, vector<double> densityZones) {
+            void readZonesSourcesSinks(std::string path, int numDensityZones) {
                 /**
                  * Here we use zoneOfSinks and zoneOfSources (containing values between 0 and number of density zones).
                  * Thus, sources and sinks are associated to the respective zone. Rule: zoneOfSinks <= zoneOfSources
@@ -805,7 +852,7 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, numDensityZones);
                 }
             }
 

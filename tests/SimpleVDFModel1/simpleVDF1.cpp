@@ -13,6 +13,9 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF1DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
+
+    LOG(debug) << sim.getNodes()->at(1);
+
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         sim.getNodes()->at(j)->setSimpleK();
@@ -21,7 +24,7 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 1);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 200);
     int stepNumber = 1;
 
     // for saving zetas in a csv
