@@ -46,7 +46,6 @@ namespace GlobalFlow {
                     readConduct(buildDir(op.getLithology()));
                 }
 
-                if (op.isRe)
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
 

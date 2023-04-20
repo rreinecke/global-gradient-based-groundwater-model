@@ -12,8 +12,9 @@ set(HEADERS
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_nzVDF.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_nzVDF.json COPYONLY)
 
-# read the NewZealand grid and recharge
+# read the NewZealand grid, initial zetas and recharge
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
+configure_file(data_5min/initial_zetas.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_nz.csv COPYONLY)
 #configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
