@@ -51,7 +51,6 @@
         "efold_as_array": "false",
         "eq_wtd_from_file": "false",
         "initial_head_from_file": "false",
-        "initial_zetas_from_file": "true",
         "k_from_file": "false",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
@@ -63,12 +62,6 @@
       "default_data": {
         "effective_porosity": 0.2,
         "initial_head": 0.05,
-        "initial_zetas": [
-          0.0,
-          0.0,
-          0.0,
-          0.0
-        ],
         "K": 2,
         "ghb_K": 800,
         "aquifer_thickness": [

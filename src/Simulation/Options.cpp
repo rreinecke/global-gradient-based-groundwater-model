@@ -105,7 +105,6 @@ namespace GlobalFlow {
             aquifer_depth_from_file = data_config.get<bool>("aquifer_depth_from_file");
             eq_wtd_from_file = data_config.get<bool>("eq_wtd_from_file");
             initial_head_from_file = data_config.get<bool>("initial_head_from_file");
-            initial_zetas_from_file = data_config.get<bool>("initial_zetas_from_file");
             effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
             zones_sources_sinks_from_file = data_config.get<bool>("zones_sources_sinks_from_file");
 
@@ -114,7 +113,6 @@ namespace GlobalFlow {
             INITIAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
-            INITIAL_ZETAS = getTypeArray<double>("initial_zetas", default_data);
 
             ANISOTROPY = default_data.get<double>("anisotropy");
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");

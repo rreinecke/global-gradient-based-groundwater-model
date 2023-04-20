@@ -364,7 +364,6 @@ namespace GlobalFlow {
                           double specificStorage,
                           bool confined,
                           bool densityVariable,
-                          vector<t_meter> zetas,
                           vector<t_dim> delnus,
                           vector<t_dim> nusInZones,
                           double effPorosity,
@@ -946,23 +945,27 @@ Modify Properties
              * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
              * @param initialZetas the zeta surface height in meters
              */
-            void setInitialZetas(vector<t_meter> initialZetas){
+            void addZeta(int localZetaID, t_meter zeta){
+                NANChecker(zeta.value(), "zeta (in addZeta)");
 
-                for(int localZetaID = 0; localZetaID < initialZetas.size(); localZetaID++) {
-                    NANChecker(initialZetas[localZetaID].value(), "height (in addInitialZeta)");
-
-                    // in SWI2: lines 660-680
-                    auto topOfNode = get<t_meter, Elevation>();
-                    t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
-                    if (initialZetas[localZetaID] > topOfNode - get<t_meter, VDFLock>()) {
-                        initialZetas[localZetaID] = topOfNode;
-                    } else if (initialZetas[localZetaID] < bottomOfNode + get<t_meter, VDFLock>()) {
-                        initialZetas[localZetaID] = bottomOfNode;
-                    }
+                // in SWI2: lines 660-680
+                auto topOfNode = get<t_meter, Elevation>();
+                t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                if (zeta > topOfNode - get<t_meter, VDFLock>()) {
+                    zeta = topOfNode;
+                } else if (zeta < bottomOfNode + get<t_meter, VDFLock>()) {
+                    zeta = bottomOfNode;
                 }
 
-                set<vector<t_meter>,Zetas>(initialZetas);
-                set<vector<t_meter>,ZetasChange>(initialZetas); // todo make all 0
+                vector<t_meter> zetas;
+                if (localZetaID == 0) { // todo improve: perhaps better to check whether Zetas is initialized (but how?)
+                    zetas.push_back(zeta);
+                } else {
+                    zetas = getZetas(); // not initialized ad localZetaID = 0
+                    zetas.insert(zetas.begin() + localZetaID, zeta);
+                }
+                set<vector<t_meter>,Zetas>(zetas);
+                set<vector<t_meter>,ZetasChange>(zetas); // todo make all 0
                 //todo throw error if height not in correct order
             }
 
@@ -2524,7 +2527,6 @@ Modify Properties
                          double specificStorage,
                          bool confined,
                          bool densityVariable,
-                         vector<t_meter> zetas,
                          vector<t_dim> delnus,
                          vector<t_dim> nusInZones,
                          double effPorosity,
@@ -2535,7 +2537,7 @@ Modify Properties
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    confined, densityVariable, zetas, delnus, nusInZones, effPorosity,
+                                    confined, densityVariable, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
@@ -2637,7 +2639,7 @@ Modify Properties
                     ID,
                     ID,
                     0.3 * (si::meter / day), 1 * si::meter, 1, 100, 10, 0.15, 0.000015, true, true,
-                    {0 * si::meter, 0 * si::meter, 0 * si::meter}, {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
+                    {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
                     0.001 * si::meter) {}
 
         private:

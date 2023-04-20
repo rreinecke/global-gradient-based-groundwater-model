@@ -55,7 +55,6 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificStorage,
                              bool confined,
                              bool densityVariable,
-                             vector<quantity<Meter>> zetas,
                              vector<quantity<Dimensionless>> delnus,
                              vector<quantity<Dimensionless>> nusInZones,
                              double effPorosity,
@@ -87,7 +86,6 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<bool, DensityVariable> (densityVariable);
-    fields.set<vector<quantity<Meter>>, Zetas> (zetas);
     fields.set<vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
     fields.set<quantity<Dimensionless>, EffectivePorosity> (effPorosity * si::si_dimensionless);

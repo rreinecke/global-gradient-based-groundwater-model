@@ -104,7 +104,6 @@ namespace GlobalFlow {
             // density information
             bool DENSITY_VARIABLE{false};
             vector<double> DENSITY_ZONES{1000.0};
-            vector<double> INITIAL_ZETAS{0.0};
             double EFFECTIVE_POROSITY{0.0};
             double MAX_TIP_SLOPE{0.2};
             double MAX_TOE_SLOPE{0.2};
@@ -122,7 +121,6 @@ namespace GlobalFlow {
             bool aquifer_depth_from_file{false};
             bool eq_wtd_from_file{false};
             bool initial_head_from_file{false};
-            bool initial_zetas_from_file{false};
             bool effective_porosity_from_file{false};
             bool zones_sources_sinks_from_file{false};
 
@@ -188,8 +186,6 @@ namespace GlobalFlow {
             bool isEqWTDFromFile() { return eq_wtd_from_file;}
 
             bool isInitialHeadFromFile() { return initial_head_from_file;}
-
-            bool isInitialZetasFromFile() { return initial_zetas_from_file;}
 
             bool isEffectivePorosityFromFile() { return effective_porosity_from_file;}
 
@@ -448,11 +444,6 @@ namespace GlobalFlow {
             double
             getInitialHead() {
                 return INITIAL_HEAD;
-            }
-
-            vector<double>
-            getInitialZetas() {
-                return INITIAL_ZETAS;
             }
 
             double

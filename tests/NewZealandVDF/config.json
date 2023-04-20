@@ -50,7 +50,6 @@
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
-        "initial_zetas_from_file": "false",
         "k_from_file": "true",
         "k_ghb_from_file": "false",
         "k_river_from_file": "false",
@@ -62,11 +61,6 @@
       "default_data": {
         "effective_porosity": 0.2,
         "initial_head": 0,
-        "initial_zetas": [
-          0.0,
-          -10.0,
-          -100.0
-        ],
         "K": 0.1,
         "ghb_K": 1000000000,
         "aquifer_thickness": [
@@ -92,6 +86,7 @@
         },
         "elevation": "elevation.csv",
         "equal_water_table_depth": "initial_head.csv",
+        "initial_zetas": "initial_zetas.csv",
         "global_wetlands": "G_GLOWET.csv",
         "global_lakes": "G_GLOLAK.csv",
         "lithology": "lithology.csv",

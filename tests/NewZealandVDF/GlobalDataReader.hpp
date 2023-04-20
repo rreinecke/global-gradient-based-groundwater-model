@@ -132,13 +132,9 @@ namespace GlobalFlow {
 
                 if (op.isDensityVariable()) {
 
-                    if (op.isInitialZetasFromFile()) {
-                        LOG(userinfo) << "Reading initial zeta heights";
-                        readInitialZetas(buildDir(op.getInitialZetasDir())); // requires elevation to be set
-                    } else {
-                        LOG(userinfo) << "Using default zeta values from configuration file."
-                                         "(Typically the first/last zeta needs to be at node top/bottom)";
-                    }
+                    LOG(userinfo) << "Reading initial zeta heights";
+                    readInitialZetas(buildDir(op.getInitialZetasDir())); // requires elevation to be set
+
                     if (op.isEffectivePorosityFromFile()) {
                         LOG(userinfo) << "Reading effective porosity";
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));

@@ -46,6 +46,7 @@ namespace GlobalFlow {
                     readConduct(buildDir(op.getLithology()));
                 }
 
+                if (op.isRe)
                 LOG(userinfo) << "Reading the groundwater recharge";
                 readGWRecharge(buildDir(op.getRecharge()));
 
@@ -54,9 +55,7 @@ namespace GlobalFlow {
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading input for variable density flow";
-                    if (op.isInitialZetasFromFile()){
-                        readInitialZetas(op.getNumberOfNodes(), buildDir(op.getInitialZetasDir()));
-                    }
+                    readInitialZetas(op.getNumberOfNodes(), buildDir(op.getInitialZetasDir()));
                     if (op.isEffectivePorosityFromFile()){
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                     }
