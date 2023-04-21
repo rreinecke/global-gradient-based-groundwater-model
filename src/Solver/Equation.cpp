@@ -345,7 +345,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
     for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
         auto id = index_mapping[nodeIter];
         if (id != -1) {
-            LOG(userinfo) << "nodeID: " << nodeIter;
+            //LOG(userinfo) << "nodeID: " << nodeIter;
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, localZetaID, isCached_zetas);
             x_zetas(id) = nodes->at(nodeIter)->getZeta(localZetaID).value(); // todo could fill with zeros?

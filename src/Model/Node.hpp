@@ -1268,13 +1268,13 @@ Modify Properties
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
-                LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                LOG(userinfo) << "sources: " << sources.value() << std::endl;
+                //LOG(userinfo) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
@@ -1288,8 +1288,8 @@ Modify Properties
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
                                   (day * get<t_dim, StepModifier>());
+                //LOG(userinfo) << "get<t_dim, EffectivePorosity>(): " << get<t_dim, EffectivePorosity>() << std::endl;
                 //LOG(userinfo) << "StepModifier: " << get<t_dim, StepModifier>() << std::endl;
-
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -1498,7 +1498,7 @@ Modify Properties
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                             out += head_part;
-                            LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
+                            //LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
 
                             t_s_meter_t zoneCondCumDelnus;
                             for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
@@ -1513,7 +1513,7 @@ Modify Properties
                                 t_vol_t delnus_part = -delnus[zetaID] * zoneCondCumDelnus *
                                                       (at(got)->getZeta(zetaID) - getZeta(zetaID));
                                 out += delnus_part;
-                                LOG(userinfo) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
+                                //LOG(userinfo) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
                             }
                         }
                     }
@@ -1537,7 +1537,7 @@ Modify Properties
                 // %%head part %% for left/back neighbour
                 t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                 out += head_part;
-                //LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
+                //LOG(userinfo) << "head_part (tip/toe): " << head_part.value() << std::endl;
 
                 // %%delnus part %% for left/back neighbour
                 t_s_meter_t zoneCondCumZeta;

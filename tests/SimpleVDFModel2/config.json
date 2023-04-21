@@ -47,7 +47,7 @@
     "input": {
       "data_config": {
         "aquifer_depth_from_file": "false",
-        "effective_porosity_from_file": "true",
+        "effective_porosity_from_file": "false",
         "efold_as_array": "false",
         "eq_wtd_from_file": "false",
         "initial_head_from_file": "false",
@@ -60,7 +60,7 @@
         "zones_sources_sinks_from_file": "true"
       },
       "default_data": {
-        "effective_porosity": 0.2,
+        "effective_porosity": 0.4,
         "initial_head": 0.05,
         "K": 2,
         "ghb_K": 800,
