@@ -32,10 +32,10 @@
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 50000,
+      "iterations": 1000,
       "inner_itter": 20,
-      "closing_crit": 1e-10,
-      "head_change": 0.0001,
+      "closing_crit": 1e-30,
+      "head_change": 0.000001,
       "zeta_change": 0,
       "damping": "false",
       "min_damp": 0.01,

@@ -375,7 +375,7 @@ namespace GlobalFlow {
                 vector<Model::quantity<Model::Meter>> zetas;
                 Model::quantity<Model::Meter> zeta;
                 large_num nodes_per_layer = nodes->size() / layers;
-
+                LOG(userinfo) << "numZetas: " << numZetas;
                 for (int nodeID = 0; nodeID < nodes_per_layer; ++nodeID) {
                     if (nodes->at(nodeID)->hasGHB()){
                         for (int zetaID = 0; zetaID < numZetas; ++zetaID){
