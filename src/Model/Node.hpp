@@ -563,7 +563,6 @@ Modify Properties
                 return calcLateralFlows<Head>(true) * get<t_dim, StepModifier>();
             }
 
-
             /**
              * @brief Cuts off all heads above surface elevation
              * @warning Should only be used in spin up phase!
@@ -642,6 +641,10 @@ Modify Properties
             void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
             void setSimpleK(){simpleK = true;}
+
+            double getLat() {return get<double, Lat>();}
+
+            double getLon() {return get<double, Lon>();}
 
             /**
              * @brief Get all outflow since simulation start
@@ -1224,6 +1227,12 @@ Modify Properties
              * @return bool
              */
             bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
+
+            /**
+             * @brief Check for type GHB
+             * @return bool
+             */
+            bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
 
             /**
              * @brief Get Q part (external sources) of flow equations

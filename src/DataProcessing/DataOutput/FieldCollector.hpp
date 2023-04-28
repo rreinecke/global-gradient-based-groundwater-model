@@ -72,6 +72,7 @@ namespace GlobalFlow {
                 GL_WETLAND_IN, /*!< Global wetland inflow */
                 WETLAND_IN, /*!< Wetland inflow */
                 LAKE_IN, /*!< Lake inflow */
+                ZETAS, /*!< Zeta surfaces */
                 NON_VALID
             };
 
@@ -109,13 +110,14 @@ namespace GlobalFlow {
                     {"Wetland_Conduct",    FieldType::WETLAND_CONDUCT},
                     {"Gl_Wetland_Conduct", FieldType::GL_WETLAND_CONDUCT},
                     {"Lake_Conduct",       FieldType::LAKE_CONDUCT},
-                    {"GHB_Outflow",      FieldType::GHB_OUT},
+                    {"GHB_Outflow",        FieldType::GHB_OUT},
                     {"Gl_Wetland_Outflow", FieldType::GL_WETLAND_OUT},
                     {"Wetland_Outflow",    FieldType::WETLAND_OUT},
                     {"Lake_Outflow",       FieldType::LAKE_OUT},
                     {"Gl_Wetland_Inflow",  FieldType::GL_WETLAND_IN},
                     {"Wetland_Inflow",     FieldType::WETLAND_IN},
-                    {"Lake_Inflow",        FieldType::LAKE_IN}
+                    {"Lake_Inflow",        FieldType::LAKE_IN},
+                    {"Zetas",              FieldType::ZETAS}
             };
 
 
@@ -613,6 +615,15 @@ namespace GlobalFlow {
                                     out = 0;
                                 }
                                 return convert<T>(out);
+                            });
+                        }
+
+                        case FieldType::ZETAS : {
+                            return getData<T>(simulation, [&simulation, this](int i) {
+                                return convert<T>(
+                                        simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
+                                                Model::Head>
+                                                ().value());
                             });
                         }
                         default:

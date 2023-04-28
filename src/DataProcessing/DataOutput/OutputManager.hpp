@@ -156,13 +156,14 @@ namespace GlobalFlow {
                     {FieldType::WETLAND_CONDUCT,    InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_CONDUCT, InternalType::DOUBLE},
                     {FieldType::LAKE_CONDUCT,       InternalType::DOUBLE},
-                    {FieldType::GHB_OUT,          InternalType::DOUBLE},
+                    {FieldType::GHB_OUT,            InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_OUT,     InternalType::DOUBLE},
                     {FieldType::WETLAND_OUT,        InternalType::DOUBLE},
                     {FieldType::LAKE_OUT,           InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_IN,      InternalType::DOUBLE},
                     {FieldType::WETLAND_IN,         InternalType::DOUBLE},
-                    {FieldType::LAKE_IN,            InternalType::DOUBLE}
+                    {FieldType::LAKE_IN,            InternalType::DOUBLE},
+                    {FieldType::ZETAS,              InternalType::VECTOR}
             };
 
             class FieldFactory {
@@ -170,14 +171,14 @@ namespace GlobalFlow {
                 static FieldType getTemplateType(std::string type) {
                     FieldType fieldType{FieldType::NON_VALID};
                     try { fieldType = fieldMapping.at(type); }
-                    catch (exception &e) { LOG(error) << "No such field" << type; }
+                    catch (exception &e) { LOG(error) << "No such field: " << type; }
                     return fieldType;
                 }
 
                 static OutputType getTemplateOutput(std::string field) {
                     OutputType outputType{OutputType::NON_VALID};
                     try { outputType = outputMapping.at(field); }
-                    catch (exception &e) { LOG(error) << "No such output type" << field; }
+                    catch (exception &e) { LOG(error) << "No such output type: " << field; }
                     return outputType;
                 }
 
