@@ -4,8 +4,8 @@
       {
         "name": "head",
         "type": "csv",
-        "field": "Head",
-        "ID": "false",
+        "field": "Zetas",
+        "ID": "true",
         "position": "true"
       }
     ],

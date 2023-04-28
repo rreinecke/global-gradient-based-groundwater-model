@@ -29,7 +29,7 @@ class SimpleDataReader : public DataReader {
                             op.getEdgeLengthFrontBack(),
                             op.isConfined(0),
                             op.isDensityVariable(),
-                            op.getInitialZetas(),
+                            op.getEffectivePorosity(),
                             op.getMaxTipSlope(),
                             op.getMaxToeSlope(),
                             op.getMinDepthFactor(),
@@ -80,7 +80,7 @@ class SimpleDataReader : public DataReader {
                  double edgeLengthFrontBack,
                  bool confined,
                  bool isDensityVariable,
-                 vector<double> initialZetas,
+                 double effPorosity,
                  double maxTipSlope,
                  double maxToeSlope,
                  double minDepthFactor,
@@ -102,10 +102,7 @@ class SimpleDataReader : public DataReader {
             lookupSpatIDtoID.reserve(numberOfNodes);
             vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-            vector<Model::quantity<Model::Meter>> initialZetasDim;
-            for (int i = 0; i < initialZetas.size(); i++) {
-                initialZetasDim.push_back(initialZetas[i] * Model::si::meter);
-            }
+
             while (in.read_row(globid, x, y, area, col, row)) {
                 out[col][row] = i;
                 //area is in km needs to be in m
@@ -126,9 +123,9 @@ class SimpleDataReader : public DataReader {
                                                             specificStorage,
                                                             confined,
                                                             isDensityVariable,
-                                                            initialZetasDim,
                                                             delnus,
                                                             nusInZones,
+                                                            effPorosity,
                                                             maxTipSlope,
                                                             maxToeSlope,
                                                             minDepthFactor,

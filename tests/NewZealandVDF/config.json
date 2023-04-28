@@ -86,7 +86,7 @@
         },
         "elevation": "elevation.csv",
         "equal_water_table_depth": "initial_head.csv",
-        "initial_zetas": "initial_zetas.csv",
+        "initial_zetas": "initial_zetas_nz.csv",
         "global_wetlands": "G_GLOWET.csv",
         "global_lakes": "G_GLOLAK.csv",
         "lithology": "lithology.csv",
