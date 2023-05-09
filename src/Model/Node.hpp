@@ -646,6 +646,10 @@ Modify Properties
 
             double getLon() {return get<double, Lon>();}
 
+            t_meter getElevation(){return get<t_meter, Elevation>();}
+
+            //t_meter getRecharge(){return get<t_meter, Recharge>();}
+
             /**
              * @brief Get all outflow since simulation start
              */

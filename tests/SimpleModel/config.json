@@ -79,7 +79,6 @@
     "data": {
       "recharge": "recharge_simple.csv",
       "elevation": "elevation_simple.csv",
-      "rivers": "rivers_simple.csv",
       "lithology": "lithology_simple.csv",
       "river_conductance": "rivers_simple.csv",
       "initial_head": "heads_simple.csv"

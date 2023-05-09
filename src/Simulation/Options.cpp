@@ -152,12 +152,11 @@ namespace GlobalFlow {
             EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
             SURFACE_WATER_ELEVATION = getOptional("surface_water_elevation", data);
 
-
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
             ZONES_SOURCES_SINKS_FILE = getOptional("zones_sources_sinks", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
-            RIVER = getOptional("river", data);
+            RIVER = getOptional("river_extent", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);
             GLOBAL_LAKES = getOptional("global_lakes", data);
             LOCAL_LAKES = getOptional("local_lakes", data);

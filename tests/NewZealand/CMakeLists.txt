@@ -17,12 +17,12 @@ configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid
 #configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
-configure_file(../../data_5min/lithology.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/lithology.csv COPYONLY)
+configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
-configure_file(../../data_5min/river.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river.csv COPYONLY)
-configure_file(../../data_5min/initial_head.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_head.csv COPYONLY)
+configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)
+configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
-configure_file(../../data_5min/recharge_withArcID.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_withArcID.csv COPYONLY)
+configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
 
 
 ## global and local wetlands

@@ -117,7 +117,7 @@ namespace GlobalFlow {
 
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
-                    readRiver(buildDir(op.getKRiver()));
+                    readRiverConductance(buildDir(op.getKRiver()));
                 } else {
                     readBlueCells(buildDir(op.getSurfaceWaterElevation()),
                                   calculateRiverStage(buildDir(op.getRiver())));
@@ -408,7 +408,7 @@ namespace GlobalFlow {
              * Structured as: spatID, Head, Bottom, Conduct
              * @param path Where to read the file from
              */
-            void readRiver(std::string path) {
+            void readRiverConductance(std::string path) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
                 int spatID{0};

@@ -19,7 +19,7 @@ namespace GlobalFlow {
 
         // For neighbour counting:
         ofstream myfile;
-        myfile.open ("neighbour_counts.csv");
+        myfile.open ("node_attributes_output.csv");
         myfile << "nodeID,lon,lat,neighbour_count" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();

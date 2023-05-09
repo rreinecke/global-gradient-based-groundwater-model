@@ -54,7 +54,7 @@ class SimpleDataReader : public DataReader {
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Defining rivers";
-            readRiver(buildDir(op.getKRiver()));
+            readRiverConductance(buildDir(op.getKRiver()));
 
             LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
             DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
@@ -154,7 +154,7 @@ class SimpleDataReader : public DataReader {
             });
         };
 
-        void readRiver(std::string path) {
+        void readRiverConductance(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
             int spatID{0};

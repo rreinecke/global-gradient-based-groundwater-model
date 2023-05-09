@@ -85,15 +85,15 @@
           ]
         },
         "elevation": "elevation.csv",
-        "equal_water_table_depth": "initial_head.csv",
+        "equal_water_table_depth": "mean_wtd.csv",
         "initial_zetas": "initial_zetas_nz.csv",
         "global_wetlands": "G_GLOWET.csv",
         "global_lakes": "G_GLOLAK.csv",
-        "lithology": "lithology.csv",
+        "lithology": "glhymps2.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
-        "recharge": "recharge_withArcID.csv",
-        "river": "river.csv",
+        "recharge": "mean_yearly_sum_recharge.csv",
+        "river_extent": "river_extent.csv",
         "slope": {
           "Slope": [
             "Africa_slope.csv",

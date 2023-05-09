@@ -383,7 +383,7 @@ namespace GlobalFlow {
             }
 
             string
-            getRiver() {
+            getRiverExtent() {
                 return RIVER;
             }
 
