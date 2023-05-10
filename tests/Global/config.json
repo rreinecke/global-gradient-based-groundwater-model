@@ -4,7 +4,7 @@
       "nodes": "grid.csv",
       "row_cols": "false",
       "steady_state": "true",
-      "number_of_nodes": 2161074,
+      "number_of_nodes_per_layer": 2161074,
       "number_of_rows": 0,
       "number_of_cols": 0,
       "edge_length_rows": 9000.0,

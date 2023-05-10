@@ -16,7 +16,7 @@ class SimpleDataReader : public DataReader {
             std::vector<std::vector<int>> grid;
             grid = readGrid(nodes,
                             buildDir(op.getNodesDir()),
-                            op.getNumberOfNodes(),
+                            op.getNumberOfNodesPerLayer(),
                             op.getNumberOfRows(),
                             op.getNumberOfCols(),
                             op.getInitialK(),
@@ -57,7 +57,7 @@ class SimpleDataReader : public DataReader {
             readRiverConductance(buildDir(op.getKRiver()));
 
             LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
-            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
+            DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
         }
 
     private:
@@ -67,7 +67,7 @@ class SimpleDataReader : public DataReader {
         Matrix<int>
         readGrid(NodeVector nodes,
                  std::string path,
-                 int numberOfNodes,
+                 int numberOfNodesPerLayer,
                  int numberOfRows,
                  int numberOfCols,
                  double defaultK,
@@ -99,7 +99,7 @@ class SimpleDataReader : public DataReader {
             int i{0};
             int row{0};
             int col{0};
-            lookupSpatIDtoID.reserve(numberOfNodes);
+            lookupSpatIDtoID.reserve(numberOfNodesPerLayer);
             vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 

@@ -20,7 +20,7 @@ namespace GlobalFlow {
 
         LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
-        // For neighbour counting:
+        // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
         myfile << "nodeID,lon,lat,neighbour_count,elevation,hyd_cond,recharge" << std::endl;
@@ -34,8 +34,8 @@ namespace GlobalFlow {
                 sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
                 sim.getNodes()->at(j)->getElevation().value() << "," <<
                 sim.getNodes()->at(j)->getK().value() << "," <<
-                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()
-                << std::endl;
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+                std::endl;
         }
         LOG(debug) << "simple k set for all nodes" << std::endl;
         myfile.close();

@@ -4,7 +4,7 @@
       "nodes": "grid_simpleVDF3.csv",
       "row_cols": "true",
       "steady_state": "true",
-      "number_of_nodes": 200,
+      "number_of_nodes_per_layer": 200,
       "number_of_rows": 200,
       "number_of_cols": 1,
       "edge_length_rows": 20,

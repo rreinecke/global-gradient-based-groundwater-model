@@ -17,7 +17,7 @@ namespace GlobalFlow {
                 std::vector<std::vector<int>> grid;
                 grid = readGrid(nodes,
                                 buildDir(op.getNodesDir()),
-                                op.getNumberOfNodes(),
+                                op.getNumberOfNodesPerLayer(),
                                 op.getNumberOfRows(),
                                 op.getNumberOfCols(),
                                 op.getInitialK(),
@@ -53,12 +53,15 @@ namespace GlobalFlow {
                 readHeadBoundary(buildDir(op.getKGHBDir()));
 
                 if (op.isDensityVariable()) {
-                    LOG(userinfo) << "Reading input for variable density flow";
-                    readInitialZetas(op.getNumberOfNodes(), buildDir(op.getInitialZetasDir()));
+                    LOG(userinfo) << "Reading zetas";
+                    readInitialZetas(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers(),
+                                     buildDir(op.getInitialZetasDir()));
                     if (op.isEffectivePorosityFromFile()){
+                        LOG(userinfo) << "Reading effective porosity";
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                     }
                     if (op.isZonesSourcesSinksFromFile()){
+                        LOG(userinfo) << "Reading zones of sinks and sources";
                         readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
                     }
                 }
@@ -69,7 +72,7 @@ namespace GlobalFlow {
                 }
 
                 LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodes(), op.getNumberOfLayers());
+                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
             }
 
         private:
@@ -79,7 +82,7 @@ namespace GlobalFlow {
             Matrix<int>
             readGrid(NodeVector nodes,
                      std::string path,
-                     int numberOfNodes,
+                     int numberOfNodesPerLayer,
                      int numberOfRows,
                      int numberOfCols,
                      double defaultK,
@@ -111,7 +114,7 @@ namespace GlobalFlow {
                 int nodeID{0};
                 int row{0};
                 int col{0};
-                lookupSpatIDtoID.reserve(numberOfNodes);
+                lookupSpatIDtoNodeID.reserve(numberOfNodesPerLayer);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
@@ -143,7 +146,7 @@ namespace GlobalFlow {
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
-                    lookupSpatIDtoID[spatID] = nodeID;
+                    lookupSpatIDtoNodeID[spatID] = nodeID;
                     nodeID++;
                 }
 
@@ -180,7 +183,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, elevation, conduct)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -226,7 +229,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -258,7 +261,7 @@ namespace GlobalFlow {
                 while (inZetas.read_row(spatID, localZetaID, zeta)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoID.at(spatID);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID);
                     }
                     catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                         continue;

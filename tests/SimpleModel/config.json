@@ -4,7 +4,7 @@
       "nodes": "grid_simple.csv",
       "row_cols": "true",
       "steady_state": "true",
-      "number_of_nodes": 100,
+      "number_of_nodes_per_layer": 100,
       "number_of_rows": 10,
       "number_of_cols": 10,
       "edge_length_rows": 3.162277,
