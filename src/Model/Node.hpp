@@ -648,7 +648,7 @@ Modify Properties
 
             t_meter getElevation(){return get<t_meter, Elevation>();}
 
-            //t_meter getRecharge(){return get<t_meter, Recharge>();}
+            t_meter getBottom(){return get<t_meter, Elevation>() - get<t_meter, VerticalSize>();}
 
             /**
              * @brief Get all outflow since simulation start
@@ -952,18 +952,17 @@ Modify Properties
 
                 // in SWI2: lines 660-680
                 auto topOfNode = get<t_meter, Elevation>();
-                t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
                 if (zeta > topOfNode - get<t_meter, VDFLock>()) {
                     zeta = topOfNode;
-                } else if (zeta < bottomOfNode + get<t_meter, VDFLock>()) {
-                    zeta = bottomOfNode;
+                } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
+                    zeta = getBottom();
                 }
 
                 vector<t_meter> zetas;
                 if (localZetaID == 0) { // todo improve: perhaps better to check whether Zetas is initialized (but how?)
                     zetas.push_back(zeta);
                 } else {
-                    zetas = getZetas(); // not initialized ad localZetaID = 0
+                    zetas = getZetas();
                     zetas.insert(zetas.begin() + localZetaID, zeta);
                 }
                 set<vector<t_meter>,Zetas>(zetas);
@@ -1288,7 +1287,7 @@ Modify Properties
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
-                                  (day * get<t_dim, StepModifier>());
+                                  (day); // get<t_dim, StepModifier>()
                 //LOG(userinfo) << "get<t_dim, EffectivePorosity>(): " << get<t_dim, EffectivePorosity>() << std::endl;
                 //LOG(userinfo) << "StepModifier: " << get<t_dim, StepModifier>() << std::endl;
                 NANChecker(out.value(), "getEffectivePorosityTerm");

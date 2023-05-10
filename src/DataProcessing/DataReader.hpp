@@ -52,10 +52,10 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupspatIDtoID <GlobalID, ID>*/
-        std::unordered_map<int, int> lookupSpatIDtoID;
-        /** @var lookupZeroPointFivetoFiveMinute <SpatID(0.5°), vector<GlobalID(5')>>*/
-        std::unordered_map<int, std::vector<int>> lookupSpatIDtoArcID;
+        /** @var lookupSpatIDtoNodeID <SpatID, NodeID>*/
+        std::unordered_map<int, int> lookupSpatIDtoNodeID;
+        /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
+        std::unordered_map<int, std::vector<int>> lookupArcIDtoSpatIDs;
     public:
         /** Virt destructor -> interface*/
         virtual ~DataReader() {}
@@ -96,7 +96,7 @@ namespace GlobalFlow {
         inline int check(int spatID) {
             int nodeID{0};
             try {
-                nodeID = lookupSpatIDtoID.at(spatID);
+                nodeID = lookupSpatIDtoNodeID.at(spatID);
             }
             catch (const std::out_of_range &ex) {
                 return -1;
@@ -139,7 +139,7 @@ namespace GlobalFlow {
             int spatID = 0;
 
             while (in.read_row(spatID, arcID)) {
-                lookupSpatIDtoArcID[spatID].push_back(std::move(arcID));
+                lookupArcIDtoSpatIDs[arcID].push_back(std::move(spatID));
             }
         }
 
@@ -148,8 +148,8 @@ namespace GlobalFlow {
          * @brief provides acccess to mapping of different resolutions
          * @return <ArcID(0.5°), vector<SpatID(5')>>
          */
-        const std::unordered_map<int, std::vector<int>> &getMappingSpatIDtoArcID() {
-            return lookupSpatIDtoArcID;
+        const std::unordered_map<int, std::vector<int>> &getMappingArcIDtoSpatIDs() {
+            return lookupArcIDtoSpatIDs;
         };
 
         /**
@@ -157,7 +157,7 @@ namespace GlobalFlow {
          * @return <SpatID, ID (internal array id)>
          */
         const std::unordered_map<int, int> &getMappingSpatIDtoID() {
-            return lookupSpatIDtoID;
+            return lookupSpatIDtoNodeID;
         };
 
         /**

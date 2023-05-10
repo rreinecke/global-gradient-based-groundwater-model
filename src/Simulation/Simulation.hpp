@@ -464,10 +464,10 @@ namespace GlobalFlow {
 
             int initNodes() {
                 LOG(userinfo) << FMAG(BOLD("Starting G³M"));
-                nodes->reserve(op.getNumberOfNodes() * op.getNumberOfLayers());
+                nodes->reserve(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers());
                 reader->initNodes(nodes);
                 reader->readData(op);
-                return op.getNumberOfNodes() * op.getNumberOfLayers();
+                return op.getNumberOfNodesPerLayer() * op.getNumberOfLayers();
             };
 
 

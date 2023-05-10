@@ -74,7 +74,7 @@ namespace GlobalFlow {
             string SPATID_ARCID{""};
 
             //++General configuration++//
-            long NUMBER_OF_NODES{0};
+            long NUMBER_OF_NODES_PER_LAYER{0};
             long NUMBER_OF_ROWS{0};
             long NUMBER_OF_COLS{0};
             double EDGE_LENGTH_ROWS{0.0};
@@ -214,8 +214,8 @@ namespace GlobalFlow {
             int getInnerItter() { return I_ITTER; }
 
             long
-            getNumberOfNodes() {
-                return NUMBER_OF_NODES;
+            getNumberOfNodesPerLayer() {
+                return NUMBER_OF_NODES_PER_LAYER;
             };
 
             long
