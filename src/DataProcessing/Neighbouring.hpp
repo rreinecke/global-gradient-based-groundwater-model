@@ -68,7 +68,12 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 * Thus 1 is the default setting, 0 is undefined
 */
 void
-buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_depth);
+buildBottomLayers(NodeVector nodes,
+                  int layers,
+                  std::vector<bool> conf,
+                  std::vector<int> aquifer_depth,
+                  std::vector<double> conductances,
+                  std::vector<double> anisotropies);
 }
 }
 

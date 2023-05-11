@@ -25,7 +25,7 @@ Simulation::Simulation(Options op, DataReader *reader) : op(op), reader(reader) 
         LOG(stateinfo) << "Attempting to load old state";
         if(boost::filesystem::exists(saveName)){
             restore();
-            numOfStaticNodes = nodes->size();
+            numOfStaticNodes = nodes->size() / op.getNumberOfLayers(); // todo: improve
             succefullyRestored = true;
         }else{
             LOG(userinfo) << "No existing state to load";

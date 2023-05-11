@@ -16,7 +16,7 @@ configure_file(data/unused/initial_head.csv ${CMAKE_CURRENT_BINARY_DIR}/../../da
 configure_file(data/initial_zetas.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_simpleVDF3.csv COPYONLY)
 configure_file(data/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/effective_porosity_simpleVDF3.csv COPYONLY)
 configure_file(data/zones_sources_sinks.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/zones_sources_sinks_simpleVDF3.csv COPYONLY)
-configure_file(data/unused/lithology.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/lithology_simpleVDF3.csv COPYONLY)
+configure_file(data/lithology.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/lithology_simpleVDF3.csv COPYONLY)
 configure_file(data/recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_simpleVDF3.csv COPYONLY)
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_simpleVDF3.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_simpleVDF3.json COPYONLY)

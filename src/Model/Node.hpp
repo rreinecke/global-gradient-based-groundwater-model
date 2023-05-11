@@ -2269,7 +2269,7 @@ Modify Properties
                 //Get all conductances from neighbouring cells
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::TOP, NeighbourPosition::BACK, NeighbourPosition::DOWN, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT}; // Question: what would we need TOP and DOWN for?
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);

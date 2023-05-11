@@ -3,10 +3,10 @@
 namespace GlobalFlow {
 namespace Solver {
 
-Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes << std::endl;
+Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation::Options options) : options(options) {
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodesPerLayer << std::endl;
 
-    this->numberOfNodes = numberOfNodes;
+    this->numberOfNodesPerLayer = numberOfNodesPerLayer;
     this->IITER = options.getMaxIterations();
     this->RCLOSE = options.getConverganceCriteria();
     this->initialHead = options.getInitialHead();
@@ -25,23 +25,23 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
     this->nodes = nodes;
 
 
-    long_vector __x(numberOfNodes);
-    long_vector __b(numberOfNodes);
+    long_vector __x(numberOfNodesPerLayer);
+    long_vector __b(numberOfNodesPerLayer);
 
     x = std::move(__x);
     b = std::move(__b);
 
-    Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
+    Eigen::SparseMatrix<pr_t> __A(numberOfNodesPerLayer, numberOfNodesPerLayer);
 
     A = std::move(__A);
-    A.reserve(long_vector::Constant(numberOfNodes, 7));
+    A.reserve(long_vector::Constant(numberOfNodesPerLayer, 7));
 
     //Init first result vector x by writing initial heads
     //Initial head should be positive
     //resulting head is the real hydraulic head
     double tmp = 0;
 #pragma omp parallel for
-    for (int i = 0; i < numberOfNodes; ++i) {
+    for (int i = 0; i < numberOfNodesPerLayer; ++i) {
         if (nwt) {
             nodes->at(i)->enableNWT();
         }
@@ -71,16 +71,16 @@ Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Option
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getDensityZones().size();
         this->maxZetaChange = options.getMaxZetaChange();
-        long_vector __x_zetas(numberOfNodes);
-        long_vector __b_zetas(numberOfNodes);
+        long_vector __x_zetas(numberOfNodesPerLayer);
+        long_vector __b_zetas(numberOfNodesPerLayer);
 
         x_zetas = std::move(__x_zetas);
         b_zetas = std::move(__b_zetas);
 
-        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodes, numberOfNodes);
+        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodesPerLayer, numberOfNodesPerLayer);
 
         A_zetas = std::move(__A_zetas);
-        A_zetas.reserve(long_vector::Constant(numberOfNodes, 5));
+        A_zetas.reserve(long_vector::Constant(numberOfNodesPerLayer, 5));
 
         //set inner iterations
         cg_zetas.setMaxIterations(inner_iterations);
@@ -257,7 +257,7 @@ Equation::updateMatrix() {
     Index threads = Eigen::nbThreads();
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-    for (large_num j = 0; j < numberOfNodes; ++j) {
+    for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         //LOG(userinfo) << "node: " << j;
         //---------------------Left
         addToA(nodes->at(j), isCached);
@@ -322,7 +322,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
 #endif
     // finding inactive nodes
 #pragma omp parallel for
-    for (large_num i = 0; i < numberOfNodes; ++i) {
+    for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
         isActive = (nodes->at(i)->getZetaPosInNode(localZetaID) == "between");
         if (isActive) {
             index_mapping[i] = i - numInactive;
@@ -332,7 +332,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
         }
     }
 
-    const long numActive = numberOfNodes - numInactive;
+    const long numActive = numberOfNodesPerLayer - numInactive;
     Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
     A_zetas = std::move(__A_zetas);
     A_zetas.reserve(long_vector::Constant(numActive, 5));
@@ -342,7 +342,7 @@ Equation::updateMatrix_zetas(int localZetaID) {
     x_zetas = std::move(__x_zetas);
 
 #pragma omp parallel for
-    for (large_num nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
+    for (large_num nodeIter = 0; nodeIter < numberOfNodesPerLayer; ++nodeIter) {
         auto id = index_mapping[nodeIter];
         if (id != -1) {
             //LOG(userinfo) << "nodeID: " << nodeIter;
@@ -413,7 +413,7 @@ Equation::updateIntermediateHeads() {
 
     bool reduced = disabled_nodes.empty();
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         //LOG(userinfo) << nodes->at(k) << std::endl;
         if (reduced) {
@@ -430,7 +430,7 @@ Equation::updateIntermediateHeads() {
 void inline
 Equation::updateIntermediateZetas(int localZetaID) {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         auto id = index_mapping[k];
         if (id != -1) {
             nodes->at(k)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
@@ -443,7 +443,7 @@ Equation::updateIntermediateZetas(int localZetaID) {
 void inline
 Equation::updateFinalHeads() {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         nodes->at(k)->updateHeadChange();
     }
 }
@@ -451,7 +451,7 @@ Equation::updateFinalHeads() {
 void inline
 Equation::updateTopZetasToHeads() {
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->setTopZetaToHead();
         }
 }
@@ -459,7 +459,7 @@ Equation::updateTopZetasToHeads() {
 void inline
 Equation::setZetasPosInNodes() {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         nodes->at(k)->setZetasPosInNode();
     }
 }
@@ -467,7 +467,7 @@ Equation::setZetasPosInNodes() {
 /*void inline // todo: remove if not required (in SWI2: required for time step adjustment)
 Equation::checkAllZetaSlopes(int localZetaID) {
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->checkZetaSlopes();
         }
 }*/
@@ -475,28 +475,28 @@ Equation::checkAllZetaSlopes(int localZetaID) {
 void inline
 Equation::adjustZetaHeights() {
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->verticalZetaMovement(); // no effect in simpleVDF
         }
 
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             // LOG(userinfo) << "node = " << k << std::endl;
             nodes->at(k)->horizontalZetaMovement(); // effect only at tip and toe in simpleVDF model
         }
 
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->clipInnerZetas(); // no effect in simpleVDF time-step 1
         }
 
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->correctCrossingZetas(); // no effect in simpleVDF
         }
 
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             nodes->at(k)->preventZetaLocking(); // no effect in simpleVDF
         }
     }
@@ -504,7 +504,7 @@ Equation::adjustZetaHeights() {
 void inline
 Equation::updateBudget() {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         nodes->at(k)->saveMassBalance();
     }
 }
@@ -551,7 +551,7 @@ Equation::solve() {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             double val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             //LOG(debug) << "val (in solve): " << val << std::endl;
@@ -727,7 +727,7 @@ Equation::solve_zetas(){
             double lowerBound = maxZetaChange;
             double changeMax = 0;
 #pragma omp parallel for
-            for (large_num k = 0; k < numberOfNodes; ++k) {
+            for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
                 double val;
                 for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
                     val = std::abs(nodes->at(k)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)

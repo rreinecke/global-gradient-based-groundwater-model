@@ -52,8 +52,8 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupSpatIDtoNodeID <SpatID, NodeID>*/
-        std::unordered_map<int, int> lookupSpatIDtoNodeID;
+        /** @var lookupSpatIDtoNodeIDs <SpatID, vector<NodeID>>*/
+        std::unordered_map<int, std::vector<int>> lookupSpatIDtoNodeIDs;
         /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
         std::unordered_map<int, std::vector<int>> lookupArcIDtoSpatIDs;
     public:
@@ -91,12 +91,12 @@ namespace GlobalFlow {
         /**
          * @brief Check weather id exists in the simulation
          * @param spatID Global identifier, can be different from position in node vector
-         * @return pos The position in the node vector
+         * @return nodeID The position in the node vector
          */
-        inline int check(int spatID) {
-            int nodeID{0};
+        inline int check(int spatID, int layer = 0) {
+            int nodeID;
             try {
-                nodeID = lookupSpatIDtoNodeID.at(spatID);
+                nodeID = lookupSpatIDtoNodeIDs[spatID][layer];
             }
             catch (const std::out_of_range &ex) {
                 return -1;
@@ -154,10 +154,18 @@ namespace GlobalFlow {
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
-         * @return <SpatID, ID (internal array id)>
+         * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<int, int> &getMappingSpatIDtoID() {
-            return lookupSpatIDtoNodeID;
+        void addMappingSpatIDtoNodeIDs(int spatID, int nodeID) {
+            lookupSpatIDtoNodeIDs[spatID].push_back(std::move(nodeID));
+        };
+
+        /**
+         * @brief provides access to mapping of data ids to position in node vector
+         * @return <SpatID, vector<NodeID> (internal array id)>
+         */
+        const std::unordered_map<int, std::vector<int>> &getMappingSpatIDtoNodeIDs() {
+            return lookupSpatIDtoNodeIDs;
         };
 
         /**

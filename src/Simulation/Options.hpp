@@ -91,10 +91,10 @@ namespace GlobalFlow {
             StepSize step_size{DAILY};
             string WETTING_APPROACH{"nwt"};
             double INITIAL_HEAD{0.0};
-            double K{0.001};
+            vector<double> K{0.001};
             double GHB_K{0.1};
             vector<int> AQUIFER_DEPTH{100};
-            double ANISOTROPY{10};
+            vector<double> ANISOTROPY{10};
             double SPECIFIC_YIELD{0.15};
             double SPECIFIC_STORAGE{0.000015};
             string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
@@ -446,7 +446,7 @@ namespace GlobalFlow {
                 return INITIAL_HEAD;
             }
 
-            double
+            vector<double>
             getInitialK() {
                 return K;
             }
@@ -461,7 +461,7 @@ namespace GlobalFlow {
                 return AQUIFER_DEPTH;
             }
 
-            double
+            vector<double>
             getAnisotropy() {
                 return ANISOTROPY;
             }

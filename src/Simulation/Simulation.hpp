@@ -467,7 +467,7 @@ namespace GlobalFlow {
                 nodes->reserve(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers());
                 reader->initNodes(nodes);
                 reader->readData(op);
-                return op.getNumberOfNodesPerLayer() * op.getNumberOfLayers();
+                return op.getNumberOfNodesPerLayer();
             };
 
 

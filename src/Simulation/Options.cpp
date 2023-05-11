@@ -109,12 +109,12 @@ namespace GlobalFlow {
             zones_sources_sinks_from_file = data_config.get<bool>("zones_sources_sinks_from_file");
 
             pt::ptree default_data = input.get_child("default_data");
-            K = default_data.get<double>("K");
+            K = getTypeArray<double>("K", default_data);
             INITIAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
 
-            ANISOTROPY = default_data.get<double>("anisotropy");
+            ANISOTROPY = getTypeArray<double>("anisotropy", default_data);
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 

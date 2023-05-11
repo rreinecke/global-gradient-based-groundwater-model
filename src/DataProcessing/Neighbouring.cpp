@@ -367,18 +367,22 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
  * @param conf
  * @param aquifer_thickness
  */
-void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness) {
+void buildBottomLayers(NodeVector nodes,
+                       int layers, std::vector<bool> conf,
+                       std::vector<int> aquifer_thickness,
+                       std::vector<double> conductances,
+                       std::vector<double> anisotropies) {
     assert(layers && "AsModel::signing 0 layers does not make any sense");
     if (layers == 1) {
         return;
     }
 
-    size_t layersize = nodes->size();
-    nodes->reserve(layers * layersize);
+    size_t nodesPerLayer = nodes->size();
+    nodes->reserve(layers * nodesPerLayer);
 
-    LOG(debug) << "Building additional layers with node count: " << layersize << " for " << layers << " layers";
+    LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << layers << " layers";
 
-    size_t id = layersize;
+    size_t id = nodesPerLayer;
     large_num spatID;
     double lat, lon;
     int stepMod;
@@ -405,7 +409,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     for (int j = 0; j < layers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
         //TODO Parallell?
-        for (int i = 0; i < layersize; ++i) {
+        for (int i = 0; i < nodesPerLayer; ++i) {
             //for each node in top layer
 
             spatID = nodes->at(i)->getProperties().get<large_num, Model::SpatID>();
@@ -414,13 +418,12 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
             edgeLengthLeftRight = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
             edgeLengthFrontBack = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
-            K = nodes->at(i)->getK__pure();
+            K = conductances[j + 1] * Model::si::meter / Model::day;
             head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             stepMod = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                     Model::StepModifier>();
             aquiferDepth = aquifer_thickness[j + 1];
-            anisotropy = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
-                    Model::Anisotropy>().value();
+            anisotropy = anisotropies[j + 1];
             specificYield =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                             Model::SpecificYield>().value();
@@ -447,7 +450,7 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                 //is taken care of by neighbouring algorithm
                 continue;
             } else {
-                if (id > layersize * layers) {
+                if (id > nodesPerLayer * layers) {
                     LOG(critical) << "This is not possible!";
                     exit(9);
                 }
@@ -475,28 +478,27 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                 nodes->at(id)->getProperties().set<int, Model::Layer>(j + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()
-                        -
-                        (aquiferDepth *
-                         Model::si::meter));
+                        - (aquiferDepth * Model::si::meter));
             }
             //2) Neighbouring for top and bottom
 
             if (j > 0) {
                 //Layer above is not top layer
-                nodes->at(id)->setNeighbour(i + (j * layersize), Model::TOP);
-                nodes->at(i + (j * layersize))->setNeighbour(id, Model::DOWN);
+                nodes->at(id)->setNeighbour(i + (j * nodesPerLayer), Model::TOP);
+                nodes->at(i + (j * nodesPerLayer))->setNeighbour(id, Model::DOWN);
             } else {
                 //Layer above is top layer
                 nodes->at(id)->setNeighbour(i, Model::TOP);
                 nodes->at(i)->setNeighbour(id, Model::DOWN);
             }
+
             id++;
-            if (id > (layersize * layers) - 1) {
+            if (id > (nodesPerLayer * layers) - 1) {
                 break;
             }
         }
     }
-    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << layersize * layers;
+    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << nodesPerLayer * layers;
 };
 
 }

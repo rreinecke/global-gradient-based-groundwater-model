@@ -49,7 +49,7 @@ namespace GlobalFlow {
  */
         class Equation {
         public:
-            Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options);
+            Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation::Options options);
 
             ~Equation();
 
@@ -156,7 +156,7 @@ namespace GlobalFlow {
     private:
         bool initalized = false;
 
-        large_num numberOfNodes;
+        large_num numberOfNodesPerLayer;
         int initialHead;
 
         /**
