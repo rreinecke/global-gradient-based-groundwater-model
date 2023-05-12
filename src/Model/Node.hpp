@@ -467,7 +467,6 @@ Modify Properties
                                        getK(),
                                        getLengthNeig(got), // length of neighbour node
                                        getLengthSelf(got), // length of this node
-                                       //getWidthNeig(got), // width of neighbour node
                                        getWidthSelf(got), // width of this node
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
@@ -482,12 +481,12 @@ Modify Properties
                 return std::make_tuple(at(got)->getK_vertical(),
                                        getK_vertical(),
                                        get<t_meter, VerticalSize>(),
-                                       get<t_meter, Head>(),
-                                       get<t_meter, Elevation>(),
-                                       get<t_s_meter, Area>(),
-                                       getAt<t_meter, Elevation>(got),
                                        getAt<t_meter, VerticalSize>(got),
+                                       get<t_meter, Head>(),
                                        getAt<t_meter, Head>(got),
+                                       get<t_meter, Elevation>(),
+                                       getAt<t_meter, Elevation>(got),
+                                       get<t_s_meter, Area>(),
                                        get<bool, Confinement>());
             }
 
@@ -621,7 +620,7 @@ Modify Properties
              * @brief Get hydraulic vertical conductivity
              * @return hydraulic conductivity scaled by anisotropy (scaled by e-folding)
              */
-            t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()) * get<t_dim, StepModifier>(); }
+            t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()); } // * get<t_dim, StepModifier>()
 
             /**
              * @brief Modify hydraulic conductivity (applied to all layers below)
@@ -1263,18 +1262,18 @@ Modify Properties
              * @param localZetaID zeta surface id in this node
              * @return volume per time
              */
-            t_vol_t getZetaRHS(int localZetaID){ // todo: test
+            t_vol_t getZetaRHS(int localZetaID){
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
-                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                //LOG(userinfo) << "sources: " << sources.value() << std::endl;
+                LOG(userinfo) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
@@ -1783,8 +1782,8 @@ Modify Properties
                 } else {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    //LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
-                    //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
+                    LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
+                    LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
 
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) + fluxFromDownNode;
                 }
@@ -2286,6 +2285,7 @@ Modify Properties
                             //    conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
                             //}else{
                             conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                            LOG(debug) << "horizontal conductance: " << conduct.value();
                             //}
                         }
                         NANChecker(conduct.value(), "Conductances");

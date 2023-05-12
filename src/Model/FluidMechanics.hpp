@@ -30,7 +30,7 @@ namespace GlobalFlow {
     namespace Model {
 
         using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
-        using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
+        using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_s_meter, bool>;
 
         /**
          * @class FluidMechanics
@@ -43,7 +43,7 @@ namespace GlobalFlow {
             /**
              * Used to calculate if a cell is dry
              */
-            t_meter calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept;
+            t_meter calcDeltaV(t_meter head, t_meter elevation, t_meter verticalSize) noexcept;
 
             t_s_meter_t calculateEFoldingConductance(FlowInputHor flow, t_meter folding_self, t_meter folding_neig);
 

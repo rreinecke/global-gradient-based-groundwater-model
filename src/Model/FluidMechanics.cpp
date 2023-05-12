@@ -4,10 +4,10 @@
 namespace GlobalFlow {
     namespace Model {
 
-        t_meter FluidMechanics::calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept {
+        t_meter FluidMechanics::calcDeltaV(t_meter head, t_meter elevation, t_meter verticalSize) noexcept {
             t_meter epsilon{1e-4 * si::meter};
-            t_meter bottom = elevation - depth;
-            if (head >= elevation) { return depth; }
+            t_meter bottom = elevation - verticalSize;
+            if (head >= elevation) { return verticalSize; }
             if (elevation > head and head + epsilon > bottom) { return head - bottom; }
             if (head + epsilon <= bottom) {
                 return 0.0 * si::meter;
@@ -155,28 +155,28 @@ namespace GlobalFlow {
             t_vel k_vert_neig;
             t_vel k_vert_self;
             t_meter verticalSize_self;
+            t_meter verticalSize_neig;
             t_meter head_self;
-            t_meter elevation_self;
-            t_s_meter area_self;
-            t_meter elevation_neig;
-            t_meter depth_neig;
             t_meter head_neig;
+            t_meter elevation_self;
+            t_meter elevation_neig;
+            t_s_meter area_self;
             bool confined;
 
             std::tie(k_vert_neig,
                      k_vert_self,
                      verticalSize_self,
+                     verticalSize_neig,
                      head_self,
-                     elevation_self,
-                     area_self,
-                     elevation_neig,
-                     depth_neig,
                      head_neig,
+                     elevation_self,
+                     elevation_neig,
+                     area_self,
                      confined) = flowInputVer;
 
             quantity<MeterSquaredPerTime> out = 0.0 * si::square_meter / day;
             t_meter deltaV_self = verticalSize_self;
-            t_meter deltaV_neig = depth_neig;
+            t_meter deltaV_neig = verticalSize_neig;
 
             //Used if non dry-out approach is used
             // FIXME need to be checked here
@@ -188,7 +188,7 @@ namespace GlobalFlow {
             e_dry dry{NONE};
             if (not confined) {
                 deltaV_self = calcDeltaV(head_self, elevation_self, verticalSize_self);
-                deltaV_neig = calcDeltaV(head_neig, elevation_neig, depth_neig);
+                deltaV_neig = calcDeltaV(head_neig, elevation_neig, verticalSize_neig);
                 if (deltaV_self == 0 * si::meter) {
                     deltaV_self = threshhold_saturated_thickness;
                     dry = SELF;
@@ -203,6 +203,8 @@ namespace GlobalFlow {
             if (deltaV_self != 0.0 * si::meter and deltaV_neig != 0.0 * si::meter) {
                 out = area_self / (((deltaV_self * 0.5) / k_vert_self) + ((deltaV_neig * 0.5) / k_vert_neig));
             }
+            LOG(debug) << "area_self: " << area_self.value() << ". deltaV_self: " << deltaV_sel.value() << ". k_vert_self:" << k_vert_self.value();
+            LOG(debug) << "deltaV_neig: " << deltaV_neig.value() << ". k_vert_neig:" << k_vert_neig.value();
 
             NANChecker(out.value(), "Vertical Conductance");
             return out;

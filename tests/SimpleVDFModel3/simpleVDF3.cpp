@@ -16,7 +16,7 @@ void StandaloneRunner::setupSimulation() {
 
     LOG(debug) << "NodeID 0: " << sim.getNodes()->at(0);
     LOG(debug) << "NodeID 200: " << sim.getNodes()->at(200);
-    LOG(debug) << "NodeID 400: " << sim.getNodes()->at(200);
+    LOG(debug) << "NodeID 400: " << sim.getNodes()->at(400);
 
     // For node infos:
     ofstream myfile;
@@ -41,7 +41,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 2);
     int stepNumber = 1;
 
     // for saving zetas in a csv
@@ -70,7 +70,7 @@ void StandaloneRunner::simulate() {
     }
 
     LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 2);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         step.first->solve();

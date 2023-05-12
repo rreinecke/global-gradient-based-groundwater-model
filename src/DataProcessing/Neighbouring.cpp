@@ -443,6 +443,8 @@ void buildBottomLayers(NodeVector nodes,
                     get<Model::quantity<Model::Dimensionless>, Model::MaxToeSlope>();
             minDepthFactor = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
+            slopeAdjFactor = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::SlopeAdjFactor>();
             vdfLock = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Meter>, Model::VDFLock>();
 

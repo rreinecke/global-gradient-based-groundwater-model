@@ -157,6 +157,11 @@ namespace GlobalFlow {
         bool initalized = false;
 
         large_num numberOfNodesPerLayer;
+
+        large_num numberOfLayers;
+
+        large_num numberOfNodesTotal;
+
         int initialHead;
 
         /**
@@ -233,14 +238,14 @@ namespace GlobalFlow {
          */
         void addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached);
 
-        void addToA_zeta(large_num nodeIter, int localZetaID, bool cached);
+        void addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID, bool cached);
 
         /**
          * Update the matrix for the current iteration
          */
         void inline updateMatrix();
 
-        void inline updateMatrix_zetas(int localZetaID);
+        void inline updateMatrix_zetas(large_num iterOffset, int localZetaID);
 
         /**
          * Reallocate matrix and vectors based on dried nodes
@@ -272,7 +277,7 @@ namespace GlobalFlow {
         /**
          * Update zetas in inner iteration
          */
-        void inline updateIntermediateZetas(int localZetaID);
+        void inline updateIntermediateZetas(large_num iterOffset, int localZetaID);
 
         /**
          * Calculate the final budget

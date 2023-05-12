@@ -62,7 +62,7 @@
       },
       "default_data": {
         "effective_porosity": 0.2,
-        "initial_head": 1,
+        "initial_head": -9,
         "K": [
           2,
           1,
