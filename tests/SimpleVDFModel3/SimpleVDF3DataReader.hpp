@@ -55,8 +55,8 @@ namespace GlobalFlow {
                     readConduct(buildDir(op.getLithology()));
                 }
 
-                //LOG(userinfo) << "Reading the groundwater recharge";
-                //readGWRecharge(buildDir(op.getRecharge()));
+                LOG(userinfo) << "Reading the groundwater recharge";
+                readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
@@ -176,28 +176,6 @@ namespace GlobalFlow {
                     nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day));
                 });
             };
-            /*void readHeadBoundary(std::string path) {
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
-                int spatID{0};
-                double elevation{0};
-                double conduct{0};
-
-                while (in.read_row(spatID, elevation, conduct)) {
-                    int nodeID = 0;
-                    try {
-                        nodeID = lookupSpatIDtoNodeIDs[spatID][0]; // at layer 0
-                    }
-                    catch (const std::out_of_range &ex) {
-                        //if Node does not exist ignore entry
-                        continue;
-                    }
-                    nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                       elevation * Model::si::meter,
-                                                       conduct,
-                                                       elevation * Model::si::meter);
-                }
-            }*/
 
             void readElevation(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
@@ -211,35 +189,50 @@ namespace GlobalFlow {
              */
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
+                in.read_header(io::ignore_no_column, "spatID", "head", "conduct");
                 int spatID{0};
-                double elevation{0};
+                double head{0};
                 double conduct{0};
 
-                while (in.read_row(spatID, elevation, conduct)) {
+                while (in.read_row(spatID, head, conduct)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoNodeIDs[spatID][0]; // at layer 0
+                        nodeID = lookupSpatIDtoNodeIDs[spatID][0]; // only at layer 0
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
                     nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                       elevation * Model::si::meter,
+                                                       head * Model::si::meter,
                                                        conduct,
-                                                       elevation * Model::si::meter);
+                                                       head * Model::si::meter);
                 }
             }
 
             void readGWRecharge(std::string path) {
-                readTwoColumns(path, [this](double data, int nodeID) {
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "layer", "recharge");
+                int spatID{0};
+                int layer{0};
+                double recharge{0};
+
+                while (in.read_row(spatID, layer, recharge)) {
+                    int nodeID = 0;
+                    try {
+                        nodeID = lookupSpatIDtoNodeIDs[spatID][layer]; // at layer 0
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
                     nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                        0 * Model::si::meter,
-                                                       data * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
+                                                       recharge * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
                                                        0 * Model::si::meter);
-                });
+                }
             }
+
 
             void readInitialHeads(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
@@ -263,15 +256,18 @@ namespace GlobalFlow {
                 double zoneOfSources{0};
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    int nodeID = 0;
+                    vector<int> nodeIDs;
                     try {
-                        nodeID = lookupSpatIDtoNodeIDs[spatID][0]; // at layer 0
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    for (int nodeID : nodeIDs) { // apply to all layers at this spatID
+                        LOG(userinfo) << "zoneofSinksAndSources set at nodeID: " << nodeID;
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    }
                 }
             }
 

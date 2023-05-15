@@ -319,6 +319,18 @@ namespace GlobalFlow {
                          << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
                 }
 
+                if (pNode->hasGHB()) {
+                    stream << "\nGHB conductance: "
+                           << pNode->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY).getConductance().value();
+                    stream << "\nGHB elevation: "
+                           << pNode->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY).getFlowHead().value();
+                }
+
+                if (pNode->hasTypeOfExternalFlow(RECHARGE)){
+                    stream << "\nRecharge: "
+                           << pNode->getExternalFlowByName(Model::RECHARGE).getRecharge().value();
+                }
+
                 stream << "\nZone of sinks: " << pNode->zoneOfSinks;
                 stream << "\nZone of sources: " << pNode->zoneOfSources;
 
@@ -515,13 +527,6 @@ Modify Properties
                         conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
                         //}
 
-                        /*if (getZetas().size() > 0) { // Question: add fluxCorrection here?
-                            t_vol_t fluxCorrectionTop = getFluxTop();
-                            t_vol_t fluxCorrectionDown = getFluxDown();
-
-                            t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got) -
-                                                          fluxCorrectionTop - fluxCorrectionDown);
-                        } else {*/
                         t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
                         //}
                         if (onlyOut) {
@@ -990,6 +995,8 @@ Modify Properties
              */
             virtual void setZetas(vector<t_meter> zetas) { set<vector<t_meter>, Zetas>(zetas); }
 
+            void initZetas_t0() noexcept { set<vector<t_meter>, Zetas_TZero>(get<vector<t_meter>, Zetas>()); }
+
             /**
              * @brief Update zeta change after one or multiple inner iteration
              * @param localZetaID zeta surface id in this node
@@ -1002,6 +1009,11 @@ Modify Properties
                     zetasChange[localZetaID] = zeta - getZeta(localZetaID);
                 }
                 set<vector<t_meter>, ZetasChange>(zetasChange);
+            }
+
+            void updateZetasTZero(){
+                //set < vector<t_meter>, ZetasChange_TZero > (get<vector<t_meter>, Zetas>() - get<vector<t_meter>, Zetas_TZero>());
+                set < vector<t_meter>, Zetas_TZero > (get<vector<t_meter>, Zetas>());
             }
 
             /**
@@ -1265,7 +1277,7 @@ Modify Properties
             t_vol_t getZetaRHS(int localZetaID){
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
-                    porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
+                    porosityTerm = getEffectivePorosityTerm() * get<vector<t_meter>, Zetas_TZero>()[localZetaID];
                 }
                 LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
@@ -1747,7 +1759,6 @@ Modify Properties
                           (headdiff + 0.5 * (at(got)->getZetas().back() - getZetas().front()) *
                            (at(got)->getNusBot() + getNusTop())); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
-                    //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
                 }
                 return out;
             }
@@ -1765,9 +1776,10 @@ Modify Properties
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) - fluxFromTopNode;
-
+                    //LOG(userinfo) << "getFluxTop: " << out.value();
                 }
                 return out;
+
             }
 
             /**
@@ -1782,10 +1794,11 @@ Modify Properties
                 } else {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
-                    LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
+                    //LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
+                    //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
 
                     out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) + fluxFromDownNode;
+                    //LOG(userinfo) << "getFluxDown: " << out.value();
                 }
                 return out;
             }
@@ -2285,7 +2298,7 @@ Modify Properties
                             //    conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
                             //}else{
                             conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                            LOG(debug) << "horizontal conductance: " << conduct.value();
+                            //LOG(debug) << "horizontal conductance: " << conduct.value();
                             //}
                         }
                         NANChecker(conduct.value(), "Conductances");
@@ -2320,14 +2333,14 @@ Modify Properties
              */
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ();
-                //LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
+                LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow();
-                //LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
+                LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t rivers = calculateNotHeadDependandFlows();
-                //LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
+                LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
-                //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
+                LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 if (steadyState) {
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
@@ -2351,13 +2364,13 @@ Modify Properties
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    //LOG(userinfo) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    LOG(userinfo) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
 
                     // calculate Vertical Flux Correction (for top and down neighbour)
                     t_vol_t fluxCorrectionTop = getFluxTop();
-                    //LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                    LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
                     t_vol_t fluxCorrectionDown = getFluxDown();
-                    //LOG(userinfo) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
+                    LOG(userinfo) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
 
                     out += pseudoSourceNode + fluxCorrectionTop + fluxCorrectionDown;
                 }

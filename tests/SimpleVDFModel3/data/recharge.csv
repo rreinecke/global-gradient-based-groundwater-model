@@ -1,3 +1,3 @@
-spatID,data
-199,0.01
-199,0.02
+spatID,layer,recharge
+199,0,0.0005
+199,2,0.001

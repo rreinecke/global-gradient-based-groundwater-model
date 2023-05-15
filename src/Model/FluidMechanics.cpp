@@ -203,8 +203,8 @@ namespace GlobalFlow {
             if (deltaV_self != 0.0 * si::meter and deltaV_neig != 0.0 * si::meter) {
                 out = area_self / (((deltaV_self * 0.5) / k_vert_self) + ((deltaV_neig * 0.5) / k_vert_neig));
             }
-            LOG(debug) << "area_self: " << area_self.value() << ". deltaV_self: " << deltaV_sel.value() << ". k_vert_self:" << k_vert_self.value();
-            LOG(debug) << "deltaV_neig: " << deltaV_neig.value() << ". k_vert_neig:" << k_vert_neig.value();
+            //LOG(debug) << "area_self: " << area_self.value() << ". deltaV_self: " << deltaV_self.value() << ". k_vert_self:" << k_vert_self.value();
+            //LOG(debug) << "deltaV_neig: " << deltaV_neig.value() << ". k_vert_neig:" << k_vert_neig.value();
 
             NANChecker(out.value(), "Vertical Conductance");
             return out;

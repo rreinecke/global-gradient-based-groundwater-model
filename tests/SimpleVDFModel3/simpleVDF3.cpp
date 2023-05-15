@@ -14,9 +14,9 @@ void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
 
-    LOG(debug) << "NodeID 0: " << sim.getNodes()->at(0);
-    LOG(debug) << "NodeID 200: " << sim.getNodes()->at(200);
-    LOG(debug) << "NodeID 400: " << sim.getNodes()->at(400);
+    LOG(debug) << "Node properties: " << sim.getNodes()->at(199);
+    LOG(debug) << "Node properties: " << sim.getNodes()->at(399);
+    LOG(debug) << "Node properties: " << sim.getNodes()->at(400);
 
     // For node infos:
     ofstream myfile;
@@ -33,7 +33,7 @@ void StandaloneRunner::setupSimulation() {
                sim.getNodes()->at(j)->getElevation().value() << "," <<
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
-               sim.getNodes()->at(j)->getZeta(1).value() << "," <<
+               //sim.getNodes()->at(j)->getZeta(1).value() <<
                std::endl;
     }
     _eq = sim.getEquation();

@@ -303,6 +303,8 @@ namespace GlobalFlow {
 
         void inline checkAllZetaSlopes(int localZetaID);
 
+        void inline updateZetasAfterEquation();
+
         void inline adjustZetaHeights();
 
         bool SteadyState = false;

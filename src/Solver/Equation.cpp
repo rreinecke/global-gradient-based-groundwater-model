@@ -84,6 +84,11 @@ Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation
         A_zetas = std::move(__A_zetas);
         A_zetas.reserve(long_vector::Constant(numberOfNodesPerLayer, 5));
 
+#pragma omp parallel for
+        for (int i = 0; i < numberOfNodesTotal; ++i) {
+            nodes->at(i)->initZetas_t0();
+        }
+
         //set inner iterations
         cg_zetas.setMaxIterations(inner_iterations);
         cg_zetas.setTolerance(RCLOSE);
@@ -474,6 +479,15 @@ Equation::checkAllZetaSlopes(int localZetaID) {
 }*/
 
 void inline
+Equation::updateZetasAfterEquation() {
+#pragma omp parallel for
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->updateZetasTZero();
+        }
+    }
+
+
+void inline
 Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -707,10 +721,10 @@ Equation::solve_zetas(){
 //#pragma omp parallel for
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
-
+        LOG(userinfo) << "Finding zeta heights in layer " << layer;
 //#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-            LOG(numerics) << "Running Time Step (zeta surface " << localZetaID << ")";
+            LOG(userinfo) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
             updateMatrix_zetas(iterOffset, localZetaID);
 
@@ -835,12 +849,15 @@ Equation::solve_zetas(){
                     LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
                 }
             }
+
             __itter = iterations;
             __error = nwt ? bicgstab_zetas.error() : cg_zetas.error_inf();
         }
         //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
         // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
     }
+    updateZetasAfterEquation();
+
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
     // updateZetaBudget(); // Question: calculate zeta budgets?
