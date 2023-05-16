@@ -14,9 +14,7 @@ void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
 
-    LOG(debug) << "Node properties: " << sim.getNodes()->at(199);
-    LOG(debug) << "Node properties: " << sim.getNodes()->at(399);
-    LOG(debug) << "Node properties: " << sim.getNodes()->at(400);
+    LOG(debug) << sim.getNodes()->at(199); // printing node properties in debug file
 
     // For node infos:
     ofstream myfile;
@@ -41,7 +39,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 2);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
     int stepNumber = 1;
 
     // for saving zetas in a csv
@@ -62,14 +60,14 @@ void StandaloneRunner::simulate() {
         int zetaID = 1;
         double zeta;
         for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
+            //zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
+            //myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
         }
 
         stepNumber++;
     }
 
-    LOG(userinfo) << "Running stress period 2";
+    /*LOG(userinfo) << "Running stress period 2";
     Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 2);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
@@ -80,12 +78,12 @@ void StandaloneRunner::simulate() {
         int zetaID = 1;
         double zeta;
         for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
+            //zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
+            //myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
         }
 
         stepNumber++;
-    }
+    }*/
 
     myfile.close(); // for saving zetas in a csv
     //sim.save();

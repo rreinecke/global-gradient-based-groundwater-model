@@ -17,7 +17,7 @@
         "true",
         "true"
       ],
-      "density_variable": "false",
+      "density_variable": "true",
       "density_zones": [
         1000,
         1025
@@ -37,12 +37,12 @@
       "iterations": 50,
       "inner_itter": 30,
       "closing_crit": 1E-8,
-      "head_change": 0.000000001,
+      "head_change": 0.0001,
       "zeta_change": 0.000000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5,
-      "step_size": "daily",
+      "step_size": "yearly",
       "wetting_approach": "nwt"
     },
     "input": {
@@ -62,7 +62,7 @@
       },
       "default_data": {
         "effective_porosity": 0.2,
-        "initial_head": 0,
+        "initial_head": 1,
         "K": [
           2,
           1,
@@ -76,7 +76,7 @@
         ],
         "anisotropy": [
           1,
-          10,
+          100,
           1
         ],
         "specific_yield": 0.2,

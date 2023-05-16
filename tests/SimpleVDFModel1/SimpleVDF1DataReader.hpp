@@ -18,12 +18,13 @@ namespace GlobalFlow {
                 grid = readGrid(nodes,
                                 buildDir(op.getNodesDir()),
                                 op.getNumberOfNodesPerLayer(),
+                                op.getNumberOfLayers(),
                                 op.getNumberOfRows(),
                                 op.getNumberOfCols(),
-                                op.getInitialK(),
+                                op.getInitialK()[0],
                                 op.getInitialHead(),
                                 op.getAquiferDepth()[0],
-                                op.getAnisotropy(),
+                                op.getAnisotropy()[0],
                                 op.getSpecificYield(),
                                 op.getSpecificStorage(),
                                 op.getEdgeLengthLeftRight(),
@@ -54,7 +55,7 @@ namespace GlobalFlow {
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading zetas";
-                    readInitialZetas(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers(),
+                    readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
                                      buildDir(op.getInitialZetasDir()));
                     if (op.isEffectivePorosityFromFile()){
                         LOG(userinfo) << "Reading effective porosity";
@@ -83,6 +84,7 @@ namespace GlobalFlow {
             readGrid(NodeVector nodes,
                      std::string path,
                      int numberOfNodesPerLayer,
+                     int numberOfLayers,
                      int numberOfRows,
                      int numberOfCols,
                      double defaultK,
@@ -114,7 +116,7 @@ namespace GlobalFlow {
                 int nodeID{0};
                 int row{0};
                 int col{0};
-                lookupSpatIDtoNodeID.reserve(numberOfNodesPerLayer);
+                lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
@@ -146,7 +148,9 @@ namespace GlobalFlow {
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
-                    lookupSpatIDtoNodeID[spatID] = nodeID;
+                    for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
+                        lookupSpatIDtoNodeIDs[spatID].push_back(nodeID + (numberOfNodesPerLayer * layer));
+                    }
                     nodeID++;
                 }
 
@@ -183,7 +187,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, elevation, conduct)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoNodeID.at(spatID);
+                        nodeID = lookupSpatIDtoNodeIDs[spatID][0];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -227,19 +231,21 @@ namespace GlobalFlow {
                 double zoneOfSources{0};
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    int nodeID = 0;
+                    vector<int> nodeIDs;
                     try {
-                        nodeID = lookupSpatIDtoNodeID.at(spatID);
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    for (int nodeID : nodeIDs) { // apply to all layers at this spatID
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
+                    }
                 }
             }
 
-            void readInitialZetas(int numberOfNodes, std::string pathZetas) {
+            void readInitialZetas(int numberOfNodesPerLayer, int numberOfLayers, std::string pathZetas) {
                 double topOfNode;
                 double bottomOfNode;
                 int spatID{0};
@@ -247,6 +253,7 @@ namespace GlobalFlow {
                 double zeta{0};
 
                 // add zeta surfaces to top and bottom of each node
+                int numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
                 for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter){
                     topOfNode = nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
                     bottomOfNode = topOfNode - nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::VerticalSize>().value();
@@ -256,17 +263,19 @@ namespace GlobalFlow {
                 }
 
                 // read initial data for density surfaces
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
-                while (inZetas.read_row(spatID, localZetaID, zeta)) {
-                    int nodeID = 0;
-                    try {
-                        nodeID = lookupSpatIDtoNodeID.at(spatID);
+                int nodeID = 0;
+                for (int layer = 0; layer < numberOfLayers; layer++) {
+                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
+                    while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                        try {
+                            nodeID = lookupSpatIDtoNodeIDs[spatID][layer];
+                        }
+                        catch (const std::out_of_range &ex) { // if node does not exist ignore entry
+                            continue;
+                        }
+                        nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                     }
-                    catch (const std::out_of_range &ex) { // if node does not exist ignore entry
-                        continue;
-                    }
-                    nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                 }
             }
 

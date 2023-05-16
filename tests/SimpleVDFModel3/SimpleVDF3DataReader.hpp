@@ -168,7 +168,6 @@ namespace GlobalFlow {
 
 
             void readConduct(std::string path) {
-
                 readTwoColumns(path, [this](double data, int nodeID) {
                     if (data > 10) {
                         LOG(debug) << "Very high conductance value at spatID "<<nodeID<<". Possible Data Error";
@@ -265,7 +264,6 @@ namespace GlobalFlow {
                         continue;
                     }
                     for (int nodeID : nodeIDs) { // apply to all layers at this spatID
-                        LOG(userinfo) << "zoneofSinksAndSources set at nodeID: " << nodeID;
                         nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                     }
                 }

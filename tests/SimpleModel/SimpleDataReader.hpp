@@ -17,12 +17,13 @@ class SimpleDataReader : public DataReader {
             grid = readGrid(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodesPerLayer(),
+                            op.getNumberOfLayers(),
                             op.getNumberOfRows(),
                             op.getNumberOfCols(),
-                            op.getInitialK(),
+                            op.getInitialK()[0],
                             op.getInitialHead(),
                             op.getAquiferDepth()[0],
-                            op.getAnisotropy(),
+                            op.getAnisotropy()[0],
                             op.getSpecificYield(),
                             op.getSpecificStorage(),
                             op.getEdgeLengthLeftRight(),
@@ -41,7 +42,9 @@ class SimpleDataReader : public DataReader {
             DataProcessing::buildBottomLayers(nodes,
                                               op.getNumberOfLayers(),
                                               op.getConfinements(),
-                                              op.getAquiferDepth());
+                                              op.getAquiferDepth(),
+                                              op.getInitialK(),
+                                              op.getAnisotropy());
 
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));
@@ -68,6 +71,7 @@ class SimpleDataReader : public DataReader {
         readGrid(NodeVector nodes,
                  std::string path,
                  int numberOfNodesPerLayer,
+                 int numberOfLayers,
                  int numberOfRows,
                  int numberOfCols,
                  double defaultK,
@@ -95,16 +99,16 @@ class SimpleDataReader : public DataReader {
             double x{0};
             double y{0};
             double area{0};
-            int globid{0};
-            int i{0};
+            int spatID{0};
+            int nodeID{0};
             int row{0};
             int col{0};
-            lookupSpatIDtoID.reserve(numberOfNodesPerLayer);
+            lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
             vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
-            while (in.read_row(globid, x, y, area, col, row)) {
-                out[col][row] = i;
+            while (in.read_row(spatID, x, y, area, col, row)) {
+                out[col][row] = nodeID;
                 //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
@@ -112,8 +116,8 @@ class SimpleDataReader : public DataReader {
                                                             area * Model::si::square_meter,
                                                             edgeLengthLeftRight * Model::si::meter,
                                                             edgeLengthFrontBack * Model::si::meter,
-                                                            (unsigned long) globid,
-                                                            i,
+                                                            (unsigned long) spatID,
+                                                            nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
                                                             initialHead * Model::si::meter,
                                                             stepMod,
@@ -131,8 +135,10 @@ class SimpleDataReader : public DataReader {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter));
-                lookupSpatIDtoID[globid] = i;
-                i++;
+                for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
+                    lookupSpatIDtoNodeIDs[spatID].push_back(nodeID + (numberOfNodesPerLayer * layer));
+                }
+                nodeID++;
             }
 
             return out;
@@ -147,8 +153,7 @@ class SimpleDataReader : public DataReader {
             });
         };
 
-        void
-        readElevation(std::string path) {
+        void readElevation(std::string path) {
             readTwoColumns(path, [this](double data, int pos) {
                 nodes->at(pos)->setElevation(data * Model::si::meter);
             });
@@ -165,7 +170,7 @@ class SimpleDataReader : public DataReader {
             while (in.read_row(spatID, head, bottom, conduct)) {
                 int i = 0;
                 try {
-                    i = lookupSpatIDtoID.at(spatID);
+                    i = lookupSpatIDtoNodeIDs[spatID][0];
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
