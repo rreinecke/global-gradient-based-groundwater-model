@@ -315,7 +315,7 @@ namespace GlobalFlow {
                 NAG,
                 STORAGE,
                 GENERAL_HEAD_BOUNDARY
-                // todo add global lake and wetland
+                // Question: add global lake?
             };
 
             /**

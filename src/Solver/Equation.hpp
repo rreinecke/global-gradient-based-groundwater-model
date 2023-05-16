@@ -255,7 +255,7 @@ namespace GlobalFlow {
          * 2) head in one of 4 neighbours higher than threshold
          */
         void inline reallocateMatrix();
-        
+
         /**
          * Run the preconditioner for heads
          */
