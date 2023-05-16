@@ -27,7 +27,8 @@ namespace GlobalFlow {
         enum StepSize {
             DAILY,
             TWO_DAILY,
-            MONTHLY
+            MONTHLY,
+            YEARLY
         };
 
 /**
@@ -424,7 +425,7 @@ namespace GlobalFlow {
 
             //Computations are all based on daily
             const int
-            getStepSizeModifier() {
+            getStepSizeModifier() { // Question: what is this needed for? StepSize is never used for nodes; instead, the stepper class is used
                 switch (step_size) {
                     case DAILY:
                         return 1;
@@ -432,6 +433,8 @@ namespace GlobalFlow {
                         return 2;
                     case MONTHLY:
                         return 31;
+                    case YEARLY:
+                        return 365;
                 }
                 throw std::out_of_range("No valid step size\n");
             }
