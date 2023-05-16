@@ -42,7 +42,7 @@ namespace GlobalFlow {
  * Actual container holding the physical properties
  */
         template<class Type, class Key = DefaultProperty>
-        class PhysicalProperty { // Question: rename to StaticProperty? Then we need to move Head to Node.hpp
+        class PhysicalProperty { // Question: rename to NodeProperty?
         protected:
             Type &
             __get() const {

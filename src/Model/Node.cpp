@@ -93,7 +93,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
-    fields.emplace<quantity<Meter>, VDFLock> (vdfLock); // Question: set for t_dim, double etc., emplace for meter etc.?
+    fields.emplace<quantity<Meter>, VDFLock> (vdfLock);
 }
 }
 }//ns

@@ -169,13 +169,18 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
     return out;
 }
 
+/**
+ *
+ * @param head
+ * @return
+ */
 t_vol_t ExternalFlow::calculateFloodplainDrainage(t_meter head) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     t_meter headAboveFloodplain = head - flowHead;
     if (headAboveFloodplain > 0 * si::meter) {
-        const double PI = std::atan(1.0) * 4;
+        const double PI = std::atan(1.0) * 4; // Question: explanation for the parameters used?
         double J = (PI * conductance.value()) / (4 * 0.15 * (500 * 500));
-        return bottom * bottom * headAboveFloodplain * (J * 1 / day); // todo adapt to rectangular nodes
+        return bottom * bottom * headAboveFloodplain * (J * 1 / day); // todo adapt to rectangular nodes?
     }
     return out;
 }

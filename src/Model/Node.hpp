@@ -414,7 +414,7 @@ Modify Properties
             void setSlope(double slope_percent) {
                 set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
                 applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
-                    try { // todo: should slope be added to the nodeInterface? currently only in PhysicalProperties
+                    try { // Question: should slope be added to the nodeInterface? currently only in PhysicalProperties
                         //nodeInterface->
                         //Slope(slope_percent);
                     }
@@ -893,7 +893,7 @@ Modify Properties
                                                         ExternalFlow(numOfExternalFlows, type,
                                                                         get<t_meter, Elevation>(),
                                                                         get<t_vel, K>() * get<t_meter, VerticalSize>(),
-                                                                        bottom))); // todo add edge lenth in different directions
+                                                                        bottom))); // todo add edge length in different directions
                 } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
@@ -963,7 +963,7 @@ Modify Properties
                 }
 
                 vector<t_meter> zetas;
-                if (localZetaID == 0) { // todo improve: perhaps better to check whether Zetas is initialized (but how?)
+                if (localZetaID == 0) { // todo improve. perhaps better to check whether Zetas is initialized (but how?)
                     zetas.push_back(zeta);
                 } else {
                     zetas = getZetas();
@@ -1252,7 +1252,7 @@ Modify Properties
              * @brief Get Q part (external sources) of flow equations
              * @return volume over time
              */
-            t_vol_t getQ() noexcept { // Question: Rename to getExternalSources() ?
+            t_vol_t getQ() noexcept {
                 t_meter eq_head = get<t_meter, EQHead>();
                 t_meter head = get<t_meter, Head>();
                 t_vol_t recharge = 0 * si::cubic_meter / day;
@@ -1279,13 +1279,13 @@ Modify Properties
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * get<vector<t_meter>, Zetas_TZero>()[localZetaID];
                 }
-                LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                LOG(userinfo) << "sources: " << sources.value() << std::endl;
+                //LOG(userinfo) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
@@ -1298,9 +1298,7 @@ Modify Properties
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
-                                  (day); // get<t_dim, StepModifier>()
-                //LOG(userinfo) << "get<t_dim, EffectivePorosity>(): " << get<t_dim, EffectivePorosity>() << std::endl;
-                //LOG(userinfo) << "StepModifier: " << get<t_dim, StepModifier>() << std::endl;
+                                  (day); // * get<t_dim, StepModifier>()
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -1311,7 +1309,6 @@ Modify Properties
              * @return map <CellID,Conductance>
              */
             std::unordered_map<large_num, t_s_meter_t> getVDFMatrixEntries(int localZetaID) {
-                // todo: test
                 size_t numC = 5;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
@@ -1481,7 +1478,7 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code lines 3574-3635, using SSWI2_SD and SSWI2_SR)
              */
-            t_vol_t getPseudoSourceBelowZeta(int localZetaID) { // todo test
+            t_vol_t getPseudoSourceBelowZeta(int localZetaID) {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<vector<t_dim>, Delnus>();
                 std::forward_list<NeighbourPosition> possible_neighbours =
@@ -1566,7 +1563,7 @@ Modify Properties
              * @return volume per time
              * @note adapted from SWI2 code lines 3637-3703 (includes usage of SSWI2_QR and SSWI2_QC)
              */
-            t_vol_t getTipToeFlow(int localZetaID){ // todo: debug
+            t_vol_t getTipToeFlow(int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
                 std::forward_list<NeighbourPosition> possible_neighbours =
@@ -1578,7 +1575,6 @@ Modify Properties
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     for (const auto &position: possible_neighbours) {
                         map_itter got = neighbours.find(position);
-                        map_itter thisNode;
                         if (got == neighbours.end()) { // do nothing if neighbour does not exist
                         } else {
                             if (at(got)->getZetaPosInNode(localZetaID) != "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
@@ -1589,7 +1585,6 @@ Modify Properties
                                     out -= getFluxHorizontal(got, localZetaID); // SSWI2_QR (left/right), SSWI2_QC (front/back)
                                 } else if (position == NeighbourPosition::TOP) {
                                     // vertical leakage to TOP neighbour
-                                    // todo: debug/test
                                     auto nusInZones = get<vector<t_dim>, NusInZones>();
                                     if (getFluxTop() < 0 * (si::cubic_meter / day) and
                                         at(got)->getNusBot() >= nusInZones[localZetaID] and
@@ -1598,7 +1593,6 @@ Modify Properties
                                     }
                                 } else if (position == NeighbourPosition::DOWN) {
                                     // vertical leakage to DOWN neighbour
-                                    // todo: debug/test
                                     auto nusInZones = get<vector<t_dim>, NusInZones>();
                                     if(getFluxDown() < 0 * (si::cubic_meter / day) and
                                         at(got)->getNusTop() < nusInZones[localZetaID] and
@@ -1737,28 +1731,51 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 documentation: CV*BOUY; in code: QLEXTRA
              */
-            t_vol_t getVerticalFluxCorrection(){ // todo debug/test
-                vector<t_dim> nusInZones = get<vector<t_dim>, NusInZones>();
+            t_vol_t getVerticalFluxCorrection(){
+                auto nusInZones = get<vector<t_dim>, NusInZones>();
                 t_meter headdiff = 0 * si::meter;
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                /* if nodes can be inactive: return 0 at inactive nodes
-                if (nodeInactive) { return out; }
-                 */
+                /* if nodes can be inactive: return 0 at inactive nodes: if (nodeInactive) { return out; }*/
+
                 // find the top neighbor
-                map_itter got = neighbours.find(NeighbourPosition::TOP);
+                auto got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) {//No top node
                 } else {//Current node has a top node
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] * (at(got)->getZeta(localZetaID + 1) -
-                                                               at(got)->getZeta(localZetaID)); // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
+                                                               at(got)->getZeta(localZetaID));
+                        // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
                     }
                     // second part of the flux correction term
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
                           (headdiff + 0.5 * (at(got)->getZetas().back() - getZetas().front()) *
-                           (at(got)->getNusBot() + getNusTop())); // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a - in the calculation of QLEXTRA
+                           (at(got)->getNusBot() + getNusTop()));
+                    // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a + in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
+                }
+                return out;
+            }
+
+            t_vol_t getVerticalFluxCorrections(){
+                t_vol_t out = 0 * (si::cubic_meter / day);
+
+                std::forward_list<NeighbourPosition> possible_neighbours =
+                        {NeighbourPosition::TOP, NeighbourPosition::DOWN};
+
+                for (const auto &position : possible_neighbours) {
+                    auto got = neighbours.find(position); // todo: enhance (this check is done multiple times for top)
+                    if (got == neighbours.end()) {//No top or down node
+                    } else {//Current node has a top or down node
+                        if (position == NeighbourPosition::TOP) {
+                            out -= getVerticalFluxCorrection();
+                        }
+                        if (position == NeighbourPosition::DOWN) {
+                            out += at(got)->getVerticalFluxCorrection();
+                        }
+
+                    }
                 }
                 return out;
             }
@@ -1768,7 +1785,7 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code: qztop
              */
-            t_vol_t getFluxTop() { // todo test
+            t_vol_t getFluxTop() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 map_itter got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) { // no neighbour at position
@@ -1787,7 +1804,7 @@ Modify Properties
              * @return volume per time
              * @note in SWI2 code: qzbot
              */
-            t_vol_t getFluxDown() { // todo test
+            t_vol_t getFluxDown() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 map_itter got = neighbours.find(NeighbourPosition::DOWN);
                 if (got == neighbours.end()) { // no neighbour at position
@@ -1850,7 +1867,7 @@ Modify Properties
              * bottom to an upper node. Without this function, that zeta surface would be stuck there since the other
              * only consider "active" surfaces (which are between the top and bottom of a node)
              */
-            void verticalZetaMovement() { // todo: debug
+            void verticalZetaMovement() {
                 // skip nodes where head is below the bottom of the node
                 t_vol_t fluxCorrectionTop; // in SWI2: qztop
                 t_s_meter_t verticalConductanceTop;
@@ -2041,8 +2058,7 @@ Modify Properties
                                     // calculate the average height from that zeta surface above (n-x) until
                                     //  the zeta surface below (n+1)
                                     for (int n2 = n2_min; n2 <= n2_max; n2++) { zetaSum += getZeta(n2); }
-                                    zetaAverage = zetaSum / ((n2_max - n2_min) *
-                                                             si::si_dimensionless); // todo check whether that is true
+                                    zetaAverage = zetaSum / ((n2_max - n2_min) * si::si_dimensionless); // todo check whether that is true
                                     // set every zeta surface between n-1 and n+1 to the averaged value
                                     for (int n2 = n2_min; n2 <= n2_max; n2++) { getZeta(n2) = zetaAverage; }
                                 }
@@ -2281,7 +2297,7 @@ Modify Properties
                 //Get all conductances from neighbouring cells
                 std::forward_list<NeighbourPosition> possible_neighbours =
                         {NeighbourPosition::TOP, NeighbourPosition::BACK, NeighbourPosition::DOWN, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT}; // Question: what would we need TOP and DOWN for?
+                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
@@ -2333,18 +2349,17 @@ Modify Properties
              */
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ();
-                LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
+                //LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow();
-                LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
+                //LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t rivers = calculateNotHeadDependandFlows();
-                LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
+                //LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
-                LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 if (steadyState) {
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
-
+                //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 t_vol_t out = extFlows + dewateredFlow - rivers - storageFlow; //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
                 return out;
@@ -2364,15 +2379,12 @@ Modify Properties
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    LOG(userinfo) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
 
-                    // calculate Vertical Flux Correction (for top and down neighbour)
-                    t_vol_t fluxCorrectionTop = getFluxTop();
-                    LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
-                    t_vol_t fluxCorrectionDown = getFluxDown();
-                    LOG(userinfo) << "fluxCorrectionDown: " << fluxCorrectionDown.value() << std::endl;
-
-                    out += pseudoSourceNode + fluxCorrectionTop + fluxCorrectionDown;
+                    // calculate Vertical Flux Correction (from top neighbour)
+                    t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
+                    LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    out += pseudoSourceNode + verticalFluxCorrections;
                 }
                 NANChecker(out.value(), "RHS");
                 return out;
@@ -2402,7 +2414,7 @@ Modify Properties
                 return out;
             }
 
-            void setHeadChange(t_meter delta) noexcept { // Question: change to "addDeltaToHead"?
+            void setHeadChange(t_meter delta) noexcept {
                 __setHeadChange(delta);
             }
 

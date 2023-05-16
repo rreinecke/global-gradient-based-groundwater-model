@@ -100,7 +100,7 @@ namespace GlobalFlow {
             /**
              * @brief Constructor for RECHARGE, FAST_SURFACE_RUNOFF and NET_ABSTRACTION // QUESTION: is that correct? (check with Node.hpp:addExternalFlow)
              * @param id
-             * @param recharge // QUESTION : rename param?
+             * @param recharge // QUESTION : rename parameter since not only recharge possible?
              * @param type
              */
             ExternalFlow(int id, t_vol_t recharge, FlowType type)
@@ -109,9 +109,9 @@ namespace GlobalFlow {
             /**
              * @brief Constructor for Evapotranspiration
              * @param id
-             * @param flowHead // QUESTION: is this needed here?
-             * @param bottom // QUESTION: is this needed here?
-             * @param evapotrans // QUESTION: this is currently the conductance term from the Node.hpp:addExternalFlow function
+             * @param flowHead // QUESTION: is this needed for ET?
+             * @param bottom // QUESTION: is this needed for ET?
+             * @param evapotrans // QUESTION: this is currently the conductance term from addExternalFlow() in Node.hpp
              * @return
              */
             ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
