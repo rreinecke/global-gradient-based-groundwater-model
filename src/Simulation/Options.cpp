@@ -90,6 +90,10 @@ namespace GlobalFlow {
             if (tmp == "monthly") {
                 step_size = MONTHLY;
             }
+            if (tmp == "yearly"){
+                step_size = YEARLY;
+            }
+
             WETTING_APPROACH = numerics.get<string>("wetting_approach");
 
             pt::ptree input = tree.get_child("input");
