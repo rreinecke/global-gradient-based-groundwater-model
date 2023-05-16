@@ -204,54 +204,6 @@ void inline Equation::reallocateMatrix() {
     }
 }
 
-/*void inline Equation::reallocateMatrix_zetas() {
-    large_num __missing{0};
-
-    const long size_new = A_zetas.rows() - inactive_nodes.size();
-
-    Eigen::SparseMatrix<pr_t, RowMajor> new_matrix_zetas(size_new, size_new); // A_zetas.cols()
-
-    if (inactive_have_changed) {
-        index_mapping.clear();
-    }
-    for (large_num i = 0; i < A_zetas.rows(); i++) {
-        if (inactive_have_changed) {
-            const bool is_active = (inactive_nodes.find(i) == inactive_nodes.end());
-            if (is_active) {
-                index_mapping[i] = i - __missing;
-                auto new_row = index_mapping[i];
-                //Save all non-zero
-                new_matrix_zetas.row(new_row) = A_zetas.block(i, __missing, 1, size_new); // A_zetas.row(i)
-            } else {
-                __missing++;
-                index_mapping[i] = -1;
-            }
-        } else {
-            auto m = index_mapping[i];
-            if (m != -1) {
-                new_matrix_zetas.row(m) = A_zetas.row(i);
-            }
-        }
-    }
-    A_zetas = new_matrix_zetas;
-
-    long_vector buffer_b_zetas(size_new);
-    long_vector buffer_x_zetas(size_new);
-    for (int j = 0; j < b_zetas.size(); ++j) {
-        auto m = index_mapping[j];
-        if (m != -1) {
-            buffer_b_zetas(m) = b_zetas(j);
-            if (inactive_have_changed) {
-                buffer_x_zetas(m) = x_zetas(j);
-            }
-        }
-    }
-    b_zetas = buffer_b_zetas;
-    if (inactive_have_changed) {
-        x_zetas = buffer_x_zetas;
-    }
-}*/
-
 void inline
 Equation::updateMatrix() {
     Index n = A.outerSize();
@@ -681,7 +633,7 @@ Equation::solve() {
     }
     //LOG(debug) << "A:\n" << A << std::endl;
     LOG(debug) << "x:\n" << x << std::endl;
-    LOG(debug) << "b (= rhs):\n" << b << std::endl;
+    //LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations\n";
@@ -818,7 +770,7 @@ Equation::solve_zetas(){
                 oldMaxZeta = maxZeta;
 
                 /**
-                 * @brief residual norm convergence // todo make function of this (need to
+                 * @brief residual norm convergence // todo make function of this
                  */
 
                 LOG(numerics) << "Inner iterations (zetas): " << innerItter;
