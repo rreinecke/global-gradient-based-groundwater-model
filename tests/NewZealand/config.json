@@ -61,13 +61,17 @@
       "default_data": {
         "effective_porosity": 0,
         "initial_head": 0,
-        "K": 0.1,
+        "K": [
+          0.1
+        ],
         "ghb_K": 1000000000,
         "aquifer_thickness": [
           100,
           100
         ],
-        "anisotropy": 10,
+        "anisotropy": [
+          10
+        ],
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
         "zones_sources_sinks": [

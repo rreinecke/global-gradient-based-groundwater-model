@@ -2,9 +2,9 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head",
+        "name": "zeta_one",
         "type": "csv",
-        "field": "Head",
+        "field": "Zetas",
         "ID": "false",
         "position": "true"
       }

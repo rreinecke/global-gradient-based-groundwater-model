@@ -14,7 +14,7 @@ void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
     sim = Simulation::Simulation(op, reader);
 
-    LOG(debug) << sim.getNodes()->at(199); // printing node properties in debug file
+    LOG(debug) << sim.getNodes()->at(265); // printing node properties in debug file
 
     // For node infos:
     ofstream myfile;
@@ -31,7 +31,7 @@ void StandaloneRunner::setupSimulation() {
                sim.getNodes()->at(j)->getElevation().value() << "," <<
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
-               //sim.getNodes()->at(j)->getZeta(1).value() <<
+               sim.getNodes()->at(j)->getZeta(1).value() <<
                std::endl;
     }
     _eq = sim.getEquation();
@@ -39,7 +39,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 3);
     int stepNumber = 1;
 
     // for saving zetas in a csv
@@ -60,8 +60,8 @@ void StandaloneRunner::simulate() {
         int zetaID = 1;
         double zeta;
         for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            //zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            //myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
+            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
+            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
         }
 
         stepNumber++;

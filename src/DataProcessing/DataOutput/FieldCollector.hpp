@@ -621,9 +621,8 @@ namespace GlobalFlow {
                         case FieldType::ZETAS : {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                Model::Head>
-                                                ().value());
+                                        simulation.getNodes()->at(i)->getProperties().get<std::vector<Model::quantity<Model::Meter>>,
+                                                Model::Zetas>()[1].value()); // todo currently only zetas 1
                             });
                         }
                         default:

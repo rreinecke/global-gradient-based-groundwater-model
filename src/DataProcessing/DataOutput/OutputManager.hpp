@@ -163,7 +163,7 @@ namespace GlobalFlow {
                     {FieldType::GL_WETLAND_IN,      InternalType::DOUBLE},
                     {FieldType::WETLAND_IN,         InternalType::DOUBLE},
                     {FieldType::LAKE_IN,            InternalType::DOUBLE},
-                    {FieldType::ZETAS,              InternalType::VECTOR}
+                    {FieldType::ZETAS,              InternalType::DOUBLE}
             };
 
             class FieldFactory {

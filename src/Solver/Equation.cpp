@@ -134,10 +134,13 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID,
     map = nodes->at(nodeIter + iterOffset)->getVDFMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry: [1] node id of horizontal neighbours or this node, [2] conductance to neighbours in zeta zone
-        colID = index_mapping[entry.first];
+        colID = index_mapping[entry.first - iterOffset];
         if (colID != -1) {
             //LOG(userinfo) << "colID " << colID;
             zoneConductance = entry.second;
+            //LOG(debug) << "entry.first: " << entry.first << ", entry.second: " << entry.second.value();
+            //LOG(debug) << "rowID: " << rowID << ", colID: " << colID;
+
             if (cached) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
             } else {
@@ -284,9 +287,11 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
         isActive = (nodes->at(i + iterOffset)->getZetaPosInNode(localZetaID) == "between");
         if (isActive) {
             index_mapping[i] = i - numInactive;
+            //LOG(debug) << "active: i = " << i << ", iterOffset = " << iterOffset;
         } else {
             numInactive++; // tracking how many have been set inactive
             index_mapping[i] = -1; // these entries will be ignored ( e.g. in loop filling A_zeta, x_zeta and b_zeta)
+            //LOG(debug) << "inactive: i = " << i << ", iterOffset = " << iterOffset;
         }
     }
 
@@ -306,7 +311,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
             //LOG(userinfo) << "nodeID: " << nodeIter;
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, iterOffset, localZetaID, isCached_zetas);
-            x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value(); // todo could fill with zeros?
+            x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value();
             //---------------------Right
             b_zetas(id) = nodes->at(nodeIter + iterOffset)->getZetaRHS(localZetaID).value();
         }
@@ -393,7 +398,7 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
         if (id != -1) {
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
-            //LOG(debug) << "updated zeta at k=" << k << ": " << nodes->at(k)->getZeta(localZetaID).value() << std::endl;
+            //LOG(debug) << "updated zeta at k=" << k+iterOffset << ": " << nodes->at(k+iterOffset)->getZeta(localZetaID).value() << std::endl;
         }
     }
 }
@@ -422,7 +427,7 @@ Equation::setZetasPosInNodes() {
     }
 }
 
-/*void inline // todo: remove if not required (in SWI2: required for time step adjustment)
+/*void inline // todo: in SWI2: required for time step adjustment
 Equation::checkAllZetaSlopes(int localZetaID) {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
@@ -443,28 +448,34 @@ void inline
 Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->verticalZetaMovement(); // no effect in simpleVDF
+            nodes->at(k)->verticalZetaMovement();
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            // LOG(userinfo) << "node = " << k << std::endl;
-            nodes->at(k)->horizontalZetaMovement(); // effect only at tip and toe in simpleVDF model
+            nodes->at(k)->horizontalZetaMovement();
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->clipInnerZetas(); // no effect in simpleVDF time-step 1
+            nodes->at(k)->clipInnerZetas();
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->correctCrossingZetas(); // no effect in simpleVDF
+            nodes->at(k)->correctCrossingZetas();
         }
 
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->preventZetaLocking(); // no effect in simpleVDF
+            nodes->at(k)->preventZetaLocking();
+        }
+
+#pragma omp parallel for
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
+                LOG(debug) << "zeta surface " << localZetaID << " at node " << k << ": " << nodes->at(k)->getZeta(localZetaID).value();
+            }
         }
     }
 

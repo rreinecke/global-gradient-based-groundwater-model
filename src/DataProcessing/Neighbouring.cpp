@@ -57,9 +57,10 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
  * @param boundaryConduct
  * @param boundaryCondition
  */
-void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mapping, int resolution, int layers,
-                   double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
-    int nodes_per_layer = nodes->size() / layers;
+void buildBySpatID(NodeVector nodes, const std::unordered_map<int, std::vector<int>> spatIDtoNodeIDs, int resolution,
+                   int numberOfLayers, double boundaryConduct,
+                   Simulation::Options::BoundaryCondition boundaryCondition) {
+    int nodes_per_layer = nodes->size() / numberOfLayers;
 
     // defining function to add boundaries to nodes with no neighbours (called later in code)
     auto addBoundary = [nodes, boundaryConduct, boundaryCondition](
@@ -91,15 +92,17 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
     lu[2] = Model::RIGHT; // formerly EAST
     lu[3] = Model::LEFT; // formerly WEST
 
-    for (int i = 0; i < nodes_per_layer; ++i) {
-        n_array nei = getNeighbourBySpatialID((int) nodes->at(i)->getID(), resolution);
-        for (int j = 0; j < 4; ++j) {
-            if (id_mapping.count(nei[j]) > 0) {
-                //Neighbour id exists in landmask
-                nodes->at(i)->setNeighbour(id_mapping.at(nei[j]), lu[j]);
-            } else { // None of the neighbour ids is in landmask
-                // Calling function defined above to add boundary
-                addBoundary(i, 0, lu[j]);
+    for (int layer; layer < numberOfLayers; layer++) {
+        for (int i = 0; i < nodes_per_layer; ++i) {
+            n_array nei = getNeighbourByNodeID((int) nodes->at(i*layer)->getID(), resolution);
+            for (int j = 0; j < 4; ++j) {
+                if (spatIDtoNodeIDs.count(nei[j]) > 0) {
+                    //Neighbour id exists in landmask
+                    nodes->at(i*layer)->setNeighbour(spatIDtoNodeIDs.at(nei[j])[layer], lu[j]);
+                } else { // None of the neighbour ids is in landmask
+                    // Calling function defined above to add boundary
+                    addBoundary(i*layer, layer, lu[j]);
+                }
             }
         }
     }
@@ -113,27 +116,27 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
  * @param res
  * @return
  */
-n_array getNeighbourBySpatialID(int id, int res) {
+n_array getNeighbourByNodeID(int nodeID, int res) {
     n_array neighbours{-1, -1, -1, -1};
     int row_l{360 * 60 * 60 / res};
     assert(row_l % 2 == 0 && "resolution is impossible");
 
-    if (id > row_l) {
+    if (nodeID > row_l) {
         //NORTH
-        neighbours[0] = id - row_l;
+        neighbours[0] = nodeID - row_l;
     }
-    if (id < (row_l / 2) * row_l - row_l) {
+    if (nodeID < (row_l / 2) * row_l - row_l) {
         //SOUTH
-        neighbours[1] = id + row_l;
+        neighbours[1] = nodeID + row_l;
     }
-    if (id % row_l == 0) {
+    if (nodeID % row_l == 0) {
         //EAST
-        neighbours[2] = id - row_l + 1;
-    } else { neighbours[2] = id + 1; }
-    if ((id - 1) % row_l == 0) {
+        neighbours[2] = nodeID - row_l + 1;
+    } else { neighbours[2] = nodeID + 1; }
+    if ((nodeID - 1) % row_l == 0) {
         //WEST
-        neighbours[3] = id + row_l - 1;
-    } else { neighbours[3] = id - 1; }
+        neighbours[3] = nodeID + row_l - 1;
+    } else { neighbours[3] = nodeID - 1; }
     return neighbours;
 }
 

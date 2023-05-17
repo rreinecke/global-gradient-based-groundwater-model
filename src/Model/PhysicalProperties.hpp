@@ -186,7 +186,7 @@ namespace GlobalFlow {
         using PhysicalProperties = PropertyRepository<
                 PhysicalProperty<large_num, ID>,
                 PhysicalProperty<large_num, SpatID>,
-                PhysicalProperty<double, Lat>, //TODO use boost unit
+                PhysicalProperty<double, Lat>, //TODO use boost unit (maybe degree? or arcmin, arcsec)
                 PhysicalProperty<double, Lon>,
                 PhysicalProperty<int, Layer>,
                 PhysicalProperty<t_dim, StepModifier>,

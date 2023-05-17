@@ -63,9 +63,8 @@ namespace std {
     struct hash<GlobalFlow::Model::NeighbourPosition> {
         typedef GlobalFlow::Model::NeighbourPosition argument_type;
         typedef std::underlying_type<argument_type>::type underlying_type;
-        //typedef std::hash<underlying_type>::result_type result_type; // todo can this be removed?
 
-        std::size_t operator()(const argument_type &arg) const { // todo correct implementation?
+        std::size_t operator()(const argument_type &arg) const {
             std::hash<underlying_type> hasher;
             return hasher(static_cast< underlying_type >( arg ));
         }
@@ -411,7 +410,7 @@ Modify Properties
              * thus: slope = slope_percent / 100
              * @param slope_percent
              */
-            void setSlope(double slope_percent) {
+            void setSlope(double slope_percent) { // todo remove
                 set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
                 applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
                     try { // Question: should slope be added to the nodeInterface? currently only in PhysicalProperties
@@ -884,11 +883,11 @@ Modify Properties
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
                                                                      type)));
-                } else if (type == EVAPOTRANSPIRATION) {
+                } else if (type == EVAPOTRANSPIRATION) { // todo remove
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, flowHead, bottom,
                                                                      cond * (si::cubic_meter / day))));
-                } else if (type == FLOODPLAIN_DRAIN) {  // TODO adapt to rectangular nodes (change bottom)
+                } else if (type == FLOODPLAIN_DRAIN) {  // TODO remove
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, type,
                                                                         get<t_meter, Elevation>(),
@@ -985,7 +984,7 @@ Modify Properties
                 if (localZetaID < zetas.size()) {
                     zetas[localZetaID] = zeta;
                 }
-                set<vector<t_meter>, Zetas>(zetas); // Question: how to improve this?
+                set<vector<t_meter>, Zetas>(zetas); // Question: how to improve this? - maybe change to unordered map: https://embeddedartistry.com/blog/2017/08/02/an-overview-of-c-stl-containers/
             }
 
             /**
@@ -1327,7 +1326,7 @@ Modify Properties
                     if (got == neighbours.end()) { // no neighbour at position
                     } else { // there is a neighbour at position
                         if ((getZetaPosInNode(localZetaID) == "between" and
-                            at(got)->getZetaPosInNode(localZetaID) == "between") or localZetaID == 0) {
+                            at(got)->getZetaPosInNode(localZetaID) == "between")) {
                             zoneConductances = getZoneConductances(got);
                             zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                             zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
@@ -1745,14 +1744,14 @@ Modify Properties
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] * (at(got)->getZeta(localZetaID + 1) -
                                                                at(got)->getZeta(localZetaID));
-                        // Question: how to deal with this: in documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
+                        // Note: in SWI2 documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
                     }
                     // second part of the flux correction term
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
                           (headdiff + 0.5 * (at(got)->getZetas().back() - getZetas().front()) *
                            (at(got)->getNusBot() + getNusTop()));
-                    // Question: how to deal with this: in documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a + in the calculation of QLEXTRA
+                    // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a + in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
                 }
                 return out;
@@ -2246,7 +2245,7 @@ Modify Properties
                 size_t numC = 7;
                 out.reserve(numC);
                 unordered_map<large_num, t_s_meter_t> map = getConductance();
-                t_s_meter_t tmp_hcofCRVC = map[get<large_num, ID>()];  // Question: is this any map or from row above?
+                t_s_meter_t tmp_hcofCRVC = map[get<large_num, ID>()];
                 double head_diff{0.0};
                 for (auto &ele : map) {
                     map[ele.first] = ele.second * mechanics.getDerivate__NWT(
@@ -2288,7 +2287,7 @@ Modify Properties
              * @return map <CellID,Conductance>
              * The left hand side of the equation
              */
-            std::unordered_map<large_num, t_s_meter_t> getConductance() { // Question: rename to getLeftHandSide?
+            std::unordered_map<large_num, t_s_meter_t> getConductance() { // todo: rename to getMatrixEntries?
                 size_t numC = 7;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
@@ -2379,11 +2378,11 @@ Modify Properties
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    //LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
 
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-                    LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
                 NANChecker(out.value(), "RHS");
