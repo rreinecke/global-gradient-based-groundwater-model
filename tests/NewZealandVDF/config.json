@@ -10,9 +10,10 @@
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 1,
-      "layers": 1,
+      "layers": 2,
       "one_layer_approach": "false",
       "confinement": [
+        "true",
         "true"
       ],
       "density_variable": "true",
@@ -60,12 +61,19 @@
       "default_data": {
         "effective_porosity": 0.2,
         "initial_head": 0,
-        "K": 0.1,
+        "K": [
+          0.1,
+          0.1
+        ],
         "ghb_K": 1000000000,
         "aquifer_thickness": [
+          100,
           100
         ],
-        "anisotropy": 10,
+        "anisotropy": [
+          10,
+          10
+        ],
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
         "zones_sources_sinks": [
@@ -74,6 +82,18 @@
         ]
       },
       "data": {
+        "elevation": "elevation.csv",
+        "equal_water_table_depth": "mean_wtd.csv",
+        "initial_zetas": "initial_zetas_nz.csv",
+        "global_lakes": "G_GLOLAK.csv",
+        "global_wetlands": "G_GLOWET.csv",
+        "lithology": "glhymps2.csv",
+        "local_lakes": "G_LOCLAK.csv",
+        "local_wetlands": "G_LOCWET.csv",
+        "recharge": "mean_yearly_sum_recharge.csv",
+        "river_extent": "river_extent.csv",
+        "spatID-arcID": "spatID-arcID.csv",
+        "surface_water_elevation": "surface_water_elevation.csv",
         "e-folding": {
           "E-Folding": [
             "Africa_F.csv",
@@ -82,19 +102,7 @@
             "N_America_F.csv",
             "S_America_F.csv"
           ]
-        },
-        "elevation": "elevation.csv",
-        "equal_water_table_depth": "mean_wtd.csv",
-        "initial_zetas": "initial_zetas_nz.csv",
-        "global_wetlands": "G_GLOWET.csv",
-        "global_lakes": "G_GLOLAK.csv",
-        "lithology": "glhymps2.csv",
-        "local_lakes": "G_LOCLAK.csv",
-        "local_wetlands": "G_LOCWET.csv",
-        "recharge": "mean_yearly_sum_recharge.csv",
-        "river_extent": "river_extent.csv",
-        "spatID-arcID": "spatID-arcID.csv",
-        "surface_water_elevation": "surface_water_elevation.csv"
+        }
       }
     }
   } 

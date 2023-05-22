@@ -361,16 +361,21 @@ namespace GlobalFlow {
                 int spatID{0};
                 double elevation{0};
                 double conduct{0};
+                std::vector<int> nodeIDs;
+                int nodeID;
 
                 while (in.read_row(spatID, elevation, conduct)) {
-                    int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoNodeIDs[spatID][0]; // only at layer 0
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID]; // only at layer 0
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
+                    if (nodeIDs.size() == 0){
+                        continue;
+                    }
+                    nodeID = nodeIDs[0];
                     nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                        elevation * Model::si::meter,
                                                        conduct,
@@ -422,17 +427,22 @@ namespace GlobalFlow {
                 double head{0};
                 double conduct{0};
                 double bottom{0};
+                std::vector<int> nodeIDs;
+                int nodeID;
 
                 while (in.read_row(spatID, head, bottom, conduct)) {
-                    int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeIDs[spatID][0];
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    nodes->at(i)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct, bottom * Model::si::meter);
+                    if (nodeIDs.size() == 0){
+                        continue;
+                    }
+                    nodeID = nodeIDs[0];
+                    nodes->at(nodeID)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct, bottom * Model::si::meter);
                 }
             }
 
@@ -515,10 +525,8 @@ namespace GlobalFlow {
 
                 int arcID = -1;
                 std::vector<int> tmp;
-
-                //Count missing mappings due to landmask diff
-                //int missingMapping = 0;
-
+                std::vector<int> nodeIDs;
+                int nodeID;
                 double recharge = 0;
 
                 while (in.read_row(arcID, recharge)) {
@@ -533,14 +541,17 @@ namespace GlobalFlow {
                     }
 
                     for (int spatID : tmp) {
-                        int i = 0;
                         try {
-                            i = this->lookupSpatIDtoNodeIDs[spatID][0];
+                            nodeIDs = this->lookupSpatIDtoNodeIDs[spatID];
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
+                        if (nodeIDs.size() == 0){
+                            continue;
+                        }
+                        nodeID = nodeIDs[0]; // take the nodeID of the top layer
                         /**
                         * GW Recharge is head independent
                         * -> p = 0
@@ -552,15 +563,15 @@ namespace GlobalFlow {
                         //double QMax = K * size;
                         NANChecker(recharge, "Broken recharge value");
                         double q_rech = convertToRate(recharge,
-                                                      nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value());
+                                                      nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value());
                         //NANChecker(QMax, "QMax Problem");
                         NANChecker(q_rech, "Recharge-init Problem");
                         //LOG(debug) << QMax << "," << q_rech << "q,r";
 
-                        nodes->at(i)->addExternalFlow(Model::RECHARGE,
-                                                      0 * Model::si::meter,
-                                                      q_rech,
-                                                      0 * Model::si::meter);
+                        nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
+                                                           0 * Model::si::meter,
+                                                           q_rech,
+                                                           0 * Model::si::meter);
 
                     }
                 }
@@ -594,20 +605,24 @@ namespace GlobalFlow {
                 double bankfull = 0;
                 double width = 0;
                 int spatID = 0;
-
+                std::vector<int> nodeIDs;
+                int nodeID;
                 std::unordered_map<int, std::array<double, 3>> out;
 
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
-                    int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeIDs[spatID][0];
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
+                    if (nodeIDs.size() == 0){
+                        continue;
+                    }
+                    nodeID = nodeIDs[0];
                     double bankfull_depth = 0.349 * std::pow(bankfull, 0.341);
-                    out[i] = {{bankfull_depth, width, lenght * 1000}};
+                    out[nodeID] = {{bankfull_depth, width, lenght * 1000}};
                 }
                 return out;
             }
@@ -623,36 +638,41 @@ namespace GlobalFlow {
                 in.read_header(io::ignore_no_column, "spatID", "data");
                 double spatID = 0;
                 double elevation = 0;
+                std::vector<int> nodeIDs;
+                int nodeID;
 
                 while (in.read_row(spatID, elevation)) {
-                    int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeIDs[spatID][0];
+                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         //cout << "ID in elevation that has no corresponding node";
                         continue;
                     }
-                    if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                    if (nodeIDs.size() == 0){
+                        continue;
+                    }
+                    nodeID = nodeIDs[0];
+                    if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
                         throw "Error in reading spatID";
                     }
 
                     double flowHead = elevation;
-                    double depth = bankfull_depth[i][0];
+                    double depth = bankfull_depth[nodeID][0];
                     if (depth <= 1) {
                         depth = 1;
                     }
                     double riverBottom = elevation - depth;
-                    double K = nodes->at(i)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
+                    double K = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
                     double riverWidthFactor =
-                            K * bankfull_depth[i][2] * bankfull_depth[i][1] / (flowHead - riverBottom);
+                            K * bankfull_depth[nodeID][2] * bankfull_depth[nodeID][1] / (flowHead - riverBottom);
                     if (riverWidthFactor <= 0) { riverWidthFactor = 1; }
 
-                    nodes->at(i)->addExternalFlow(Model::RIVER_MM,
-                                                  flowHead * Model::si::meter,
-                                                  riverWidthFactor,
-                                                  riverBottom * Model::si::meter);
+                    nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
+                                                       flowHead * Model::si::meter,
+                                                       riverWidthFactor,
+                                                       riverBottom * Model::si::meter);
                 }
             };
 
@@ -678,16 +698,22 @@ namespace GlobalFlow {
 
                     double percentage = 0;
                     float spatID = 0;
+                    std::vector<int> nodeIDs;
+                    int nodeID;
+
                     while (in.read_row(spatID, percentage)) {
-                        int i = 0;
                         try {
-                            i = lookupSpatIDtoNodeIDs[spatID][0];
+                            nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        if (nodes->at(i)->getProperties().get<large_num, Model::SpatID>() != (int) spatID) {
+                        if(nodeIDs.size() == 0){
+                            continue;
+                        }
+                        nodeID = nodeIDs[0];
+                        if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != (int) spatID) {
                             throw "Error in reading spatID";
                         }
 
@@ -697,20 +723,20 @@ namespace GlobalFlow {
 
                         percentage = percentage / 100;
 
-                        double elevation = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
+                        double elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
                         try {
-                            elevation = nodes->at(i)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value();
+                            elevation = nodes->at(nodeID)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value();
                         } catch (const std::out_of_range &ex) {}
 
                         double flowHead = elevation;
                         double bottom = elevation;
-                        double K_s = nodes->at(i)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
+                        double K_s = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
                         if (itter == 1) {
                             //global wetlands
                             percentage = percentage * 0.8;
                         }
                         double A_s =
-                                nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value() *
+                                nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value() *
                                 percentage;
                         double M = 5;
                         //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
@@ -724,32 +750,32 @@ namespace GlobalFlow {
                             //Global LAKE
                             //flowHead -= 10;
                             bottom -= 100;
-                            nodes->at(i)->addExternalFlow(Model::LAKE,
-                                                          flowHead * Model::si::meter,
-                                                          conduct,
-                                                          bottom * Model::si::meter);
+                            nodes->at(nodeID)->addExternalFlow(Model::LAKE,
+                                                               flowHead * Model::si::meter,
+                                                               conduct,
+                                                               bottom * Model::si::meter);
                         } else if (itter == 1) {
                             //Global WETLANDS
                             bottom -= 2;
-                            nodes->at(i)->addExternalFlow(Model::GLOBAL_WETLAND,
-                                                          flowHead * Model::si::meter,
-                                                          conduct,
-                                                          bottom * Model::si::meter);
+                            nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_WETLAND,
+                                                               flowHead * Model::si::meter,
+                                                               conduct,
+                                                               bottom * Model::si::meter);
                         } else if (itter == 2) {
                             //Local LAKE
                             //flowHead -= 10;
                             bottom -= 10;
-                            nodes->at(i)->addExternalFlow(Model::LAKE,
-                                                          flowHead * Model::si::meter,
-                                                          conduct,
-                                                          bottom * Model::si::meter);
+                            nodes->at(nodeID)->addExternalFlow(Model::LAKE,
+                                                               flowHead * Model::si::meter,
+                                                               conduct,
+                                                               bottom * Model::si::meter);
                         } else {
                             //Local WETLANDS
                             bottom -= 2;
-                            nodes->at(i)->addExternalFlow(Model::WETLAND,
-                                                          flowHead * Model::si::meter,
-                                                          conduct,
-                                                          bottom * Model::si::meter);
+                            nodes->at(nodeID)->addExternalFlow(Model::WETLAND,
+                                                               flowHead * Model::si::meter,
+                                                               conduct,
+                                                               bottom * Model::si::meter);
                         }
                     }
                     itter++;
@@ -854,13 +880,14 @@ namespace GlobalFlow {
                 return nusInZones;
             }
 
-            vector<Model::quantity<Model::Dimensionless>> calcDelnus(vector<double> densityZones){
+            vector<Model::quantity<Model::Dimensionless>> calcDelnus(vector<double> densityZones) {
                 double densityFresh = 1000.0;
                 vector<Model::quantity<Model::Dimensionless>> nusInZones;
                 vector<Model::quantity<Model::Dimensionless>> delnus;
                 for (int id = 0; id < densityZones.size(); id++) {
                     // nus of zones is equal to nus of zeta surface below
-                    nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
+                    nusInZones.push_back(
+                            ((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
                     if (id == 0) {
                         delnus.push_back(nusInZones[id]); // density difference in top zone
                     } else {

@@ -684,10 +684,10 @@ Equation::solve_zetas(){
 //#pragma omp parallel for
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
-        LOG(userinfo) << "Finding zeta heights in layer " << layer;
+        LOG(debug) << "Finding zeta surface heights in layer " << layer;
 //#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-            LOG(userinfo) << "Solving for zeta surface " << localZetaID << "";
+            LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
             updateMatrix_zetas(iterOffset, localZetaID);
 

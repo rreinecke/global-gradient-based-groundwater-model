@@ -91,17 +91,21 @@ namespace GlobalFlow {
         /**
          * @brief Check weather id exists in the simulation
          * @param spatID Global identifier, can be different from position in node vector
+         * @param layer Layer the node is in
          * @return nodeID The position in the node vector
          */
         inline int check(int spatID, int layer = 0) {
-            int nodeID;
+            std::vector<int> nodeIDs;
             try {
-                nodeID = lookupSpatIDtoNodeIDs[spatID][layer];
+                nodeIDs = lookupSpatIDtoNodeIDs[spatID];
             }
             catch (const std::out_of_range &ex) {
                 return -1;
             }
-            return nodeID;
+            if (nodeIDs.size() == 0){
+                return -1;
+            }
+            return nodeIDs[layer];
         }
 
         /**
