@@ -22,7 +22,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Meter>, Elevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, TopElevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, VerticalSize>(10 * si::meter);
-    fields.emplace<quantity<Dimensionless>, Slope>(0 * si::si_dimensionless);
     fields.emplace<quantity<Meter>, EFolding>(1 * si::meter);
     fields.emplace<bool, Confinement>(true);
     fields.emplace<quantity<Velocity>, K>(0.03 * (si::meter / day));

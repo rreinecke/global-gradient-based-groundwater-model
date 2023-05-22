@@ -133,19 +133,8 @@ namespace GlobalFlow {
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
             ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
 
-
-            bool slopeAsArray = data_config.get<bool>("slope_as_array");
             bool efoldAsArray = data_config.get<bool>("efold_as_array");
             pt::ptree data = input.get_child("data");
-
-            if (slopeAsArray) {
-                SLOPE_a = getArray("Slope", data.get_child("slope"));
-                //ELEVATION_a = getArray("Elevation", data.get_child("elevation"));
-                //EQUAL_WATER_TABLE_DEPTH_a = getArray("WTD", data.get_child("equal_water_table_depth"));
-                //SURFACE_WATER_ELEVATION_a = getArray("SurfaceWaterElevation", data.get_child("surface_water_elevation"));
-            }
-            SLOPE = getOptional("slope", data);
-
 
             if (efoldAsArray){
                 EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));

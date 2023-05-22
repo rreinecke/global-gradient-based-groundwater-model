@@ -52,7 +52,6 @@
         "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
-        "slope_as_array": "true",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
         "zones_sources_sinks_from_file": "false"
@@ -60,13 +59,17 @@
       "default_data": {
         "effective_porosity": 0,
         "initial_head": 0,
-        "K": 0.01,
+        "K": [
+          0.01
+        ],
         "ghb_K": 10,
         "aquifer_thickness": [
           100,
           100
         ],
-        "anisotropy": 10,
+        "anisotropy": [
+          10
+        ],
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
         "zones_sources_sinks": [
@@ -86,15 +89,6 @@
         "global_lakes": "G_GLOLAK.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
-        "slope": {
-          "Slope": [
-            "Africa_slope.csv",
-            "Australia_slope.csv",
-            "Eurasia_slope.csv",
-            "N_America_slope.csv",
-            "S_America_slope.csv"
-          ]
-        },
         "e-folding": {
           "E-Folding": [
             "Africa_F.csv",

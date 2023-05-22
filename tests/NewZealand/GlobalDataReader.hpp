@@ -106,9 +106,6 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading e-folding";
                 readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
 
-                LOG(userinfo) << "Reading slope";
-                readSlope(buildDir(op.getSlope()), op.getSlope_a());
-
                 // read either initial head (default) or equal water table depth from file, if available
                 if (op.isInitialHeadFromFile()){
                     LOG(userinfo) << "Reading initial head";
@@ -429,7 +426,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, head, bottom, conduct)) {
                     int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeID.at(spatID);
+                        i = lookupSpatIDtoNodeIDs[spatID][0];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -448,19 +445,6 @@ namespace GlobalFlow {
                 loopFiles(path, files, [this](std::string path) {
                     readTwoColumns(path, [this](double data, int nodeID) {
                         nodes->at(nodeID)->setEfold(data);
-                    });
-                });
-            };
-
-            /**
-             * @brief Read slope data from a specified path
-             * @param path Where to read the file from
-             * @param files If different files for different regions are given
-             */
-            void readSlope(std::string path, std::vector<std::string> files) {
-                loopFiles(path, files, [this](std::string path) {
-                    readTwoColumns(path, [this](double data, int nodeID) {
-                        nodes->at(nodeID)->setSlope(data);
                     });
                 });
             };
@@ -548,7 +532,7 @@ namespace GlobalFlow {
                     for (int spatID : tmp) {
                         int nodeID = 0;
                         try {
-                            nodeID = this->lookupSpatIDtoNodeID.at(spatID);
+                            nodeID = this->lookupSpatIDtoNodeIDs[spatID][0];
                         }
                         catch (const std::out_of_range &ex) {
                             //if SpatID is not mapped to NodeID, ignore entry
@@ -612,7 +596,7 @@ namespace GlobalFlow {
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
                     int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeID.at(spatID);
+                        i = lookupSpatIDtoNodeIDs[spatID][0];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -639,7 +623,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, elevation)) {
                     int i = 0;
                     try {
-                        i = lookupSpatIDtoNodeID.at((int) spatID);
+                        i = lookupSpatIDtoNodeIDs[spatID][0];
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -693,7 +677,7 @@ namespace GlobalFlow {
                     while (in.read_row(spatID, percentage)) {
                         int i = 0;
                         try {
-                            i = lookupSpatIDtoNodeID.at((int) spatID);
+                            i = lookupSpatIDtoNodeIDs[spatID][0];
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry

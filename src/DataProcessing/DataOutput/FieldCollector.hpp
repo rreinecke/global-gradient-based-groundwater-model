@@ -43,7 +43,6 @@ namespace GlobalFlow {
                 AREA, /*!< Area of the node */
                 CONDUCT, /*!< Hydraulic conductivity of the node */
                 ELEVATION, /*!< Elevation of the node */
-                SLOPE, /*!< Slope in the node */
                 X, Y, /*!< Postion of the node in X and Y */
                 HEAD, /*!< Hydraulic head */
                 EQ_HEAD, /*!< The equilibrium head -> inital head */
@@ -86,7 +85,6 @@ namespace GlobalFlow {
                     {"Area",               FieldType::AREA},
                     {"Conductivity",       FieldType::CONDUCT},
                     {"Elevation",          FieldType::ELEVATION},
-                    {"Slope",              FieldType::SLOPE},
                     {"X",                  FieldType::X},
                     {"Y",                  FieldType::Y},
                     {"Head",               FieldType::HEAD},
@@ -232,13 +230,6 @@ namespace GlobalFlow {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties()
                                                           .get<Model::quantity<Model::Meter>,
                                                                   Model::Elevation>().value());
-                            });
-                        }
-                        case FieldType::SLOPE : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
-                                return convert<T>(simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                        Model::Dimensionless>,
-                                        Model::Slope>().value());
                             });
                         }
                         case FieldType::X : {

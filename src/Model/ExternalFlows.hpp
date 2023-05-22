@@ -133,14 +133,12 @@ namespace GlobalFlow {
              * @param head The current hydraulic head
              * @param eq_head The equilibrium head
              * @param recharge The current recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_s_meter_t getP(t_meter head,
                              t_meter eq_head,
                              t_vol_t recharge,
-                             t_dim slope,
                              t_vol_t eqFlow) const noexcept;
 
             /**
@@ -149,14 +147,12 @@ namespace GlobalFlow {
              * @param head
              * @param eq_head
              * @param recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_vol_t getQ(t_meter head,
                          t_meter eq_head,
                          t_vol_t recharge,
-                         t_dim slope,
                          t_vol_t eqFlow) const noexcept;
 
 
@@ -220,18 +216,6 @@ namespace GlobalFlow {
 
             t_vol_t
             calculateFloodplainDrainage(t_meter head) const noexcept;
-
-            /**
-            * Calculate river conductance as in Miguez-Macho 2007
-            * RC = ERC * F
-            * Input: F-data, ERC
-            * Output: RC
-            */
-            t_s_meter_t
-            dynamicRiverConductance(t_meter head,
-                                    t_vol_t current_recharge,
-                                    t_dim slope,
-                                    t_vol_t eq_flow) const noexcept;
 
             /**
             * Calculate ERC (must be repeated every time step)

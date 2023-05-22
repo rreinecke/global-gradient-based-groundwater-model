@@ -269,7 +269,6 @@ namespace GlobalFlow {
                 << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
                 << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
                 << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
-                << "\nSlope [-]: " << pNode->get<t_dim, Slope>().value()
                 << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
                 << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
                 << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
@@ -405,23 +404,6 @@ Modify Properties
             };
 
             /**
-             * @brief Set slope from data on all layers
-             * Slope input is in % but is required as absolut
-             * thus: slope = slope_percent / 100
-             * @param slope_percent
-             */
-            void setSlope(double slope_percent) { // todo remove
-                set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
-                applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
-                    try { // Question: should slope be added to the nodeInterface? currently only in PhysicalProperties
-                        //nodeInterface->
-                        //Slope(slope_percent);
-                    }
-                    catch (...) {}
-                });
-            };
-
-            /**
              * @brief Set e-folding factor from data on all layers
              * @param e-fold
              */
@@ -454,14 +436,6 @@ Modify Properties
                     catch (...) {}
                 });
             }
-
-            //void setMaxTipSlope(t_dim maxTipSlope) { set < t_dim, MaxTipSlope > (maxTipSlope); }
-            //void setMaxToeSlope(t_dim maxToeSlope) { set < t_dim, MaxToeSlope > (maxToeSlope); }
-            //void setDelnus(vector<t_dim> delnusVec){ set<vector<t_dim>, Delnus>(delnusVec); }
-            //void setNusInZones(vector<t_dim> nusInZones){ set<vector<t_dim>, NusInZones>(nusInZones); }
-            //void setMinDepthFactor(t_dim minDepthFactor){ set<t_dim, MinDepthFactor>(minDepthFactor); }
-            //void setSlopeAdjFactor(t_dim slopeAdjFactor){ set<t_dim, SlopeAdjFactor>(slopeAdjFactor); }
-            //void setVDFLock(t_meter vdfLock){ set<t_meter, VDFLock>(vdfLock); }
 
             /**
              * Calculated equilibrium flow to neighbouring cells
@@ -758,19 +732,18 @@ Modify Properties
                 } catch (const std::out_of_range &e) {
                     //ignore me there is no special_flow in this cell
                 }
-                t_dim slope = get<t_dim, Slope>();
                 t_vol_t eqFlow = getEqFlow(); // get the equilibrium lateral flows
                 if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (flow.flowIsHeadDependant(head)) {
-                        ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
-                              flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                        ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     } else { // flow is not head dependent when the head is below the bottom of the simulated cell
-                        ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom() +
-                              flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                        ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     }
                 } else {
-                    ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
-                          flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
+                          flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                 }
                 return ex;
             }
@@ -1259,11 +1232,10 @@ Modify Properties
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
                 } catch (const std::out_of_range &e) {//ignore me cell has no special_flow
                 }
-                t_dim slope = get<t_dim, Slope>();
                 t_vol_t eqFlow = getEqFlow();
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 for (const auto &flow : externalFlows) {
-                    out += flow.second.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                    out += flow.second.getQ(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                 }
                 return out;
             }
@@ -2193,15 +2165,14 @@ Modify Properties
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
                 } catch (const std::out_of_range &e) {//ignore me
                 }
-                t_dim slope = get<t_dim, Slope>();
                 t_vol_t eqFlow = getEqFlow();
                 for (const auto &flow : externalFlows) {
                     if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                         if (flow.second.flowIsHeadDependant(head)) {
-                            out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                         }
                     } else {
-                        out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                        out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                     }
                 }
                 return out;
@@ -2221,14 +2192,13 @@ Modify Properties
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
                 } catch (const std::out_of_range &e) {//ignore me
                 }
-                t_dim slope = get<t_dim, Slope>();
                 t_vol_t eqFlow = getEqFlow();
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 //Q part is already subtracted in RHS
                 for (const auto &flow : externalFlows) {
                     if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
                         if (not flow.second.flowIsHeadDependant(head)) {
-                            out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
+                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>() *
                                    flow.second.getBottom();
                         }
                     }

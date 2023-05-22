@@ -41,13 +41,11 @@ namespace GlobalFlow {
             //++Input data++//
             vector<string> ELEVATION_a;
             vector<string> EFOLDING_a;
-            vector<string> SLOPE_a;
             vector<string> EQUAL_WATER_TABLE_DEPTH_a;
             vector<string> SURFACE_WATER_ELEVATION_a;
 
             string ELEVATION{""};
             string EFOLDING{""};
-            string SLOPE{""};
             string EQUAL_WATER_TABLE_DEPTH{""};
             string SURFACE_WATER_ELEVATION{""};
 
@@ -330,10 +328,6 @@ namespace GlobalFlow {
                 return EQUAL_WATER_TABLE_DEPTH;
             }
 
-            string getSlope() {
-                return SLOPE;
-            }
-
             string getSurfaceWaterElevation() {
                 return SURFACE_WATER_ELEVATION;
             }
@@ -351,11 +345,6 @@ namespace GlobalFlow {
             vector<string>
             getEqWTD_a() {
                 return EQUAL_WATER_TABLE_DEPTH_a;
-            }
-
-            vector<string>
-            getSlope_a() {
-                return SLOPE_a;
             }
 
             vector<string>

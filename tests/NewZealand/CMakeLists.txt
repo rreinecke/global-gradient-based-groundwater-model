@@ -31,12 +31,6 @@ configure_file(../../data_5min/G_GLOWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../da
 ## global and local lakes
 configure_file(../../data_5min/G_LOCLAK.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCLAK.csv COPYONLY)
 configure_file(../../data_5min/G_GLOLAK.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_GLOLAK.csv COPYONLY)
-## slope
-configure_file(../../data_5min/Slope/Africa_slope.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Slope/Africa_slope.csv COPYONLY)
-configure_file(../../data_5min/Slope/Australia_slope.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Slope/Australia_slope.csv COPYONLY)
-configure_file(../../data_5min/Slope/Eurasia_slope.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Slope/Eurasia_slope.csv COPYONLY)
-configure_file(../../data_5min/Slope/N_America_slope.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Slope/N_America_slope.csv COPYONLY)
-configure_file(../../data_5min/Slope/S_America_slope.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Slope/S_America_slope.csv COPYONLY)
 ## e-folding
 configure_file(../../data_5min/E-Folding/Africa_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Africa_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/Australia_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Australia_F.csv COPYONLY)

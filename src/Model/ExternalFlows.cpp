@@ -5,7 +5,6 @@ namespace Model {
 
 t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
                                t_vol_t recharge,
-                               t_dim slope, // QUESTION: can we get rid of the slope?
                                t_vol_t eqFlow) const noexcept {
     t_s_meter_t out = 0.0 * (si::square_meter / day);
     switch (type) {
@@ -90,7 +89,6 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
 
 t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
                            t_vol_t recharge,
-                           t_dim slope, // QUESTION: can we get rid of the slope?
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     switch (type) {
