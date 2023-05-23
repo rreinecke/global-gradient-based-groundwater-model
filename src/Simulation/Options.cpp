@@ -55,16 +55,12 @@ namespace GlobalFlow {
             EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
             THREADS = config.get<int>("threads");
             LAYERS = config.get<int>("layers");
-            ONE_LAYER = config.get<bool>("one_layer_approach");
             CONFINED = getTypeArray<bool>("confinement", config);
             if (LAYERS != CONFINED.size()) {
                 LOG(critical) << "mismatching layers";
                 exit(3);
             }
-            //if (ONE_LAYER and LAYERS > 1) {
-            //    LOG(critical) << "Approach only viable with one layer";
-            //    exit(3);
-            //}
+
             CACHE = config.get<bool>("cache");
             ADAPTIVE_STEP_SIZE = config.get<bool>("adaptive_step_size");
             BOUNDARY_CONDITION = config.get<string>("boundary_condition");
@@ -80,19 +76,6 @@ namespace GlobalFlow {
             DAMPING = numerics.get<bool>("damping");
             MIN_DAMP = numerics.get<double>("min_damp");
             MAX_DAMP = numerics.get<double>("max_damp");
-            string tmp = numerics.get<string>("step_size");
-            if (tmp == "daily") {
-                step_size = DAILY;
-            }
-            if (tmp == "two_days") {
-                step_size = TWO_DAILY;
-            }
-            if (tmp == "monthly") {
-                step_size = MONTHLY;
-            }
-            if (tmp == "yearly"){
-                step_size = YEARLY;
-            }
 
             WETTING_APPROACH = numerics.get<string>("wetting_approach");
 

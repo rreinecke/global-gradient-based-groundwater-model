@@ -24,13 +24,6 @@ namespace GlobalFlow {
 
         using namespace std;
 
-        enum StepSize {
-            DAILY,
-            TWO_DAILY,
-            MONTHLY,
-            YEARLY
-        };
-
 /**
  * @class Options
  * Reads simulation options from a JSON file
@@ -87,7 +80,6 @@ namespace GlobalFlow {
             int THREADS{0};
             bool CACHE{false};
             bool ADAPTIVE_STEP_SIZE{false};
-            StepSize step_size{DAILY};
             string WETTING_APPROACH{"nwt"};
             double INITIAL_HEAD{0.0};
             vector<double> K{0.001};
@@ -98,7 +90,6 @@ namespace GlobalFlow {
             double SPECIFIC_STORAGE{0.000015};
             string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
-            bool ONE_LAYER{false};
             vector<bool> CONFINED{};
             // density information
             bool DENSITY_VARIABLE{false};
@@ -154,7 +145,6 @@ namespace GlobalFlow {
 
             bool isConfined(int layer) { return CONFINED[layer]; }
 
-            bool isOneLayerApproach() { return ONE_LAYER; }
 
             vector<bool> getConfinements() { return CONFINED; }
 
@@ -410,22 +400,6 @@ namespace GlobalFlow {
             const bool
             adaptiveStepSizeEnabled() {
                 return ADAPTIVE_STEP_SIZE;
-            }
-
-            //Computations are all based on daily
-            const int
-            getStepSizeModifier() { // Question: what is this needed for? StepSize is never used for nodes; instead, the stepper class is used
-                switch (step_size) {
-                    case DAILY:
-                        return 1;
-                    case TWO_DAILY:
-                        return 2;
-                    case MONTHLY:
-                        return 31;
-                    case YEARLY:
-                        return 365;
-                }
-                throw std::out_of_range("No valid step size\n");
             }
 
             bool
