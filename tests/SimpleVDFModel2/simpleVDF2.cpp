@@ -11,7 +11,7 @@ void StandaloneRunner::loadSettings() {
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF2DataReader(op.getStepSizeModifier());
+    reader = new DataProcessing::SimpleVDF2DataReader();
     sim = Simulation::Simulation(op, reader);
 
     LOG(debug) << sim.getNodes()->at(1);

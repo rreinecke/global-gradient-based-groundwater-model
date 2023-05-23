@@ -32,14 +32,13 @@
     "numerics": {
       "solver": "PCG",
       "iterations": 100,
-      "inner_itter": 10,
+      "inner_itter": 30,
       "closing_crit": 1e-90,
       "head_change": 0.000001,
       "zeta_change": 0,
       "damping": "false",
       "min_damp": 0.01,
-      "max_damp": 0.5,
-      "wetting_approach": "nwt"
+      "max_damp": 0.5
     },
   "input": {
     "data_config": {

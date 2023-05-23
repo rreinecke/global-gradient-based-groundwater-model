@@ -37,9 +37,8 @@ namespace GlobalFlow {
         public:
             /**
              * @brief Constructor
-             * @param step Day, Month, ...
              */
-            GlobalDataReader(int step) { stepMod = step; }
+            GlobalDataReader() { }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the top model layer";
@@ -242,7 +241,6 @@ namespace GlobalFlow {
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
-                                                                stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,
@@ -327,7 +325,6 @@ namespace GlobalFlow {
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
-                                                                stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,

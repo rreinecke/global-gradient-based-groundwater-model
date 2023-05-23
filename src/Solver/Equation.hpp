@@ -130,7 +130,9 @@ namespace GlobalFlow {
             void updateStepModifier(double mod) {
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepModifier(mod); });
+                              [mod](std::unique_ptr<Model::NodeInterface> const &node) {
+                    node->updateStepModifier(mod);
+                });
             }
 
             typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;
@@ -170,11 +172,8 @@ namespace GlobalFlow {
         NodeVector nodes;
 
         long_vector x;
-        long_vector _x_;
         long_vector b;
-        long_vector _b_;
         SparseMatrix<pr_t> A;
-        SparseMatrix<pr_t> _A_;
 
         long_vector x_zetas;
         long_vector b_zetas;
@@ -202,31 +201,12 @@ namespace GlobalFlow {
         double dampMin{0.01};
         double dampMax{0.01};
 
-        bool disable_dry_cells{false};
-        //Maybe rename me :D
-        std::unordered_set<large_num> disabled_nodes;
-        std::unordered_set<large_num> inactive_nodes;
         //Real -> Current
         std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index_mapping_zetas or is this enough?
-
-        bool dry_have_changed{true};
-        bool inactive_have_changed{true};
-
-        template<typename Set>
-        bool set_compare(Set const &lhs, Set const &rhs) {
-            return lhs.size() == rhs.size()
-                   && std::equal(lhs.begin(), lhs.end(), rhs.begin());
-        }
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
-
-        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab;
-
-        BiCGSTAB<SparseMatrix<pr_t>, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> bicgstab_zetas;
-        //Used for NWT
-        bool nwt{false};
 
         bool vdf{false};
 

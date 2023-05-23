@@ -32,11 +32,15 @@ void StandaloneRunner::simulate() {
 
     DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
 
-    LOG(userinfo) << "Running transient steps";
+    int stepNumber = 1;
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper) {
+        LOG(userinfo) << "Running transient step " << stepNumber;
+
         step.first->solve();
         sim.printMassBalances(debug);
+
+        stepNumber++;
     }
 
     //Changing stresses

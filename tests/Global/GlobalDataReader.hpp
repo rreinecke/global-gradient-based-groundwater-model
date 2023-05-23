@@ -39,7 +39,7 @@ namespace GlobalFlow {
              * @brief Constructor
              * @param step Day, Month, ...
              */
-            GlobalDataReader(int step) { stepMod = step; }
+            GlobalDataReader() { }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the top model layer";

@@ -12,7 +12,7 @@ namespace GlobalFlow {
     }
 
     void GlobalRunner::setupSimulation() {
-        reader = new DataProcessing::GlobalDataReader(op.getStepSizeModifier());
+        reader = new DataProcessing::GlobalDataReader();
         LOG(debug) << "reader initiated" << std::endl;
 
         sim = Simulation::Simulation(op, reader);

@@ -77,8 +77,6 @@ namespace GlobalFlow {
             MIN_DAMP = numerics.get<double>("min_damp");
             MAX_DAMP = numerics.get<double>("max_damp");
 
-            WETTING_APPROACH = numerics.get<string>("wetting_approach");
-
             pt::ptree input = tree.get_child("input");
 
 //BASE_PATH = input.get<string>("base_path");

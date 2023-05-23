@@ -2517,36 +2517,13 @@ Modify Properties
              * @brief Update heads after one or multiple inner iterations
              * @param delta
              */
-            virtual void __setHeadChange(t_meter delta) {
-                NANChecker(delta.value(), "Set Head");
+            virtual void __setHeadChange(t_meter head) {
+                NANChecker(head.value(), "Set Head");
                 //t_meter deltaH__old = get<t_meter, HeadChange>();
                 t_meter current_head = get<t_meter, Head>();
-                //t_meter delta = head - current_head;
+                t_meter delta = head - current_head;
                 set<t_meter, HeadChange>(delta);
-                set<t_meter, Head>(current_head + delta);
-
-                /*	if (nwt){
-                        //TODO move to Numerics
-                        //Underrelaxation with delta-bar-delta from Smith 1993:
-
-                        t_dim gamma = 0 * si::si_dimensionless;
-                        t_dim theta = 0.9;
-                        t_dim kappa = 0.00001;
-                        t_dim momentum = 0.1;
-                        t_meter deltaH = (1 - gamma) * get<t_meter, HeadChange
-                        >() + gamma * deltaH__old;
-                        if (weight < 1)
-                        {
-                            weight = weight + kappa;
-                        }
-                        else
-                        {
-                            weight = weight - theta * weight;
-                        }
-                        t_meter h = head + weight * get<t_meter, HeadChange>() + momentum * deltaH;
-                        set<t_meter, HeadChange>(h - get<t_meter, Head>());
-                        set<t_meter, Head>(h);
-                    }*/
+                //set<t_meter, Head>(current_head + delta);
             };
 
         virtual t_meter

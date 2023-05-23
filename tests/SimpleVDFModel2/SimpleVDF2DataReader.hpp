@@ -10,7 +10,7 @@ namespace GlobalFlow {
 
         class SimpleVDF2DataReader : public DataReader {
         public:
-            SimpleVDF2DataReader(int step) { stepMod = step; }
+            SimpleVDF2DataReader() { }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the initial model layer";
@@ -133,7 +133,6 @@ namespace GlobalFlow {
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
-                                                                stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,

@@ -80,7 +80,6 @@ namespace GlobalFlow {
             int THREADS{0};
             bool CACHE{false};
             bool ADAPTIVE_STEP_SIZE{false};
-            string WETTING_APPROACH{"nwt"};
             double INITIAL_HEAD{0.0};
             vector<double> K{0.001};
             double GHB_K{0.1};
@@ -282,16 +281,6 @@ namespace GlobalFlow {
             string
             getSolverName() {
                 return SOLVER;
-            }
-
-            bool disableDryCells() {
-                if (WETTING_APPROACH == "nwt") {
-                    return false;
-                }
-                if (WETTING_APPROACH == "classic") {
-                    return true;
-                }
-                return false;
             }
 
             //string getBasePath() {

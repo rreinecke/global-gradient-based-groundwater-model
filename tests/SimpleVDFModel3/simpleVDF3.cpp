@@ -11,7 +11,7 @@ void StandaloneRunner::loadSettings() {
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF3DataReader(op.getStepSizeModifier());
+    reader = new DataProcessing::SimpleVDF3DataReader();
     sim = Simulation::Simulation(op, reader);
 
     LOG(debug) << sim.getNodes()->at(265); // printing node properties in debug file
