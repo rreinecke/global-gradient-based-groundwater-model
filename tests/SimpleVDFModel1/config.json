@@ -38,8 +38,7 @@
       "zeta_change": 0.0000001,
       "damping": "false",
       "min_damp": 0.01,
-      "max_damp": 0.5,
-      "wetting_approach": "nwt"
+      "max_damp": 0.5
     },
     "input": {
       "data_config": {

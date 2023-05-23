@@ -77,7 +77,6 @@ TEST_F(StepperFixture,DayLoop){
     ASSERT_EQ(p,2);
     ASSERT_EQ(a,1);
     //FIXME currently not possible to test as stepper holds an equation pointer; intro of abstract EQ would solve this
-    //EXPECT_CALL(equation, updateStepSize(1)).Times(testing::AtLeast(1));
 }
 
 TEST_F(StepperFixture,MonthLoop){

@@ -273,7 +273,6 @@ namespace GlobalFlow {
                 << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
                 << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
                 << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
-                << "\nStepSize [d_time]: " << pNode->get<quantity < d_time>, StepSize>().value()
                 << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
                 << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
                 << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
@@ -362,7 +361,6 @@ namespace GlobalFlow {
                           large_num ID,
                           t_vel K,
                           t_meter head,
-                          int stepModifier,
                           double aquiferDepth,
                           double anisotropy,
                           double specificYield,
@@ -644,7 +642,7 @@ Modify Properties
              */
             void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
 
-            void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
+            void updateStepModifier(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
 
             /**
              * @brief Storage capacity based on yield or specific storage
@@ -2490,7 +2488,6 @@ Modify Properties
                          large_num ID,
                          t_vel K,
                          t_meter head,
-                         int stepmodifier,
                          double aquiferDepth,
                          double anisotropy,
                          double specificYield,
@@ -2506,7 +2503,7 @@ Modify Properties
                          double slopeAdjFactor,
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
-                                    head, stepmodifier, aquiferDepth, anisotropy, specificYield, specificStorage,
+                                    head, aquiferDepth, anisotropy, specificYield, specificStorage,
                                     confined, densityVariable, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
@@ -2608,7 +2605,7 @@ Modify Properties
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1 * si::meter, 1, 100, 10, 0.15, 0.000015, true, true,
+                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15, 0.000015, true, true,
                     {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
                     0.001 * si::meter) {}
 

@@ -79,7 +79,7 @@ namespace GlobalFlow {
 
                     LOG(debug) << "Stepsize delta " << __delta;
                     LOG(debug) << "Stepsize: " << double(_time) *  __delta;
-                    _stepper->get(0)->updateStepSize(double(_time) * __delta);
+                    _stepper->get(0)->updateStepModifier(double(_time) * __delta);
                     _pos = _pos + __delta;
                     LOG(debug) << "Current position " << _pos;
 
@@ -93,7 +93,7 @@ namespace GlobalFlow {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
                 _delta_t_n = __delta;
-                _stepper->get(0)->updateStepSize(double(_time) * __delta);
+                _stepper->get(0)->updateStepModifier(double(_time) * __delta);
 		            LOG(debug) << "Stepsize: " << double(_time) * __delta;
                 _pos = _pos + __delta;
             }
@@ -116,7 +116,7 @@ namespace GlobalFlow {
 
             Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
                     : _equation(eq), _timeFrame(time), _steps(steps), _dyn(dynStep) {
-                _equation->updateStepSize(_timeFrame);
+                _equation->updateStepModifier(_timeFrame);
             }
 
             virtual Solver::Equation *

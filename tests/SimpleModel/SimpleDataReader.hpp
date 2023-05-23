@@ -9,7 +9,7 @@ namespace DataProcessing {
 
 class SimpleDataReader : public DataReader {
     public:
-        SimpleDataReader(int step) { stepMod = step; }
+        SimpleDataReader() { }
 
         virtual void readData(Simulation::Options op) {
             LOG(userinfo) << "Building the initial model layer";
@@ -120,7 +120,6 @@ class SimpleDataReader : public DataReader {
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
                                                             initialHead * Model::si::meter,
-                                                            stepMod,
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,

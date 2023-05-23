@@ -124,13 +124,13 @@ namespace GlobalFlow {
             }
 
             /**
-             * Set the correct stepsize (default is DAY)
+             * Set the correct stepsize (default is DAY) // todo remove if not needed
              * @param mod
              */
-            void updateStepSize(double mod) {
+            void updateStepModifier(double mod) {
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepSize(mod); });
+                              [mod](std::unique_ptr<Model::NodeInterface> const &node) { node->updateStepModifier(mod); });
             }
 
             typedef typename Eigen::Matrix<pr_t, -1, 1, 0, -1, 1>::Scalar Scalar;

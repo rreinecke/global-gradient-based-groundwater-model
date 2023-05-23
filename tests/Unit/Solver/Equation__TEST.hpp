@@ -54,9 +54,9 @@ TEST_F(EquationFixture, toggleSteadyState) {
     ASSERT_FALSE(eq->toggleSteadyState());
 }
 
-TEST_F(EquationFixture, updateStepSize) {
+TEST_F(EquationFixture, updateStepModifier) {
     ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 1);
-    eq->updateStepSize(10);
+    eq->updateStepModifier(10);
     ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 10);
 }
 
