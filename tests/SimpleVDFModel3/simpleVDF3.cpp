@@ -14,7 +14,6 @@ void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader();
     sim = Simulation::Simulation(op, reader);
 
-    LOG(debug) << sim.getNodes()->at(265); // printing node properties in debug file
 
     // For node infos:
     ofstream myfile;
@@ -39,8 +38,9 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 3);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1);
     int stepNumber = 1;
+    //LOG(debug) << sim.getNodes()->at(265); // printing node properties in debug file
 
     // for saving zetas in a csv
     ofstream myfile;

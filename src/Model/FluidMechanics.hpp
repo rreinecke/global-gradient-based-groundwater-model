@@ -57,15 +57,6 @@ namespace GlobalFlow {
             t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
 
             /**
-             * Simple smoother function to buffer iteration steps in NWT approach
-             * @param elevation
-             * @param verticalSize
-             * @param head
-             * @return smoothed head
-             */
-            double smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head);
-
-            /**
              * Get the coefficients for storage and P components
              * @param steadyState
              * @param stepModifier
@@ -76,24 +67,12 @@ namespace GlobalFlow {
             t_s_meter_t getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
                                 t_s_meter storageCapacity, t_s_meter_t P) noexcept;
 
-
             /**
              * Calculates the vertical flow between two nodes
              * @param flow a tuple of inputs about the aquifer
              * @return the vertical conductance
              */
             t_s_meter_t calculateVerticalConductance(FlowInputVert flow) noexcept;
-
-            /**
-             * Calculate derivates for NWT approach
-             * @param elevation
-             * @param verticalSize
-             * @param head
-             * @return
-             */
-            double getDerivate__NWT(t_meter elevation,
-                                    t_meter verticalSize,
-                                    t_meter head);
 
             /**
              * Criv = Krb/e*L*W

@@ -94,7 +94,7 @@ namespace GlobalFlow {
         class NodeInterface {
         private:
             virtual void
-            __setHeadChange(t_meter head) = 0;
+            __setHeadChange(t_meter change) = 0;
 
             virtual t_meter
             __calcInitialHead(t_meter initialParam) = 0;
@@ -151,7 +151,6 @@ namespace GlobalFlow {
             unordered_map<FlowType, ExternalFlow, FlowTypeHash> externalFlows;
             //vector<t_meter> ZetasChange_TZero;
             int numOfExternalFlows{0};
-            bool nwt{false};
             bool initial_head{true};
             bool simpleDistance{false};
             bool simpleK{false};
@@ -206,18 +205,6 @@ namespace GlobalFlow {
             }
 
             /**
-             * @brief Uses specific yield with NWT smoother
-             * @return Flow budget for cell depending on head change
-             * Assumes that smooth function is linear
-             */
-            t_s_meter getStorageCapacity__SecondaryNWT() noexcept {
-                return getStorageCapacity__Secondary()
-                       * mechanics.smoothFunction__NWT(get<t_meter, Elevation>(), get<t_meter, VerticalSize>(),
-                                                       get<t_meter, Head>())
-                       + getStorageCapacity__Secondary();
-            }
-
-            /**
              * @brief Flow volume of cell
              * @return Flow volume
              */
@@ -244,7 +231,6 @@ namespace GlobalFlow {
                 ar & neighbours;
                 ar & externalFlows;
                 ar & numOfExternalFlows;
-                ar & nwt;
                 ar & initial_head;
                 ar & simpleDistance;
                 ar & simpleK;
@@ -343,7 +329,6 @@ namespace GlobalFlow {
              * @param SpatID Unique Spat-ID
              * @param ID Internal ID = Position in vector
              * @param K Hydraulic conductivity in meter/day (default)
-             * @param stepModifier Modifies default step size of day (default=1)
              * @param aquiferDepth Vertical size of the cell
              * @param anisotropy Modifier for vertical conductivity based on horizontal
              * @param specificYield Yield of storage for dewatered conditions
@@ -571,6 +556,11 @@ Modify Properties
 
             void initHead_t0() noexcept { set < t_meter, Head_TZero > (get<t_meter, Head>()); }
 
+            void setHead(t_meter head) noexcept {
+                NANChecker(head.value(), "Set Head");
+                set<t_meter, Head>(head);
+            }
+
             void setHead_direct(double head) noexcept { set < t_meter, Head > (head * si::meter); }
 
             t_vel getK__pure() noexcept { return get<t_vel, K>(); }
@@ -596,7 +586,7 @@ Modify Properties
              * @brief Get hydraulic vertical conductivity
              * @return hydraulic conductivity scaled by anisotropy (scaled by e-folding)
              */
-            t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()); } // * get<t_dim, StepModifier>()
+            t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()); }
 
             /**
              * @brief Modify hydraulic conductivity (applied to all layers below)
@@ -666,8 +656,6 @@ Modify Properties
 
                 if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                     //water-table condition
-                    if (nwt) { return getStorageCapacity__SecondaryNWT(); }
-                    return getStorageCapacity__Secondary();
                 } else {
                     return getStorageCapacity__Primary();
                 }
@@ -1267,7 +1255,7 @@ Modify Properties
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
-                                  (day); // * get<t_dim, StepModifier>()
+                                  (day * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -1846,31 +1834,31 @@ Modify Properties
                 if (top == neighbours.end()) { // no neighbour at position
                 } else {
                     // if head is above the bottom of the node, both in this node AND in the node above (SWI2 line 2325)
-                    if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()) and
+                    if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()) &&
                         getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
-
 
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
                             // - at the top of the current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
-                            if (getZetaPosInNode(localZetaID) == "top" and
+                            if (getZetaPosInNode(localZetaID) == "top" &&
                                 at(top)->getZetaPosInNode(localZetaID) == "bottom") {
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxTop();
-                                //LOG(userinfo) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                                LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop > (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
-                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top));
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // * get<t_dim, StepModifier>()
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
-                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>());
-                                    // ...lower zeta height of the highest zeta surface in this node
+                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); //  * get<t_dim, StepModifier>()
+                                    LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
+                                    // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);
                                 }
                             }
@@ -2086,13 +2074,13 @@ Modify Properties
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                                 // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour
-                                if (getZetaPosInNode(localZetaID) == "bottom" and // IPLPOS_self = 2
+                                if (getZetaPosInNode(localZetaID) == "bottom" && // IPLPOS_self = 2
                                     at(got)->getZetaPosInNode(localZetaID) == "top") { // IPLPOS_neig = 1
                                     // adjust zeta surface heights
                                     setZeta(localZetaID, getZeta(localZetaID) + delta_self);
                                     zeta_neig = at(got)->getZeta(localZetaID);
                                     at(got)->setZeta(localZetaID, zeta_neig - delta_neig);
-                                } else if (getZetaPosInNode(localZetaID) == "top" and // IPLPOS_self = 1
+                                } else if (getZetaPosInNode(localZetaID) == "top" && // IPLPOS_self = 1
                                            at(got)->getZetaPosInNode(localZetaID) == "bottom") {// IPLPOS_neig = 2
                                     // adjust zeta surface heights
                                     setZeta(localZetaID, getZeta(localZetaID) - delta_self);
@@ -2205,52 +2193,6 @@ Modify Properties
             }
 
             /**
-             * @brief The Jacobian entry for the cell (NWT approach)
-             * @return map <CellID,Conductance>
-             */
-            std::unordered_map<large_num, t_s_meter_t> getJacobian() noexcept {
-                std::unordered_map<large_num, t_s_meter_t> out;
-                size_t numC = 7;
-                out.reserve(numC);
-                unordered_map<large_num, t_s_meter_t> map = getConductance();
-                t_s_meter_t tmp_hcofCRVC = map[get<large_num, ID>()];
-                double head_diff{0.0};
-                for (auto &ele : map) {
-                    map[ele.first] = ele.second * mechanics.getDerivate__NWT(
-                            nodes->at(ele.first)->get<t_meter, Elevation>(),
-                            nodes->at(ele.first)->get<t_meter, VerticalSize>(),
-                            nodes->at(ele.first)->get<t_meter, Head>()
-                    );
-                    if (ele.first != get<large_num, ID>()) {
-                        head_diff = nodes->at(ele.first)->get<t_meter, Head>().value()
-                                    - get<t_meter, Head>().value();
-                        out[ele.first] =
-                                (ele.second.value() + ele.second.value() * mechanics.getDerivate__NWT(
-                                        nodes->at(ele.first)->get<t_meter, Elevation>(),
-                                        nodes->at(ele.first)->get<t_meter, VerticalSize>(),
-                                        nodes->at(ele.first)->get<t_meter, Head>()
-                                ) * head_diff) * si::square_meter / day;
-                        out[get<large_num, ID>()] += map[ele.first].value() * head_diff * si::square_meter / day;;
-                    }
-                }
-                out[get<large_num, ID>()] +=
-                        ((mechanics.getHCOF(steadyState,
-                                            get<t_dim, StepModifier>(),
-                                            getStorageCapacity(),
-                                            getP()).value() * mechanics.getDerivate__NWT(
-                                get<t_meter, Elevation>(),
-                                get<t_meter, VerticalSize>(),
-                                get<t_meter, Head>()
-                        ) * get<t_meter, Head>().value())
-                         + tmp_hcofCRVC.value() - (getRHS().value() * mechanics.getDerivate__NWT(
-                                get<t_meter, Elevation>(),
-                                get<t_meter, VerticalSize>(),
-                                get<t_meter, Head>()
-                        ))) * si::square_meter / day;;
-                return out;
-            }
-
-            /**
              * @brief The matrix entry for the cell
              * @return map <CellID,Conductance>
              * The left hand side of the equation
@@ -2357,32 +2299,8 @@ Modify Properties
                 return out;
             }
 
-            /**
-             * @brief The right hand side of the equation (NWT)
-             * @return volume per time
-             */
-            double getRHS__NWT() noexcept {
-                double out{0.0};
-                const unordered_map<large_num, t_s_meter_t> &map = getConductance();
-                const double sum = std::accumulate(std::begin(map), std::end(map), 0,
-                                                   [this](const size_t previous,
-                                                          const std::pair<int, t_s_meter_t>
-                                                          &p) {
-                                                       return previous + (p.second.value() *
-                                                                          mechanics.smoothFunction__NWT(
-                                                                                  nodes->at(
-                                                                                          p.first)->get<t_meter, Elevation>(),
-                                                                                  nodes->at(
-                                                                                          p.first)->get<t_meter, VerticalSize>(),
-                                                                                  nodes->at(
-                                                                                          p.first)->get<t_meter, Head>()));
-                                                   });
-                out = sum - getRHS().value();
-                return out;
-            }
-
-            void setHeadChange(t_meter delta) noexcept {
-                __setHeadChange(delta);
+            void setHeadChange(t_meter change) noexcept {
+                __setHeadChange(change);
             }
 
             t_meter calcInitialHead(t_meter initialParam) noexcept { return __calcInitialHead(initialParam); }
@@ -2390,8 +2308,6 @@ Modify Properties
             bool isStaticNode() noexcept { return __isStaticNode(); }
 
             PhysicalProperties &getProperties() { return fields; } // Question: rename to getNodeProperties?
-
-            void enableNWT() { nwt = true; }
 
             /**
              * @brief Calculate non storage related in and out flow
@@ -2517,13 +2433,11 @@ Modify Properties
              * @brief Update heads after one or multiple inner iterations
              * @param delta
              */
-            virtual void __setHeadChange(t_meter head) {
-                NANChecker(head.value(), "Set Head");
-                //t_meter deltaH__old = get<t_meter, HeadChange>();
+            virtual void __setHeadChange(t_meter change) {
+                NANChecker(change.value(), "Set Head Change");
                 t_meter current_head = get<t_meter, Head>();
-                t_meter delta = head - current_head;
-                set<t_meter, HeadChange>(delta);
-                //set<t_meter, Head>(current_head + delta);
+                set<t_meter, HeadChange>(change);
+                set<t_meter, Head>(current_head + change);
             };
 
         virtual t_meter
@@ -2549,7 +2463,6 @@ Modify Properties
             ar & neighbours;
             ar & externalFlows;
             ar & numOfExternalFlows;
-            ar & nwt;
             ar & initial_head;
             ar & simpleDistance;
             ar & simpleK;
@@ -2589,7 +2502,7 @@ Modify Properties
         private:
             friend class NodeInterface;
 
-            virtual void __setHeadChange(t_meter head) {
+            virtual void __setHeadChange(t_meter change) {
                 set<t_meter, HeadChange>(0 * si::meter);
             };
 
@@ -2608,7 +2521,6 @@ Modify Properties
                 ar & neighbours;
                 ar & externalFlows;
                 ar & numOfExternalFlows;
-                ar & nwt;
                 ar & initial_head;
                 ar & simpleDistance;
                 ar & simpleK;

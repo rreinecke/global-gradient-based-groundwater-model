@@ -117,10 +117,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID,
     for (const auto &entry : map) { // entry: [1] node id of horizontal neighbours or this node, [2] conductance to neighbours in zeta zone
         colID = index_mapping[entry.first - iterOffset];
         if (colID != -1) {
-            //LOG(userinfo) << "colID " << colID;
             zoneConductance = entry.second;
-            //LOG(debug) << "entry.first: " << entry.first << ", entry.second: " << entry.second.value();
-            //LOG(debug) << "rowID: " << rowID << ", colID: " << colID;
 
             if (cached) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
@@ -151,19 +148,15 @@ Equation::updateMatrix() {
         NANChecker(rhs, "Right hand side");
     }
 
-    //A is up to date and b contains only rhs term
-    //Update with current heads
-    b = b + A * x;
-
     //Check if after iteration former 0 values turned to non-zero
     if ((not A.isCompressed()) and isCached) {
         LOG(numerics) << "Recompressing Matrix";
         A.makeCompressed();
     }
 
-    //LOG(debug) << "A:\n" << A << std::endl;
-    LOG(debug) << "x:\n" << x << std::endl;
-    //LOG(debug) << "b (= rhs):\n" << b << std::endl;
+    //LOG(debug) << "A (updateMatrix):\n" << A << std::endl;
+    //LOG(debug) << "x (updateMatrix):\n" << x << std::endl;
+    //LOG(debug) << "b (updateMatrix):\n" << b << std::endl;
 }
 
 void inline
@@ -183,11 +176,9 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
         isActive = (nodes->at(i + iterOffset)->getZetaPosInNode(localZetaID) == "between");
         if (isActive) {
             index_mapping[i] = i - numInactive;
-            //LOG(debug) << "active: i = " << i << ", iterOffset = " << iterOffset;
         } else {
             numInactive++; // tracking how many have been set inactive
             index_mapping[i] = -1; // these entries will be ignored ( e.g. in loop filling A_zeta, x_zeta and b_zeta)
-            //LOG(debug) << "inactive: i = " << i << ", iterOffset = " << iterOffset;
         }
     }
 
@@ -204,7 +195,6 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     for (large_num nodeIter = 0; nodeIter < numberOfNodesPerLayer; ++nodeIter) {
         auto id = index_mapping[nodeIter];
         if (id != -1) {
-            //LOG(userinfo) << "nodeID: " << nodeIter;
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
             addToA_zeta(nodeIter, iterOffset, localZetaID, isCached_zetas);
             x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value();
@@ -212,16 +202,12 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
             b_zetas(id) = nodes->at(nodeIter + iterOffset)->getZetaRHS(localZetaID).value();
         }
     }
-    LOG(debug) << "updateMatrix: A_zetas full:\n" << A_zetas << std::endl;
-    LOG(debug) << "updateMatrix: b_zetas (= rhs_zeta) full:\n" << b_zetas << std::endl;
 
     //Check if after iteration former 0 values turned to non-zero
     if ((not A_zetas.isCompressed()) and isCached_zetas) {
         LOG(numerics) << "Recompressing Matrix";
         A_zetas.makeCompressed();
     }
-
-
 }
 
 void inline
@@ -247,14 +233,12 @@ Equation::preconditioner_zetas() {
 
 void inline
 Equation::updateIntermediateHeads() {
-    long_vector changes;
-    changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
+    long_vector changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
 
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
-        //LOG(userinfo) << nodes->at(k) << std::endl;
-        nodes->at(k)->setHead_direct((double) changes[id]);
+        //nodes->at(k)->setHead((double) heads[id] * si::meter);
         nodes->at(k)->setHeadChange((double) changes[id] * si::meter);
     }
 }
@@ -267,7 +251,6 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
         if (id != -1) {
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
-            //LOG(debug) << "updated zeta at k=" << k+iterOffset << ": " << nodes->at(k+iterOffset)->getZeta(localZetaID).value() << std::endl;
         }
     }
 }
@@ -318,6 +301,9 @@ Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->verticalZetaMovement();
+            if (k >= 264 && k <= 266){
+                LOG(debug) << "zeta[" << 1 << "] at node " << k << " after verticalZetaMovement: " << nodes->at(k)->getZeta(1).value();
+            }
         }
 
 #pragma omp parallel for
@@ -340,12 +326,12 @@ Equation::adjustZetaHeights() {
             nodes->at(k)->preventZetaLocking();
         }
 
-#pragma omp parallel for
+/*#pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
                 LOG(debug) << "zeta surface " << localZetaID << " at node " << k << ": " << nodes->at(k)->getZeta(localZetaID).value();
             }
-        }
+        }*/
     }
 
 void inline
@@ -394,7 +380,6 @@ Equation::solve() {
         for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
             double val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
-            //LOG(debug) << "val (in solve): " << val << std::endl;
             changeMax = (val > changeMax) ? val : changeMax;
         }
 	    maxHead = changeMax;
@@ -412,8 +397,7 @@ Equation::solve() {
 
         //Solve inner iterations
         x = cg.solveWithGuess(b, x);
-
-        //LOG(debug) << "x (potential new hydraulic head) (outer iteration " << iterations << "):\n" << x << std::endl;
+        //LOG(debug) << "x (inner iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
         int innerItter{0};
@@ -477,7 +461,7 @@ Equation::solve() {
         iterations++;
     }
     //LOG(debug) << "A:\n" << A << std::endl;
-    LOG(debug) << "x:\n" << x << std::endl;
+    //LOG(debug) << "x:\n" << x << std::endl;
     //LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
     if (iterations == IITER) {
@@ -566,7 +550,7 @@ Equation::solve_zetas(){
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                LOG(debug) << "x_zetas (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
                 updateIntermediateZetas(iterOffset, localZetaID);
 

@@ -211,12 +211,5 @@ TEST_F(StandardNodeFixture, getRHS) {
     ASSERT_EQ((at(0)->getRHS().value()), -50);
 }
 
-TEST_F(StandardNodeFixture, getRHS__NWT) {
-    at(0)->setHead_direct(1);
-    at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
-    at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
-    at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_EQ((at(0)->getRHS().value()), -50);
-}
 
 

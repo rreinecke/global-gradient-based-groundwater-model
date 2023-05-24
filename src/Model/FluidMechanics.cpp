@@ -129,27 +129,6 @@ namespace GlobalFlow {
             return out;
         };
 
-        double FluidMechanics::smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head) {
-            t_meter bottom = elevation - verticalSize;
-            double X = (head - bottom) / verticalSize;
-            double sigma(1.0e-20);
-            double A(1 / (1 - sigma));
-
-            if (X <= 0)
-                return 1.0e-20;
-            if (0 < X and X <= sigma)
-                return (0.5 * A * pow(X, 2) / sigma);
-            if (sigma < X and X <= (1 - sigma))
-                return (A * X + 0.5 * (1 - A));
-            if ((1 - sigma) < X and X < 1)
-                return (1 - (0.5 * A * pow((1 - X), 2) / sigma));
-            if (X >= 1)
-                return 1;
-
-            //This should not happen
-            return 1;
-        }
-
         quantity<MeterSquaredPerTime>
         FluidMechanics::calculateVerticalConductance(FlowInputVert flowInputVer) noexcept {
             t_vel k_vert_neig;
@@ -222,28 +201,6 @@ namespace GlobalFlow {
             //LOG(userinfo) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
             NANChecker(out.value(), "HCOF");
             return out;
-        }
-
-        double FluidMechanics::getDerivate__NWT(t_meter elevation,
-                                                t_meter verticalSize,
-                                                t_meter head) {
-            t_meter bottom = elevation - verticalSize;
-            double X = (head - bottom) / verticalSize;
-            double sigma(1.0e-20);
-            double A(1 / (1 - sigma));
-
-            if (X <= 0)
-                return 0;
-            if (0 < X and X <= sigma)
-                return A * X / (sigma * (verticalSize.value()));
-            if (sigma < X and X <= (1 - sigma))
-                return A / verticalSize.value();
-            if ((1 - sigma) < X and X < 1)
-                return (1 - (-A * (1.0 - X) / (sigma * verticalSize.value())));
-            if (X >= 1)
-                return 0;
-            //This should not happen
-            return 0;
         }
     }
 }//ns
