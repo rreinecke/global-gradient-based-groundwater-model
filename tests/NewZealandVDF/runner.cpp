@@ -20,19 +20,21 @@ namespace GlobalFlow {
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,lon,lat,neighbour_count,elevation,hyd_cond,recharge" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,neighbour_count,elevation,hyd_cond,recharge" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();
 
-            myfile << j << "," <<
-                   sim.getNodes()->at(j)->getLon() << "," <<
-                   sim.getNodes()->at(j)->getLat() << "," <<
-                   sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
-                   sim.getNodes()->at(j)->getElevation().value() << "," <<
-                   sim.getNodes()->at(j)->getK().value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
-                   std::endl;
+            myfile <<
+                sim.getNodes()->at(j)->getID() << "," <<
+                sim.getNodes()->at(j)->getSpatID() << "," <<
+                sim.getNodes()->at(j)->getLon() << "," <<
+                sim.getNodes()->at(j)->getLat() << "," <<
+                sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                sim.getNodes()->at(j)->getElevation().value() << "," <<
+                sim.getNodes()->at(j)->getK().value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+                std::endl;
         }
         LOG(debug) << "simple k set for all nodes" << std::endl;
         myfile.close();

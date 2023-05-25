@@ -15,7 +15,7 @@ configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_nzVDF.json CO
 # read the NewZealand grid, initial zetas and recharge
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
 configure_file(data_5min/initial_zetas_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_nz.csv COPYONLY)
-#configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
+configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
 configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
@@ -23,7 +23,7 @@ configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../d
 configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
-configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
+#configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
 
 
 ## global and local wetlands

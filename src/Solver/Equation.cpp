@@ -301,9 +301,9 @@ Equation::adjustZetaHeights() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->verticalZetaMovement();
-            if (k >= 264 && k <= 266){
-                LOG(debug) << "zeta[" << 1 << "] at node " << k << " after verticalZetaMovement: " << nodes->at(k)->getZeta(1).value();
-            }
+            //if (k >= 264 && k <= 266){
+            //    LOG(debug) << "zeta[" << 1 << "] at node " << k << " after verticalZetaMovement: " << nodes->at(k)->getZeta(1).value();
+            //}
         }
 
 #pragma omp parallel for
@@ -337,7 +337,7 @@ Equation::adjustZetaHeights() {
 void inline
 Equation::updateBudget() {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
+    for (large_num k = 0; k < numberOfNodesPerLayer * numberOfLayers; ++k) {
         nodes->at(k)->saveMassBalance();
     }
 }
@@ -377,7 +377,7 @@ Equation::solve() {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
+        for (large_num k = 0; k < numberOfNodesPerLayer * numberOfLayers; ++k) {
             double val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (val > changeMax) ? val : changeMax;

@@ -53,9 +53,9 @@ namespace GlobalFlow {
         std::string basePath{"data"};
         fs::path data_dir{basePath};
         /** @var lookupSpatIDtoNodeIDs <SpatID, vector<NodeID>>*/
-        std::unordered_map<int, std::vector<int>> lookupSpatIDtoNodeIDs;
+        std::unordered_map<large_num, std::vector<large_num>> lookupSpatIDtoNodeIDs;
         /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
-        std::unordered_map<int, std::vector<int>> lookupArcIDtoSpatIDs;
+        std::unordered_map<large_num, std::vector<large_num>> lookupArcIDtoSpatIDs;
     public:
         /** Virt destructor -> interface*/
         virtual ~DataReader() {}
@@ -94,15 +94,15 @@ namespace GlobalFlow {
          * @param layer Layer the node is in
          * @return nodeID The position in the node vector
          */
-        inline int check(int spatID, int layer = 0) {
-            std::vector<int> nodeIDs;
+        inline large_num check(large_num spatID, int layer = 0) {
+            std::vector<large_num> nodeIDs;
             try {
                 nodeIDs = lookupSpatIDtoNodeIDs[spatID];
             }
             catch (const std::out_of_range &ex) {
                 return -1;
             }
-            if (nodeIDs.size() == 0){
+            if (nodeIDs.empty()){
                 return -1;
             }
             return nodeIDs[layer];
@@ -117,9 +117,9 @@ namespace GlobalFlow {
         void readTwoColumns(std::string path, ProcessDataFunction processData) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data");
-            int spatID = 0;
+            large_num spatID = 0;
             double data = 0;
-            int nodeID = 0;
+            large_num nodeID = 0;
             while (in.read_row(spatID, data)) {
                 nodeID = check(spatID);
                 if (nodeID == -1) {
@@ -139,8 +139,8 @@ namespace GlobalFlow {
         void readSpatIDtoArcID(std::string path) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "arcID");
-            int arcID = 0;
-            int spatID = 0;
+            large_num arcID = 0;
+            large_num spatID = 0;
 
             while (in.read_row(spatID, arcID)) {
                 lookupArcIDtoSpatIDs[arcID].push_back(std::move(spatID));
@@ -152,7 +152,7 @@ namespace GlobalFlow {
          * @brief provides acccess to mapping of different resolutions
          * @return <ArcID(0.5°), vector<SpatID(5')>>
          */
-        const std::unordered_map<int, std::vector<int>> &getMappingArcIDtoSpatIDs() {
+        const std::unordered_map<large_num, std::vector<large_num>> &getMappingArcIDtoSpatIDs() {
             return lookupArcIDtoSpatIDs;
         };
 
@@ -160,7 +160,7 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        void addMappingSpatIDtoNodeIDs(int spatID, int nodeID) {
+        void addMappingSpatIDtoNodeIDs(large_num spatID, large_num nodeID) {
             lookupSpatIDtoNodeIDs[spatID].push_back(std::move(nodeID));
         };
 
@@ -168,7 +168,7 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<int, std::vector<int>> &getMappingSpatIDtoNodeIDs() {
+        const std::unordered_map<large_num, std::vector<large_num>> &getMappingSpatIDtoNodeIDs() {
             return lookupSpatIDtoNodeIDs;
         };
 

@@ -92,7 +92,7 @@ namespace GlobalFlow {
                 //readGWRecharge(buildDir(op.getRecharge()));
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
-                                                return (((recharge / 1000) * area) / 365);});
+                                                return ((recharge * area) / 365);});
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
@@ -220,8 +220,8 @@ namespace GlobalFlow {
                 double lat{0};
                 double lon{0};
                 double area{0};
-                int spatID{0};
-                int nodeID{0};
+                large_num spatID{0};
+                large_num nodeID{0};
                 int row{0};
                 int col{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
@@ -237,7 +237,7 @@ namespace GlobalFlow {
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) spatID,
+                                                                spatID,
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
@@ -321,7 +321,7 @@ namespace GlobalFlow {
                                                                 1e+6 * area * Model::si::square_meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
-                                                                (unsigned long) spatID,
+                                                                spatID,
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
@@ -341,6 +341,7 @@ namespace GlobalFlow {
                                                                 vdfLock * Model::si::meter));
                     for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
                         lookupSpatIDtoNodeIDs[spatID].push_back(nodeID + (numberOfNodesPerLayer * layer));
+                        //LOG(debug) << "spatID: " << spatID << ", nodeID: " << nodeID;
                     }
                     nodeID++;
                 }
@@ -355,21 +356,21 @@ namespace GlobalFlow {
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
-                int spatID{0};
+                large_num spatID{0};
                 double elevation{0};
                 double conduct{0};
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
 
                 while (in.read_row(spatID, elevation, conduct)) {
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs[spatID]; // only at layer 0
+                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID); // only at layer 0
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    if (nodeIDs.size() == 0){
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[0];
@@ -420,22 +421,22 @@ namespace GlobalFlow {
             void readRiverConductance(std::string path) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
-                int spatID{0};
+                large_num spatID{0};
                 double head{0};
                 double conduct{0};
                 double bottom{0};
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
 
                 while (in.read_row(spatID, head, bottom, conduct)) {
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    if (nodeIDs.size() == 0){
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[0];
@@ -521,9 +522,9 @@ namespace GlobalFlow {
                 in.read_header(io::ignore_no_column, "arcID", "data");
 
                 int arcID = -1;
-                std::vector<int> tmp;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> tmp;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
                 double recharge = 0;
 
                 while (in.read_row(arcID, recharge)) {
@@ -539,13 +540,13 @@ namespace GlobalFlow {
 
                     for (int spatID : tmp) {
                         try {
-                            nodeIDs = this->lookupSpatIDtoNodeIDs[spatID];
+                            nodeIDs = this->lookupSpatIDtoNodeIDs.at(spatID);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        if (nodeIDs.size() == 0){
+                        if (nodeIDs.empty()){
                             continue;
                         }
                         nodeID = nodeIDs[0]; // take the nodeID of the top layer
@@ -601,20 +602,20 @@ namespace GlobalFlow {
                 double lenght = 0;
                 double bankfull = 0;
                 double width = 0;
-                int spatID = 0;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                large_num spatID = 0;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
                 std::unordered_map<int, std::array<double, 3>> out;
 
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    if (nodeIDs.size() == 0){
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[0];
@@ -633,21 +634,21 @@ namespace GlobalFlow {
                                std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
-                double spatID = 0;
+                large_num spatID = 0;
                 double elevation = 0;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
 
                 while (in.read_row(spatID, elevation)) {
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         //cout << "ID in elevation that has no corresponding node";
                         continue;
                     }
-                    if (nodeIDs.size() == 0){
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[0];
@@ -694,19 +695,19 @@ namespace GlobalFlow {
                     in.read_header(io::ignore_no_column, "spatID", "data");
 
                     double percentage = 0;
-                    float spatID = 0;
-                    std::vector<int> nodeIDs;
-                    int nodeID;
+                    large_num spatID = 0;
+                    std::vector<large_num> nodeIDs;
+                    large_num nodeID;
 
                     while (in.read_row(spatID, percentage)) {
                         try {
-                            nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                            nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
                             continue;
                         }
-                        if(nodeIDs.size() == 0){
+                        if(nodeIDs.empty()){
                             continue;
                         }
                         nodeID = nodeIDs[0];
@@ -821,7 +822,7 @@ namespace GlobalFlow {
                     inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
                         try {
-                            nodeID = lookupSpatIDtoNodeIDs[spatID][layer];
+                            nodeID = lookupSpatIDtoNodeIDs.at(spatID)[layer];
                         }
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
@@ -848,20 +849,20 @@ namespace GlobalFlow {
 
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
-                int spatID{0};
+                large_num spatID{0};
                 double zoneOfSinks{0};
                 double zoneOfSources{0};
+                vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    vector<int> nodeIDs;
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    for (int nodeID : nodeIDs) { // apply to all layers at this spatID
+                    for (large_num nodeID : nodeIDs) { // apply to all layers at this spatID
                         nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                     }
                 }

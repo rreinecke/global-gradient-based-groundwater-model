@@ -268,12 +268,8 @@ namespace GlobalFlow {
              * @return
              */
             MassError getMassError() {
-                return getError([this](int pos) {
-                                    return nodes->at(pos)->getOUT().value();
-                                },
-                                [this](int pos) {
-                                    return nodes->at(pos)->getIN().value();
-                                });
+                return getError([this](int pos) { return nodes->at(pos)->getOUT().value();},
+                                [this](int pos) { return nodes->at(pos)->getIN().value();});
             }
 
             /**
@@ -410,11 +406,11 @@ namespace GlobalFlow {
              * Prints all mass balances
              */
             void printMassBalances(custom_severity_level level) {
+                LOG(level) << "All units in cubic meter per step size";
                 MassError currentErr = getCurrentMassError();
-                MassError totalErr = getMassError();
-                LOG(level) << "All units in meter per stepsize";
                 LOG(level) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
                            << currentErr.OUT;
+                MassError totalErr = getMassError();
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
                            << totalErr.OUT;
                 LOG(level) << "General Head Boundary: " << getFlowByName(GENERAL_HEAD_BOUNDARY);

@@ -48,12 +48,12 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
 * Builds a map of neighbouring nodes based spatial Id's and resolution
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
-void buildBySpatID(NodeVector nodes, std::unordered_map<int, std::vector<int>> spatIDtoNodeIDs, int resolution,
+void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, int resolution,
                    int numberOfLayers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-n_array getNeighbourByNodeID(int nodeID, int res);
+n_array getNeighboursBySpatID(large_num spatID, large_num res);
 
 
 /**

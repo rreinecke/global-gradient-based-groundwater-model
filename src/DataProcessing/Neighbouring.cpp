@@ -57,8 +57,8 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
  * @param boundaryConduct
  * @param boundaryCondition
  */
-void buildBySpatID(NodeVector nodes, const std::unordered_map<int, std::vector<int>> spatIDtoNodeIDs, int resolution,
-                   int numberOfLayers, double boundaryConduct,
+void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs,
+                   int resolution, int numberOfLayers, double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
     int nodes_per_layer = nodes->size() / numberOfLayers;
 
@@ -92,16 +92,17 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, std::vector<i
     lu[2] = Model::RIGHT; // formerly EAST
     lu[3] = Model::LEFT; // formerly WEST
 
-    for (int layer; layer < numberOfLayers; layer++) {
+    for (int layer = 0; layer < numberOfLayers; ++layer) {
         for (int i = 0; i < nodes_per_layer; ++i) {
-            n_array nei = getNeighbourByNodeID((int) nodes->at(i*layer)->getID(), resolution);
+            int nodeID = i + (nodes_per_layer * layer);
+            n_array neighbours = getNeighboursBySpatID(nodes->at(nodeID)->getSpatID(), resolution);
             for (int j = 0; j < 4; ++j) {
-                if (spatIDtoNodeIDs.count(nei[j]) > 0) {
+                if (spatIDtoNodeIDs.count(neighbours[j]) > 0) {
                     //Neighbour id exists in landmask
-                    nodes->at(i*layer)->setNeighbour(spatIDtoNodeIDs.at(nei[j])[layer], lu[j]);
+                    nodes->at(nodeID)->setNeighbour(spatIDtoNodeIDs.at(neighbours[j])[layer], lu[j]);
                 } else { // None of the neighbour ids is in landmask
                     // Calling function defined above to add boundary
-                    addBoundary(i*layer, layer, lu[j]);
+                    addBoundary(nodeID, layer, lu[j]);
                 }
             }
         }
@@ -116,27 +117,27 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, std::vector<i
  * @param res
  * @return
  */
-n_array getNeighbourByNodeID(int nodeID, int res) {
+n_array getNeighboursBySpatID(large_num spatID, large_num res) {
     n_array neighbours{-1, -1, -1, -1};
-    int row_l{360 * 60 * 60 / res};
+    large_num row_l{360 * 60 * 60 / res};
     assert(row_l % 2 == 0 && "resolution is impossible");
 
-    if (nodeID > row_l) {
+    if (spatID > row_l) {
         //NORTH
-        neighbours[0] = nodeID - row_l;
+        neighbours[0] = spatID - row_l;
     }
-    if (nodeID < (row_l / 2) * row_l - row_l) {
+    if (spatID < (row_l / 2) * row_l - row_l) {
         //SOUTH
-        neighbours[1] = nodeID + row_l;
+        neighbours[1] = spatID + row_l;
     }
-    if (nodeID % row_l == 0) {
+    if (spatID % row_l == 0) {
         //EAST
-        neighbours[2] = nodeID - row_l + 1;
-    } else { neighbours[2] = nodeID + 1; }
-    if ((nodeID - 1) % row_l == 0) {
+        neighbours[2] = spatID - row_l + 1;
+    } else { neighbours[2] = spatID + 1; }
+    if ((spatID - 1) % row_l == 0) {
         //WEST
-        neighbours[3] = nodeID + row_l - 1;
-    } else { neighbours[3] = nodeID - 1; }
+        neighbours[3] = spatID + row_l - 1;
+    } else { neighbours[3] = spatID - 1; }
     return neighbours;
 }
 

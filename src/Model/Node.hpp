@@ -363,7 +363,7 @@ namespace GlobalFlow {
 
             virtual ~NodeInterface() = default;
 
-            large_num getID() { return get<large_num, SpatID>(); }
+            large_num getID() { return get<large_num, ID>(); }
 
 /*****************************************************************
 Modify Properties
@@ -607,6 +607,8 @@ Modify Properties
 
             void setSimpleK(){simpleK = true;}
 
+            double getSpatID() {return get<large_num, SpatID>();}
+
             double getLat() {return get<double, Lat>();}
 
             double getLon() {return get<double, Lon>();}
@@ -656,6 +658,7 @@ Modify Properties
 
                 if (get<t_meter, Head>() + epsilon < get<t_meter, Elevation>()) {
                     //water-table condition
+                    return getStorageCapacity__Secondary();
                 } else {
                     return getStorageCapacity__Primary();
                 }
@@ -1255,7 +1258,7 @@ Modify Properties
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
-                                  (day * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
+                                  (day); // * get<t_dim, StepModifier>()
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -1692,24 +1695,24 @@ Modify Properties
                 auto nusInZones = get<vector<t_dim>, NusInZones>();
                 t_meter headdiff = 0 * si::meter;
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                /* if nodes can be inactive: return 0 at inactive nodes: if (nodeInactive) { return out; }*/
 
-                // find the top neighbor
                 auto got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) {//No top node
                 } else {//Current node has a top node
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
-                        headdiff -= nusInZones[localZetaID] * (at(got)->getZeta(localZetaID + 1) -
-                                                               at(got)->getZeta(localZetaID));
-                        // Note: in SWI2 documentation is, BOUY is calculated with the simple sum (would be out +=), MODFLOW code for headdiff is as implemented (like out -=)
+                        headdiff -= nusInZones[localZetaID] *
+                                (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
+                        // Note: in SWI2 documentation is, BOUY is calculated with the simple sum (would be out +=),
+                        // MODFLOW code for headdiff is as implemented (like out -=)
                     }
                     // second part of the flux correction term
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
                           (headdiff + 0.5 * (at(got)->getZetas().back() - getZetas().front()) *
                            (at(got)->getNusBot() + getNusTop()));
-                    // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP, but in the code there is a + in the calculation of QLEXTRA
+                    // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP,
+                    // in MODFLOW code there is a + in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
                 }
                 return out;
@@ -1731,7 +1734,6 @@ Modify Properties
                         if (position == NeighbourPosition::DOWN) {
                             out += at(got)->getVerticalFluxCorrection();
                         }
-
                     }
                 }
                 return out;
@@ -1749,11 +1751,10 @@ Modify Properties
                 } else {
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) - fluxFromTopNode;
+                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) - fluxFromTopNode;
                     //LOG(userinfo) << "getFluxTop: " << out.value();
                 }
                 return out;
-
             }
 
             /**
@@ -1768,10 +1769,7 @@ Modify Properties
                 } else {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    //LOG(userinfo) << "fluxFromDownNode: " << fluxFromDownNode.value() << std::endl;
-                    //LOG(userinfo) << "verticalConductance: " << verticalConductance.value() << std::endl;
-
-                    out = verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) + fluxFromDownNode;
+                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) + fluxFromDownNode;
                     //LOG(userinfo) << "getFluxDown: " << out.value();
                 }
                 return out;
@@ -1848,14 +1846,14 @@ Modify Properties
                                 LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop > (0 * si::cubic_meter / day)) {
-                                    deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
+                                    deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // * get<t_dim, StepModifier>()
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
-                                    deltaZeta = (fluxCorrectionTop * (day * get<t_dim, StepModifier>())) /
+                                    deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); //  * get<t_dim, StepModifier>()
                                     LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
@@ -1873,9 +1871,6 @@ Modify Properties
              * @note in SWI2 documentation: "Tip and Toe Tracking", in SWI2 code: SSWI2_HORZMOVE
              */
             void horizontalZetaMovement(){
-                /* if nodes can be inactive: return at inactive nodes
-                if (nodeInactive) { return; }
-                 */
                 std::unordered_map<NeighbourPosition, NeighbourPosition> oppositePositions;
                 oppositePositions[NeighbourPosition::BACK] = NeighbourPosition::FRONT;
                 oppositePositions[NeighbourPosition::FRONT] = NeighbourPosition::BACK;
