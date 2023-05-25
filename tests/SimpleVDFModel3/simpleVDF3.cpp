@@ -38,9 +38,9 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
     int stepNumber = 1;
-    //LOG(debug) << sim.getNodes()->at(265); // printing node properties in debug file
+    LOG(debug) << sim.getNodes()->at(199); // printing node properties in debug file
 
     // for saving zetas in a csv
     ofstream myfile;

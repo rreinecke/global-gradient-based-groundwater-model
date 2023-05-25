@@ -218,7 +218,7 @@ namespace GlobalFlow {
                 while (in.read_row(spatID, layer, recharge)) {
                     int nodeID = 0;
                     try {
-                        nodeID = lookupSpatIDtoNodeIDs[spatID][layer]; // at layer 0
+                        nodeID = lookupSpatIDtoNodeIDs[spatID][layer]; // at layer
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
