@@ -2254,7 +2254,7 @@ Modify Properties
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ();
                 //LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
-                t_vol_t dewateredFlow = calculateDewateredFlow();
+                t_vol_t dewateredFlow = calculateDewateredFlow(); // only for multiple layers
                 //LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t rivers = calculateNotHeadDependandFlows();
                 //LOG(userinfo) << "rivers: " << rivers.value() << std::endl;

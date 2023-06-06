@@ -48,7 +48,7 @@ namespace GlobalFlow {
                     LOG(userinfo) << "- reading grid by rows and columns";
                     grid = readGrid(nodes,
                                     buildDir(op.getNodesDir()),
-                                    op.getNumberOfNodesPerLayer(),
+                                    op.getNumberOfNodesPerLayer(), // for global: 2161074, for North America: 396787
                                     op.getNumberOfLayers(),
                                     op.getNumberOfRows(),
                                     op.getNumberOfCols(),
@@ -153,7 +153,8 @@ namespace GlobalFlow {
                 } else {
                     LOG(userinfo) << "Building grid by spatial ID";
                     //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
-                    DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoNodeIDs(), 60*5 , op.getNumberOfLayers(),
+                    large_num resolution = 60*5;
+                    DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoNodeIDs(), resolution, op.getNumberOfLayers(),
                                                   op.getGHBConduct(), op.getBoundaryCondition());
                 }
 
@@ -223,8 +224,8 @@ namespace GlobalFlow {
                 double lat{0};
                 double lon{0};
                 double area{0};
-                int spatID{0};
-                int nodeID{0};
+                large_num spatID{0};
+                large_num nodeID{0};
                 int row{0};
                 int col{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
@@ -240,11 +241,10 @@ namespace GlobalFlow {
                                                                 area * Model::si::square_meter,
                                                                 edgeLengthLeftRight * Model::si::meter,
                                                                 edgeLengthFrontBack * Model::si::meter,
-                                                                (unsigned long) spatID,
+                                                                spatID,
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
-                                                                stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,
@@ -309,7 +309,7 @@ namespace GlobalFlow {
                 double lat{0};
                 double area{0};
                 large_num spatID{0};
-                int nodeID{0};
+                large_num nodeID{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
@@ -323,11 +323,10 @@ namespace GlobalFlow {
                                                                 1e+6 * area * Model::si::square_meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
-                                                                (unsigned long) spatID,
+                                                                spatID,
                                                                 nodeID,
                                                                 defaultK * (Model::si::meter / Model::day),
                                                                 initialHead * Model::si::meter,
-                                                                stepMod,
                                                                 aquiferDepth,
                                                                 anisotropy,
                                                                 specificYield,
@@ -358,10 +357,10 @@ namespace GlobalFlow {
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
-                int spatID{0};
+                large_num spatID{0};
                 double elevation{0};
                 double conduct{0};
-                std::vector<int> nodeIDs;
+                std::vector<large_num> nodeIDs;
                 int nodeID;
 
                 while (in.read_row(spatID, elevation, conduct)) {
@@ -423,11 +422,11 @@ namespace GlobalFlow {
             void readRiverConductance(std::string path) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
-                int spatID{0};
+                large_num spatID{0};
                 double head{0};
                 double conduct{0};
                 double bottom{0};
-                std::vector<int> nodeIDs;
+                std::vector<large_num> nodeIDs;
                 int nodeID;
 
                 while (in.read_row(spatID, head, bottom, conduct)) {
@@ -524,9 +523,9 @@ namespace GlobalFlow {
                 in.read_header(io::ignore_no_column, "arcID", "data");
 
                 int arcID = -1;
-                std::vector<int> tmp;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> tmp;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
                 double recharge = 0;
 
                 while (in.read_row(arcID, recharge)) {
@@ -542,7 +541,7 @@ namespace GlobalFlow {
 
                     for (int spatID : tmp) {
                         try {
-                            nodeIDs = this->lookupSpatIDtoNodeIDs[spatID];
+                            nodeIDs = this->lookupSpatIDtoNodeIDs.at(spatID);
                         }
                         catch (const std::out_of_range &ex) {
                             //if Node does not exist ignore entry
@@ -604,9 +603,9 @@ namespace GlobalFlow {
                 double lenght = 0;
                 double bankfull = 0;
                 double width = 0;
-                int spatID = 0;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                large_num spatID = 0;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
                 std::unordered_map<int, std::array<double, 3>> out;
 
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
@@ -636,10 +635,10 @@ namespace GlobalFlow {
                                std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
-                double spatID = 0;
+                large_num spatID = 0;
                 double elevation = 0;
-                std::vector<int> nodeIDs;
-                int nodeID;
+                std::vector<large_num> nodeIDs;
+                large_num nodeID;
 
                 while (in.read_row(spatID, elevation)) {
                     try {
@@ -698,8 +697,8 @@ namespace GlobalFlow {
 
                     double percentage = 0;
                     float spatID = 0;
-                    std::vector<int> nodeIDs;
-                    int nodeID;
+                    std::vector<large_num> nodeIDs;
+                    large_num nodeID;
 
                     while (in.read_row(spatID, percentage)) {
                         try {
@@ -851,12 +850,12 @@ namespace GlobalFlow {
 
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
-                int spatID{0};
+                large_num spatID{0};
                 double zoneOfSinks{0};
                 double zoneOfSources{0};
+                vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    vector<int> nodeIDs;
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }

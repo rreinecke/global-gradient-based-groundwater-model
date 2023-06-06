@@ -58,9 +58,9 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
  * @param boundaryCondition
  */
 void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs,
-                   int resolution, int numberOfLayers, double boundaryConduct,
+                   large_num resolution, int numberOfLayers, double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
-    int nodes_per_layer = nodes->size() / numberOfLayers;
+        large_num nodes_per_layer = nodes->size() / numberOfLayers;
 
     // defining function to add boundaries to nodes with no neighbours (called later in code)
     auto addBoundary = [nodes, boundaryConduct, boundaryCondition](
@@ -92,17 +92,29 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::ve
     lu[2] = Model::RIGHT; // formerly EAST
     lu[3] = Model::LEFT; // formerly WEST
 
+    large_num nodeID;
+    large_num nodeID_neig;
+    std::vector<large_num> nodeIDs_neig;
+    large_num spatID;
+    int spatID_neig;
     for (int layer = 0; layer < numberOfLayers; ++layer) {
         for (int i = 0; i < nodes_per_layer; ++i) {
-            int nodeID = i + (nodes_per_layer * layer);
-            n_array neighbours = getNeighboursBySpatID(nodes->at(nodeID)->getSpatID(), resolution);
+            nodeID = i + (nodes_per_layer * layer);
             for (int j = 0; j < 4; ++j) {
-                if (spatIDtoNodeIDs.count(neighbours[j]) > 0) {
-                    //Neighbour id exists in landmask
-                    nodes->at(nodeID)->setNeighbour(spatIDtoNodeIDs.at(neighbours[j])[layer], lu[j]);
-                } else { // None of the neighbour ids is in landmask
-                    // Calling function defined above to add boundary
-                    addBoundary(nodeID, layer, lu[j]);
+                spatID = nodes->at(nodeID)->getSpatID();
+                spatID_neig = getNeighbourSpatID(spatID, j, resolution);
+                if (spatID_neig > 0) { //
+                    if (spatIDtoNodeIDs.contains((unsigned long) spatID_neig)) {
+                        if (spatIDtoNodeIDs.at((unsigned long) spatID_neig).size() >
+                            0) { //Neighbour id exists in landmask
+                            nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig);
+                            nodeID_neig = spatIDtoNodeIDs.at(spatID_neig)[layer];
+                            nodes->at(nodeID)->setNeighbour(nodeID_neig, lu[j]);
+                        } else { // Neighbour is not in landmask
+                            // Calling function defined above to add boundary
+                            addBoundary(nodeID, layer, lu[j]);
+                        }
+                    }
                 }
             }
         }
@@ -117,7 +129,8 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::ve
  * @param res
  * @return
  */
-n_array getNeighboursBySpatID(large_num spatID, large_num res) {
+/*
+n_array getNeighboursBySpatID(large_num spatID, int res) {
     n_array neighbours{-1, -1, -1, -1};
     large_num row_l{360 * 60 * 60 / res};
     assert(row_l % 2 == 0 && "resolution is impossible");
@@ -139,8 +152,43 @@ n_array getNeighboursBySpatID(large_num spatID, large_num res) {
         neighbours[3] = spatID + row_l - 1;
     } else { neighbours[3] = spatID - 1; }
     return neighbours;
-}
+}*/
 
+/**
+ * @brief calculates all neighbours based on a spatial ID
+ * Assumes no landmask and calculates all possible neighbours
+ * @param id
+ * @param res
+ * @return
+ */
+int getNeighbourSpatID(int spatID, int j, int res) {
+    int row_l{360 * 60 * 60 / res};
+    assert(row_l % 2 == 0 && "resolution is impossible");
+    switch(j) {
+        case 0:
+            if (spatID > row_l) {
+                //NORTH
+                return spatID - row_l;
+            }
+        case 1:
+            if (spatID < (row_l / 2) * row_l - row_l) {
+                //SOUTH
+                return spatID + row_l;
+            }
+        case 2:
+            if (spatID % row_l == 0) {
+                //EAST
+                return spatID - row_l + 1;
+            } else { return spatID + 1; }
+        case 3:
+            if ((spatID - 1) % row_l == 0) {
+                //WEST
+                return spatID + row_l - 1;
+            } else { return spatID - 1; }
+        default:
+            return -1;
+    }
+}
 
 /**
  * @brief Connects neighbouring nodes

@@ -43,7 +43,7 @@ namespace GlobalFlow {
 
     void NZRunner::simulate() {
 
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 30);
         for (Simulation::step step : stepper) {
             step.first->toggleSteadyState();
             step.first->solve();

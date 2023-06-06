@@ -14,7 +14,7 @@ configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_global.json C
 
 # read the data for the model
 configure_file(../../data_5min/caspian_data.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/caspian_data.csv COPYONLY)
-configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
+configure_file(data_5min/grid_north_america.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_north_america.csv COPYONLY)
 configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
 configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)

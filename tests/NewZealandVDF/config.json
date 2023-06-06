@@ -31,10 +31,10 @@
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 1000,
-      "inner_itter": 20,
-      "closing_crit": 1e-30,
-      "head_change": 0.000001,
+      "iterations": 10000,
+      "inner_itter": 50,
+      "closing_crit": 1e-185,
+      "head_change": 1,
       "zeta_change": 0.000001,
       "damping": "false",
       "min_damp": 0.01,
@@ -60,7 +60,7 @@
         "K": [
           0.1
         ],
-        "ghb_K": 1000000000,
+        "ghb_K": 10,
         "aquifer_thickness": [
           100
         ],

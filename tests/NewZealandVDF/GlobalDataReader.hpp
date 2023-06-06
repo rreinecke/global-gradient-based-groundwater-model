@@ -92,7 +92,7 @@ namespace GlobalFlow {
                 //readGWRecharge(buildDir(op.getRecharge()));
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
-                                                return ((recharge * area) / 365);});
+                                                return (((recharge / 1000) * area) / 365);});
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
@@ -594,7 +594,7 @@ namespace GlobalFlow {
              * @param path Where to read the file from
              * @return a map of bankfull depth, stream width, and length
              */
-            std::unordered_map<int, std::array<double, 3>> calculateRiverStage(std::string path) {
+            std::unordered_map<large_num, std::array<double, 3>> calculateRiverStage(std::string path) {
                 io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "POINTID", "length", "bankfull", "spatID", "width");
 
@@ -605,7 +605,7 @@ namespace GlobalFlow {
                 large_num spatID = 0;
                 std::vector<large_num> nodeIDs;
                 large_num nodeID;
-                std::unordered_map<int, std::array<double, 3>> out;
+                std::unordered_map<large_num, std::array<double, 3>> out;
 
                 while (in.read_row(id, lenght, bankfull, spatID, width)) {
                     try {
@@ -631,15 +631,15 @@ namespace GlobalFlow {
              * @param bankfull_depth A map with addition information @see calculateRiverStage
              */
             void readBlueCells(std::string file,
-                               std::unordered_map<int, std::array<double, 3>> bankfull_depth) {
+                               std::unordered_map<large_num, std::array<double, 3>> bankfull_depth) {
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
                 large_num spatID = 0;
-                double elevation = 0;
+                double riverElevation = 0;
                 std::vector<large_num> nodeIDs;
                 large_num nodeID;
 
-                while (in.read_row(spatID, elevation)) {
+                while (in.read_row(spatID, riverElevation)) {
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
@@ -656,21 +656,20 @@ namespace GlobalFlow {
                         throw "Error in reading spatID";
                     }
 
-                    double flowHead = elevation;
-                    double depth = bankfull_depth[nodeID][0];
+                    double depth = bankfull_depth.at(nodeID)[0];
                     if (depth <= 1) {
-                        depth = 1;
+                        depth = 1; // river depth is at least 1 meter
                     }
-                    double riverBottom = elevation - depth;
+                    double riverBottom = riverElevation - depth;
                     double K = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
                     double riverWidthFactor =
-                            K * bankfull_depth[nodeID][2] * bankfull_depth[nodeID][1] / (flowHead - riverBottom);
+                            K * bankfull_depth.at(nodeID)[2] * bankfull_depth.at(nodeID)[1] / (riverElevation - riverBottom);
                     if (riverWidthFactor <= 0) { riverWidthFactor = 1; }
 
                     nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
-                                                  flowHead * Model::si::meter,
-                                                  riverWidthFactor,
-                                                  riverBottom * Model::si::meter);
+                                                       riverElevation * Model::si::meter,
+                                                       riverWidthFactor,
+                                                       riverBottom * Model::si::meter);
                 }
             };
 

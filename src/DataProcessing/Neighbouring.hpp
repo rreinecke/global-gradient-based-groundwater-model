@@ -35,7 +35,7 @@ namespace DataProcessing
 template<class T>
 using Matrix = std::vector<std::vector<T>>;
 using large_num = unsigned long int;
-using n_array = std::array<int,4>;
+using n_array = std::array<large_num,4>;
 
 /**
  * Modflow like grid file
@@ -48,12 +48,12 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
 * Builds a map of neighbouring nodes based spatial Id's and resolution
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
-void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, int resolution,
+void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, large_num resolution,
                    int numberOfLayers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-n_array getNeighboursBySpatID(large_num spatID, large_num res);
+int getNeighbourSpatID(int spatID, int j, int res);
 
 
 /**
