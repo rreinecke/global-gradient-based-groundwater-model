@@ -87,20 +87,6 @@ add_executable(new_zealand_model_vdf tests/NewZealandVDF/runner.cpp ${new_zealan
 target_link_libraries(new_zealand_model_vdf pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
-# Global Model
-################################
-add_subdirectory(tests/Global)
-set(global_model_src ${SOURCE})
-list(REMOVE_ITEM global_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-list(REMOVE_ITEM global_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
-list(REMOVE_ITEM global_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
-list(REMOVE_ITEM global_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel3/simpleVDF3.cpp)
-list(REMOVE_ITEM global_model_src ${CMAKE_SOURCE_DIR}/tests/NewZealandVDF/runner.cpp)
-add_executable(global_model tests/Global/runner.cpp ${global_model_src} ${HEADERS})
-target_link_libraries(global_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
-
-
-################################
 # Unit Tests
 ################################
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest
@@ -135,7 +121,6 @@ list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/s
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel3/simpleVDF3.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/NewZealandVDF/runner.cpp)
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/Global/runner.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)

@@ -76,17 +76,19 @@ namespace GlobalFlow {
                                  op.isConfined(0), op.isDensityVariable(),
                                  op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
                                  op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
-                    LOG(userinfo) << "- reading mapping";
+                    LOG(userinfo) << "- reading mapping of SpatID to ArcID";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
                 }
 
-                LOG(userinfo) << "Building the model layer(s) below";
-                DataProcessing::buildBottomLayers(nodes,
-                                                  op.getNumberOfLayers(),
-                                                  op.getConfinements(),
-                                                  op.getAquiferDepth(),
-                                                  op.getInitialK(),
-                                                  op.getAnisotropy());
+                if (op.getNumberOfLayers() > 1) {
+                    LOG(userinfo) << "Building the model layer(s) below";
+                    DataProcessing::buildBottomLayers(nodes,
+                                                      op.getNumberOfLayers(),
+                                                      op.getConfinements(),
+                                                      op.getAquiferDepth(),
+                                                      op.getInitialK(),
+                                                      op.getAnisotropy());
+                }
 
                 LOG(userinfo) << "Reading groundwater recharge";
                 //readGWRecharge(buildDir(op.getRecharge()));
@@ -105,7 +107,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading e-folding";
                 readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
 
-                // read either initial head (default) or equal water table depth from file, if available
+                // read either initial head (default) or equilibrium water table depth from file, if available
                 if (op.isInitialHeadFromFile()){
                     LOG(userinfo) << "Reading initial head";
                     readInitialHeads((buildDir(op.getInitialHeadsDir())));
@@ -113,7 +115,7 @@ namespace GlobalFlow {
                     LOG(userinfo) << "Reading equal water table depth";
                     readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
                 }
-
+/*
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
                     readRiverConductance(buildDir(op.getKRiver()));
@@ -121,13 +123,14 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getSurfaceWaterElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
-
+*/
+/*
                 LOG(userinfo) << "Reading lakes and wetlands";
                 readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getLocalLakes()),
                                      buildDir(op.getLocalWetlands()));
-
+*/
                 if (op.isDensityVariable()) {
 
                     LOG(userinfo) << "Reading initial zeta heights";
@@ -145,7 +148,7 @@ namespace GlobalFlow {
                 }
 
                 if (op.isRowCol()) {
-                    LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+                    LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in a file)";
                     DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
                 } else {
                     LOG(userinfo) << "Building grid by spatial ID";
@@ -597,7 +600,7 @@ namespace GlobalFlow {
                 in.read_header(io::ignore_no_column, "POINTID", "length", "bankfull", "spatID", "width");
 
                 int id = 0;
-                double lenght = 0;
+                double length = 0;
                 double bankfull = 0;
                 double width = 0;
                 large_num spatID = 0;
@@ -605,20 +608,15 @@ namespace GlobalFlow {
                 large_num nodeID;
                 std::unordered_map<large_num, std::array<double, 3>> out;
 
-                while (in.read_row(id, lenght, bankfull, spatID, width)) {
-                    try {
-                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
-                    }
-                    catch (const std::out_of_range &ex) {
-                        //if Node does not exist ignore entry
+                while (in.read_row(id, length, bankfull, spatID, width)) {
+                    try { nodeIDs = lookupSpatIDtoNodeIDs.at(spatID); }
+                    catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                         continue;
                     }
-                    if (nodeIDs.empty()){
-                        continue;
-                    }
+                    if (nodeIDs.empty()){ continue; }
                     nodeID = nodeIDs[0];
                     double bankfull_depth = 0.349 * std::pow(bankfull, 0.341);
-                    out[nodeID] = {{bankfull_depth, width, lenght * 1000}};
+                    out[nodeID] = {{bankfull_depth, width, length * 1000}};
                 }
                 return out;
             }
@@ -641,14 +639,10 @@ namespace GlobalFlow {
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
-                    catch (const std::out_of_range &ex) {
-                        //if Node does not exist ignore entry
-                        //cout << "ID in elevation that has no corresponding node";
+                    catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                         continue;
                     }
-                    if (nodeIDs.empty()){
-                        continue;
-                    }
+                    if (nodeIDs.empty()){ continue; }
                     nodeID = nodeIDs[0];
                     if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
                         throw "Error in reading spatID";
@@ -736,16 +730,16 @@ namespace GlobalFlow {
                         double M = 5;
                         //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
                         double conduct = (K_s * A_s) / M;
-                        if(conduct > 1e6){
-                            std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
-                        }
+                        //if(conduct > 1e6){
+                        //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
+                        //}
 
                         if (itter == 0) {
                             //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
                             //Global LAKE
                             //flowHead -= 10;
                             bottom -= 100;
-                            nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE, // Question: GLOBAL_LAKE?
+                            nodes->at(nodeID)->addExternalFlow(Model::LAKE, // Question: GLOBAL_LAKE?
                                                           flowHead * Model::si::meter,
                                                           conduct,
                                                           bottom * Model::si::meter);

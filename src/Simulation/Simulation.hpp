@@ -304,6 +304,7 @@ namespace GlobalFlow {
                 DRAINS,
                 RIVER_MM,
                 LAKES,
+                GLOBAL_LAKES, // Question: GLOBAL_LAKES?
                 WETLANDS,
                 GLOBAL_WETLANDS,
                 RECHARGE,
@@ -311,7 +312,6 @@ namespace GlobalFlow {
                 NAG,
                 STORAGE,
                 GENERAL_HEAD_BOUNDARY
-                // Question: add global lake?
             };
 
             /**
@@ -383,6 +383,12 @@ namespace GlobalFlow {
                                     return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
                                 });
                         break;
+                    case GLOBAL_LAKES:
+                        tmp = getError(
+                                [this](int i) {
+                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                                });
+                        break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
                             return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
@@ -398,7 +404,7 @@ namespace GlobalFlow {
                         break;
                 }
 
-                stream << "IN :" << tmp.IN << "  OUT :" << tmp.OUT;
+                stream << "IN: " << tmp.IN << "  OUT: " << tmp.OUT;
                 return stream.str();
             }
 
@@ -418,6 +424,7 @@ namespace GlobalFlow {
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
                 LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);
                 LOG(level) << "Lakes: " << getFlowByName(LAKES);
+                LOG(level) << "Global lakes: " << getFlowByName(GLOBAL_LAKES);
                 LOG(level) << "Wetlands: " << getFlowByName(WETLANDS);
                 LOG(level) << "Global wetlands: " << getFlowByName(GLOBAL_WETLANDS);
                 LOG(level) << "Recharge: " << getFlowByName(RECHARGE);

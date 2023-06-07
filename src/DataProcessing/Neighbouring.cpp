@@ -104,16 +104,15 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::ve
                 spatID = nodes->at(nodeID)->getSpatID();
                 spatID_neig = getNeighbourSpatID(spatID, j, resolution);
                 if (spatID_neig > 0) { //
-                    if (spatIDtoNodeIDs.contains((unsigned long) spatID_neig)) {
-                        if (spatIDtoNodeIDs.at((unsigned long) spatID_neig).size() >
-                            0) { //Neighbour id exists in landmask
-                            nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig);
-                            nodeID_neig = spatIDtoNodeIDs.at(spatID_neig)[layer];
-                            nodes->at(nodeID)->setNeighbour(nodeID_neig, lu[j]);
-                        } else { // Neighbour is not in landmask
-                            // Calling function defined above to add boundary
-                            addBoundary(nodeID, layer, lu[j]);
-                        }
+                    if (spatIDtoNodeIDs.contains((unsigned long) spatID_neig) and
+                        not spatIDtoNodeIDs.at((unsigned long) spatID_neig).empty()) { //Neighbour id exists in landmask
+                        nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig);
+                        nodeID_neig = spatIDtoNodeIDs.at(spatID_neig)[layer];
+                        nodes->at(nodeID)->setNeighbour(nodeID_neig, lu[j]);
+                    } else {// Neighbour is not in landmask
+                        // Calling function defined above to add boundary
+                        //LOG(userinfo) << "adding boundary at nodeID" << nodeID;
+                        addBoundary(nodeID, layer, lu[j]);
                     }
                 }
             }
@@ -420,19 +419,20 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
  * @param aquifer_thickness
  */
 void buildBottomLayers(NodeVector nodes,
-                       int layers, std::vector<bool> conf,
+                       int numberOfLayers,
+                       std::vector<bool> conf,
                        std::vector<int> aquifer_thickness,
                        std::vector<double> conductances,
                        std::vector<double> anisotropies) {
-    assert(layers && "AsModel::signing 0 layers does not make any sense");
-    if (layers == 1) {
+    assert(numberOfLayers && "AsModel::signing 0 layers does not make any sense");
+    if (numberOfLayers == 1) {
         return;
     }
 
     size_t nodesPerLayer = nodes->size();
-    nodes->reserve(layers * nodesPerLayer);
+    nodes->reserve(numberOfLayers * nodesPerLayer);
 
-    LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << layers << " layers";
+    LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << numberOfLayers << " layers";
 
     size_t id = nodesPerLayer;
     large_num spatID;
@@ -458,7 +458,7 @@ void buildBottomLayers(NodeVector nodes,
     double slopeAdjFactor;
     Model::quantity<Model::Meter> vdfLock;
 
-    for (int j = 0; j < layers - 1; ++j) {
+    for (int j = 0; j < numberOfLayers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
         //TODO Parallell?
         for (int i = 0; i < nodesPerLayer; ++i) {
@@ -504,7 +504,7 @@ void buildBottomLayers(NodeVector nodes,
                 //is taken care of by neighbouring algorithm
                 continue;
             } else {
-                if (id > nodesPerLayer * layers) {
+                if (id > nodesPerLayer * numberOfLayers) {
                     LOG(critical) << "This is not possible!";
                     exit(9);
                 }
@@ -546,12 +546,12 @@ void buildBottomLayers(NodeVector nodes,
             }
 
             id++;
-            if (id > (nodesPerLayer * layers) - 1) {
+            if (id > (nodesPerLayer * numberOfLayers) - 1) {
                 break;
             }
         }
     }
-    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << nodesPerLayer * layers;
+    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << nodesPerLayer * numberOfLayers;
 };
 
 }

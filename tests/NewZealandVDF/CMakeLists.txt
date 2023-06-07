@@ -14,8 +14,8 @@ configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_nzVDF.json CO
 
 # read the NewZealand grid, initial zetas and recharge
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
-configure_file(data_5min/initial_zetas_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_nz.csv COPYONLY)
-configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
+#configure_file(data_5min/initial_zetas_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_nz.csv COPYONLY)
+#configure_file(data_5min/recharge_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_nz.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
 configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)

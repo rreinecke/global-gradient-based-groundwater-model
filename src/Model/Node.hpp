@@ -617,6 +617,8 @@ Modify Properties
 
             t_meter getBottom(){return get<t_meter, Elevation>() - get<t_meter, VerticalSize>();}
 
+            t_meter getHead(){ return get<t_meter, Head>(); }
+
             /**
              * @brief Get all outflow since simulation start
              */
