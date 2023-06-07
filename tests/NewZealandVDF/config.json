@@ -37,8 +37,8 @@
       "head_change": 1,
       "zeta_change": 0.000001,
       "damping": "false",
-      "min_damp": 0.01,
-      "max_damp": 0.5
+      "min_damp": 0.3,
+      "max_damp": 0.55
     },
     "input": {
       "data_config": {
@@ -58,7 +58,7 @@
         "effective_porosity": 0.2,
         "initial_head": 0,
         "K": [
-          0.1
+          0.01
         ],
         "ghb_K": 10,
         "aquifer_thickness": [

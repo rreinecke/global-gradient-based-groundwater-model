@@ -402,10 +402,10 @@ namespace GlobalFlow {
                     std::ofstream ofs;
                     ofs.open(filePath + ".csv", std::ofstream::out | std::ofstream::trunc);
                     if (printID) {
-                        ofs << "ID,";
+                        ofs << "nodeID,";
                     }
                     if (printXY) {
-                        ofs << "X,Y,";
+                        ofs << "lat,lon,";
                     }
                     ofs << "data";
                     ofs << std::endl;

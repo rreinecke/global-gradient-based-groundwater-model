@@ -722,15 +722,15 @@ Modify Properties
                     //ignore me there is no special_flow in this cell
                 }
                 t_vol_t eqFlow = getEqFlow(); // get the equilibrium lateral flows
-                if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
-                    if (flow.flowIsHeadDependant(head)) {
+                if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                    if (flow.flowIsHeadDependent(head)) {
                         ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
                               flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     } else { // flow is not head dependent when the head is below the bottom of the simulated cell
                         ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
                               flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     }
-                } else {
+                } else { // FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF, GENERAL_HEAD_BOUNDARY
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
                           flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                 }
@@ -2148,8 +2148,8 @@ Modify Properties
                 }
                 t_vol_t eqFlow = getEqFlow();
                 for (const auto &flow : externalFlows) {
-                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
-                        if (flow.second.flowIsHeadDependant(head)) {
+                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) { // Question: GLOBAL_LAKE?
+                        if (flow.second.flowIsHeadDependent(head)) {
                             out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                         }
                     } else {
@@ -2165,7 +2165,7 @@ Modify Properties
              * Flow can be added to constant flows on right side of the equations
              * If head is above river bottom for example
              */
-            t_vol_t calculateNotHeadDependandFlows() noexcept {
+            t_vol_t calculateNotHeadDependentFlows() noexcept {
                 t_meter eq_head = get<t_meter, EQHead>();
                 t_meter head = get<t_meter, Head>();
                 t_vol_t recharge = 0 * si::cubic_meter / day;
@@ -2177,8 +2177,8 @@ Modify Properties
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 //Q part is already subtracted in RHS
                 for (const auto &flow : externalFlows) {
-                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
-                        if (not flow.second.flowIsHeadDependant(head)) {
+                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) { // Question: GLOBAL_LAKE?
+                        if (not flow.second.flowIsHeadDependent(head)) {
                             out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>() *
                                    flow.second.getBottom();
                         }
@@ -2252,11 +2252,11 @@ Modify Properties
              * @return volume per time
              */
             t_vol_t getRHSConstantDensity(){
-                t_vol_t extFlows = -getQ();
+                t_vol_t extFlows = -getQ(); // e.g., recharge
                 //LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
-                t_vol_t dewateredFlow = calculateDewateredFlow(); // only for multiple layers
+                t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
                 //LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
-                t_vol_t rivers = calculateNotHeadDependandFlows();
+                t_vol_t notHeadDependentFlows = calculateNotHeadDependentFlows(); // e.g., rivers, lakes, wetlands //
                 //LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
@@ -2264,7 +2264,8 @@ Modify Properties
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
-                t_vol_t out = extFlows + dewateredFlow - rivers - storageFlow; //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
+                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow;
+                //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
                 return out;
             }

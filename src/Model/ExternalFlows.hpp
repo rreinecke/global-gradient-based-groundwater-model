@@ -123,7 +123,7 @@ namespace GlobalFlow {
              * @param head The current hydraulic head
              * @return Bool
              */
-            bool flowIsHeadDependant(t_meter head) const noexcept {
+            bool flowIsHeadDependent(t_meter head) const noexcept {
                 return (head > bottom);
             }
 
@@ -161,7 +161,6 @@ namespace GlobalFlow {
             t_meter getBottom() const noexcept { return bottom; }
 
             t_vol_t getRecharge() const noexcept { return special_flow; }
-
 
             t_meter getFlowHead() const noexcept { return flowHead; }
 

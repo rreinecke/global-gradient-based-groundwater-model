@@ -172,9 +172,9 @@ namespace GlobalFlow {
                  */
                 pos_v getPositions(Simulation::Simulation &simulation) {
                     return getData<std::pair<double, double>>(simulation, [&simulation](int i) {
-                        double x{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>()};
-                        double y{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>()};
-                        return make_pair(x, y);
+                        double lat{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>()};
+                        double lon{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>()};
+                        return make_pair(lat, lon);
                     });
                 }
 

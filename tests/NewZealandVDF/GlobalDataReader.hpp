@@ -47,7 +47,7 @@ namespace GlobalFlow {
                     LOG(userinfo) << "- reading grid by rows and columns";
                     grid = readGrid(nodes,
                                     buildDir(op.getNodesDir()),
-                                    op.getNumberOfNodesPerLayer(),
+                                    op.getNumberOfNodesPerLayer(), // for nz: 4603, for na: 396787, for global: 2161074
                                     op.getNumberOfLayers(),
                                     op.getNumberOfRows(),
                                     op.getNumberOfCols(),
@@ -123,10 +123,10 @@ namespace GlobalFlow {
                 }
 
                 LOG(userinfo) << "Reading lakes and wetlands";
-                readLakesAndWetlands(buildDir(op.getLocalWetlands()),
+                readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalWetlands()),
-                                     buildDir(op.getGlobalLakes()),
-                                     buildDir(op.getGlobalLakes()));
+                                     buildDir(op.getLocalLakes()),
+                                     buildDir(op.getLocalWetlands()));
 
                 if (op.isDensityVariable()) {
 
@@ -299,20 +299,18 @@ namespace GlobalFlow {
                          double slopeAdjFactor,
                          double vdfLock,
                          vector<double> densityZones) {
-                io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "col", "row");
+                io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area");
                 double lon{0};
                 double lat{0};
                 double area{0};
-                large_num col{0}; // todo remove
-                large_num row{0}; // todo remove
                 large_num spatID{0};
                 int nodeID{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
                 vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
                 vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
-                while (in.read_row(spatID, lon, lat, area, col, row)) {
+                while (in.read_row(spatID, lon, lat, area)) {
                     //area is in km needs to be in m
                     //TODO implement a container for these parameters
                     nodes->emplace_back(new Model::StandardNode(nodes,
@@ -656,14 +654,14 @@ namespace GlobalFlow {
                         throw "Error in reading spatID";
                     }
 
-                    double depth = bankfull_depth.at(nodeID)[0];
+                    double depth = bankfull_depth[nodeID][0];
                     if (depth <= 1) {
                         depth = 1; // river depth is at least 1 meter
                     }
                     double riverBottom = riverElevation - depth;
                     double K = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
                     double riverWidthFactor =
-                            K * bankfull_depth.at(nodeID)[2] * bankfull_depth.at(nodeID)[1] / (riverElevation - riverBottom);
+                            K * bankfull_depth[nodeID][2] * bankfull_depth[nodeID][1] / (riverElevation - riverBottom);
                     if (riverWidthFactor <= 0) { riverWidthFactor = 1; }
 
                     nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
@@ -685,8 +683,8 @@ namespace GlobalFlow {
                                       std::string pathLocalLakes,
                                       std::string pathLocalWetlands) {
 
-                std::vector<std::string> paths = {pathGlobalLakes, pathGlobalWetlands, pathLocalLakes,
-                                                  pathLocalWetlands};
+                std::vector<std::string> paths = {pathGlobalLakes, pathGlobalWetlands,
+                                                  pathLocalLakes, pathLocalWetlands};
 
                 int itter = 0;
                 for (std::string path : paths) {
@@ -738,16 +736,16 @@ namespace GlobalFlow {
                         double M = 5;
                         //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
                         double conduct = (K_s * A_s) / M;
-                        //if(conduct > 1e6){
-                        //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
-                        //}
+                        if(conduct > 1e6){
+                            std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
+                        }
 
                         if (itter == 0) {
                             //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
                             //Global LAKE
                             //flowHead -= 10;
                             bottom -= 100;
-                            nodes->at(nodeID)->addExternalFlow(Model::LAKE,
+                            nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE, // Question: GLOBAL_LAKE?
                                                           flowHead * Model::si::meter,
                                                           conduct,
                                                           bottom * Model::si::meter);

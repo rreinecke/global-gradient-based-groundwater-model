@@ -23,7 +23,8 @@ configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../d
 configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
-#configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
+configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
+#configure_file(../../data_5min/conductance.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/conductance.csv COPYONLY)
 
 
 ## global and local wetlands

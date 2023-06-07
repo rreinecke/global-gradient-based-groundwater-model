@@ -20,7 +20,7 @@ namespace GlobalFlow {
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,neighbour_count,elevation,hyd_cond,recharge" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,neighbour_count,elevation,hyd_cond,recharge,lake,global_lake,wetland,global_wetland,river_mm,river_mm_flowhead" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();
@@ -33,7 +33,13 @@ namespace GlobalFlow {
                 sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
                 sim.getNodes()->at(j)->getElevation().value() << "," <<
                 sim.getNodes()->at(j)->getK().value() << "," <<
-                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::LAKE).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
                 std::endl;
         }
         LOG(debug) << "simple k set for all nodes" << std::endl;
@@ -43,7 +49,7 @@ namespace GlobalFlow {
 
     void NZRunner::simulate() {
 
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 30);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 2);
         for (Simulation::step step : stepper) {
             step.first->toggleSteadyState();
             step.first->solve();
