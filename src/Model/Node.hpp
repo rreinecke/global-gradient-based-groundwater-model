@@ -607,11 +607,13 @@ Modify Properties
 
             void setSimpleK(){simpleK = true;}
 
-            double getSpatID() {return get<large_num, SpatID>();}
+            int getSpatID() {return (int) get<large_num, SpatID>();}
 
             double getLat() {return get<double, Lat>();}
 
             double getLon() {return get<double, Lon>();}
+
+            t_s_meter getArea(){return get<t_s_meter, Area>();}
 
             t_meter getElevation(){return get<t_meter, Elevation>();}
 
@@ -2179,7 +2181,7 @@ Modify Properties
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 //Q part is already subtracted in RHS
                 for (const auto &flow : externalFlows) {
-                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) { // Question: GLOBAL_LAKE?
+                    if (is(flow.second.getType()).in(RIVER, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND, DRAIN)) { // Question: GLOBAL_LAKE?
                         if (not flow.second.flowIsHeadDependent(head)) {
                             out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>() *
                                    flow.second.getBottom();
@@ -2255,11 +2257,11 @@ Modify Properties
              */
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ(); // e.g., recharge
-                //LOG(userinfo) << "extFlows: " << extFlows.value() << std::endl;
+                //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
-                //LOG(userinfo) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
+                //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t notHeadDependentFlows = calculateNotHeadDependentFlows(); // e.g., rivers, lakes, wetlands //
-                //LOG(userinfo) << "rivers: " << rivers.value() << std::endl;
+                //LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
                 if (steadyState) {

@@ -7,6 +7,13 @@
         "field": "Head",
         "ID": "true",
         "position": "true"
+      },
+      {
+        "name": "flowHead",
+        "type": "csv",
+        "field": "FlowHead",
+        "ID": "true",
+        "position": "true"
       }
     ],
     "InnerIteration": {

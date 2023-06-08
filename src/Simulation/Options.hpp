@@ -35,12 +35,12 @@ namespace GlobalFlow {
             vector<string> ELEVATION_a;
             vector<string> EFOLDING_a;
             vector<string> EQUAL_WATER_TABLE_DEPTH_a;
-            vector<string> SURFACE_WATER_ELEVATION_a;
+            vector<string> RIVER_ELEVATION_a;
 
             string ELEVATION{""};
             string EFOLDING{""};
             string EQUAL_WATER_TABLE_DEPTH{""};
-            string SURFACE_WATER_ELEVATION{""};
+            string RIVER_ELEVATION{""};
 
             string RECHARGE{""};
             string ZONES_SOURCES_SINKS_FILE{""};
@@ -307,8 +307,8 @@ namespace GlobalFlow {
                 return EQUAL_WATER_TABLE_DEPTH;
             }
 
-            string getSurfaceWaterElevation() {
-                return SURFACE_WATER_ELEVATION;
+            string getRiverElevation() {
+                return RIVER_ELEVATION;
             }
 
             vector<string>
@@ -327,8 +327,8 @@ namespace GlobalFlow {
             }
 
             vector<string>
-            getSurfaceWaterElevation_a() {
-                return SURFACE_WATER_ELEVATION_a;
+            getRiverElevation_a() {
+                return RIVER_ELEVATION_a;
             }
 
             string

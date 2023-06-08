@@ -3,7 +3,7 @@
     "model_config": {
       "nodes": "grid_nz.csv",
       "row_cols": "false",
-      "steady_state": "true",
+      "steady_state": "false",
       "number_of_nodes_per_layer": 4603,
       "number_of_rows": 156,
       "number_of_cols": 146,
@@ -86,7 +86,7 @@
         "recharge": "mean_yearly_sum_recharge.csv",
         "river_extent": "river_extent.csv",
         "spatID-arcID": "spatID-arcID.csv",
-        "surface_water_elevation": "surface_water_elevation.csv",
+        "river_elevation": "surface_water_elevation.csv",
         "e-folding": {
           "E-Folding": [
             "Africa_F.csv",

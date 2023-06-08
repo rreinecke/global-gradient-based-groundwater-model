@@ -380,7 +380,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
  * @param from is position in vector of top layer node
  * @param to is position in vector of node that receive neighbouring information
  */
-void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
+void copyNeighbour(size_t from, size_t to, NodeVector nodes, size_t layer_shift){
     auto neighbours = nodes->at(from)->getListOfNeighbours();
     for(const auto &n : neighbours){
         if(n.first == Model::DOWN or n.first == Model::TOP){
@@ -395,15 +395,15 @@ void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
  * @param nodes
  * @param layers
  */
-void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
-    assert(layers && "0 layers does not make sense");
-    if (layers == 1) {
+void copyNeighboursToBottomLayers(NodeVector nodes, int numberOfLayers){
+    assert(numberOfLayers && "0 layers does not make sense");
+    if (numberOfLayers == 1) {
         return;
     }
-    size_t top_layer_size = nodes->size() / layers;
-    for (int i = 0; i < top_layer_size; ++i) {
-        for (int j = 0; j < layers - 1; ++j) {
-            copyNeighbour(i ,i + (top_layer_size * j), nodes, top_layer_size  * j);
+    size_t nodesPerLayer = nodes->size() / numberOfLayers;
+    for (int i = 0; i < nodesPerLayer; ++i) {
+        for (int j = 0; j < numberOfLayers - 1; ++j) {
+            copyNeighbour(i ,i + (nodesPerLayer * j), nodes, (int) nodesPerLayer  * j);
         }
     }
 }

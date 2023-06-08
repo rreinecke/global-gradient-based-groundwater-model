@@ -20,16 +20,17 @@ namespace GlobalFlow {
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,neighbour_count,elevation,hyd_cond,head,hasGHB,recharge,lake,global_lake,wetland,global_wetland,river_mm,river_mm_flowhead" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,elevation,hyd_cond,initial_head,hasGHB,recharge,lake,global_lake,wetland,global_wetland,river_mm,river_mm_flowhead" << std::endl; //
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             sim.getNodes()->at(j)->setSimpleK();
-
+            const auto default_precision = (int) std::cout.precision();
             myfile <<
                 sim.getNodes()->at(j)->getID() << "," <<
-                sim.getNodes()->at(j)->getSpatID() << "," <<
+                setprecision(7) << sim.getNodes()->at(j)->getSpatID() << setprecision(default_precision) << "," <<
                 sim.getNodes()->at(j)->getLon() << "," <<
                 sim.getNodes()->at(j)->getLat() << "," <<
+                sim.getNodes()->at(j)->getArea().value() << "," <<
                 sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
                 sim.getNodes()->at(j)->getElevation().value() << "," <<
                 sim.getNodes()->at(j)->getK().value() << "," <<
@@ -40,8 +41,8 @@ namespace GlobalFlow {
                 sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
                 sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
                 sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() << "," <<
-                //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
-                //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
+                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
+                sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
                 std::endl;
         }
         LOG(debug) << "simple k set for all nodes" << std::endl;

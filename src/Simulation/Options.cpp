@@ -124,7 +124,7 @@ namespace GlobalFlow {
 
             ELEVATION = getOptional("elevation", data);
             EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
-            SURFACE_WATER_ELEVATION = getOptional("surface_water_elevation", data);
+            RIVER_ELEVATION = getOptional("river_elevation", data);
 
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
