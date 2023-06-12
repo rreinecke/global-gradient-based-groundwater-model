@@ -224,7 +224,6 @@ void inline
 Equation::preconditioner_zetas() {
     LOG(numerics) << "Decomposing Matrix (zetas)";
     cg_zetas.compute(A_zetas);
-
     if (cg_zetas.info() != Success) {
         LOG(numerics) << "Fail in decomposing matrix (zetas)";
         throw "Fail in decomposing matrix (zetas)";
@@ -337,7 +336,7 @@ Equation::adjustZetaHeights() {
 void inline
 Equation::updateBudget() {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesPerLayer * numberOfLayers; ++k) {
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->saveMassBalance();
     }
 }
@@ -377,7 +376,7 @@ Equation::solve() {
         double lowerBound = maxHeadChange;
         double changeMax = 0;
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesPerLayer * numberOfLayers; ++k) {
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             double val = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (val > changeMax) ? val : changeMax;

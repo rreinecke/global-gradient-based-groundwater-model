@@ -734,7 +734,7 @@ Modify Properties
                         ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
                               flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     }
-                } else { // FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF, GENERAL_HEAD_BOUNDARY
+                } else { // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
                           flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                 }
@@ -2209,9 +2209,10 @@ Modify Properties
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
+                    conduct = 0 * si::square_meter / day;
                     if (got == neighbours.end()) {
                         //No neighbouring node
-                        continue;
+                        // continue;
                     } else {
                         //There is a neighbour node
                         if (got->first == TOP or got->first == DOWN) {
@@ -2234,7 +2235,7 @@ Modify Properties
                 }
 
                 // To solve for the head at this node, the conductances to neighbours and HCOF are used
-                t_s_meter_t conductNode;
+                t_s_meter_t conductNode = 0 * si::square_meter / day;
                 // subtract the conductances to neighbours (which were calculated above)
                 for (const auto &c : out) { conductNode = conductNode - c.second; }
                 // add HCOF
@@ -2243,6 +2244,8 @@ Modify Properties
                                                      getStorageCapacity(),
                                                      getP());
                 conductNode = conductNode + hcof;
+                //LOG(debug) << "conductNode: " << conductNode.value();
+
                 // check for nan
                 NANChecker(conductNode.value(), "conductNode");
 
@@ -2257,11 +2260,11 @@ Modify Properties
              */
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ(); // e.g., recharge
-                //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
+                LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
                 //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t notHeadDependentFlows = calculateNotHeadDependentFlows(); // e.g., rivers, lakes, wetlands //
-                //LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
+                LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
                 if (steadyState) {
@@ -2269,7 +2272,7 @@ Modify Properties
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow;
-                //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
+                LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
                 return out;
             }

@@ -438,7 +438,10 @@ namespace GlobalFlow {
                         continue;
                     }
                     nodeID = nodeIDs[0];
-                    nodes->at(nodeID)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct, bottom * Model::si::meter);
+                    nodes->at(nodeID)->addExternalFlow(Model::RIVER,
+                                                       head * Model::si::meter,
+                                                       conduct,
+                                                       bottom * Model::si::meter);
                 }
             }
 
@@ -625,10 +628,10 @@ namespace GlobalFlow {
             /**
              * @brief Reads in river definitions based on a specific elevation data-set
              * @param file to read from
-             * @param bankfull_depth A map with additional information @see calculateRiverStage
+             * @param riverStage A map with additional information @see calculateRiverStage
              */
             void readBlueCells(std::string file,
-                               std::unordered_map<large_num, std::array<double, 3>> bankfull_depth) {
+                               std::unordered_map<large_num, std::array<double, 3>> riverStage) {
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
                 large_num spatID = 0;
@@ -649,20 +652,24 @@ namespace GlobalFlow {
                         throw "Error in reading spatID";
                     }
 
-                    double depth = bankfull_depth[nodeID][0];
-                    if (depth <= 1) {
-                        depth = 1; // river depth is at least 1 meter
+                    double bankfull_depth = riverStage[nodeID][0];
+                    double width = riverStage[nodeID][1];
+                    double length = riverStage[nodeID][2];
+
+                    if (bankfull_depth <= 1) {
+                        bankfull_depth = 1; // river depth is at least 1 meter
                     }
-                    double riverBottom = riverElevation - depth;
+                    double riverBottom = riverElevation - bankfull_depth;
                     double K = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
-                    double riverWidthFactor =
-                            K * bankfull_depth[nodeID][2] * bankfull_depth[nodeID][1] / (riverElevation - riverBottom);
-                    if (riverWidthFactor <= 0) { riverWidthFactor = 1; }
+                    double conduct = K * length * width / bankfull_depth;
+                    if (conduct <= 0) { conduct = 1; }
 
                     nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
                                                        riverElevation * Model::si::meter,
-                                                       riverWidthFactor,
+                                                       conduct,
                                                        riverBottom * Model::si::meter);
+                    LOG(debug) << "conduct = " << conduct << ", K = " << K <<
+                                  ", length = " << length << ", width = " << width << ", bankfull depth = " << bankfull_depth;
                 }
             };
 
@@ -735,6 +742,7 @@ namespace GlobalFlow {
                         //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
                         //}
 
+                        LOG(debug) << "itter = " << itter << ", conduct = " << conduct;
                         if (itter == 0) {
                             //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
                             //Global LAKE

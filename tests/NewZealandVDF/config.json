@@ -3,7 +3,6 @@
     "model_config": {
       "nodes": "grid_nz.csv",
       "row_cols": "false",
-      "steady_state": "false",
       "number_of_nodes_per_layer": 4603,
       "number_of_rows": 156,
       "number_of_cols": 146,
@@ -38,7 +37,7 @@
       "zeta_change": 0.000001,
       "damping": "false",
       "min_damp": 0.3,
-      "max_damp": 0.55
+      "max_damp": 0.95
     },
     "input": {
       "data_config": {
@@ -60,7 +59,7 @@
         "K": [
           0.01
         ],
-        "ghb_K": 10000000,
+        "ghb_K": 10,
         "aquifer_thickness": [
           100
         ],
