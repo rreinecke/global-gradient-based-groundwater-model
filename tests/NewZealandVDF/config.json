@@ -13,7 +13,7 @@
       "confinement": [
         "true"
       ],
-      "density_variable": "false",
+      "density_variable": "true",
       "density_zones": [
         1000,
         1025
@@ -33,7 +33,7 @@
       "iterations": 10000,
       "inner_itter": 50,
       "closing_crit": 1e-185,
-      "head_change": 1,
+      "head_change": 0.1,
       "zeta_change": 0.000001,
       "damping": "false",
       "min_damp": 0.3,

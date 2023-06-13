@@ -196,40 +196,46 @@ double smoothstep(double edge0, double edge1, double x) {
     return x * x * (3 - 2 * x);
 }
 
+/**
+ * @brief river conductance estimation following Miguez-Macho et al. (2007)
+ * @param current_recharge
+ * @param eq_head
+ * @param current_head
+ * @param eq_flow
+ * @return
+ */
 t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
                                   t_meter eq_head,
                                   t_meter current_head,
                                   t_vol_t eq_flow) const noexcept {
+    //possibility to lock conductance equation with former recharge e.g. from steady-state model
+    if (lock_recharge) {
+        //current_recharge = locked_recharge;
+        return locked_conductance * mult;
+    }
 
     //LOG(debug) << "recharge:" << current_recharge.value() << "head:" << eq_head.value() << "StreamStage: " << flowHead.value() << "Bottom" << bottom.value() << "EQFlow" << eq_flow.value() << "AltConduct" << conductance.value();
-
     t_s_meter_t out = 0 * si::square_meter / day;
 
     //Static MM
     t_meter stage = eq_head - flowHead;
     NANChecker(stage.value(), "ERC stage problem");
-
-    //Scale parameter not in use
-    double p = 1;
     if (stage.value() <= 0) {
         stage = .1 * si::meter;
     }
 
-    //possibility to lock conductance equation with former recharge e.g. from steady-state model
-    if (lock_recharge) {
-        current_recharge = locked_recharge;
-        return locked_conductance * mult;
-    }
+    //Scale parameter (not in use)
+    t_dim p = 1 * si::si_dimensionless;
 
-    out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;
+    // River conductance of gaining rivers in steady state following Miguez-Macho et al. (2007)
+    out = (current_recharge * p + eq_flow) / stage;
     NANChecker(out.value(), "ERC Recharge Problem");
 
-    if (out < conductance) {
-        //Only happens if cell was loosing in eq and is now gaining
+    if (out < conductance) { //Only happens if cell was loosing in eq and is now gaining
         out = conductance;
     }
 
-    if (current_head < flowHead - 1 * si::meter) {
+    if (current_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from filefollowing Harbaugh (2005)
         t_s_meter_t tmp_conduct = conductance;
         if (tmp_conduct.value() > 1e+10) {
             tmp_conduct = 1e+10 * si::square_meter / day;

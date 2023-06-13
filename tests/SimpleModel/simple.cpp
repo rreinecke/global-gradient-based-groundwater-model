@@ -30,7 +30,7 @@ void StandaloneRunner::simulate() {
         step.first->toggleSteadyState();
     }
 
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
 
     int stepNumber = 1;
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);

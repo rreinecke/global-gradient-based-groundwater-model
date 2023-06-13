@@ -2260,11 +2260,11 @@ Modify Properties
              */
             t_vol_t getRHSConstantDensity(){
                 t_vol_t extFlows = -getQ(); // e.g., recharge
-                LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
+                //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
                 //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
                 t_vol_t notHeadDependentFlows = calculateNotHeadDependentFlows(); // e.g., rivers, lakes, wetlands //
-                LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
+                //LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
                 t_vol_t storageFlow =
                         getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
                 if (steadyState) {
@@ -2272,7 +2272,7 @@ Modify Properties
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow;
-                LOG(debug) << "RHS constant density: " << out.value() << std::endl;
+                //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
                 return out;
             }

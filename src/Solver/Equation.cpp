@@ -426,6 +426,7 @@ Equation::solve() {
 
                 if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
+                    LOG(debug) << "x (converged):\n" << x << std::endl;
                     break;
                 }
             }
@@ -542,14 +543,14 @@ Equation::solve_zetas(){
             char smallZetaChanges{0};
             bool zetaConverged{false};
 
-            //LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
-            //LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
+            LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
+            LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
             while (iterations < IITER) {
                 LOG(numerics) << "Outer iteration (zetas): " << iterations;
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+                LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
                 updateIntermediateZetas(iterOffset, localZetaID);
 
