@@ -397,6 +397,9 @@ namespace GlobalFlow {
                             nodes->at(nodeID)->setZeta(zetaID, zeta);
                         }
                         nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZetas-2, numZetas-1);
+                    } else {
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, 0, numZetas-1);
+
                     }
                 }
             }

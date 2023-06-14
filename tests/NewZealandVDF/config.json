@@ -59,7 +59,7 @@
         "K": [
           0.01
         ],
-        "ghb_K": 10,
+        "ghb_K": 100000000,
         "aquifer_thickness": [
           100
         ],
