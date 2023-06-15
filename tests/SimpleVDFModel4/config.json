@@ -57,13 +57,11 @@
         "effective_porosity": 0.2,
         "initial_head": 1,
         "K": [
-          0.8
+          1
         ],
         "ghb_K": 1000000,
         "aquifer_thickness": [
-          20,
-          1,
-          20
+          10
         ],
         "anisotropy": [
           10
@@ -77,21 +75,12 @@
       },
       "data": {
         "elevation": "elevation_simpleVDF4.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF4.csv",
         "initial_zetas": "initial_zetas_simpleVDF4.csv",
         "zones_sources_sinks": "zones_sources_sinks_simpleVDF4.csv",
         "recharge": "recharge_simpleVDF4.csv",
         "initial_heads": "heads_simpleVDF4.csv",
-        "lithology": "lithology_simpleVDF4.csv",
-        "local_lakes": "lakes.csv",
-        "local_wetlands": "wetlands.csv",
-        "river_extent": "river_extent.csv",
-        "spatID-arcID": "spatID-arcID.csv",
-        "river_elevation": "surface_water_elevation.csv",
-        "e-folding": {
-          "E-Folding": [
-            "efolding.csv"
-          ]
-        }
+        "river_conductance": "rivers_simpleVDF4.csv"
       }
     }
   }

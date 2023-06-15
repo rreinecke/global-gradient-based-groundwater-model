@@ -1,4 +1,4 @@
-#include "simpleVDF3.hpp"
+#include "simpleVDF4.hpp"
 
 
 namespace GlobalFlow {
@@ -7,11 +7,11 @@ using namespace std;
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_simpleVDF3.json");
+    op.load("data/config_simpleVDF4.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF3DataReader();
+    reader = new DataProcessing::SimpleVDF4DataReader();
     sim = Simulation::Simulation(op, reader);
 
 
@@ -38,14 +38,14 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 100);
     int stepNumber = 1;
-    LOG(debug) << sim.getNodes()->at(199); // printing node properties in debug file
+    LOG(debug) << sim.getNodes()->at(0); // printing node properties in debug file
 
     // for saving zetas in a csv
     ofstream myfile;
     myfile.open ("zetas.csv");
-    myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
+    myfile << "timestep,nodeID,zetaID,lat,lon,zeta" << std::endl;
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
@@ -60,8 +60,13 @@ void StandaloneRunner::simulate() {
         int zetaID = 1;
         double zeta;
         for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
+            myfile << stepNumber << "," <<
+                      nodeID << "," <<
+                      zetaID << "," <<
+                      sim.getNodes()->at(nodeID)->getLat() << "," <<
+                      sim.getNodes()->at(nodeID)->getLon() << "," <<
+                      sim.getNodes()->at(nodeID)->getZeta(zetaID).value() <<
+                      std::endl;
         }
 
         stepNumber++;
@@ -92,7 +97,7 @@ void StandaloneRunner::simulate() {
 void StandaloneRunner::getResults() {}
 
 void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF3.json", sim).write();
+    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF4.json", sim).write();
 }
 
 StandaloneRunner::StandaloneRunner() {}
