@@ -106,7 +106,7 @@ namespace GlobalFlow {
                     readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
                 }
 
-                if(op.isKGHBFile()) {
+                if(op.isKGHBFromFile()) {
                     LOG(userinfo) << "Reading the boundary condition";
                     readHeadBoundary(buildDir(op.getKGHBDir()));
                 }
@@ -133,7 +133,7 @@ namespace GlobalFlow {
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
                                           return (((recharge / 1000) * area) / 365);});
-/*
+
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
                     readRiverConductance(buildDir(op.getKRiver()));
@@ -141,7 +141,7 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getRiverElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
-*/
+
                 LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
                 readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalWetlands()),

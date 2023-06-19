@@ -197,11 +197,13 @@ double smoothstep(double edge0, double edge1, double x) {
 }
 
 /**
- * @brief river conductance estimation following Miguez-Macho et al. (2007)
- * @param current_recharge
- * @param eq_head
- * @param current_head
- * @param eq_flow
+ * @brief Equilibrium river conductance (ERC) following Miguez-Macho et al. (2007):
+ * the idea is to set river conductance to let rivers take up the cells "drainage demand"
+ * (recharge and lateral flow at equilibrium groundwater head)
+ * @param current_recharge Groundwater recharge
+ * @param eq_head Equilibrium groundwater head
+ * @param current_head Current groundwater head
+ * @param eq_flow Equilibrium lateral groundwater flow
  * @return
  */
 t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
@@ -217,61 +219,44 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
     //LOG(debug) << "recharge:" << current_recharge.value() << "head:" << eq_head.value() << "StreamStage: " << flowHead.value() << "Bottom" << bottom.value() << "EQFlow" << eq_flow.value() << "AltConduct" << conductance.value();
     t_s_meter_t out = 0 * si::square_meter / day;
 
-    //Static MM
+    // River conductance of gaining rivers in steady state following Miguez-Macho et al. (2007)
+    // sets river conductance to let rivers take up the cells "drainage demand" (recharge and lateral flow at equilibrium groundwater head)
     t_meter stage = eq_head - flowHead;
     NANChecker(stage.value(), "ERC stage problem");
-    if (stage.value() <= 0) {
-        stage = .1 * si::meter;
-    }
-
-    //Scale parameter (not in use)
+    if (stage.value() <= 0) { stage = .1 * si::meter; }
+    // set scale parameter p (not in use)
     t_dim p = 1 * si::si_dimensionless;
-
-    // River conductance of gaining rivers in steady state following Miguez-Macho et al. (2007)
+    // calculate conductance
     out = (current_recharge * p + eq_flow) / stage;
     NANChecker(out.value(), "ERC Recharge Problem");
 
-    if (out < conductance) { //Only happens if cell was loosing in eq and is now gaining
-        out = conductance;
-    }
+    if (out < conductance) {out = conductance;} //Only happens if cell was loosing in eq and is now gaining; stage
 
-    if (current_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from filefollowing Harbaugh (2005)
-        t_s_meter_t tmp_conduct = conductance;
-        if (tmp_conduct.value() > 1e+10) {
-            tmp_conduct = 1e+10 * si::square_meter / day;
-        }
-        NANChecker(tmp_conduct.value(), "ERC Problem low flow head");
-        if (tmp_conduct.value() <= 0) {
-            LOG(critical) << "conductance <= 0";
-        }
-        return tmp_conduct * mult;
-    } else if (current_head > flowHead + 1 * si::meter) {
-        if (out.value() > 1e+10) {
-            out = 1e+10 * si::square_meter / day;
-        }
+    if (current_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from input data
+        out = conductance;
+        if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
+        NANChecker(out.value(), "ERC Problem low flow head");
+        if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
+        return out * mult;
+    } else if (current_head > flowHead + 1 * si::meter) { // for gaining rivers: use approach by Miguez-Macho et al. (2007)
+        if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
         NANChecker(out.value(), "ERC Problem high flow head");
-        if (out.value() <= 0) {
-            LOG(critical) << "conductance <= 0";
-        }
+        if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
+        return out * mult; // mult is only used for sensitivity analysis
+    } else { // when current head and flow head are less than 1 meter apart
+        double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, current_head.value());
+        double range = std::abs(out.value() - conductance.value());
+        //double lower_bound = out.value() > conductance.value() ? out.value() : conductance.value();
+        out = (out.value() + range * delta) * si::square_meter / day;
+
+        NANChecker(out.value(), "ERC Problem");
+
+        if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
+        if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
+        //LOG(debug) << "calcERC out = " << out.value() << ", recharge = " << current_recharge.value() <<
+        //              ", equilibrium flow = " << eq_flow.value() << ", stage = " << stage.value();
         return out * mult;
     }
-
-    double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, current_head.value());
-    double range = std::abs(out.value() - conductance.value());
-    double lower_bound = out.value() > conductance.value() ? out.value() : conductance.value();
-    out = (lower_bound + range * delta) * si::square_meter / day;
-
-    NANChecker(out.value(), "ERC Problem");
-
-    if (out.value() > 1e+10) {
-        out = 1e+10 * si::square_meter / day;
-    }
-    if (out.value() <= 0) {
-        LOG(critical) << "conductance <= 0";
-    }
-    LOG(debug) << "calcERC out = " << out.value() << ", recharge = " << current_recharge.value() <<
-                  ", equilibrium flow = " << eq_flow.value() << ", stage = " << stage.value();
-    return out * mult;
 }
 }
 }//ns

@@ -98,7 +98,8 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 
     for (const auto &conductance : map) {
         // conductance.first is the nodeID of the respective neighbour node
-        if (cached) {
+        NANChecker(conductance.second.value(), "Matrix entry");
+        if (isCached) {
             A.coeffRef(nodeID, conductance.first) = conductance.second.value();
         } else {
             A.insert(nodeID, conductance.first) = conductance.second.value();
@@ -139,13 +140,12 @@ Equation::updateMatrix() {
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
         //LOG(userinfo) << "node: " << j;
+        large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
-        addToA(nodes->at(j), isCached);
+        addToA(nodes->at(id), isCached);
         //---------------------Right
-        double rhs{0.0};
-        rhs = nodes->at(j)->getRHS().value();
-        b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
-        NANChecker(rhs, "Right hand side");
+        b(id) = nodes->at(id)->getRHS().value();
+        NANChecker(b[id], "Right hand side");
     }
 
     //Check if after iteration former 0 values turned to non-zero
@@ -205,7 +205,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
 
     //Check if after iteration former 0 values turned to non-zero
     if ((not A_zetas.isCompressed()) and isCached_zetas) {
-        LOG(numerics) << "Recompressing Matrix";
+        LOG(numerics) << "Recompressing Matrix (zetas)";
         A_zetas.makeCompressed();
     }
 }
@@ -238,7 +238,8 @@ Equation::updateIntermediateHeads() {
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         //nodes->at(k)->setHead((double) heads[id] * si::meter);
-        nodes->at(k)->setHeadChange((double) changes[id] * si::meter);
+        nodes->at(id)->setHeadChange((double) changes[id] * si::meter);
+        //LOG(debug) << "head (updateIntermediateHeads): " << nodes->at(id)->getHead().value();
     }
 }
 
@@ -248,6 +249,7 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
     for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         auto id = index_mapping[k];
         if (id != -1) {
+            // todo get nodeID
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
         }
@@ -278,7 +280,7 @@ Equation::setZetasPosInNodes() {
     }
 }
 
-/*void inline // todo: in SWI2: required for time step adjustment
+/*void inline // todo: in SWI2: required for zeta time step adjustment
 Equation::checkAllZetaSlopes(int localZetaID) {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
@@ -362,7 +364,7 @@ Equation::solve() {
         isCached = true;
     }
 
-    preconditioner();
+    preconditioner(); // decomposing matrix
     adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
 
     LOG(numerics) << "Running Time Step";
@@ -393,15 +395,17 @@ Equation::solve() {
 
     while (iterations < IITER) {
         LOG(numerics) << "Outer iteration: " << iterations;
+        //LOG(debug) << "x (before outer iteration " << iterations << "):\n" << x << std::endl;
 
         //Solve inner iterations
         x = cg.solveWithGuess(b, x);
-        //LOG(debug) << "x (inner iteration " << iterations << "):\n" << x << std::endl;
+        LOG(debug) << "b (Outer iteration " << iterations << "):\n" << b << std::endl;
+        LOG(debug) << "x (Outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
+
         int innerItter{0};
         innerItter = cg.iterations();
-
         if (innerItter == 0 and iterations == 0) {
             LOG(numerics) << "convergence criterion to small - no iterations";
             break;
@@ -422,8 +426,8 @@ Equation::solve() {
                 break;
             } else {
                 headConverged = true;
-                smallHeadChanges++;
 
+                smallHeadChanges++;
                 if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
                     LOG(debug) << "x (converged):\n" << x << std::endl;
@@ -543,8 +547,8 @@ Equation::solve_zetas(){
             char smallZetaChanges{0};
             bool zetaConverged{false};
 
-            LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
-            LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
+            //LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
+            //LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
             while (iterations < IITER) {
                 LOG(numerics) << "Outer iteration (zetas): " << iterations;
 

@@ -2,7 +2,7 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head",
+        "name": "head_simple",
         "type": "csv",
         "field": "Head",
         "ID": "false",

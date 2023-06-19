@@ -2,7 +2,7 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head",
+        "name": "head_simpleVDF4",
         "type": "csv",
         "field": "Head",
         "ID": "false",

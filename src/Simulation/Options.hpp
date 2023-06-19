@@ -161,7 +161,7 @@ namespace GlobalFlow {
 
             bool isKFromFile() { return k_from_file; }
 
-            bool isKGHBFile() { return k_ghb_from_file; }
+            bool isKGHBFromFile() { return k_ghb_from_file; }
 
             bool isSpecificStorageFile() { return specificstorage_from_file; }
 

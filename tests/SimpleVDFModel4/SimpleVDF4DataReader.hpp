@@ -240,7 +240,7 @@ namespace GlobalFlow {
                         continue;
                     }
                     nodeID = nodeIDs[0];
-                    nodes->at(nodeID)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct,
+                    nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM, head * Model::si::meter, conduct,
                                                        bottom * Model::si::meter);
 
                 }

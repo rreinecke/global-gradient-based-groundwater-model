@@ -202,7 +202,7 @@ namespace GlobalFlow {
         double dampMax{0.01};
 
         //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping; // Question: do we need an index_mapping_zetas or is this enough?
+        std::unordered_map<large_num, long long> index_mapping;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
