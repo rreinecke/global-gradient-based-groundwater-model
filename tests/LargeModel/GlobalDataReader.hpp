@@ -807,7 +807,7 @@ namespace GlobalFlow {
                 int spatID{0};
                 double localZetaID{0};
                 double zeta{0};
-                double elevation{0};
+                double head{0};
 
                 // add zeta surfaces to top and bottom of each node
                 int numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
@@ -823,12 +823,12 @@ namespace GlobalFlow {
                 vector<large_num> nodeIDs;
                 large_num nodeID = 0;
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
-                    io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                    //inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
-                    inZetas.read_header(io::ignore_no_column, "spatID", "data");
+                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
+                    //inZetas.read_header(io::ignore_no_column, "spatID", "data");
 
-                    //while (inZetas.read_row(spatID, localZetaID, zeta)) {
-                    while (inZetas.read_row(spatID, zeta)) {
+                    while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                    //while (inZetas.read_row(spatID, zeta)) {
                         localZetaID = 1;
                         try {
                             nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
@@ -840,9 +840,8 @@ namespace GlobalFlow {
                             continue;
                         }
                         nodeID = nodeIDs[0];
-                        //elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
-                        //nodes->at(nodeID)->addZeta(localZetaID, (elevation + zeta) * Model::si::meter);
-                        nodes->at(nodeID)->addZeta(localZetaID, (zeta) * Model::si::meter);
+                        head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
+                        nodes->at(nodeID)->addZeta(localZetaID, (head + zeta) * Model::si::meter);
                     }
                 }
             }

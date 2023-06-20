@@ -509,6 +509,9 @@ Equation::solve_zetas(){
             LOG(numerics) << "Updating Matrix (zetas)";
             updateMatrix_zetas(iterOffset, localZetaID);
 
+            if (A_zetas.size() == 0){ // if matrix empty continue with next iteration
+                continue;
+            }
             if (!isCached_zetas) {
                 LOG(numerics) << "Compressing matrix (zetas)";
                 A_zetas.makeCompressed();
@@ -516,7 +519,7 @@ Equation::solve_zetas(){
                 LOG(numerics) << "Cached Matrix (zetas)";
                 isCached_zetas = true;
             }
-
+            LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
             preconditioner_zetas();
 
             double maxZeta{0};
@@ -614,6 +617,9 @@ Equation::solve_zetas(){
 
 
                 updateMatrix_zetas(iterOffset, localZetaID);
+                if (A_zetas.size() == 0) { // if matrix is empty, go to next iteration
+                    continue;
+                }
                 //LOG(debug) << "A_zetas (after outer iteration " << iterations << "):\n" << A_zetas << std::endl;
                 //LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
                 preconditioner_zetas();

@@ -58,11 +58,11 @@ namespace GlobalFlow {
         myfile.close();
 
         for (Simulation::step step : stepper) {
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
             step.first->solve();
             LOG(userinfo) << "Solved step with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
         }
         sim.save();
     }

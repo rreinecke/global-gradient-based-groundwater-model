@@ -9,9 +9,8 @@
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 1,
-      "layers": 2,
+      "layers": 1,
       "confinement": [
-        "true",
         "true"
       ],
       "density_variable": "false",
@@ -34,8 +33,8 @@
       "iterations": 10000,
       "inner_itter": 50,
       "closing_crit": 1e-185,
-      "head_change": 0.1,
-      "zeta_change": 0.000001,
+      "head_change": 1,
+      "zeta_change": 1,
       "damping": "false",
       "min_damp": 0.3,
       "max_damp": 0.95
@@ -58,16 +57,13 @@
         "effective_porosity": 0.2,
         "initial_head": 0,
         "K": [
-          0.01,
-          0.01
+          0.27
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
-          100,
           100
         ],
         "anisotropy": [
-          10,
           10
         ],
         "specific_yield": 0.15,
@@ -80,7 +76,7 @@
       "data": {
         "elevation": "elevation.csv",
         "equal_water_table_depth": "mean_wtd.csv",
-        "initial_zetas": "surface_water_elevation.csv",
+        "initial_zetas": "initial_zetas_nz.csv",
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
         "ghb_conductance": "caspian_data.csv",
