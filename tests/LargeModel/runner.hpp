@@ -43,13 +43,13 @@ namespace GlobalFlow {
      * @implements GW_Interface
      * @brief A standalone global steady-state groundwater model
      */
-    class NZRunner : GW_Interface<NotCoupled> {
+    class Runner : GW_Interface<NotCoupled> {
     public:
 
         /**
          * @brief Default constructor
          */
-        NZRunner();
+        Runner();
 
         void
         loadSettings();

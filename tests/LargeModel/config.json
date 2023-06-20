@@ -1,16 +1,17 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_na.csv",
+      "nodes": "grid.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 396787,
+      "number_of_nodes_per_layer": 2161074,
       "number_of_rows": 156,
       "number_of_cols": 146,
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 1,
-      "layers": 1,
+      "layers": 2,
       "confinement": [
+        "true",
         "true"
       ],
       "density_variable": "false",
@@ -47,7 +48,7 @@
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
         "k_from_file": "true",
-        "k_ghb_from_file": "false",
+        "k_ghb_from_file": "true",
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
@@ -57,13 +58,16 @@
         "effective_porosity": 0.2,
         "initial_head": 0,
         "K": [
+          0.01,
           0.01
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
+          100,
           100
         ],
         "anisotropy": [
+          10,
           10
         ],
         "specific_yield": 0.15,
@@ -76,9 +80,10 @@
       "data": {
         "elevation": "elevation.csv",
         "equal_water_table_depth": "mean_wtd.csv",
-        "initial_zetas": "initial_zetas_nz.csv",
+        "initial_zetas": "surface_water_elevation.csv",
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
+        "ghb_conductance": "caspian_data.csv",
         "lithology": "glhymps2.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",

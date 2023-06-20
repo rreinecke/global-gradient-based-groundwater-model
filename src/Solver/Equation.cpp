@@ -118,8 +118,8 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID,
     for (const auto &entry : map) { // entry: [1] node id of horizontal neighbours or this node, [2] conductance to neighbours in zeta zone
         colID = index_mapping[entry.first - iterOffset];
         if (colID != -1) {
+            NANChecker(entry.second.value(), "Matrix entry (zetas)");
             zoneConductance = entry.second;
-
             if (cached) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
             } else {
@@ -399,8 +399,8 @@ Equation::solve() {
 
         //Solve inner iterations
         x = cg.solveWithGuess(b, x);
-        LOG(debug) << "b (Outer iteration " << iterations << "):\n" << b << std::endl;
-        LOG(debug) << "x (Outer iteration " << iterations << "):\n" << x << std::endl;
+        //LOG(debug) << "b (Outer iteration " << iterations << "):\n" << b << std::endl;
+        //LOG(debug) << "x (Outer iteration " << iterations << "):\n" << x << std::endl;
 
         updateIntermediateHeads();
 
@@ -430,7 +430,7 @@ Equation::solve() {
                 smallHeadChanges++;
                 if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
-                    LOG(debug) << "x (converged):\n" << x << std::endl;
+                    //LOG(debug) << "x (converged):\n" << x << std::endl;
                     break;
                 }
             }

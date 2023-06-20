@@ -2,16 +2,9 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head_nz",
+        "name": "head_large",
         "type": "csv",
         "field": "Head",
-        "ID": "true",
-        "position": "true"
-      },
-      {
-        "name": "flowHead",
-        "type": "csv",
-        "field": "FlowHead",
         "ID": "true",
         "position": "true"
       }

@@ -383,7 +383,6 @@ namespace GlobalFlow {
                 vector<Model::quantity<Model::Meter>> zetas;
                 Model::quantity<Model::Meter> zeta;
                 large_num nodes_per_layer = nodes->size() / layers;
-                LOG(userinfo) << "numZetas: " << numZetas;
                 for (int nodeID = 0; nodeID < nodes_per_layer; ++nodeID) {
                     if (nodes->at(nodeID)->hasGHB()){
                         for (int zetaID = 0; zetaID < numZetas; ++zetaID){
@@ -590,7 +589,7 @@ namespace GlobalFlow {
              */
             void readConduct(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
-                    if (data != 0) {
+                    if (data != 0) { // todo check the impact of the default value on the result! median of glhymps is 0.273
                         //0 is possible data error, known to occur with Gleeson based map
                         nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day)); // Question: check if val > 10 m/day?
 		            }
@@ -824,9 +823,13 @@ namespace GlobalFlow {
                 vector<large_num> nodeIDs;
                 large_num nodeID = 0;
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
-                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
-                    while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                    io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
+                    //inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
+                    inZetas.read_header(io::ignore_no_column, "spatID", "data");
+
+                    //while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                    while (inZetas.read_row(spatID, zeta)) {
+                        localZetaID = 1;
                         try {
                             nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                         }
@@ -837,8 +840,9 @@ namespace GlobalFlow {
                             continue;
                         }
                         nodeID = nodeIDs[0];
-                        elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
-                        nodes->at(nodeID)->addZeta(localZetaID, (elevation + zeta) * Model::si::meter);
+                        //elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
+                        //nodes->at(nodeID)->addZeta(localZetaID, (elevation + zeta) * Model::si::meter);
+                        nodes->at(nodeID)->addZeta(localZetaID, (zeta) * Model::si::meter);
                     }
                 }
             }

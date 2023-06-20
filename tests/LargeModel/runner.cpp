@@ -6,12 +6,12 @@ namespace GlobalFlow {
 
     //int sim_id{0};
 
-    void NZRunner::loadSettings() {
+    void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_nz.json");
+        op.load("data/config.json");
     }
 
-    void NZRunner::setupSimulation() {
+    void Runner::setupSimulation() {
         reader = new DataProcessing::GlobalDataReader();
         sim = Simulation::Simulation(op, reader);
 
@@ -22,14 +22,14 @@ namespace GlobalFlow {
         _eq = sim.getEquation();
     }
 
-    void NZRunner::simulate() {
+    void Runner::simulate() {
         Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
         LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,river_flow,river_conduct,river_bottom,elevation,initial_head,river_head" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head" << std::endl;
         // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
@@ -47,12 +47,12 @@ namespace GlobalFlow {
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
-                   sim.getNodes()->at(j)->getHead().value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
+                   sim.getNodes()->at(j)->getHead().value() <<
+                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
                    std::endl;
         }
         myfile.close();
@@ -67,17 +67,17 @@ namespace GlobalFlow {
         sim.save();
     }
 
-    void NZRunner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out_nz.json", sim).write();
+    void Runner::writeData() {
+	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
     }
 
-    NZRunner::NZRunner() {}
+    Runner::Runner() {}
 
 }//ns
 
 int main() {
     std::cout << FBLU("Starting Simulation") << std::endl;
-    GlobalFlow::NZRunner runner;
+    GlobalFlow::Runner runner;
     std::cout << FBLU("- loading settings...") << std::endl;
     runner.loadSettings();
     std::cout << FBLU("- simulation setup...") << std::endl;
