@@ -70,7 +70,8 @@ namespace GlobalFlow {
             SOLVER = numerics.get<string>("solver");
             IITER = numerics.get<int>("iterations");
             I_ITTER = numerics.get<int>("inner_itter");
-            RCLOSE = numerics.get<double>("closing_crit");
+            RCLOSE_HEAD = numerics.get<double>("closing_crit_head");
+            RCLOSE_ZETA = numerics.get<double>("closing_crit_zeta");
             MAX_HEAD_CHANGE = numerics.get<double>("head_change");
             MAX_ZETA_CHANGE = numerics.get<double>("zeta_change");
             DAMPING = numerics.get<bool>("damping");

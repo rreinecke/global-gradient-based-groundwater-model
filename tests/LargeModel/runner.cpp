@@ -23,13 +23,13 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
         LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head,zeta1" << std::endl;
         // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
@@ -51,8 +51,9 @@ namespace GlobalFlow {
                    //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
-                   sim.getNodes()->at(j)->getHead().value() <<
-                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() <<
+                   sim.getNodes()->at(j)->getHead().value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
+                   sim.getNodes()->at(j)->getZeta(1).value() <<
                    std::endl;
         }
         myfile.close();

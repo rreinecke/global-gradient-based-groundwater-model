@@ -10,7 +10,8 @@ Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation
     this->numberOfLayers = options.getNumberOfLayers();
     this->numberOfNodesTotal = numberOfNodesPerLayer * numberOfLayers;
     this->IITER = options.getMaxIterations();
-    this->RCLOSE = options.getConverganceCriteria();
+    this->RCLOSE_HEAD = options.getConverganceCriteriaHead();
+    this->RCLOSE_ZETA = options.getConverganceCriteriaZeta();
     this->initialHead = options.getInitialHead();
     this->maxHeadChange = options.getMaxHeadChange();
     this->isAdaptiveDamping = options.isDampingEnabled();
@@ -54,7 +55,7 @@ Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation
 
     //set inner iterations
     cg.setMaxIterations(inner_iterations);
-    cg.setTolerance(RCLOSE);
+    cg.setTolerance(RCLOSE_HEAD);
     //cg.preconditioner().setInitialShift(1e-8);
 
 
@@ -80,7 +81,7 @@ Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation
 
         //set inner iterations
         cg_zetas.setMaxIterations(inner_iterations);
-        cg_zetas.setTolerance(RCLOSE);
+        cg_zetas.setTolerance(RCLOSE_ZETA);
     }
 }
 
@@ -120,11 +121,11 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID,
         if (colID != -1) {
             NANChecker(entry.second.value(), "Matrix entry (zetas)");
             zoneConductance = entry.second;
-            if (cached) {
+            //if (cached) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
-            } else {
-                A_zetas.insert(rowID, colID) = zoneConductance.value();
-            }
+            //} else {
+                //A_zetas.insert(rowID, colID) = zoneConductance.value();
+            //}
         }
     }
 }
@@ -204,10 +205,10 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     }
 
     //Check if after iteration former 0 values turned to non-zero
-    if ((not A_zetas.isCompressed()) and isCached_zetas) {
-        LOG(numerics) << "Recompressing Matrix (zetas)";
-        A_zetas.makeCompressed();
-    }
+    //if ((not A_zetas.isCompressed()) and isCached_zetas) {
+    //    LOG(numerics) << "Recompressing Matrix (zetas)";
+    //    A_zetas.makeCompressed();
+    //}
 }
 
 void inline
@@ -512,14 +513,15 @@ Equation::solve_zetas(){
             if (A_zetas.size() == 0){ // if matrix empty continue with next iteration
                 continue;
             }
-            if (!isCached_zetas) {
+
+            /*if (!isCached_zetas) {
                 LOG(numerics) << "Compressing matrix (zetas)";
                 A_zetas.makeCompressed();
 
                 LOG(numerics) << "Cached Matrix (zetas)";
                 isCached_zetas = true;
-            }
-            LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
+            }*/
+            //LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
             preconditioner_zetas();
 
             double maxZeta{0};
@@ -552,6 +554,8 @@ Equation::solve_zetas(){
 
             //LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
             //LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
+            LOG(debug) << "x_zetas (before iteration):\n" << x_zetas << std::endl;
+
             while (iterations < IITER) {
                 LOG(numerics) << "Outer iteration (zetas): " << iterations;
 
@@ -621,7 +625,7 @@ Equation::solve_zetas(){
                     continue;
                 }
                 //LOG(debug) << "A_zetas (after outer iteration " << iterations << "):\n" << A_zetas << std::endl;
-                //LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
+                LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
                 preconditioner_zetas();
 
                 iterations++;

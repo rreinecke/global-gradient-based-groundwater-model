@@ -10,6 +10,7 @@ set(HEADERS
    PARENT_SCOPE
 )
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config.json COPYONLY)
+configure_file(config_two_layers.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_two_layers.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY)
 
 # read the NewZealand grid, initial zetas and initial head

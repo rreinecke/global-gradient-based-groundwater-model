@@ -74,7 +74,9 @@ namespace GlobalFlow {
             int LAYERS{0};
             int IITER{0};
             int I_ITTER{0};
-            double RCLOSE{0.1};
+            double RCLOSE_HEAD{0.1};
+            double RCLOSE_ZETA{0.1};
+
             string SOLVER{"PCG"};
             string NODES{""};
             int THREADS{0};
@@ -128,7 +130,10 @@ namespace GlobalFlow {
                 STATIC_HEAD_SEA_LEVEL
             };
 
-            void setClosingCrit(double crit) { RCLOSE = crit; }
+            void setClosingCritHead(double crit_head) { RCLOSE_HEAD = crit_head; }
+
+            void setClosingCritZeta(double crit_zeta) { RCLOSE_ZETA = crit_zeta; }
+
 
             void setDamping(bool set) { DAMPING = set; }
 
@@ -274,8 +279,13 @@ namespace GlobalFlow {
             }
 
             double
-            getConverganceCriteria() {
-                return RCLOSE;
+            getConverganceCriteriaHead() {
+                return RCLOSE_HEAD;
+            }
+
+            double
+            getConverganceCriteriaZeta() {
+                return RCLOSE_ZETA;
             }
 
             string

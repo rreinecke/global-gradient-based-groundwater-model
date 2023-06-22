@@ -43,6 +43,7 @@ namespace GlobalFlow {
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the top model layer";
                 std::vector<std::vector<int>> grid;
+
                 if (op.isRowCol()) {
                     LOG(userinfo) << "- reading grid by rows and columns";
                     grid = readGrid(nodes,
@@ -133,7 +134,7 @@ namespace GlobalFlow {
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
                                           return (((recharge / 1000) * area) / 365);});
-
+/*
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
                     readRiverConductance(buildDir(op.getKRiver()));
@@ -141,13 +142,14 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getRiverElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
-
+*/
+/*
                 LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
                 readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getLocalLakes()),
                                      buildDir(op.getLocalWetlands()));
-
+*/
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading initial zeta heights";
                     readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
@@ -160,13 +162,13 @@ namespace GlobalFlow {
 
                     if (op.isZonesSourcesSinksFromFile()) {
                         LOG(userinfo) << "Reading zones of sources and sinks";
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
+                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
+                                              op.getDensityZones());
                     }
 
                     LOG(userinfo) << "Setting the variable density conditions at general head boundaries";
                     // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
-                    setVariableDensityConditionsAtBoundary(op.getNumberOfLayers(),
-                                                           op.getDensityZones().size(),
+                    setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
                                                            op.getAquiferDepth()[0]);
                 }
             }
@@ -379,25 +381,24 @@ namespace GlobalFlow {
                 }
             }
 
-            void setVariableDensityConditionsAtBoundary(int layers, int numZetas, double aquiferDepth){
+            void setVariableDensityConditionsAtBoundary(int numZones, double aquiferDepth){
                 vector<Model::quantity<Model::Meter>> zetas;
                 Model::quantity<Model::Meter> zeta;
-                large_num nodes_per_layer = nodes->size() / layers;
-                for (int nodeID = 0; nodeID < nodes_per_layer; ++nodeID) {
+                for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
                     if (nodes->at(nodeID)->hasGHB()){
-                        for (int zetaID = 0; zetaID < numZetas; ++zetaID){
+                        for (int zetaID = 0; zetaID <= numZones; ++zetaID){
                             double elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
 
-                            if (zetaID == numZetas-1){
+                            if (zetaID == numZones){
                                 zeta = (elevation - aquiferDepth) * Model::si::meter;
                             } else {
-                                zeta = elevation * Model::si::meter;
+                                zeta = elevation * Model::si::meter; // todo: or set this to GHB elevation?
                             }
                             nodes->at(nodeID)->setZeta(zetaID, zeta);
                         }
-                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZetas-2, numZetas-1);
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZones-1, numZones);
                     } else {
-                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, 0, numZetas-1);
+                        nodes->at(nodeID)->setZoneOfSinksAndSources(0, 0, numZones);
 
                     }
                 }
@@ -840,8 +841,8 @@ namespace GlobalFlow {
                             continue;
                         }
                         nodeID = nodeIDs[0];
-                        head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
-                        nodes->at(nodeID)->addZeta(localZetaID, (head + zeta) * Model::si::meter);
+                        //head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
+                        nodes->at(nodeID)->addZeta(localZetaID, (-zeta) * Model::si::meter);
                     }
                 }
             }

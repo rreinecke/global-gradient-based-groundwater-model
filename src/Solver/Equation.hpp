@@ -186,8 +186,10 @@ namespace GlobalFlow {
         AdaptiveDamping adaptiveDamping_zetas;
 
         int IITER{0};//FIXME this is used as outer iterations
-        pr_t RCLOSE{0};
-	    int inner_iterations{0};
+        pr_t RCLOSE_HEAD{0};
+        pr_t RCLOSE_ZETA{0};
+
+        int inner_iterations{0};
 
         //From current run
         int __itter{0};

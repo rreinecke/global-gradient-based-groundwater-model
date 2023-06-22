@@ -919,7 +919,7 @@ Modify Properties
             void addZeta(int localZetaID, t_meter zeta){
                 NANChecker(zeta.value(), "zeta (in addZeta)");
 
-                // in SWI2: lines 660-680
+                // limit zeta value to node top and bottom (in SWI2: lines 660-680)
                 auto topOfNode = get<t_meter, Elevation>();
                 if (zeta > topOfNode - get<t_meter, VDFLock>()) {
                     zeta = topOfNode;
@@ -948,7 +948,15 @@ Modify Properties
                 NANChecker(zeta.value(), "height (in setZeta)");
                 auto zetas = getZetas();
                 if (localZetaID < zetas.size()) {
-                    zetas[localZetaID] = zeta;
+                    // limit zeta value to node top and bottom (in SWI2: lines 660-680)
+                    auto topOfNode = get<t_meter, Elevation>();
+                    if (zeta > topOfNode - get<t_meter, VDFLock>()) {
+                        zetas[localZetaID] = topOfNode;
+                    } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
+                        zetas[localZetaID] = getBottom();
+                    } else {
+                        zetas[localZetaID] = zeta;
+                    }
                 }
                 set<vector<t_meter>, Zetas>(zetas); // Question: how to improve this? - maybe change to unordered map: https://embeddedartistry.com/blog/2017/08/02/an-overview-of-c-stl-containers/
             }
@@ -1031,7 +1039,7 @@ Modify Properties
                 }
 
                 if (zoneSinks < zoneSources and zoneSinks > 0) {
-                    throw "If zone number of sinks and sources are not equal (for simulating SGD), zone of sinks is 0";
+                    throw "If zone number of sinks and sources are not equal (for simulating SGD), zone number of sinks must be 0";
                 }
 
                 if (zoneSinks < numOfZones and zoneSinks >= 0) {
@@ -1243,13 +1251,13 @@ Modify Properties
                 if (getZetaPosInNode(localZetaID) == "between") { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * get<vector<t_meter>, Zetas_TZero>()[localZetaID];
                 }
-                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                //LOG(userinfo) << "sources: " << sources.value() << std::endl;
+                LOG(userinfo) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 NANChecker(out.value(), "getZetaRHS");
                 return out;
@@ -2152,11 +2160,11 @@ Modify Properties
                 }
                 t_vol_t eqFlow = getEqFlow();
                 for (const auto &flow : externalFlows) {
-                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) { // Question: GLOBAL_LAKE?
+                    if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                         if (flow.second.flowIsHeadDependent(head)) {
                             out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                         }
-                    } else {
+                    } else { // RECHARGE, ...
                         out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
                     }
                 }
@@ -2259,7 +2267,7 @@ Modify Properties
              * @return volume per time
              */
             t_vol_t getRHSConstantDensity(){
-                t_vol_t extFlows = -getQ(); // e.g., recharge
+                t_vol_t extFlows = -getQ(); // e.g., recharge, river, lakes, wetlands
                 //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
                 //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
@@ -2291,13 +2299,19 @@ Modify Properties
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    //LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
-
+                    if (pseudoSourceNode.value() != 0) {
+                        //LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    }
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-                    //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    if (verticalFluxCorrections.value() != 0) {
+                        //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    }
+
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
+                //LOG(userinfo) << "getRHS: " << out.value() << std::endl;
+
                 NANChecker(out.value(), "RHS");
                 return out;
             }
