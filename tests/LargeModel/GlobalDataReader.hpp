@@ -134,7 +134,7 @@ namespace GlobalFlow {
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
                                           return (((recharge / 1000) * area) / 365);});
-/*
+
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
                     readRiverConductance(buildDir(op.getKRiver()));
@@ -142,14 +142,14 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getRiverElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
-*/
-/*
+
+
                 LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
                 readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getLocalLakes()),
                                      buildDir(op.getLocalWetlands()));
-*/
+
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading initial zeta heights";
                     readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),

@@ -38,9 +38,8 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 1000);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     int stepNumber = 1;
-    LOG(debug) << sim.getNodes()->at(199); // printing node properties in debug file
 
     // for saving zetas in a csv
     ofstream myfile;
@@ -67,23 +66,24 @@ void StandaloneRunner::simulate() {
         stepNumber++;
     }
 
-    /*LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 2);
+    //Changing stresses
+    std::vector<int> ids = {199, 599};
+
+    for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        if(std::find(ids.begin(), ids.end(), j) != ids.end()) {
+            double recharge = 0.5 * sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value();
+            sim.getNodes()->at(j)->updateUniqueFlow(recharge, Model::RECHARGE, false);
+        }
+    }
+    LOG(userinfo) << "Running stress period 2";
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         step.first->solve();
         sim.printMassBalances(debug);
 
-        // for saving zetas in a csv
-        int zetaID = 1;
-        double zeta;
-        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            //zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            //myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
-        }
-
         stepNumber++;
-    }*/
+    }
 
     myfile.close(); // for saving zetas in a csv
     //sim.save();

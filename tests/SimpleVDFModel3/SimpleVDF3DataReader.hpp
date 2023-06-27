@@ -249,12 +249,12 @@ namespace GlobalFlow {
 
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
-                int spatID{0};
+                large_num spatID{0};
                 double zoneOfSinks{0};
                 double zoneOfSources{0};
+                vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
-                    vector<int> nodeIDs;
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs[spatID];
                     }

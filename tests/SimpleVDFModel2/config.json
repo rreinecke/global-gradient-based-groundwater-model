@@ -3,7 +3,6 @@
     "model_config": {
       "nodes": "grid_simpleVDF2.csv",
       "row_cols": "true",
-      "steady_state": "true",
       "number_of_nodes_per_layer": 60,
       "number_of_rows": 60,
       "number_of_cols": 1,
@@ -27,14 +26,15 @@
       "vdf_lock": 0.001,
       "cache": "false",
       "adaptive_step_size": "false",
-      "boundary_condition": "StaticHeadSeaLevel",
+      "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-8,
+      "closing_crit_head": 1E-80,
+      "closing_crit_zeta": 1E-9,
       "head_change": 0.000000001,
       "zeta_change": 0.000000001,
       "damping": "false",

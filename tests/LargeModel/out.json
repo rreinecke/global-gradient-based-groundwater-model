@@ -11,7 +11,7 @@
       {
         "name": "zeta1_large",
         "type": "csv",
-        "field": "Zetas",
+        "field": "Zeta1",
         "ID": "true",
         "position": "true"
       }

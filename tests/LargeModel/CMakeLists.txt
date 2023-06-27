@@ -17,7 +17,7 @@ configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
 configure_file(data_5min/grid_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na.csv COPYONLY)
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
-configure_file(data_5min/initial_zetas_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_nz.csv COPYONLY)
+configure_file(../../data_5min/initial_zetas_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_global.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)

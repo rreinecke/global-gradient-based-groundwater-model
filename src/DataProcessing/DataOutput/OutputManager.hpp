@@ -73,6 +73,7 @@ namespace GlobalFlow {
                 const path filePath;
                 const bool printID;
                 const bool printXY;
+                const bool allLayers;
                 const OutputType outputType;
                 const std::vector<T> data;
                 const pos_v p;
@@ -81,17 +82,18 @@ namespace GlobalFlow {
 
 
             public:
-                OutputField(path filePath, bool printID, bool printXY, Simulation::Simulation &sim,
+                OutputField(path filePath, bool printID, bool printXY, bool allLayers, Simulation::Simulation &sim,
                             OutputType outputType,
                             FieldType fieldType)
-                        : filePath(filePath), printID(printID), printXY(printXY),
+                        : filePath(filePath), printID(printID), printXY(printXY), allLayers(allLayers),
                           outputType(outputType),
-                          data(FieldCollector(fieldType).get<T>(sim)), p(FieldCollector().getPositions(sim)),
-                          ids(FieldCollector().getIds(sim)) {}
+                          data(FieldCollector(fieldType).get<T>(sim, allLayers)),
+                          p(FieldCollector().getPositions(sim, allLayers)),
+                          ids(FieldCollector().getIds(sim, allLayers)) {}
 
                 void write() {
                     OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
-                    oi->write(filePath, printID, printXY, data, p, ids);
+                    oi->write(filePath, printID, printXY, allLayers, data, p, ids);
                     delete oi;
                 };
 
@@ -162,7 +164,8 @@ namespace GlobalFlow {
                     {FieldType::GL_WETLAND_IN,      InternalType::DOUBLE},
                     {FieldType::WETLAND_IN,         InternalType::DOUBLE},
                     {FieldType::LAKE_IN,            InternalType::DOUBLE},
-                    {FieldType::ZETAS,              InternalType::DOUBLE}
+                    {FieldType::ZETA1,              InternalType::DOUBLE},
+                    {FieldType::ZETA2,              InternalType::DOUBLE}
             };
 
             class FieldFactory {
@@ -198,23 +201,24 @@ namespace GlobalFlow {
                                     std::string name = item.get<std::string>("name") + date;
                                     bool id = item.get<bool>("ID");
                                     bool pos = item.get<bool>("position");
+                                    bool allLay = item.get<bool>("all_layers");
                                     switch (typeMapping.at(field)) {
                                         case InternalType::DOUBLE : {
-                                            f.emplace_back(OutputField<double>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<double>(name, id, pos, allLay, sim, type, field));
                                             break;
                                         }
                                         case InternalType::STRING : {
-                                            f.emplace_back(OutputField<std::string>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<std::string>(name, id, pos, allLay, sim, type, field));
                                             break;
                                         }
                                         case InternalType::VECTOR : {
                                             f.emplace_back(
-                                                    OutputField<std::pair<double, double>>(name, id, pos, sim, type,
+                                                    OutputField<std::pair<double, double>>(name, id, pos, allLay, sim, type,
                                                                                            field));
                                             break;
                                         }
                                         case InternalType::BOOL :
-                                            f.emplace_back(OutputField<bool>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<bool>(name, id, pos, allLay, sim, type, field));
                                             break;
                                     }
                                 }
@@ -256,8 +260,7 @@ namespace GlobalFlow {
                  */
                 void write() {
                     Outputvisitor visitor;
-                    std::for_each(
-                            fields.begin(), fields.end(), boost::apply_visitor(visitor)
+                    std::for_each(fields.begin(), fields.end(), boost::apply_visitor(visitor)
                     );
                 }
 

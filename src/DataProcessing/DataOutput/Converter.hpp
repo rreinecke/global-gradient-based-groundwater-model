@@ -74,7 +74,7 @@ template<>
 std::pair<double, double> convert(std::pair<double, double> d) { return d; }
 
 /**
- * They are obiously nonesense
+ * They are obviously nonesense
  * FIXME
  */
 template<>

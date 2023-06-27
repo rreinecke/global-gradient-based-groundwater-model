@@ -554,14 +554,14 @@ Equation::solve_zetas(){
 
             //LOG(debug) << "A_zetas (before iteration):\n" << A_zetas << std::endl;
             //LOG(debug) << "b_zetas (before iteration):\n" << b_zetas << std::endl;
-            LOG(debug) << "x_zetas (before iteration):\n" << x_zetas << std::endl;
+            //LOG(debug) << "x_zetas (before iteration):\n" << x_zetas << std::endl;
 
             while (iterations < IITER) {
                 LOG(numerics) << "Outer iteration (zetas): " << iterations;
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
                 updateIntermediateZetas(iterOffset, localZetaID);
 
@@ -625,7 +625,7 @@ Equation::solve_zetas(){
                     continue;
                 }
                 //LOG(debug) << "A_zetas (after outer iteration " << iterations << "):\n" << A_zetas << std::endl;
-                LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
+                //LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
                 preconditioner_zetas();
 
                 iterations++;

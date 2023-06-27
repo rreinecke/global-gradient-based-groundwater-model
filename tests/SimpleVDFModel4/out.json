@@ -2,10 +2,17 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head_simpleVDF4",
+        "name": "head_vdf4",
         "type": "csv",
         "field": "Head",
-        "ID": "false",
+        "ID": "true",
+        "position": "true"
+      },
+      {
+        "name": "zeta1_vdf4",
+        "type": "csv",
+        "field": "Zeta1",
+        "ID": "true",
         "position": "true"
       }
     ],

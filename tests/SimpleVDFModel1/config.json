@@ -33,9 +33,10 @@
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closing_crit": 1E-8,
-      "head_change": 0.0000001,
-      "zeta_change": 0.0000001,
+      "closing_crit_head": 1E-80,
+      "closing_crit_zeta": 1E-8,
+      "head_change": 0.000000001,
+      "zeta_change": 0.000000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

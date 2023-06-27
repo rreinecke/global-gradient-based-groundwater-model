@@ -2,9 +2,16 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head",
+        "name": "head_vdf1",
         "type": "csv",
-        "field": "Zetas",
+        "field": "Head",
+        "ID": "true",
+        "position": "true"
+      },
+      {
+        "name": "zeta1_vdf1",
+        "type": "csv",
+        "field": "Zeta1",
         "ID": "true",
         "position": "true"
       }
