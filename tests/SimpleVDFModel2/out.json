@@ -6,21 +6,24 @@
         "type": "csv",
         "field": "Head",
         "ID": "true",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       },
       {
         "name": "zeta1_vdf2",
         "type": "csv",
         "field": "Zeta1",
         "ID": "true",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       },
       {
         "name": "zeta2_vdf2",
         "type": "csv",
         "field": "Zeta2",
         "ID": "true",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       }
     ],
     "InnerIteration": {

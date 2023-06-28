@@ -6,14 +6,16 @@
         "type": "csv",
         "field": "Head",
         "ID": "true",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       },
       {
-        "name": "zeta1_large",
+        "name": "river_conduct",
         "type": "csv",
-        "field": "Zeta1",
+        "field": "River_Conduct",
         "ID": "true",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       }
     ],
     "InnerIteration": {

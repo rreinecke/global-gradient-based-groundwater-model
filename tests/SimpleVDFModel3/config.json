@@ -9,7 +9,7 @@
       "number_of_cols": 1,
       "edge_length_rows": 20,
       "edge_length_cols": 1,
-      "threads": 1,
+      "threads": 20,
       "layers": 3,
       "confinement": [
         "true",
@@ -37,8 +37,8 @@
       "inner_itter": 30,
       "closing_crit_head": 1E-80,
       "closing_crit_zeta": 1E-10,
-      "head_change": 0.000000001,
-      "zeta_change": 0.000000001,
+      "head_change": 1,
+      "zeta_change": 0.000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

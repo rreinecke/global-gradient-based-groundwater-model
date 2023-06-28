@@ -342,17 +342,11 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>,
-                                                            Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
                                 catch (exception &e) {
@@ -370,13 +364,11 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::RIVER_MM).value();
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
                                 catch (exception &e) {
                                 }
@@ -423,16 +415,11 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>, Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
                                 catch (exception &e) {}
@@ -443,16 +430,11 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::DRAIN).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>, Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::DRAIN).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
                                 catch (exception &e) {}

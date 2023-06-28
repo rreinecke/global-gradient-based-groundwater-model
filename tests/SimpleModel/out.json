@@ -6,7 +6,8 @@
         "type": "csv",
         "field": "Head",
         "ID": "false",
-        "position": "true"
+        "position": "true",
+        "all_layers": "true"
       }
     ],
     "InnerIteration": {

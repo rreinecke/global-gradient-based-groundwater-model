@@ -190,7 +190,7 @@ class SimulationOutput {
                         double out{NAN};
                         try {
                             out =
-                                    simulation.nodes->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
+                                    simulation.nodes->at(i)->getExternalFlowByName(Model::RIVER_MM).getERC(
                                             simulation.nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
                                             simulation.nodes->at(i)->getProperties().get < Model::quantity <
                                             Model::Meter > , Model::EQHead > (),
@@ -209,7 +209,7 @@ class SimulationOutput {
                         double out{NAN};
                         try {
                             out =
-                                    simulation.nodes->at(i)->getExternalFlowByName(Model::DRAIN).getDyn(
+                                    simulation.nodes->at(i)->getExternalFlowByName(Model::DRAIN).getERC(
                                             simulation.nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
                                             simulation.nodes->at(i)->getProperties().get < Model::quantity <
                                             Model::Meter > , Model::EQHead > (),
