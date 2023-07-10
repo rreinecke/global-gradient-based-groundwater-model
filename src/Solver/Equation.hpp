@@ -278,8 +278,6 @@ namespace GlobalFlow {
          */
         void inline updateTopZetasToHeads();
 
-        void inline setZetasPosInNodes();
-
         void inline checkAllZetaSlopes(int localZetaID);
 
         void inline updateZetasAfterEquation();

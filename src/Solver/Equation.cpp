@@ -63,20 +63,10 @@ Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getDensityZones().size();
         this->maxZetaChange = options.getMaxZetaChange();
-        long_vector __x_zetas(numberOfNodesPerLayer);
-        long_vector __b_zetas(numberOfNodesPerLayer);
-
-        x_zetas = std::move(__x_zetas);
-        b_zetas = std::move(__b_zetas);
-
-        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodesPerLayer, numberOfNodesPerLayer);
-
-        A_zetas = std::move(__A_zetas);
-        A_zetas.reserve(long_vector::Constant(numberOfNodesPerLayer, 5));
 
 #pragma omp parallel for
         for (int i = 0; i < numberOfNodesTotal; ++i) {
-            nodes->at(i)->initZetas_t0();
+            nodes->at(i)->initZetasTZero();
         }
 
         //set inner iterations
@@ -172,9 +162,9 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     Index threads = Eigen::nbThreads();
 #endif
     // finding inactive nodes
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
-        isActive = (nodes->at(i + iterOffset)->getZetaPosInNode(localZetaID) == "between");
+        isActive = (nodes->at(i + iterOffset)->isZetaBetween(localZetaID));
         if (isActive) {
             index_mapping[i] = i - numInactive;
         } else {
@@ -273,14 +263,6 @@ Equation::updateTopZetasToHeads() {
         }
 }
 
-void inline
-Equation::setZetasPosInNodes() {
-#pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        nodes->at(k)->setZetasPosInNode();
-    }
-}
-
 /*void inline // todo: in SWI2: required for zeta time step adjustment
 Equation::checkAllZetaSlopes(int localZetaID) {
 #pragma omp parallel for
@@ -300,6 +282,7 @@ Equation::updateZetasAfterEquation() {
 
 void inline
 Equation::adjustZetaHeights() {
+    LOG(debug) << "Calculating vertical zeta movement";
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->verticalZetaMovement();
@@ -308,21 +291,24 @@ Equation::adjustZetaHeights() {
             //}
         }
 
+    LOG(debug) << "Calculating horizontal zeta movement";
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->horizontalZetaMovement();
         }
 
+        LOG(debug) << "Clipping inner zetas";
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->clipInnerZetas();
         }
-
+        LOG(debug) << "Correcting crossing zetas";
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->correctCrossingZetas();
         }
 
+        LOG(debug) << "Preventing zeta locking";
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->preventZetaLocking();
@@ -350,10 +336,6 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
-    if(vdf) {
-        setZetasPosInNodes();
-    }
-
     LOG(numerics) << "Updating Matrix";
     updateMatrix();
 
@@ -500,11 +482,23 @@ Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
+        long_vector __x_zetas(numberOfNodesPerLayer);
+        long_vector __b_zetas(numberOfNodesPerLayer);
+
+        x_zetas = std::move(__x_zetas);
+        b_zetas = std::move(__b_zetas);
+
+        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodesPerLayer, numberOfNodesPerLayer);
+
+        A_zetas = std::move(__A_zetas);
+        A_zetas.reserve(long_vector::Constant(numberOfNodesPerLayer, 5));
+
         large_num iterOffset = layer * numberOfNodesPerLayer;
+
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";

@@ -53,8 +53,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificStorage,
                              bool confined,
                              bool densityVariable,
-                             vector<quantity<Dimensionless>> delnus,
-                             vector<quantity<Dimensionless>> nusInZones,
+                             std::vector<quantity<Dimensionless>> delnus,
+                             std::vector<quantity<Dimensionless>> nusInZones,
                              double effPorosity,
                              double maxTipSlope,
                              double maxToeSlope,
@@ -83,8 +83,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<bool, DensityVariable> (densityVariable);
-    fields.set<vector<quantity<Dimensionless>>, Delnus> (delnus);
-    fields.set<vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
+    fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
+    fields.set<std::vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
     fields.set<quantity<Dimensionless>, EffectivePorosity> (effPorosity * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MaxTipSlope> (maxTipSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);

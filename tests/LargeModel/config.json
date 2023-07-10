@@ -9,11 +9,12 @@
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 20,
-      "layers": 1,
+      "layers": 2,
       "confinement": [
+        "true",
         "true"
       ],
-      "density_variable": "false",
+      "density_variable": "true",
       "density_zones": [
         1000,
         1025
@@ -32,7 +33,7 @@
       "solver": "PCG",
       "iterations": 10000,
       "inner_itter": 50,
-      "closing_crit_head": 1e-180,
+      "closing_crit_head": 1e-20,
       "closing_crit_zeta": 1e-8,
       "head_change": 1,
       "zeta_change": 0.1,
@@ -58,13 +59,16 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
+          0.027,
           0.027
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
+          100,
           100
         ],
         "anisotropy": [
+          10,
           10
         ],
         "specific_yield": 0.15,

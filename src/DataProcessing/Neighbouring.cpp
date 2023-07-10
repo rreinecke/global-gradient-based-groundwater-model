@@ -448,7 +448,6 @@ void buildBottomLayers(NodeVector nodes,
     double specificYield;
     double specificStorage;
     bool densityVariable;
-    std::vector<Model::quantity<Model::Meter>> zetas;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
     double effPorosity;
@@ -486,7 +485,7 @@ void buildBottomLayers(NodeVector nodes,
             delnus = nodes->at(i)->getProperties().
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
             nusInZones = nodes->at(i)->getProperties().
-                    get<Model::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
+                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
             effPorosity = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::EffectivePorosity>();
             maxTipSlope = nodes->at(i)->getProperties().

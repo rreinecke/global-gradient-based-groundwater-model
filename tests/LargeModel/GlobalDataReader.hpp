@@ -840,7 +840,7 @@ namespace GlobalFlow {
                         if(nodeIDs.empty()){
                             continue;
                         }
-                        nodeID = nodeIDs[0];
+                        nodeID = nodeIDs[layer];
                         //head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
                         nodes->at(nodeID)->addZeta(localZetaID, (-zeta) * Model::si::meter);
                     }
