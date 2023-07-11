@@ -10,12 +10,57 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleVDF3DataReader();
     sim = Simulation::Simulation(op, reader);
+    _eq = sim.getEquation();
+}
 
+void StandaloneRunner::simulate() {
+    LOG(userinfo) << "Running stress period 1";
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
+    int stepNumber{1};
 
-    // For node infos:
+    for (Simulation::step step : stepper) {
+        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
+        step.first->toggleSteadyState(); // turn steady state on
+        step.first->solve(); // solve equations
+        step.first->toggleSteadyState(); // turn steady state off
+        sim.printMassBalances(debug);
+        ++stepNumber;
+    }
+
+    //Changing recharge at nodes 199 and 599
+    std::unordered_map<int, double> recharge_new = {{199, 0.00025},{599, 0.0005}}; // new recharge (per unit area [m^2])
+    for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        if(recharge_new.find(j) != recharge_new.end()) {
+            // multiply new recharge with area (here: 20 m^2), then update recharge
+            double recharge = recharge_new.at(j) * sim.getNodes()->at(j)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value();
+            sim.getNodes()->at(j)->updateUniqueFlow(recharge, Model::RECHARGE, false);
+        }
+    }
+
+    LOG(userinfo) << "Running stress period 2";
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
+    for (Simulation::step step : stepper2) {
+        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
+        step.first->toggleSteadyState();
+        step.first->solve();
+        step.first->toggleSteadyState();
+        sim.printMassBalances(debug);
+        ++stepNumber;
+    }
+
+    //sim.save();
+}
+
+void StandaloneRunner::getResults() {}
+
+void StandaloneRunner::writeData() {
+    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF3.json", sim).write();
+}
+
+void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
-    myfile.open ("node_attributes_output.csv");
-    myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1]" << std::endl;
+    myfile.open ("node_attributes_vdf3.csv");
+    myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1],recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         sim.getNodes()->at(j)->setSimpleK();
@@ -27,70 +72,11 @@ void StandaloneRunner::setupSimulation() {
                sim.getNodes()->at(j)->getElevation().value() << "," <<
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
-               sim.getNodes()->at(j)->getZeta(1).value() <<
+               sim.getNodes()->at(j)->getZeta(1).value() << "," <<
+               sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
                std::endl;
     }
-    _eq = sim.getEquation();
-}
-
-void StandaloneRunner::simulate() {
-    LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
-    int stepNumber = 1;
-
-    // for saving zetas in a csv
-    std::ofstream myfile;
-    myfile.open ("zetas.csv");
-    myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
-
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-
-        if (stepNumber == 1) {
-            step.first->toggleSteadyState();
-        }
-        step.first->solve();
-        sim.printMassBalances(debug);
-
-        // for saving zetas in a csv
-        int zetaID = 1;
-        double zeta;
-        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
-        }
-
-        stepNumber++;
-    }
-
-    //Changing stresses
-    std::vector<int> ids = {199, 599};
-
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        if(std::find(ids.begin(), ids.end(), j) != ids.end()) {
-            double recharge = 0.5 * sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value();
-            sim.getNodes()->at(j)->updateUniqueFlow(recharge, Model::RECHARGE, false);
-        }
-    }
-
-    /*LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
-    for (Simulation::step step : stepper2) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->solve();
-        sim.printMassBalances(debug);
-
-        stepNumber++;
-    }*/
-
-    myfile.close(); // for saving zetas in a csv
-    //sim.save();
-}
-
-void StandaloneRunner::getResults() {}
-
-void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF3.json", sim).write();
+    myfile.close();
 }
 
 StandaloneRunner::StandaloneRunner() {}
@@ -102,6 +88,7 @@ int main() {
     GlobalFlow::StandaloneRunner runner;
     runner.loadSettings();
     runner.setupSimulation();
+    runner.writeNodeInfosToCSV();
     runner.simulate();
     runner.writeData();
     return EXIT_SUCCESS;

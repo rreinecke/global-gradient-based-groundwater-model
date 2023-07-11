@@ -26,7 +26,7 @@ void StandaloneRunner::simulate() {
     int stepNumber = 1;
 
     // for saving zetas in a csv
-    ofstream myfile;
+    std::ofstream myfile;
     myfile.open ("zetas.csv");
     myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
 

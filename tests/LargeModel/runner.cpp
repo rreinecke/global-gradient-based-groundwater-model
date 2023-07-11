@@ -2,8 +2,6 @@
 
 namespace GlobalFlow {
 
-    //using namespace std;
-
     //int sim_id{0};
 
     void Runner::loadSettings() {
@@ -23,17 +21,17 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 5);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
         LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
             step.first->solve();
             LOG(userinfo) << "Step " << stepNumber << ":\n";
             LOG(userinfo) << "- Solved head with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
             ++stepNumber;
         }
         sim.save();
@@ -42,9 +40,10 @@ namespace GlobalFlow {
     void Runner::writeData() {
 	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
     }
+
     void Runner::writeNodeInfosToCSV(){
         // For node infos:
-        ofstream myfile;
+        std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
         myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head,zeta1" << std::endl;
         // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
@@ -52,7 +51,7 @@ namespace GlobalFlow {
             const auto default_precision = (int) std::cout.precision();
             myfile <<
                    sim.getNodes()->at(j)->getID() << "," <<
-                   setprecision(7) << sim.getNodes()->at(j)->getSpatID() << setprecision(default_precision) << "," <<
+                   std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision) << "," <<
                    sim.getNodes()->at(j)->getLon() << "," <<
                    sim.getNodes()->at(j)->getLat() << "," <<
                    //sim.getNodes()->at(j)->getArea().value() << "," <<

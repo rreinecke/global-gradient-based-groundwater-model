@@ -83,7 +83,7 @@ namespace GlobalFlow {
          * @brief Helper function for arcID mappings
          * @return a set of arcIDs
          */
-        set<int> getMapping();
+        std::set<int> getMapping();
     };
 
 }//ns

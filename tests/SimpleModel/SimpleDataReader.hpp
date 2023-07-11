@@ -109,7 +109,6 @@ class SimpleDataReader : public DataReader {
 
             while (in.read_row(spatID, x, y, area, col, row)) {
                 out[col][row] = nodeID;
-                //area is in km needs to be in m
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             x,
                                                             y,

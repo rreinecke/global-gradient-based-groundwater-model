@@ -606,11 +606,11 @@ namespace GlobalFlow {
                 io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "POINTID", "length", "bankfull", "spatID", "width");
 
-                int id = 0;
-                double length = 0;
-                double Q_bankfull = 0;
-                double width = 0;
-                large_num spatID = 0;
+                int id{0};
+                double length{0};
+                double Q_bankfull{0};
+                double width{0};
+                large_num spatID{0};
                 std::vector<large_num> nodeIDs;
                 large_num nodeID;
                 std::unordered_map<large_num, std::array<double, 3>> out;
@@ -637,8 +637,8 @@ namespace GlobalFlow {
                                std::unordered_map<large_num, std::array<double, 3>> riverStage) {
                 io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
                 in.read_header(io::ignore_no_column, "spatID", "data");
-                large_num spatID = 0;
-                double riverElevation = 0;
+                large_num spatID{0};
+                double riverElevation{0};
                 std::vector<large_num> nodeIDs;
                 large_num nodeID;
 
@@ -697,8 +697,8 @@ namespace GlobalFlow {
                     io::CSVReader<2, io::trim_chars<'"', '\t'>, io::no_quote_escape<','>> in(path);
                     in.read_header(io::ignore_no_column, "spatID", "data");
 
-                    double percentage = 0;
-                    large_num spatID = 0;
+                    double percentage{0};
+                    large_num spatID{0};
                     std::vector<large_num> nodeIDs;
                     large_num nodeID;
 
@@ -805,7 +805,7 @@ namespace GlobalFlow {
             void readInitialZetas(int numberOfNodesPerLayer, int numberOfLayers, const std::string pathZetas) {
                 double topOfNode;
                 double bottomOfNode;
-                int spatID{0};
+                large_num spatID{0};
                 double localZetaID{0};
                 double zeta{0};
                 double head{0};
@@ -822,7 +822,7 @@ namespace GlobalFlow {
 
                 // read initial data for density surfaces
                 std::vector<large_num> nodeIDs;
-                large_num nodeID = 0;
+                large_num nodeID{0};
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
                     inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
@@ -842,7 +842,7 @@ namespace GlobalFlow {
                         }
                         nodeID = nodeIDs[layer];
                         //head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
-                        nodes->at(nodeID)->addZeta(localZetaID, (-zeta) * Model::si::meter);
+                        nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                     }
                 }
             }

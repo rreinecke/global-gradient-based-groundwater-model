@@ -34,7 +34,7 @@
       "iterations": 10000,
       "inner_itter": 50,
       "closing_crit_head": 1e-185,
-      "closing_crit_zeta": 1e-80,
+      "closing_crit_zeta": 1e-7,
       "head_change": 1,
       "zeta_change": 1,
       "damping": "false",
