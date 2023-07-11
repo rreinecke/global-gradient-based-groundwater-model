@@ -213,7 +213,7 @@ namespace GlobalFlow {
                      double minDepthFactor,
                      double slopeAdjFactor,
                      double vdfLock,
-                     vector<double> densityZones) {
+                     std::vector<double> densityZones) {
                 Matrix<int> out = Matrix<int>(numberOfCols, std::vector<int>(numberOfRows));
 
                 io::CSVReader<6, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -227,8 +227,8 @@ namespace GlobalFlow {
                 int row{0};
                 int col{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
-                vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
-                vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
+                std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
+                std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
                 while (in.read_row(spatID, lon, lat, area, col, row)) {
                     out[col][row] = nodeID;
@@ -300,7 +300,7 @@ namespace GlobalFlow {
                          double minDepthFactor,
                          double slopeAdjFactor,
                          double vdfLock,
-                         vector<double> densityZones) {
+                         std::vector<double> densityZones) {
                 io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area");
                 double lon{0};
@@ -309,8 +309,8 @@ namespace GlobalFlow {
                 int spatID{0};
                 int nodeID{0};
                 lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
-                vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
-                vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
+                std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
+                std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
                 while (in.read_row(spatID, lon, lat, area)) {
                     //area is in km needs to be in m
@@ -382,7 +382,7 @@ namespace GlobalFlow {
             }
 
             void setVariableDensityConditionsAtBoundary(int numZones, double aquiferDepth){
-                vector<Model::quantity<Model::Meter>> zetas;
+                std::vector<Model::quantity<Model::Meter>> zetas;
                 Model::quantity<Model::Meter> zeta;
                 for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
                     if (nodes->at(nodeID)->hasGHB()){
@@ -821,7 +821,7 @@ namespace GlobalFlow {
                 }
 
                 // read initial data for density surfaces
-                vector<large_num> nodeIDs;
+                std::vector<large_num> nodeIDs;
                 large_num nodeID = 0;
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
@@ -853,7 +853,7 @@ namespace GlobalFlow {
                 });
             }
 
-            void readZonesSourcesSinks(std::string path, vector<double> densityZones) {
+            void readZonesSourcesSinks(std::string path, std::vector<double> densityZones) {
                 /**
                  * Here we use zoneOfSinks and zoneOfSources (containing values between 0 and number of density zones).
                  * Thus, sources and sinks are associated to the respective zone. Rule: zoneOfSinks <= zoneOfSources
@@ -867,7 +867,7 @@ namespace GlobalFlow {
                 large_num spatID{0};
                 double zoneOfSinks{0};
                 double zoneOfSources{0};
-                vector<large_num> nodeIDs;
+                std::vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
                     try {
@@ -883,9 +883,9 @@ namespace GlobalFlow {
                 }
             }
 
-            vector<Model::quantity<Model::Dimensionless>> calcNusInZones(vector<double> densityZones){
+            std::vector<Model::quantity<Model::Dimensionless>> calcNusInZones(std::vector<double> densityZones){
                 double densityFresh = 1000.0;
-                vector<Model::quantity<Model::Dimensionless>> nusInZones;
+                std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
                 for (int id = 0; id < densityZones.size(); id++) {
                     // nus of zones is equal to nus of zeta surface below
                     nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
@@ -893,10 +893,10 @@ namespace GlobalFlow {
                 return nusInZones;
             }
 
-            vector<Model::quantity<Model::Dimensionless>> calcDelnus(vector<double> densityZones){
+            std::vector<Model::quantity<Model::Dimensionless>> calcDelnus(std::vector<double> densityZones){
                 double densityFresh = 1000.0;
-                vector<Model::quantity<Model::Dimensionless>> nusInZones;
-                vector<Model::quantity<Model::Dimensionless>> delnus;
+                std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
+                std::vector<Model::quantity<Model::Dimensionless>> delnus;
                 for (int id = 0; id < densityZones.size(); id++) {
                     // nus of zones is equal to nus of zeta surface below
                     nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);

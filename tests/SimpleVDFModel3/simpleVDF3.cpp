@@ -1,9 +1,6 @@
 #include "simpleVDF3.hpp"
 
-
 namespace GlobalFlow {
-
-using namespace std;
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
@@ -16,7 +13,7 @@ void StandaloneRunner::setupSimulation() {
 
 
     // For node infos:
-    ofstream myfile;
+    std::ofstream myfile;
     myfile.open ("node_attributes_output.csv");
     myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1]" << std::endl;
 
@@ -42,7 +39,7 @@ void StandaloneRunner::simulate() {
     int stepNumber = 1;
 
     // for saving zetas in a csv
-    ofstream myfile;
+    std::ofstream myfile;
     myfile.open ("zetas.csv");
     myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
 
@@ -75,7 +72,8 @@ void StandaloneRunner::simulate() {
             sim.getNodes()->at(j)->updateUniqueFlow(recharge, Model::RECHARGE, false);
         }
     }
-    LOG(userinfo) << "Running stress period 2";
+
+    /*LOG(userinfo) << "Running stress period 2";
     Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
@@ -83,7 +81,7 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
 
         stepNumber++;
-    }
+    }*/
 
     myfile.close(); // for saving zetas in a csv
     //sim.save();

@@ -182,7 +182,7 @@ namespace GlobalFlow {
                     return getData<std::pair<double, double>>(simulation, allLayers, [&simulation](int i) {
                         double lat{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>()};
                         double lon{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>()};
-                        return make_pair(lat, lon);
+                        return std::make_pair(lat, lon);
                     });
                 }
 
@@ -318,7 +318,7 @@ namespace GlobalFlow {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::RIVER_MM).getFlowHead().value();
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 return convert<T>(out);
                             });
@@ -333,7 +333,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 return convert<T>(out);
                             });
@@ -349,7 +349,7 @@ namespace GlobalFlow {
                                             simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
 
                                 }
                                 return convert<T>(out);
@@ -370,7 +370,7 @@ namespace GlobalFlow {
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
                                             ().value()) * 1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 if (out < 0) {
                                     out = 0;
@@ -391,7 +391,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 if (out > 0) {
                                     out = 0;
@@ -422,7 +422,7 @@ namespace GlobalFlow {
                                             simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
@@ -437,7 +437,7 @@ namespace GlobalFlow {
                                             simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
@@ -448,7 +448,7 @@ namespace GlobalFlow {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::WETLAND).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
@@ -459,7 +459,7 @@ namespace GlobalFlow {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::GLOBAL_WETLAND).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
@@ -470,7 +470,7 @@ namespace GlobalFlow {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::LAKE).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
@@ -485,7 +485,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -503,7 +503,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -521,7 +521,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -538,7 +538,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -556,7 +556,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }
@@ -574,7 +574,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }
@@ -591,7 +591,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }

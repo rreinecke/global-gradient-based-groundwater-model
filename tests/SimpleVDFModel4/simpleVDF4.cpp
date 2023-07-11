@@ -3,8 +3,6 @@
 
 namespace GlobalFlow {
 
-using namespace std;
-
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
     op.load("data/config_simpleVDF4.json");

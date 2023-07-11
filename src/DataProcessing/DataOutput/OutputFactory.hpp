@@ -91,8 +91,8 @@ namespace GlobalFlow {
              * @return
              */
             template<typename Container_T>
-            string str(Container_T begin, Container_T end) {
-                stringstream ss;
+            std::string str(Container_T begin, Container_T end) {
+                std::stringstream ss;
                 bool first = true;
                 for (; begin != end; begin++) {
                     double val = *begin;
@@ -101,7 +101,7 @@ namespace GlobalFlow {
                     if (std::isnan(val)) {
                         ss << "null";
                     } else {
-                        ss << std::scientific << setprecision(17) << val;
+                        ss << std::scientific <<  std::setprecision(17) << val;
                     }
                     first = false;
                 }
@@ -147,7 +147,7 @@ namespace GlobalFlow {
                 return init;
             };
 
-            void push(vector_d &u, vector_d &v, string x) {
+            void push(vector_d &u, vector_d &v,  std::string x) {
                 u.push_back(::atof(x.c_str()));
                 v.push_back(::atof(x.c_str()));
             }
@@ -219,7 +219,7 @@ namespace GlobalFlow {
                 assert(v.size() == u.size() && "Size of vectors don't match!");
                 pair_vector out;
                 for (int j = 0; j < v.size(); ++j) {
-                    out.push_back(make_pair(v[j], u[j]));
+                    out.push_back( std::make_pair(v[j], u[j]));
                 }
                 return out;
             }
@@ -517,7 +517,7 @@ namespace GlobalFlow {
                     return out;
                 }
 
-                double **vectorToArray(vector <vector<double>> &vals) {
+                double **vectorToArray( std::vector < std::vector<double>> &vals) {
                     int N = vals.size();
                     int M = vals[0].size();
                     double **whereto = new double *[N];

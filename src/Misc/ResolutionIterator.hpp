@@ -20,8 +20,6 @@ using Item = NodeInterface*;
 using size_type = unsigned long;
 using Step = unsigned long;
 using AssociatedNodes = vector<Item>;
-using namespace std;
-
 
 class FiveDegreeToZeroFiveItem {
  private:

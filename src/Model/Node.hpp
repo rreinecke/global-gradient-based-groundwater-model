@@ -74,7 +74,6 @@ namespace std {
 namespace GlobalFlow {
     namespace Model {
 
-        //using namespace std;
         using namespace boost::units;
 
         class NodeInterface;
@@ -1894,7 +1893,7 @@ Modify Properties
                                 at(top)->isZetaAtBottom(localZetaID)) {
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxTop();
-                                LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+                                //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop > (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
@@ -1906,7 +1905,7 @@ Modify Properties
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); //  * get<t_dim, StepModifier>()
-                                    LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
+                                    //LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);
                                 }

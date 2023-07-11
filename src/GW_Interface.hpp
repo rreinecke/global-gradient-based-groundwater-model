@@ -29,8 +29,6 @@
 
 namespace GlobalFlow {
 
-    using namespace std;
-
     /**
      * @interface GW_Interface
      * @class GW_Interface

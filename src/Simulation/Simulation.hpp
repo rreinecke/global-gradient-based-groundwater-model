@@ -120,7 +120,7 @@ namespace GlobalFlow {
                 if (serialize) {
                     LOG(stateinfo) << "Saving state for faster reboot..";
                     {
-                        std::ofstream ofs(saveName, ios::out | ios::binary);
+                        std::ofstream ofs(saveName,  std::ios::out |  std::ios::binary);
                         boost::archive::binary_oarchive outStream(ofs);
                         outStream << nodes;
                     }
@@ -132,7 +132,7 @@ namespace GlobalFlow {
                 if(loadNodes) {
                     LOG(stateinfo) << "Restoring state..";
                     {
-                        std::ifstream in(saveName, ios::in | ios::binary);
+                        std::ifstream in(saveName,  std::ios::in |  std::ios::binary);
                         boost::archive::binary_iarchive inStream(in);
                         inStream >> nodes;
                     }
@@ -147,7 +147,7 @@ namespace GlobalFlow {
              */
             std::string NodeInfosByID(unsigned long nodeID) {
                 Model::NodeInterface *nodeInterface = nodes->at(nodeID).get();
-                string out("\n");
+                std::string out("\n");
                 out += "IN: ";
                 out += to_string(nodeInterface->getCurrentIN().value());
                 out += "\nOUT: ";
@@ -198,7 +198,7 @@ namespace GlobalFlow {
                         out += nodes->at(j)->getOUT().value();
                     }
                 }
-                ostringstream output;
+                std::ostringstream output;
                 output << to_string(in) << "\n";
                 output << to_string(out);
                 return output.str();
@@ -215,7 +215,7 @@ namespace GlobalFlow {
                     }
                 }
                 Model::NodeInterface *nodeInterface = nodes->at(id).get();
-                string out("");
+                std::string out("");
                 //Flows Budget for
                 //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Wetland
                 out += to_string(nodeID);
@@ -336,8 +336,8 @@ namespace GlobalFlow {
              * @param flow
              * @return
              */
-            string getFlowByName(Flows flow) {
-                ostringstream stream;
+            std::string getFlowByName(Flows flow) {
+                std::ostringstream stream;
                 MassError tmp(0, 0, 0);
                 switch (flow) {
                     case GENERAL_HEAD_BOUNDARY:
@@ -445,7 +445,7 @@ namespace GlobalFlow {
              * Get the residuals of the current iteration
              * @param path
              */
-            void writeResiduals(string path) {
+            void writeResiduals( std::string path ) {
                 Eigen::Matrix<double, Eigen::Dynamic, 1> vector = eq->getResiduals();
                 std::ofstream ofs;
                 ofs.open(path, std::ofstream::out | std::ofstream::trunc);

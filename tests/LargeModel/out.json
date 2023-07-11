@@ -10,9 +10,9 @@
         "all_layers": "true"
       },
       {
-        "name": "river_conduct",
+        "name": "zeta1_large",
         "type": "csv",
-        "field": "River_Conduct",
+        "field": "Zeta1",
         "ID": "true",
         "position": "true",
         "all_layers": "true"

@@ -9,9 +9,8 @@
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 20,
-      "layers": 2,
+      "layers": 1,
       "confinement": [
-        "true",
         "true"
       ],
       "density_variable": "true",
@@ -59,16 +58,13 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          0.027,
           0.027
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
-          100,
           100
         ],
         "anisotropy": [
-          10,
           10
         ],
         "specific_yield": 0.15,

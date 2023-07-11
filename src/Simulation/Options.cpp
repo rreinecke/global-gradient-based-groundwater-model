@@ -5,22 +5,21 @@ namespace GlobalFlow {
     namespace Simulation {
 
         namespace pt = boost::property_tree;
-        using namespace std;
 
-        inline vector<string> getArray(string child_name, pt::ptree subtree) {
-            vector<string> out;
+        inline std::vector<std::string> getArray(std::string child_name, pt::ptree subtree) {
+            std::vector<std::string> out;
             pt::ptree array = subtree.get_child(child_name);
             BOOST_FOREACH(const pt::ptree::value_type &child, array) {
                 assert(child.first.empty());
-                string t = child.second.get<string>("");
+                std::string t = child.second.get<std::string>("");
                 out.push_back(child_name + "/" + t);
             }
             return out;
         }
 
         template<class T>
-        inline vector<T> getTypeArray(string child_name, pt::ptree subtree) {
-            vector<T> out;
+        inline std::vector<T> getTypeArray(std::string child_name, pt::ptree subtree) {
+            std::vector<T> out;
             pt::ptree array = subtree.get_child(child_name);
             BOOST_FOREACH(const pt::ptree::value_type &child, array) {
                 assert(child.first.empty());
@@ -31,12 +30,12 @@ namespace GlobalFlow {
         }
 
 
-        inline string getOptional(string child_name, pt::ptree subtree) {
-            boost::optional<string> data = subtree.get_optional<string>(child_name);
+        inline std::string getOptional(std::string child_name, pt::ptree subtree) {
+            boost::optional<std::string> data = subtree.get_optional<std::string>(child_name);
             if (data) {
                 return data.value();
             }
-            return string("");
+            return std::string("");
         }
 
         void
@@ -46,7 +45,7 @@ namespace GlobalFlow {
             tree = tree.get_child("config");
 
             pt::ptree config = tree.get_child("model_config");
-            NODES = config.get<string>("nodes");
+            NODES = config.get<std::string>("nodes");
             ROW_COLS = config.get<bool>("row_cols");
             NUMBER_OF_NODES_PER_LAYER = config.get<long>("number_of_nodes_per_layer");
             NUMBER_OF_ROWS = config.get<long>("number_of_rows");
@@ -63,11 +62,11 @@ namespace GlobalFlow {
 
             CACHE = config.get<bool>("cache");
             ADAPTIVE_STEP_SIZE = config.get<bool>("adaptive_step_size");
-            BOUNDARY_CONDITION = config.get<string>("boundary_condition");
+            BOUNDARY_CONDITION = config.get<std::string>("boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
             pt::ptree numerics = tree.get_child("numerics");
-            SOLVER = numerics.get<string>("solver");
+            SOLVER = numerics.get<std::string>("solver");
             IITER = numerics.get<int>("iterations");
             I_ITTER = numerics.get<int>("inner_itter");
             RCLOSE_HEAD = numerics.get<double>("closing_crit_head");
@@ -80,7 +79,7 @@ namespace GlobalFlow {
 
             pt::ptree input = tree.get_child("input");
 
-//BASE_PATH = input.get<string>("base_path");
+//BASE_PATH = input.get<std::string>("base_path");
 
             pt::ptree data_config = input.get_child("data_config");
             k_from_file = data_config.get<bool>("k_from_file");

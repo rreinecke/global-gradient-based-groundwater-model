@@ -64,6 +64,9 @@ namespace GlobalFlow {
         getResults();
 
         void
+        writeNodeInfosToCSV();
+
+        void
         writeData();
 
     private:

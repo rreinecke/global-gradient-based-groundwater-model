@@ -2,13 +2,13 @@
 
 namespace GlobalFlow {
 
-    using namespace std;
+    //using namespace std;
 
     //int sim_id{0};
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config.json");
+        op.load("data/config_two_layers.json");
     }
 
     void Runner::setupSimulation() {
@@ -23,9 +23,26 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 5);
         LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
+        int stepNumber{1};
+        for (Simulation::step step : stepper) {
+            //step.first->toggleSteadyState();
+            step.first->solve();
+            LOG(userinfo) << "Step " << stepNumber << ":\n";
+            LOG(userinfo) << "- Solved head with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
+            sim.printMassBalances(debug);
+            //step.first->toggleSteadyState();
+            ++stepNumber;
+        }
+        sim.save();
+    }
+
+    void Runner::writeData() {
+	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
+    }
+    void Runner::writeNodeInfosToCSV(){
         // For node infos:
         ofstream myfile;
         myfile.open ("node_attributes_output.csv");
@@ -57,24 +74,13 @@ namespace GlobalFlow {
                    std::endl;
         }
         myfile.close();
-
-        for (Simulation::step step : stepper) {
-            step.first->toggleSteadyState();
-            step.first->solve();
-            LOG(userinfo) << "Solved step with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
-            sim.printMassBalances(debug);
-            step.first->toggleSteadyState();
-        }
-        sim.save();
-    }
-
-    void Runner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
     }
 
     Runner::Runner() {}
 
 }//ns
+
+
 
 int main() {
     std::cout << FBLU("Starting Simulation") << std::endl;
@@ -83,6 +89,7 @@ int main() {
     runner.loadSettings();
     std::cout << FBLU("- simulation setup...") << std::endl;
     runner.setupSimulation();
+    runner.writeNodeInfosToCSV();
     std::cout << FBLU("- simulating...") << std::endl;
     runner.simulate();
     std::cout << FBLU("- writing output...") << std::endl;

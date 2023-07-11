@@ -80,7 +80,7 @@ Equation::~Equation() {
 }
 
 void inline
-Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
+Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
 
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     map = node->getConductance();
@@ -99,7 +99,7 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached)
 }
 
 void inline
-Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID, bool cached) {
+Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID) {
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
     large_num rowID = index_mapping[nodeIter];
     large_num colID;
@@ -111,10 +111,11 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID,
         if (colID != -1) {
             NANChecker(entry.second.value(), "Matrix entry (zetas)");
             zoneConductance = entry.second;
-            //if (cached) {
+            //LOG(debug) << "colID = " << colID << ", rowID = " << rowID << ", iterOffset = " << iterOffset;
+            //if (isCached_zetas) {
                 A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
             //} else {
-                //A_zetas.insert(rowID, colID) = zoneConductance.value();
+            //    A_zetas.insert(rowID, colID) = zoneConductance.value();
             //}
         }
     }
@@ -133,7 +134,7 @@ Equation::updateMatrix() {
         //LOG(userinfo) << "node: " << j;
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
-        addToA(nodes->at(id), isCached);
+        addToA(nodes->at(id));
         //---------------------Right
         b(id) = nodes->at(id)->getRHS().value();
         NANChecker(b[id], "Right hand side");
@@ -157,12 +158,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     bool isActive;
     index_mapping.clear();
 
-#ifdef EIGEN_HAS_OPENMP
-    Eigen::initParallel();
-    Index threads = Eigen::nbThreads();
-#endif
     // finding inactive nodes
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
         isActive = (nodes->at(i + iterOffset)->isZetaBetween(localZetaID));
         if (isActive) {
@@ -182,12 +178,16 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
 
-#pragma omp parallel for
+#ifdef EIGEN_HAS_OPENMP
+    Eigen::initParallel();
+    Index threads = Eigen::nbThreads();
+#endif
+//#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num nodeIter = 0; nodeIter < numberOfNodesPerLayer; ++nodeIter) {
         auto id = index_mapping[nodeIter];
         if (id != -1) {
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
-            addToA_zeta(nodeIter, iterOffset, localZetaID, isCached_zetas);
+            addToA_zeta(nodeIter, iterOffset, localZetaID);
             x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value();
             //---------------------Right
             b_zetas(id) = nodes->at(nodeIter + iterOffset)->getZetaRHS(localZetaID).value();
@@ -482,23 +482,13 @@ Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
-        long_vector __x_zetas(numberOfNodesPerLayer);
-        long_vector __b_zetas(numberOfNodesPerLayer);
-
-        x_zetas = std::move(__x_zetas);
-        b_zetas = std::move(__b_zetas);
-
-        Eigen::SparseMatrix<pr_t> __A_zetas(numberOfNodesPerLayer, numberOfNodesPerLayer);
-
-        A_zetas = std::move(__A_zetas);
-        A_zetas.reserve(long_vector::Constant(numberOfNodesPerLayer, 5));
 
         large_num iterOffset = layer * numberOfNodesPerLayer;
 
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
@@ -508,13 +498,14 @@ Equation::solve_zetas(){
                 continue;
             }
 
-            /*if (!isCached_zetas) {
-                LOG(numerics) << "Compressing matrix (zetas)";
-                A_zetas.makeCompressed();
+            //if (!isCached_zetas) {
+            //    LOG(numerics) << "Compressing matrix (zetas)";
+            //    A_zetas.makeCompressed();
+            //
+            //    LOG(numerics) << "Cached Matrix (zetas)";
+            //   isCached_zetas = true;
+            //}
 
-                LOG(numerics) << "Cached Matrix (zetas)";
-                isCached_zetas = true;
-            }*/
             //LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
             preconditioner_zetas();
 
@@ -555,7 +546,7 @@ Equation::solve_zetas(){
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+                LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
                 updateIntermediateZetas(iterOffset, localZetaID);
 
@@ -631,8 +622,8 @@ Equation::solve_zetas(){
                 LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
             }
 
-            __itter = iterations;
-            __error = cg_zetas.error_inf();
+            //__itter_zetas = iterations; // Question: add this to output?
+            //__error_zetas = cg_zetas.error_inf();
         }
         //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
         // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)

@@ -1,11 +1,11 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_nz.csv",
+      "nodes": "grid_na.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 4603,
-      "number_of_rows": 156,
-      "number_of_cols": 146,
+      "number_of_nodes_per_layer": 396787,
+      "number_of_rows": 0,
+      "number_of_cols": 0,
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
       "threads": 1,
@@ -34,7 +34,7 @@
       "iterations": 10000,
       "inner_itter": 50,
       "closing_crit_head": 1e-185,
-      "closing_crit_zeta": 1e-8,
+      "closing_crit_zeta": 1e-80,
       "head_change": 1,
       "zeta_change": 1,
       "damping": "false",
@@ -81,7 +81,7 @@
       "data": {
         "elevation": "elevation.csv",
         "equal_water_table_depth": "mean_wtd.csv",
-        "initial_zetas": "initial_zetas_nz.csv",
+        "initial_zetas": "initial_zetas_global.csv",
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
         "ghb_conductance": "caspian_data.csv",

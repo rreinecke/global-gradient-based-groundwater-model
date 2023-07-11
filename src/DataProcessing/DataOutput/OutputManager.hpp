@@ -173,14 +173,14 @@ namespace GlobalFlow {
                 static FieldType getTemplateType(std::string type) {
                     FieldType fieldType{FieldType::NON_VALID};
                     try { fieldType = fieldMapping.at(type); }
-                    catch (exception &e) { LOG(error) << "No such field: " << type; }
+                    catch ( std::exception &e) { LOG(error) << "No such field: " << type; }
                     return fieldType;
                 }
 
                 static OutputType getTemplateOutput(std::string field) {
                     OutputType outputType{OutputType::NON_VALID};
                     try { outputType = outputMapping.at(field); }
-                    catch (exception &e) { LOG(error) << "No such output type: " << field; }
+                    catch ( std::exception &e) { LOG(error) << "No such output type: " << field; }
                     return outputType;
                 }
 
