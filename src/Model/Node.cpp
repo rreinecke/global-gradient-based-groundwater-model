@@ -10,14 +10,10 @@ namespace Model {
  * Initialize the physical properties with default values
  * @return
  */
-PhysicalProperties initProperties() {
+PhysicalProperties initProperties() { // Question:: init all properties?
     PhysicalProperties fields;
-    fields.emplace < unsigned
-    long
-    int, ID > (0);
-    fields.emplace < unsigned
-    long
-    int, SpatID > (0);
+    fields.emplace < unsigned long int, ID > (0);
+    fields.emplace < unsigned long int, SpatID > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
@@ -26,7 +22,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Meter>, Elevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, TopElevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, VerticalSize>(10 * si::meter);
-    fields.emplace<quantity<Dimensionless>, Slope>(0 * si::si_dimensionless);
     fields.emplace<quantity<Meter>, EFolding>(1 * si::meter);
     fields.emplace<bool, Confinement>(true);
     fields.emplace<quantity<Velocity>, K>(0.03 * (si::meter / day));
@@ -39,7 +34,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
     fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
-
     return fields;
 }
 
@@ -52,25 +46,30 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              unsigned long int spatID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
-                             int stepModifier,
+                             quantity<Meter> head,
                              double aquiferDepth,
                              double anisotropy,
                              double specificYield,
                              double specificStorage,
-                             bool confined) : nodes(nodes) {
+                             bool confined,
+                             bool densityVariable,
+                             std::vector<quantity<Dimensionless>> delnus,
+                             std::vector<quantity<Dimensionless>> nusInZones,
+                             double effPorosity,
+                             double maxTipSlope,
+                             double maxToeSlope,
+                             double minDepthFactor,
+                             double slopeAdjFactor,
+                             quantity<Meter> vdfLock): nodes(nodes) {
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
     fields.set<quantity<SquareMeter>, Area>(area);
-    fields.set < unsigned
-    long
-    int, SpatID > (spatID);
-    fields.set < unsigned
-    long
-    int, ID > (identifier);
+    fields.set < unsigned long int, SpatID > (spatID);
+    fields.set < unsigned long int, ID > (identifier);
     fields.set<quantity<Velocity>, K>(conduct);
+    fields.set<quantity<Meter>, Head>(head);
     fields.set<bool, Confinement>(confined);
-    fields.set<quantity<Dimensionless>, StepModifier>(stepModifier * si::si_dimensionless);
     fields.emplace<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
     fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
     fields.emplace<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
@@ -83,6 +82,15 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
+    fields.set<bool, DensityVariable> (densityVariable);
+    fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
+    fields.set<std::vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
+    fields.set<quantity<Dimensionless>, EffectivePorosity> (effPorosity * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MaxTipSlope> (maxTipSlope * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
+    fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
+    fields.emplace<quantity<Meter>, VDFLock> (vdfLock);
 }
 }
 }//ns

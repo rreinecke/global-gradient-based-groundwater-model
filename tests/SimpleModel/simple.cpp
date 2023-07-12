@@ -3,15 +3,13 @@
 
 namespace GlobalFlow {
 
-using namespace std;
-
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
     op.load("data/config_simple.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleDataReader(op.getStepsizeModifier());
+    reader = new DataProcessing::SimpleDataReader();
     sim = Simulation::Simulation(op, reader);
     //disabling e-folding
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -21,8 +19,6 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::simulate() {
-
-
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running a steady state step";
@@ -32,13 +28,17 @@ void StandaloneRunner::simulate() {
         step.first->toggleSteadyState();
     }
 
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
 
-    LOG(userinfo) << "Running transient steps";
+    int stepNumber = 1;
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper) {
+        LOG(userinfo) << "Running transient step " << stepNumber;
+
         step.first->solve();
         sim.printMassBalances(debug);
+
+        stepNumber++;
     }
 
     //Changing stresses
@@ -67,7 +67,7 @@ void StandaloneRunner::simulate() {
             sim.getNodes()->at(j)->updateUniqueFlow(0.5, Model::RECHARGE, false);
     }
   
-    LOG(userinfo) << "Running transient steps with changing stresses";
+    LOG(userinfo) << "Running transient steps with changed stresses";
     Simulation::Stepper transientStepper2 = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper2) {
         step.first->solve();
@@ -82,7 +82,7 @@ void StandaloneRunner::getResults() {
 
 }
 
-void StandaloneRunner::writeData(std::string) {
+void StandaloneRunner::writeData() {
 
 }
 

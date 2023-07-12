@@ -1,28 +1,27 @@
-cmake_minimum_required(VERSION 3.15.3)
-if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
-    message(STATUS "You need to upgrade CMake! Minimum required version is 3.15.3.")
+cmake_minimum_required(VERSION 3.25.0)
+if(${CMAKE_VERSION} VERSION_LESS "3.25.0")
+    message(STATUS "You need to upgrade CMake! Minimum required version is 3.25.0.")
 endif()
 
-set(CMAKE_C_COMPILER "clang")
-set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang-16")
+set(CMAKE_CXX_COMPILER "clang++-16")
 
 # CMAKE flags
-set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-project(GW)
+project(3GM)
 
 # Build folder structure
 add_subdirectory(src)
 add_subdirectory(lib)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")  
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 
 ################# Libs ################
-
 # Boost
-find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
+find_package(Boost 1.80.0 COMPONENTS system filesystem serialization log REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
@@ -47,50 +46,79 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 ################################
 # Simple Demo Model
 ################################
-project(simple)
-
 add_subdirectory(tests/SimpleModel)
 add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
-# Simple Demo Model for Variable Density Flow (VDF)
+# Simple Demo Models for Variable Density Flow (VDF)
 ################################
-project(simpleVDF)
+add_subdirectory(tests/SimpleVDFModel1)
+set(simple_vdf_1_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_1_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_executable(simple_vdf_model_1 tests/SimpleVDFModel1/simpleVDF1.cpp ${simple_vdf_1_src} ${HEADERS})
+target_link_libraries(simple_vdf_model_1 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
-set(simple_vdf_hrd ${HEADERS})
-set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_subdirectory(tests/SimpleVDFModel2)
+set(simple_vdf_2_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_2_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_2_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+add_executable(simple_vdf_model_2 tests/SimpleVDFModel2/simpleVDF2.cpp ${simple_vdf_2_src} ${HEADERS})
+target_link_libraries(simple_vdf_model_2 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
-add_subdirectory(tests/SimpleVDFModel)
-add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${simple_vdf_hrd})
-target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+add_subdirectory(tests/SimpleVDFModel3)
+set(simple_vdf_3_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_3_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_3_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM simple_vdf_3_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
+add_executable(simple_vdf_model_3 tests/SimpleVDFModel3/simpleVDF3.cpp ${simple_vdf_3_src} ${HEADERS})
+target_link_libraries(simple_vdf_model_3 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+add_subdirectory(tests/SimpleVDFModel4)
+set(simple_vdf_4_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_4_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_4_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM simple_vdf_4_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
+list(REMOVE_ITEM simple_vdf_4_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel3/simpleVDF3.cpp)
+add_executable(simple_vdf_model_4 tests/SimpleVDFModel4/simpleVDF4.cpp ${simple_vdf_4_src} ${HEADERS})
+target_link_libraries(simple_vdf_model_4 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+################################
+# Large scale model (with Variable Density Flow (VDF))
+################################
+add_subdirectory(tests/LargeModel)
+set(large_model_src ${SOURCE})
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel3/simpleVDF3.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel4/simpleVDF4.cpp)
+add_executable(large_model tests/LargeModel/runner.cpp ${large_model_src} ${HEADERS})
+target_link_libraries(large_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Unit Tests
 ################################
-project(Testing)
-
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest
 # Download and unpack googletest at configure time
 configure_file(CMakeLists_GTest.txt googletest-download/CMakeLists.txt)
 execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
 execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
+        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googletest-download" )
 
 # Add googletest directly to our build. This adds
 # the following targets: gtest, gtest_main, gmock
 # and gmock_main
 add_subdirectory("${CMAKE_BINARY_DIR}/googletest-src"
-                 "${CMAKE_BINARY_DIR}/googletest-build")
+        "${CMAKE_BINARY_DIR}/googletest-build")
 
 # The gtest/gmock targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
 # later. Otherwise we have to add them here ourselves.
 if(CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include"
-                        "${gmock_SOURCE_DIR}/include")
+            "${gmock_SOURCE_DIR}/include")
 endif()
 
 add_subdirectory(tests)
@@ -99,8 +127,10 @@ enable_testing()
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
 list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel1/simpleVDF1.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel2/simpleVDF2.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel3/simpleVDF3.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/LargeModel/runner.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)
@@ -119,4 +149,3 @@ add_test(AllTests runUnitTests)
 #                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
 #                NAME coverage
 #)
-

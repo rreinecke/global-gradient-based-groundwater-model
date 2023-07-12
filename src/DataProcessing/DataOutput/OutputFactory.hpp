@@ -91,8 +91,8 @@ namespace GlobalFlow {
              * @return
              */
             template<typename Container_T>
-            string str(Container_T begin, Container_T end) {
-                stringstream ss;
+            std::string str(Container_T begin, Container_T end) {
+                std::stringstream ss;
                 bool first = true;
                 for (; begin != end; begin++) {
                     double val = *begin;
@@ -101,7 +101,7 @@ namespace GlobalFlow {
                     if (std::isnan(val)) {
                         ss << "null";
                     } else {
-                        ss << std::scientific << setprecision(17) << val;
+                        ss << std::scientific <<  std::setprecision(17) << val;
                     }
                     first = false;
                 }
@@ -147,7 +147,7 @@ namespace GlobalFlow {
                 return init;
             };
 
-            void push(vector_d &u, vector_d &v, string x) {
+            void push(vector_d &u, vector_d &v,  std::string x) {
                 u.push_back(::atof(x.c_str()));
                 v.push_back(::atof(x.c_str()));
             }
@@ -219,7 +219,7 @@ namespace GlobalFlow {
                 assert(v.size() == u.size() && "Size of vectors don't match!");
                 pair_vector out;
                 for (int j = 0; j < v.size(); ++j) {
-                    out.push_back(make_pair(v[j], u[j]));
+                    out.push_back( std::make_pair(v[j], u[j]));
                 }
                 return out;
             }
@@ -370,7 +370,7 @@ namespace GlobalFlow {
                  * @param p Position vector
                  */
                 virtual void
-                write(path filePath, bool printID, bool printXY, std::vector<T> data, pos_v p, a_vector ids) = 0;
+                write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<T> data, pos_v p, a_vector ids) = 0;
 
             };
 
@@ -382,12 +382,12 @@ namespace GlobalFlow {
             class CSVOutput : public OutputInterface<T> {
             public:
                 void
-                write(path filePath, bool printID, bool printXY, std::vector<std::pair<double, double>> data, pos_v p,
+                write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<std::pair<double, double>> data, pos_v p,
                       a_vector ids) {}
 
-                void write(path filePath, bool printID, bool printXY, std::vector<bool> data, pos_v p, a_vector ids) {}
+                void write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<bool> data, pos_v p, a_vector ids) {}
 
-                void write(path filePath, bool printID, bool printXY, std::vector<double> data, pos_v p, a_vector ids) {
+                void write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<double> data, pos_v p, a_vector ids) {
                     std::vector<std::string> d;
                     d.reserve(data.size());
                     for (int i = 0; i < data.size(); ++i) {
@@ -395,17 +395,17 @@ namespace GlobalFlow {
                         out << std::scientific << std::setprecision(17) << data[i];
                         d.emplace_back(out.str());
                     }
-                    write(filePath, printID, printXY, d, p, ids);
+                    write(filePath, printID, printXY, allLayers, d, p, ids);
                 }
 
-                void write(path filePath, bool printID, bool printXY, std::vector<std::string> data, pos_v p, a_vector ids) {
+                void write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<std::string> data, pos_v p, a_vector ids) {
                     std::ofstream ofs;
                     ofs.open(filePath + ".csv", std::ofstream::out | std::ofstream::trunc);
                     if (printID) {
-                        ofs << "ID,";
+                        ofs << "nodeID,";
                     }
                     if (printXY) {
-                        ofs << "X,Y,";
+                        ofs << "lat,lon,";
                     }
                     ofs << "data";
                     ofs << std::endl;
@@ -429,22 +429,22 @@ namespace GlobalFlow {
             public:
 
                 void
-                write(path filePath, bool printID, bool printXY, std::vector<std::pair<double, double>> data, pos_v p,
+                write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<std::pair<double, double>> data, pos_v p,
                       a_vector ids) {
                     LOG(userinfo) << "not implemented yet";
                 }
 
-                void write(path filePath, bool printID, bool printXY, std::vector<bool> data, pos_v p, a_vector ids) {
+                void write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<bool> data, pos_v p, a_vector ids) {
                     LOG(userinfo) << "not implemented yet";
                 }
 
                 void
-                write(path filePath, bool printID, bool printXY, std::vector<std::string> data, pos_v p, a_vector ids) {
+                write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<std::string> data, pos_v p, a_vector ids) {
                     LOG(userinfo) << "not implemented yet";
                 }
 
                 void
-                write(path filePath, bool printID, bool printXY, std::vector<double> geo_data, pos_v p, a_vector ids) {
+                write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<double> geo_data, pos_v p, a_vector ids) {
                 /**
 
 		    try {
@@ -517,7 +517,7 @@ namespace GlobalFlow {
                     return out;
                 }
 
-                double **vectorToArray(vector <vector<double>> &vals) {
+                double **vectorToArray( std::vector < std::vector<double>> &vals) {
                     int N = vals.size();
                     int M = vals[0].size();
                     double **whereto = new double *[N];
@@ -614,7 +614,7 @@ namespace GlobalFlow {
                 }
 
             public:
-                void write(path filePath, bool printID, bool printXY, std::vector<T> data, pos_v p, a_vector ids) {
+                void write(path filePath, bool printID, bool printXY, bool allLayers, std::vector<T> data, pos_v p, a_vector ids) {
                     std::ofstream ofs;
                     ofs.open(filePath + ".json", std::ofstream::out | std::ofstream::trunc);
                     buildData(data, p, ofs);

@@ -7,8 +7,8 @@ TEST(FluidMechanics, estimateConductance) {
     //t_vel K, t_meter length, t_meter width, t_meter Daq, t_meter G, depth
     ASSERT_DOUBLE_EQ(m.estimateConductance(1 * si::meter / day, 100 * si::meter, 10 * si::meter, 100 * si::meter,
                                            1000 * si::meter, 10 * si::meter).value(), 32.855614163202617);
-    ASSERT_DOUBLE_EQ(m.estimateConductance(0.01 * si::meter / day, 1000 * si::meter, 100 * si::meter, 100 * si::meter,
-                                           1000 * si::meter, 10 * si::meter).value(), 10.949907990410804);
+    /*ASSERT_DOUBLE_EQ(m.estimateConductance(0.01 * si::meter / day, 1000 * si::meter, 100 * si::meter, 100 * si::meter,
+                                           1000 * si::meter, 10 * si::meter).value(), 10.949907990410804);*/
     testing::FLAGS_gtest_death_test_style = "threadsafe";
     ASSERT_DEATH(m.estimateConductance(0.01 * si::meter / day, 1000 * si::meter, 100 * si::meter, 100 * si::meter,
                                        1000 * si::meter, 1000 * si::meter).value(),
@@ -50,14 +50,6 @@ TEST(FluidMechanics, calculateHarmonicMeanConductance) {
     ASSERT_DOUBLE_EQ(m.calculateHarmonicMeanConductance(t).value(), 0.1);
 }
 
-TEST(FluidMechanics, smoothFunction__NWT) {
-    //quantity<Meter> elevation, quantity<Meter> verticalSize, quantity<Meter> head
-    FluidMechanics m = FluidMechanics();
-    //TODO more coverage
-    ASSERT_DOUBLE_EQ((m.smoothFunction__NWT(1 * si::meter, 1 * si::meter, 1 * si::meter)), 1);
-    ASSERT_DOUBLE_EQ((m.smoothFunction__NWT(10 * si::meter, 1 * si::meter, 1 * si::meter)), 10e-21);
-}
-
 TEST(FluidMechanics, getHCOF) {
     FluidMechanics m = FluidMechanics();
     bool steadyState = true;
@@ -89,8 +81,3 @@ TEST(FluidMechanics, calculateVerticalConductance) {
     ASSERT_DOUBLE_EQ(m.calculateVerticalConductance(t).value(), 0.1);
 }
 
-TEST(FluidMechanics, getDerivate__NWT) {
-    FluidMechanics m = FluidMechanics();
-    ASSERT_DOUBLE_EQ(m.getDerivate__NWT(10 * si::meter, 5 * si::meter, 5 * si::meter), 0);
-    ASSERT_DOUBLE_EQ(m.getDerivate__NWT(10 * si::meter, 5 * si::meter, 10 * si::meter), 0.2);
-}

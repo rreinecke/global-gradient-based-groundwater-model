@@ -35,27 +35,25 @@ namespace DataProcessing
 template<class T>
 using Matrix = std::vector<std::vector<T>>;
 using large_num = unsigned long int;
-using n_array = std::array<int,4>;
+using n_array = std::array<large_num,4>;
 
 /**
  * Modflow like grid file
  * @param nodes
  * @param grid
  * @param layers
- * @param ghbConduct
- * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary);
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers);
 /**
-* Builds a map of neighbouring nodes based spatial Id's and resoltion
+* Builds a map of neighbouring nodes based spatial Id's and resolution
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
-void buildBySpatID(NodeVector nodes, std::unordered_map<int, int> id_mapping, int resolution, int layers,
-                   double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
+void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, large_num resolution,
+                   int numberOfLayers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-n_array getNeighbourBySpatialID(int id, int res);
+int getNeighbourSpatID(int spatID, int j, int res);
 
 
 /**
@@ -70,7 +68,12 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 * Thus 1 is the default setting, 0 is undefined
 */
 void
-buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_depth);
+buildBottomLayers(NodeVector nodes,
+                  int layers,
+                  std::vector<bool> conf,
+                  std::vector<int> aquifer_depth,
+                  std::vector<double> conductances,
+                  std::vector<double> anisotropies);
 }
 }
 

@@ -52,16 +52,16 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupglobIDtoID <GlobalID, ID>*/
-        std::unordered_map<int, int> lookupglobIDtoID;
-        /** @var lookupZeroPointFivetoFiveMinute <SPATID(0.5°), vector<GlobalID(5')>>*/
-        std::unordered_map<int, std::vector<int>> lookupZeroPointFivetoFiveMinute;
+        /** @var lookupSpatIDtoNodeIDs <SpatID, vector<NodeID>>*/
+        std::unordered_map<large_num, std::vector<large_num>> lookupSpatIDtoNodeIDs;
+        /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
+        std::unordered_map<large_num, std::vector<large_num>> lookupArcIDtoSpatIDs;
     public:
         /** Virt destructor -> interface*/
         virtual ~DataReader() {}
 
         /**
-         * @brief Initialize internal ref to node vetor
+         * @brief Initialize internal ref to node vector
          * @param nodes The vector of nodes
          */
         void initNodes(NodeVector nodes) { this->nodes = nodes; }
@@ -90,18 +90,22 @@ namespace GlobalFlow {
 
         /**
          * @brief Check weather id exists in the simulation
-         * @param globid Global identifier, can be different from position in node vector
-         * @return i the position in the node vector
+         * @param spatID Global identifier, can be different from position in node vector
+         * @param layer Layer the node is in
+         * @return nodeID The position in the node vector
          */
-        inline int check(int globid) {
-            int i{0};
+        inline large_num check(large_num spatID, int layer = 0) {
+            std::vector<large_num> nodeIDs;
             try {
-                i = lookupglobIDtoID.at(globid);
+                nodeIDs = lookupSpatIDtoNodeIDs[spatID];
             }
             catch (const std::out_of_range &ex) {
                 return -1;
             }
-            return i;
+            if (nodeIDs.empty()){
+                return -1;
+            }
+            return nodeIDs[layer];
         }
 
         /**
@@ -113,61 +117,71 @@ namespace GlobalFlow {
         void readTwoColumns(std::string path, ProcessDataFunction processData) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data");
-            int globid = 0;
+            large_num spatID = 0;
             double data = 0;
-            int pos = 0;
-            while (in.read_row(globid, data)) {
-                pos = check(globid);
-                if (pos == -1) {
+            large_num nodeID = 0;
+            while (in.read_row(spatID, data)) {
+                nodeID = check(spatID);
+                if (nodeID == -1) {
                     continue;
                 }
-                if (nodes->at(pos)->getProperties().get<large_num, Model::SpatID>() != globid) {
-                    throw "Error in reading globID";
+                if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                    throw "Error in reading spatID";
                 }
-                processData(data, pos);
+                processData(data, nodeID);
             }
         }
 
         /**
-         * @brief Creates a mapping of 0.5° SpatIDs to a list of contained 5' GlobIDs
+         * @brief Creates a mapping of 0.5° SpatID to a list of contained 5' ArcIDs
          * @param path to file
          */
-        void readZeroPointFiveToFiveMin(std::string path) {
+        void readSpatIDtoArcID(std::string path) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "ARC_ID");
-            int globID = 0;
-            int spatID = 0;
+            in.read_header(io::ignore_no_column, "spatID", "arcID");
+            large_num arcID = 0;
+            large_num spatID = 0;
 
-            while (in.read_row(globID, spatID)) {
-                lookupZeroPointFivetoFiveMinute[spatID].push_back(std::move(globID));
+            while (in.read_row(spatID, arcID)) {
+                lookupArcIDtoSpatIDs[arcID].push_back(std::move(spatID));
             }
         }
 
 
         /**
          * @brief provides acccess to mapping of different resolutions
-         * @return <SPATID(0.5°), vector<GlobalID(5')>>
+         * @return <ArcID(0.5°), vector<SpatID(5')>>
          */
-        const std::unordered_map<int, std::vector<int>> &getSpatIDMapping() {
-            return lookupZeroPointFivetoFiveMinute;
+        const std::unordered_map<large_num, std::vector<large_num>> &getMappingArcIDtoSpatIDs() {
+            return lookupArcIDtoSpatIDs;
         };
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
-         * @return <SpatID, ID (internal array id)>
+         * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<int, int> &getGlobIDMapping() {
-            return lookupglobIDtoID;
+        void addMappingSpatIDtoNodeIDs(large_num spatID, large_num nodeID) {
+            lookupSpatIDtoNodeIDs[spatID].push_back(std::move(nodeID));
         };
 
         /**
-         * @brief Builds a corect path from the base dir
+         * @brief provides access to mapping of data ids to position in node vector
+         * @return <SpatID, vector<NodeID> (internal array id)>
+         */
+        const std::unordered_map<large_num, std::vector<large_num>> &getMappingSpatIDtoNodeIDs() {
+            return lookupSpatIDtoNodeIDs;
+        };
+
+        /**
+         * @brief Builds a correct path from the base dir
          * @param path The relative path from the config
          * @return A path based on the base dir
          */
         std::string buildDir(std::string path) {
             return (data_dir / fs::path(path)).string();
         };
+
+
     };
 }
 #endif //DATAREADER_HPP

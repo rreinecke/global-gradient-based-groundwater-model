@@ -7,14 +7,14 @@ namespace DataProcessing {
  * For regular grids (modflow like)
  * @param nodes
  * @param grid
+ * @param nodesPerLayer
  * @param layers
- * @param ghbConduct
- * @param staticHeadBoundary
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbConduct, bool staticHeadBoundary) {
+void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers) {
     //id->row,col
     int rows = grid[0].size();
     int cols = grid.size();
+    LOG(debug) << "cols: " << cols << ", rows: " << rows << ", nodes per layer: " << nodesPerLayer << ", layers: " << layers << std::endl;
 
     auto check = [grid](int i, int j) {
         try {
@@ -26,11 +26,11 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
     };
 
     for (int layer = 0; layer < layers; ++layer) {
+        int l_mult = layer * nodesPerLayer;
         //id->row,col
         for (int i = 0; i < cols; ++i) {
             for (int j = 0; j < rows; ++j) {
                 int id = grid[i][j];
-                int l_mult = layer * (rows * cols);
                 if (check(i + 1, j)) {
                     nodes->at(id + l_mult)->setNeighbour(grid[i + 1][j] + l_mult, Model::RIGHT);
                 }
@@ -45,9 +45,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
                 }
             }
         }
-
     }
-
 }
 
 /**
@@ -56,17 +54,18 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int layers, double ghbCondu
  * @param id_mapping
  * @param resolution
  * @param layers
- * @param oceanCoduct
+ * @param boundaryConduct
  * @param boundaryCondition
  */
-void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mapping, int resolution, int layers,
-                   double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
-    int nodes_per_layer = nodes->size() / layers;
+void buildBySpatID(NodeVector nodes, const std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs,
+                   large_num resolution, int numberOfLayers, double boundaryConduct,
+                   Simulation::Options::BoundaryCondition boundaryCondition) {
+        large_num nodes_per_layer = nodes->size() / numberOfLayers;
 
+    // defining function to add boundaries to nodes with no neighbours (called later in code)
     auto addBoundary = [nodes, boundaryConduct, boundaryCondition](
-            large_num pos, int layer,
-            Model::NeighbourPosition
-            positionOfBoundary) {
+            large_num pos, int layer, Model::NeighbourPosition positionOfBoundary) {
+
         if (layer > 0) {
             return;
         }
@@ -75,17 +74,12 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
             case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
                 Model::quantity<Model::Meter> head =
                         nodes->at(pos)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
-                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                head,
-                                                boundaryConduct,
-                                                head);
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, head, boundaryConduct, head);
             }
                 break;
             case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
-                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                0 * Model::si::meter,
-                                                boundaryConduct,
-                                                0 * Model::si::meter);
+                nodes->at(pos)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, 0 * Model::si::meter,
+                                                boundaryConduct, 0 * Model::si::meter);
             }
             default:
                 break;
@@ -98,14 +92,29 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
     lu[2] = Model::RIGHT; // formerly EAST
     lu[3] = Model::LEFT; // formerly WEST
 
-    for (int i = 0; i < nodes_per_layer; ++i) {
-        n_array nei = getNeighbourBySpatialID((int) nodes->at(i)->getID(), resolution);
-        for (int j = 0; j < 4; ++j) {
-            if (id_mapping.count(nei[j]) > 0) {
-                //Neighbour id exists in landmask
-                nodes->at(i)->setNeighbour(id_mapping.at(nei[j]), lu[j]);
-            } else {
-                addBoundary(i, 0, lu[j]);
+    large_num nodeID;
+    large_num nodeID_neig;
+    std::vector<large_num> nodeIDs_neig;
+    large_num spatID;
+    int spatID_neig;
+    for (int layer = 0; layer < numberOfLayers; ++layer) {
+        for (int i = 0; i < nodes_per_layer; ++i) {
+            nodeID = i + (nodes_per_layer * layer);
+            for (int j = 0; j < 4; ++j) {
+                spatID = nodes->at(nodeID)->getSpatID();
+                spatID_neig = getNeighbourSpatID(spatID, j, resolution);
+                if (spatID_neig > 0) { //
+                    if (spatIDtoNodeIDs.contains((unsigned long) spatID_neig) and
+                        not spatIDtoNodeIDs.at((unsigned long) spatID_neig).empty()) { //Neighbour id exists in landmask
+                        nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig);
+                        nodeID_neig = spatIDtoNodeIDs.at(spatID_neig)[layer];
+                        nodes->at(nodeID)->setNeighbour(nodeID_neig, lu[j]);
+                    } else {// Neighbour is not in landmask
+                        // Calling function defined above to add boundary
+                        //LOG(userinfo) << "adding boundary at nodeID" << nodeID;
+                        addBoundary(nodeID, layer, lu[j]);
+                    }
+                }
             }
         }
     }
@@ -114,35 +123,71 @@ void buildBySpatID(NodeVector nodes, const std::unordered_map<int, int> id_mappi
 
 /**
  * @brief calculates all neighbours based on a spatial ID
- * Assumes no landmask and caclulates all possible neighbours
+ * Assumes no landmask and calculates all possible neighbours
  * @param id
  * @param res
  * @return
  */
-n_array getNeighbourBySpatialID(int id, int res) {
+/*
+n_array getNeighboursBySpatID(large_num spatID, int res) {
     n_array neighbours{-1, -1, -1, -1};
-    int row_l{360 * 60 * 60 / res};
+    large_num row_l{360 * 60 * 60 / res};
     assert(row_l % 2 == 0 && "resolution is impossible");
 
-    if (id > row_l) {
+    if (spatID > row_l) {
         //NORTH
-        neighbours[0] = id - row_l;
+        neighbours[0] = spatID - row_l;
     }
-    if (id < (row_l / 2) * row_l - row_l) {
+    if (spatID < (row_l / 2) * row_l - row_l) {
         //SOUTH
-        neighbours[1] = id + row_l;
+        neighbours[1] = spatID + row_l;
     }
-    if (id % row_l == 0) {
+    if (spatID % row_l == 0) {
         //EAST
-        neighbours[2] = id - row_l + 1;
-    } else { neighbours[2] = id + 1; }
-    if ((id - 1) % row_l == 0) {
+        neighbours[2] = spatID - row_l + 1;
+    } else { neighbours[2] = spatID + 1; }
+    if ((spatID - 1) % row_l == 0) {
         //WEST
-        neighbours[3] = id + row_l - 1;
-    } else { neighbours[3] = id - 1; }
+        neighbours[3] = spatID + row_l - 1;
+    } else { neighbours[3] = spatID - 1; }
     return neighbours;
-}
+}*/
 
+/**
+ * @brief calculates all neighbours based on a spatial ID
+ * Assumes no landmask and calculates all possible neighbours
+ * @param id
+ * @param res
+ * @return
+ */
+int getNeighbourSpatID(int spatID, int j, int res) {
+    int row_l{360 * 60 * 60 / res};
+    assert(row_l % 2 == 0 && "resolution is impossible");
+    switch(j) {
+        case 0:
+            if (spatID > row_l) {
+                //NORTH
+                return spatID - row_l;
+            }
+        case 1:
+            if (spatID < (row_l / 2) * row_l - row_l) {
+                //SOUTH
+                return spatID + row_l;
+            }
+        case 2:
+            if (spatID % row_l == 0) {
+                //EAST
+                return spatID - row_l + 1;
+            } else { return spatID + 1; }
+        case 3:
+            if ((spatID - 1) % row_l == 0) {
+                //WEST
+                return spatID + row_l - 1;
+            } else { return spatID - 1; }
+        default:
+            return -1;
+    }
+}
 
 /**
  * @brief Connects neighbouring nodes
@@ -184,9 +229,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
     };
 
     auto addBoundary = [nodes, ghbConduct, boundaryCondition, id, &numOfStaticHeads, setNeighbouring](
-            large_num pos, int layer,
-            Model::NeighbourPosition
-            positionOfBoundary) {
+            large_num pos, int layer, Model::NeighbourPosition positionOfBoundary) {
         if (layer > 0) {
             return;
         }
@@ -335,9 +378,9 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 /**
  * @brief
  * @param from is position in vector of top layer node
- * @param to is position in vector of node that recieve neighbouring information
+ * @param to is position in vector of node that receive neighbouring information
  */
-void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
+void copyNeighbour(size_t from, size_t to, NodeVector nodes, size_t layer_shift){
     auto neighbours = nodes->at(from)->getListOfNeighbours();
     for(const auto &n : neighbours){
         if(n.first == Model::DOWN or n.first == Model::TOP){
@@ -352,15 +395,15 @@ void copyNeighbour(size_t from, size_t to, NodeVector nodes, int layer_shift){
  * @param nodes
  * @param layers
  */
-void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
-    assert(layers && "AsModel::signing 0 layers does not make any sense");
-    if (layers == 1) {
+void copyNeighboursToBottomLayers(NodeVector nodes, int numberOfLayers){
+    assert(numberOfLayers && "0 layers does not make sense");
+    if (numberOfLayers == 1) {
         return;
     }
-    size_t top_layer_size = nodes->size() / layers;
-    for (int i = 0; i < top_layer_size; ++i) {
-        for (int j = 0; j < layers - 1; ++j) {
-            copyNeighbour(i ,i + (top_layer_size * j), nodes, top_layer_size  * j);
+    size_t nodesPerLayer = nodes->size() / numberOfLayers;
+    for (int i = 0; i < nodesPerLayer; ++i) {
+        for (int j = 0; j < numberOfLayers - 1; ++j) {
+            copyNeighbour(i ,i + (nodesPerLayer * j), nodes, (int) nodesPerLayer  * j);
         }
     }
 }
@@ -375,18 +418,23 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers){
  * @param conf
  * @param aquifer_thickness
  */
-void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std::vector<int> aquifer_thickness) {
-    assert(layers && "AsModel::signing 0 layers does not make any sense");
-    if (layers == 1) {
+void buildBottomLayers(NodeVector nodes,
+                       int numberOfLayers,
+                       std::vector<bool> conf,
+                       std::vector<int> aquifer_thickness,
+                       std::vector<double> conductances,
+                       std::vector<double> anisotropies) {
+    assert(numberOfLayers && "AsModel::signing 0 layers does not make any sense");
+    if (numberOfLayers == 1) {
         return;
     }
 
-    size_t layersize = nodes->size();
-    nodes->reserve(layers * layersize);
+    size_t nodesPerLayer = nodes->size();
+    nodes->reserve(numberOfLayers * nodesPerLayer);
 
-    LOG(debug) << "Building additional layers with node count: " << layersize << " for " << layers << " layers";
+    LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << numberOfLayers << " layers";
 
-    size_t id = layersize;
+    size_t id = nodesPerLayer;
     large_num spatID;
     double lat, lon;
     int stepMod;
@@ -394,15 +442,25 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
     Model::quantity<Model::Meter> edgeLengthLeftRight;
     Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
+    Model::quantity<Model::Meter> head;
     double aquiferDepth;
     double anisotropy;
     double specificYield;
     double specificStorage;
+    bool densityVariable;
+    std::vector<Model::quantity<Model::Dimensionless>> delnus;
+    std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
+    double effPorosity;
+    double maxTipSlope;
+    double maxToeSlope;
+    double minDepthFactor;
+    double slopeAdjFactor;
+    Model::quantity<Model::Meter> vdfLock;
 
-    for (int j = 0; j < layers - 1; ++j) {
+    for (int j = 0; j < numberOfLayers - 1; ++j) {
         //1) Add a Model::similar node in z direction for each layer
         //TODO Parallell?
-        for (int i = 0; i < layersize; ++i) {
+        for (int i = 0; i < nodesPerLayer; ++i) {
             //for each node in top layer
 
             spatID = nodes->at(i)->getProperties().get<large_num, Model::SpatID>();
@@ -411,25 +469,42 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
             area = nodes->at(i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>();
             edgeLengthLeftRight = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
             edgeLengthFrontBack = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
-            K = nodes->at(i)->getK__pure();
+            K = conductances[j + 1] * Model::si::meter / Model::day;
+            head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             stepMod = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                     Model::StepModifier>();
             aquiferDepth = aquifer_thickness[j + 1];
-            anisotropy = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
-                    Model::Anisotropy>().value();
+            anisotropy = anisotropies[j + 1];
             specificYield =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                             Model::SpecificYield>().value();
             specificStorage =
                     nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                             ().value();
+            densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
+            delnus = nodes->at(i)->getProperties().
+                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
+            nusInZones = nodes->at(i)->getProperties().
+                    get<std::vector<Model::quantity<Model::Dimensionless>>, Model::NusInZones>();
+            effPorosity = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::EffectivePorosity>();
+            maxTipSlope = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MaxTipSlope>();
+            maxToeSlope = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MaxToeSlope>();
+            minDepthFactor = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
+            slopeAdjFactor = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Dimensionless>, Model::SlopeAdjFactor>();
+            vdfLock = nodes->at(i)->getProperties().
+                    get<Model::quantity<Model::Meter>, Model::VDFLock>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
                 continue;
             } else {
-                if (id > layersize * layers) {
-                    LOG(critical) << "This is not posModel::sible!";
+                if (id > nodesPerLayer * numberOfLayers) {
+                    LOG(critical) << "This is not possible!";
                     exit(9);
                 }
                 nodes->emplace_back(new Model::StandardNode(nodes, lat, lon, area, edgeLengthLeftRight,
@@ -437,36 +512,45 @@ void buildBottomLayers(NodeVector nodes, int layers, std::vector<bool> conf, std
                                                             spatID,
                                                             id,
                                                             K,
-                                                            stepMod,
+                                                            head,
                                                             aquiferDepth,
                                                             anisotropy,
                                                             specificYield,
-                                                            specificStorage, conf[j + 1]));
+                                                            specificStorage,
+                                                            conf[j + 1],
+                                                            densityVariable,
+                                                            delnus,
+                                                            nusInZones,
+                                                            effPorosity,
+                                                            maxTipSlope,
+                                                            maxToeSlope,
+                                                            minDepthFactor,
+                                                            slopeAdjFactor,
+                                                            vdfLock));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(j + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()
-                        -
-                        (aquiferDepth *
-                         Model::si::meter));
+                        - (aquiferDepth * Model::si::meter));
             }
             //2) Neighbouring for top and bottom
 
             if (j > 0) {
                 //Layer above is not top layer
-                nodes->at(id)->setNeighbour(i + (j * layersize), Model::TOP);
-                nodes->at(i + (j * layersize))->setNeighbour(id, Model::DOWN);
+                nodes->at(id)->setNeighbour(i + (j * nodesPerLayer), Model::TOP);
+                nodes->at(i + (j * nodesPerLayer))->setNeighbour(id, Model::DOWN);
             } else {
                 //Layer above is top layer
                 nodes->at(id)->setNeighbour(i, Model::TOP);
                 nodes->at(i)->setNeighbour(id, Model::DOWN);
             }
+
             id++;
-            if (id > (layersize * layers) - 1) {
+            if (id > (nodesPerLayer * numberOfLayers) - 1) {
                 break;
             }
         }
     }
-    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << layersize * layers;
+    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) " << nodesPerLayer * numberOfLayers;
 };
 
 }

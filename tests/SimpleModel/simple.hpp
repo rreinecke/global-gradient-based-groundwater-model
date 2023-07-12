@@ -46,7 +46,7 @@ namespace GlobalFlow {
         getResults();
 
         void
-        writeData(std::string);
+        writeData();
 
     private:
         Solver::Equation *_eq;

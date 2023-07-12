@@ -50,6 +50,7 @@ namespace GlobalFlow {
          *
          * LAKE, WETLAND
          *  similar to modflow river definition
+
          */
         enum FlowType : int {
             RECHARGE = 1,
@@ -99,7 +100,7 @@ namespace GlobalFlow {
             /**
              * @brief Constructor for RECHARGE, FAST_SURFACE_RUNOFF and NET_ABSTRACTION // QUESTION: is that correct? (check with Node.hpp:addExternalFlow)
              * @param id
-             * @param recharge // QUESTION : rename param?
+             * @param recharge // QUESTION : rename parameter since not only recharge possible?
              * @param type
              */
             ExternalFlow(int id, t_vol_t recharge, FlowType type)
@@ -108,30 +109,21 @@ namespace GlobalFlow {
             /**
              * @brief Constructor for Evapotranspiration
              * @param id
-             * @param flowHead // QUESTION: is this needed here?
-             * @param bottom // QUESTION: is this needed here?
-             * @param evapotrans // QUESTION: this is currently the conductance term from the Node.hpp:addExternalFlow function
+             * @param flowHead // QUESTION: is this needed for ET?
+             * @param bottom // QUESTION: is this needed for ET?
+             * @param evapotrans // QUESTION: this is currently the conductance term from addExternalFlow() in Node.hpp
              * @return
              */
             ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
-                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0), // QUESTION: why EVAPOTRANSPIRATION and not type?
+                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
                       special_flow(evapotrans) {}
-
-            /**
-             * @brief Constructor for Pseudo Source Term (Flow)
-             * @param id
-             * @return
-             */
-            ExternalFlow(int id)
-                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(0) {}
-
 
             /**
              * Check if flow can be calculated on the right hand side
              * @param head The current hydraulic head
              * @return Bool
              */
-            bool flowIsHeadDependant(t_meter head) const noexcept {
+            bool flowIsHeadDependent(t_meter head) const noexcept {
                 return (head > bottom);
             }
 
@@ -141,14 +133,12 @@ namespace GlobalFlow {
              * @param head The current hydraulic head
              * @param eq_head The equilibrium head
              * @param recharge The current recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_s_meter_t getP(t_meter head,
                              t_meter eq_head,
                              t_vol_t recharge,
-                             t_dim slope,
                              t_vol_t eqFlow) const noexcept;
 
             /**
@@ -157,39 +147,20 @@ namespace GlobalFlow {
              * @param head
              * @param eq_head
              * @param recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_vol_t getQ(t_meter head,
                          t_meter eq_head,
                          t_vol_t recharge,
-                         t_dim slope,
                          t_vol_t eqFlow) const noexcept;
 
-            /**
-             * The pseudo source term for the flow equation, only used if variable density flow is active:
-             * This accounts for the effects of variable density flow
-             * This is the total specified external source term
-             * @param head
-             * @param eq_head
-             * @param recharge
-             * @param slope
-             * @param eqFlow
-             * @return
-             */
-            t_vol_t getR(t_meter head,
-                         t_meter eq_head,
-                         t_vol_t recharge,
-                         t_dim slope,
-                         t_vol_t eqFlow) const noexcept;
 
             FlowType getType() const noexcept { return type; }
 
             t_meter getBottom() const noexcept { return bottom; }
 
             t_vol_t getRecharge() const noexcept { return special_flow; }
-
 
             t_meter getFlowHead() const noexcept { return flowHead; }
 
@@ -243,19 +214,7 @@ namespace GlobalFlow {
             bool lock_recharge{false};
 
             t_vol_t
-            calculateFloodplaindDrainage(t_meter head) const noexcept;
-
-            /**
-            * Calculate river conductance as in Miguez-Macho 2007
-            * RC = ERC * F
-            * Input: F-data, ERC
-            * Output: RC
-            */
-            t_s_meter_t
-            dynamicRiverConductance(t_meter head,
-                                    t_vol_t current_recharge,
-                                    t_dim slope,
-                                    t_vol_t eq_flow) const noexcept;
+            calculateFloodplainDrainage(t_meter head) const noexcept;
 
             /**
             * Calculate ERC (must be repeated every time step)

@@ -1,0 +1,95 @@
+{
+  "config": {
+    "model_config": {
+      "nodes": "grid_simpleVDF3.csv",
+      "row_cols": "true",
+      "number_of_nodes_per_layer": 200,
+      "number_of_rows": 200,
+      "number_of_cols": 1,
+      "edge_length_rows": 20,
+      "edge_length_cols": 1,
+      "threads": 20,
+      "layers": 3,
+      "confinement": [
+        "true",
+        "true",
+        "true"
+      ],
+      "density_variable": "true",
+      "density_zones": [
+        1000,
+        1025
+      ],
+      "max_tip_slope": 0.04,
+      "max_toe_slope": 0.01,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.001,
+      "cache": "false",
+      "adaptive_step_size": "false",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "numerics": {
+      "solver": "PCG",
+      "iterations": 5000,
+      "inner_itter": 30,
+      "closing_crit_head": 1E-80,
+      "closing_crit_zeta": 1E-8,
+      "head_change": 1,
+      "zeta_change": 0.001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5
+    },
+    "input": {
+      "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "true",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "false",
+        "initial_head_from_file": "false",
+        "k_from_file": "false",
+        "k_ghb_from_file": "true",
+        "k_river_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
+        "zones_sources_sinks_from_file": "true"
+      },
+      "default_data": {
+        "effective_porosity": 0.2,
+        "initial_head": 1,
+        "K": [
+          2,
+          1,
+          4
+        ],
+        "ghb_K": 800,
+        "aquifer_thickness": [
+          20,
+          1,
+          20
+        ],
+        "anisotropy": [
+          30,
+          100,
+          60
+        ],
+        "specific_yield": 0.2,
+        "specific_storage": 0.000015,
+        "zones_sources_sinks": [
+          0,
+          1
+        ]
+      },
+      "data": {
+        "effective_porosity": "effective_porosity_simpleVDF3.csv",
+        "elevation": "elevation_simpleVDF3.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF3.csv",
+        "initial_zetas": "initial_zetas_simpleVDF3.csv",
+        "zones_sources_sinks": "zones_sources_sinks_simpleVDF3.csv",
+        "recharge": "recharge_simpleVDF3.csv"
+      }
+    }
+  }
+}
