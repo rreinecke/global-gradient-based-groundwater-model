@@ -83,7 +83,7 @@ void inline
 Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
 
     std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
-    map = node->getConductance();
+    map = node->getMatrixEntries();
 
     auto nodeID = node->getProperties().get<large_num, Model::ID>();
 
@@ -104,7 +104,7 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID)
     large_num rowID = index_mapping[nodeIter];
     large_num colID;
     quantity<Model::MeterSquaredPerTime> zoneConductance;
-    map = nodes->at(nodeIter + iterOffset)->getVDFMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
+    map = nodes->at(nodeIter + iterOffset)->getMatrixEntries(localZetaID); // gets matrix entries (zone conductances and porosity term)
 
     for (const auto &entry : map) { // entry: [1] node id of horizontal neighbours or this node, [2] conductance to neighbours in zeta zone
         colID = index_mapping[entry.first - iterOffset];
@@ -190,7 +190,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
             addToA_zeta(nodeIter, iterOffset, localZetaID);
             x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value();
             //---------------------Right
-            b_zetas(id) = nodes->at(nodeIter + iterOffset)->getZetaRHS(localZetaID).value();
+            b_zetas(id) = nodes->at(nodeIter + iterOffset)->getRHS(localZetaID).value();
         }
     }
 
@@ -546,7 +546,7 @@ Equation::solve_zetas(){
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
+                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
 
                 updateIntermediateZetas(iterOffset, localZetaID);
 
