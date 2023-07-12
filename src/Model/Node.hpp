@@ -190,7 +190,7 @@ namespace GlobalFlow {
              */
             t_s_meter getStorageCapacity__Primary() noexcept {
                 t_s_meter out = get<quantity<perUnit>, SpecificStorage>().value()
-                                                                       * get<t_c_meter, VolumeOfCell>().value() * si::square_meter;
+                                * get<t_c_meter, VolumeOfCell>().value() * si::square_meter;
                 return out;
             }
 
@@ -244,61 +244,61 @@ namespace GlobalFlow {
              */
             friend std::ostream & operator<< (std::ostream & stream, const p_node & pNode) {
                 stream << "Node properties:"
-                << "\nID [large_num]: "<< pNode->get<large_num, ID>()
-                << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
-                << "\nLat [double]: " << pNode->get<double, Lat>()
-                << "\nLon [double]: " << pNode->get<double, Lon>()
-                << "\nLayer [int]: " << pNode->get<int, Layer>()
-                << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
-                << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
-                << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
-                << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
-                << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
-                << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
-                << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
-                << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
-                << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
-                << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
-                << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
-                << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
-                << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
-                << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
-                << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
-                << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
-                << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
-                << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
-                << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
-                << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
-                << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
-                << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
-                << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
-                << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
-                << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
+                       << "\nID [large_num]: "<< pNode->get<large_num, ID>()
+                       << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
+                       << "\nLat [double]: " << pNode->get<double, Lat>()
+                       << "\nLon [double]: " << pNode->get<double, Lon>()
+                       << "\nLayer [int]: " << pNode->get<int, Layer>()
+                       << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
+                       << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
+                       << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
+                       << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
+                       << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
+                       << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
+                       << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
+                       << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
+                       << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
+                       << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
+                       << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
+                       << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
+                       << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
+                       << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
+                       << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
+                       << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
+                       << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
+                       << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
+                       << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
+                       << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
+                       << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
+                       << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
+                       << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
+                       << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
+                       << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
 
                 std::unordered_map<NeighbourPosition, large_num> neighbourList = pNode->getListOfNeighbours();
                 if(neighbourList.find(DOWN) != neighbourList.end()) {
                     stream << "\nDOWN neighbour lat [double]: " << pNode->getNeighbour(DOWN)->get<double, Lat>()
-                         << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
+                           << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
                 }
                 if(neighbourList.find(TOP) != neighbourList.end()) {
                     stream << "\nTOP neighbour lat [double]: " << pNode->getNeighbour(TOP)->get<double, Lat>()
-                        << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
+                           << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
                 }
                 if(neighbourList.find(LEFT) != neighbourList.end()) {
                     stream << "\nLEFT neighbour lat [double]: " << pNode->getNeighbour(LEFT)->get<double, Lat>()
-                         << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
+                           << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
                 }
                 if(neighbourList.find(RIGHT) != neighbourList.end()) {
                     stream << "\nRIGHT neighbour lat [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lat>()
-                          << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
+                           << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
                 }
                 if(neighbourList.find(FRONT) != neighbourList.end()) {
                     stream << "\nFRONT neighbour lat [double]: " << pNode->getNeighbour(FRONT)->get<double, Lat>()
-                        << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
+                           << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
                 }
                 if(neighbourList.find(BACK) != neighbourList.end()) {
                     stream << "\nBACK neighbour lat [double]: " << pNode->getNeighbour(BACK)->get<double, Lat>()
-                         << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
+                           << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
                 }
 
                 if (pNode->hasGHB()) {
@@ -868,16 +868,16 @@ Calculate
                 } else if (type == FLOODPLAIN_DRAIN) {  // TODO remove
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, type,
-                                                                        get<t_meter, Elevation>(),
-                                                                        get<t_vel, K>() * get<t_meter, VerticalSize>(),
-                                                                        bottom))); // todo add edge length in different directions
+                                                                     get<t_meter, Elevation>(),
+                                                                     get<t_vel, K>() * get<t_meter, VerticalSize>(),
+                                                                     bottom))); // todo add edge length in different directions
                 } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows,
-                                                                 type,
-                                                                 flowHead,
-                                                                 cond * (si::square_meter / day),
-                                                                 bottom)));
+                    externalFlows.insert(std::make_pair(type,
+                                                        ExternalFlow(numOfExternalFlows,
+                                                                     type,
+                                                                     flowHead,
+                                                                     cond * (si::square_meter / day),
+                                                                     bottom)));
                 }
                 numOfExternalFlows++;
                 if(numOfExternalFlows != externalFlows.size()){
@@ -1017,7 +1017,7 @@ Calculate
                     return get<std::vector<t_meter>, Zetas>()[localZetaID];
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
-                    ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
+                          ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
 
@@ -1036,7 +1036,7 @@ Calculate
                     return get<std::vector<t_meter>, ZetasChange>()[localZetaID];
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
-                    ": ZetasChange[localZetaID = " + std::to_string(localZetaID) + "]";
+                          ": ZetasChange[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
 
@@ -1456,7 +1456,7 @@ Calculate
                         std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
                         if ((isZetaBetween(localZetaID) and // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
-                            at(got)->isZetaBetween(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
+                             at(got)->isZetaBetween(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
                             //%% head part %%
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
@@ -1556,8 +1556,8 @@ Calculate
                                     // vertical leakage to DOWN neighbour
                                     auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                                     if(getFluxDown() < 0 * (si::cubic_meter / day) and
-                                        at(got)->getNusTop() < nusInZones[localZetaID] and
-                                        getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
+                                       at(got)->getNusTop() < nusInZones[localZetaID] and
+                                       getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
                                         continue;
                                     } else{
                                         out += getFluxDown(); // in SWI2: qzbot
@@ -1706,7 +1706,7 @@ Calculate
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] *
-                                (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
+                                    (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
                         // Note: in SWI2 documentation is, BOUY is calculated by adding headdiff (would be out +=),
                         // MODFLOW code for headdiff is as implemented here (with out -=)
                     }
@@ -1714,9 +1714,9 @@ Calculate
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
                           (headdiff +
-                          0.5 *
-                          (at(got)->getZetas().back() - getZetas().front()) *
-                          (at(got)->getNusBot() + getNusTop()));
+                           0.5 *
+                           (at(got)->getZetas().back() - getZetas().front()) *
+                           (at(got)->getNusBot() + getNusTop()));
                     // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP,
                     // in MODFLOW code there is a + in the calculation of QLEXTRA
                     //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
@@ -1798,7 +1798,7 @@ Calculate
                         // if groundwater head is ABOVE the bottom of the node
                         if (head > bottomOfNode) {
                             updatedZeta = head;
-                        // if groundwater head is BELOW OR EQUAL to the bottom of the node
+                            // if groundwater head is BELOW OR EQUAL to the bottom of the node
                         } else { // head <= bottomOfNode
                             updatedZeta = bottomOfNode;
                         }
@@ -1811,7 +1811,7 @@ Calculate
                                 setZeta(localZetaID, updatedZeta);
                             }
                         }
-                    // if groundwater head is ABOVE OR EQUAL to the top of the node
+                        // if groundwater head is ABOVE OR EQUAL to the top of the node
                     } else { // head >= topOfNode
                         // clip zeta to the top of the node
                         setZeta(0, topOfNode);
@@ -1857,7 +1857,7 @@ Calculate
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
-                                // if vertical flux through the top of the node is negative...
+                                    // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); //  * get<t_dim, StepModifier>()
@@ -1908,14 +1908,14 @@ Calculate
 
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
                                 delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
-                                                    (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
+                                             ((getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
+                                              ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
+                                               (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
                                 // if tracking tip/toe: lower/raise this zeta surface in neighbouring node by:
                                 delta_neig = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
-                                                    (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
+                                             ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) /
+                                              ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
+                                               (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
 
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     //%% Toe tracking %%
@@ -1946,14 +1946,14 @@ Calculate
                                     } else {
                                         if (at(got_opp)->isZetaBetween(localZetaID)) { // or localZetaID == 0
                                             // change zeta in other direction neighbour
-                                                delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
-                                                             (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
-                                                             (getLengthNeig(got_opp) *
-                                                              getAt<t_dim, EffectivePorosity>(got_opp)));
-                                                t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
-                                                at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
-                                                setZeta(localZetaID, getZetas().back());
-                                                //LOG(userinfo) << "delta_opp (toe): " << delta_opp.value() << std::endl;
+                                            delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
+                                                         (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
+                                                         (getLengthNeig(got_opp) *
+                                                          getAt<t_dim, EffectivePorosity>(got_opp)));
+                                            t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
+                                            at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
+                                            setZeta(localZetaID, getZetas().back());
+                                            //LOG(userinfo) << "delta_opp (toe): " << delta_opp.value() << std::endl;
                                         }
                                     }
                                 }
@@ -2067,11 +2067,11 @@ Calculate
 
                                 // calculate delta zeta of node and neighbour
                                 delta_self = maxDelta * (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
-                                                 getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
+                                             (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
+                                              getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
                                 delta_neig = maxDelta * (get<t_dim, EffectivePorosity>() * getLengthSelf(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
-                                                 getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
+                                             (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
+                                              getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                                 // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour
@@ -2340,7 +2340,7 @@ Calculate
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
                     //if (verticalFluxCorrections.value() != 0) {
-                        //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
                     //}
 
                     out += pseudoSourceNode + verticalFluxCorrections;
@@ -2514,37 +2514,37 @@ Calculate
                 set<t_meter, Head>(current_head + change);
             };
 
-        virtual t_meter
-        __calcInitialHead(t_meter initialParam) {
-            t_meter elevation = get<t_meter, TopElevation>();
-            if (elevation >= initialParam) {
-                return elevation - initialParam; // todo check whether this is correct
+            virtual t_meter
+            __calcInitialHead(t_meter initialParam) {
+                t_meter elevation = get<t_meter, TopElevation>();
+                if (elevation >= initialParam) {
+                    return elevation - initialParam; // todo check whether this is correct
+                }
+                return elevation;
             }
-            return elevation;
-        }
 
-        virtual bool
-        __isStaticNode() { return false; }
+            virtual bool
+            __isStaticNode() { return false; }
 
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-            boost::serialization::void_cast_register<NodeInterface, StandardNode>();
-            boost::serialization::void_cast_register<StandardNode, NodeInterface>();
-            boost::serialization::base_object<NodeInterface>(*this);
-            LOG(debug) << "Serializing Standard Node";
-            ar & nodes;
-            ar & neighbours;
-            ar & externalFlows;
-            ar & numOfExternalFlows;
-            ar & initial_head;
-            ar & simpleDistance;
-            ar & simpleK;
-            ar & steadyState;
-            ar & fields;
-            ar & cached;
-            ar & eq_flow;
-        }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version) {
+                boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+                boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+                boost::serialization::base_object<NodeInterface>(*this);
+                LOG(debug) << "Serializing Standard Node";
+                ar & nodes;
+                ar & neighbours;
+                ar & externalFlows;
+                ar & numOfExternalFlows;
+                ar & initial_head;
+                ar & simpleDistance;
+                ar & simpleK;
+                ar & steadyState;
+                ar & fields;
+                ar & cached;
+                ar & eq_flow;
+            }
 
         };
 
