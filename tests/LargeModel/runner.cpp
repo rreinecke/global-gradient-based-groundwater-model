@@ -22,7 +22,7 @@ namespace GlobalFlow {
 
     void Runner::simulate() {
         Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
-        LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
+        //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {

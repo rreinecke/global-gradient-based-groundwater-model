@@ -826,10 +826,8 @@ namespace GlobalFlow {
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
                     inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
-                    //inZetas.read_header(io::ignore_no_column, "spatID", "data");
 
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
-                    //while (inZetas.read_row(spatID, zeta)) {
                         localZetaID = 1;
                         try {
                             nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
@@ -841,7 +839,6 @@ namespace GlobalFlow {
                             continue;
                         }
                         nodeID = nodeIDs[layer];
-                        //head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>().value();
                         nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                     }
                 }

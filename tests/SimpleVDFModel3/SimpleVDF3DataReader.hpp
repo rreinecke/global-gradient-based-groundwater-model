@@ -159,9 +159,8 @@ namespace GlobalFlow {
                     for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
                         lookupSpatIDtoNodeIDs[spatID].push_back(nodeID + (numberOfNodesPerLayer * layer));
                     }
-                    nodeID++;
+                    ++nodeID;
                 }
-
                 return out;
             };
 
@@ -192,14 +191,17 @@ namespace GlobalFlow {
                 double head{0};
                 double conduct{0};
                 std::vector<large_num> nodeIDs;
+                large_num nodeID;
 
                 while (in.read_row(spatID, head, conduct)) {
-                    int nodeID = 0;
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
+                        continue;
+                    }
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[0]; // only at layer 0
@@ -217,14 +219,17 @@ namespace GlobalFlow {
                 int layer{0};
                 double recharge{0};
                 std::vector<large_num> nodeIDs;
+                large_num nodeID{0};
 
                 while (in.read_row(spatID, layer, recharge)) {
-                    int nodeID = 0;
                     try {
                         nodeIDs = this->lookupSpatIDtoNodeIDs.at(spatID);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
+                        continue;
+                    }
+                    if (nodeIDs.empty()){
                         continue;
                     }
                     nodeID = nodeIDs[layer];
@@ -254,8 +259,8 @@ namespace GlobalFlow {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
                 large_num spatID{0};
-                double zoneOfSinks{0};
-                double zoneOfSources{0};
+                int zoneOfSinks{0};
+                int zoneOfSources{0};
                 std::vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
@@ -294,10 +299,8 @@ namespace GlobalFlow {
                 large_num nodeID = 0;
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
-
+                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
-                        localZetaID = 1;
                         try {
                             nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                         }

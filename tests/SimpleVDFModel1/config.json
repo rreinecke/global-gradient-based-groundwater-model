@@ -3,13 +3,12 @@
     "model_config": {
       "nodes": "grid_simpleVDF1.csv",
       "row_cols": "true",
-      "steady_state": "true",
       "number_of_nodes_per_layer": 50,
       "number_of_rows": 50,
       "number_of_cols": 1,
       "edge_length_rows": 5,
       "edge_length_cols": 1,
-      "threads": 1,
+      "threads": 20,
       "layers": 1,
       "confinement": [
         "true"
@@ -31,12 +30,12 @@
     },
     "numerics": {
       "solver": "PCG",
-      "iterations": 50,
+      "iterations": 5000,
       "inner_itter": 30,
       "closing_crit_head": 1E-80,
       "closing_crit_zeta": 1E-8,
-      "head_change": 0.000000001,
-      "zeta_change": 0.000000001,
+      "head_change": 0.0001,
+      "zeta_change": 0.0000001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5
