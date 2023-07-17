@@ -44,8 +44,19 @@ namespace GlobalFlow {
  * LEFT * RIGHT
  *     DOWN
  *
- * In Z (Top view):
- * FRONT (larger ID) * BACK (smaller ID)
+ *
+ * Top view:
+ *     FRONT
+ * LEFT * RIGHT
+ *     BACK
+ *
+ *  Top view with refinement:
+ *          FRONTLEFT FRONTRIGHT
+ * LEFTFRONT      ******        RIGHTFRONT
+ *                *node*
+ * LEFTBACK       ******        RIGHTBACK
+ *          BACKLEFT  BACKRIGHT
+ *
  */
         enum NeighbourPosition {
             TOP = 1,
@@ -53,7 +64,15 @@ namespace GlobalFlow {
             RIGHT,
             LEFT,
             FRONT,
-            BACK
+            BACK,
+            RIGHTFRONT,
+            RIGHTBACK,
+            LEFTFRONT,
+            LEFTBACK,
+            FRONTLEFT,
+            FRONTRIGHT,
+            BACKLEFT,
+            BACKRIGHT
         };
     }
 }
@@ -350,6 +369,7 @@ namespace GlobalFlow {
                           double specificYield,
                           double specificStorage,
                           bool confined,
+                          int refinementLevel,
                           bool densityVariable,
                           std::vector<t_dim> delnus,
                           std::vector<t_dim> nusInZones,
@@ -2483,6 +2503,7 @@ Calculate
                          double specificYield,
                          double specificStorage,
                          bool confined,
+                         int refinementLevel,
                          bool densityVariable,
                          std::vector<t_dim> delnus,
                          std::vector<t_dim> nusInZones,
@@ -2494,7 +2515,7 @@ Calculate
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    confined, densityVariable, delnus, nusInZones, effPorosity,
+                                    confined, refinementLevel, densityVariable, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
@@ -2569,7 +2590,7 @@ Calculate
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15, 0.000015, true, true,
+                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15, 0.000015, 0, true, true,
                     {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
                     0.001 * si::meter) {}
 

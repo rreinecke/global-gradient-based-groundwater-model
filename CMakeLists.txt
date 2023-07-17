@@ -3,8 +3,8 @@ if(${CMAKE_VERSION} VERSION_LESS "3.25.0")
     message(STATUS "You need to upgrade CMake! Minimum required version is 3.25.0.")
 endif()
 
-set(CMAKE_C_COMPILER "clang-16")
-set(CMAKE_CXX_COMPILER "clang++-16")
+set(CMAKE_C_COMPILER "clang-13")
+set(CMAKE_CXX_COMPILER "clang++-13")
 
 # CMAKE flags
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
@@ -51,11 +51,21 @@ add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
+# Simple Demo for refined grids
+################################
+add_subdirectory(tests/SimpleRefinedModel)
+set(simple_refined_src ${SOURCE})
+list(REMOVE_ITEM simple_refined_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_executable(simple_refined_model tests/SimpleRefinedModel/simpleRefined.cpp ${simple_refined_src} ${HEADERS})
+target_link_libraries(simple_refined_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+################################
 # Simple Demo Models for Variable Density Flow (VDF)
 ################################
 add_subdirectory(tests/SimpleVDFModel1)
 set(simple_vdf_1_src ${SOURCE})
 list(REMOVE_ITEM simple_vdf_1_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_1_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
 add_executable(simple_vdf_model_1 tests/SimpleVDFModel1/simpleVDF1.cpp ${simple_vdf_1_src} ${HEADERS})
 target_link_libraries(simple_vdf_model_1 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 

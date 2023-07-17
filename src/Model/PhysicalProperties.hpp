@@ -171,6 +171,7 @@ namespace GlobalFlow {
         struct ZetasPosInNode;
         struct Delnus;
         struct NusInZones;
+        struct RefinementLevel;
         struct DensityVariable;
         struct MaxTipSlope;
         struct MaxToeSlope;
@@ -213,6 +214,7 @@ namespace GlobalFlow {
         PhysicalProperty<t_s_meter, SurfaceFrontBack>,
         PhysicalProperty<t_c_meter, VolumeOfCell>,
         PhysicalProperty<t_dim, EffectivePorosity>,
+        PhysicalProperty<int, RefinementLevel>,
         PhysicalProperty<bool, DensityVariable>,
         PhysicalProperty<std::vector<t_meter>, Zetas>,
         PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,

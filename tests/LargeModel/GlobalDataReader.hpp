@@ -69,6 +69,8 @@ namespace GlobalFlow {
                                     op.getSlopeAdjFactor(),
                                     op.getVDFLock(),
                                     op.getDensityZones());
+                    LOG(userinfo) << " - building grid by rows and columns (boundaries need to be specified in a file)";
+                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
                 } else {
                     LOG(userinfo) << "- reading land mask (with default values from config)";
                     readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
@@ -77,19 +79,14 @@ namespace GlobalFlow {
                                  op.isConfined(0), op.isDensityVariable(),
                                  op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
                                  op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+
                     LOG(userinfo) << "- reading mapping of SpatID to ArcID";
                     readSpatIDtoArcID(buildDir(op.getMapping()));
-                }
 
-                if (op.isRowCol()) {
-                    LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in a file)";
-                    DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
-                } else {
-                    LOG(userinfo) << "Building grid by spatial ID";
+                    LOG(userinfo) << "- building grid by SpatID";
                     //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
                     DataProcessing::buildBySpatID(nodes, this->getMappingSpatIDtoNodeIDs(), 60*5 ,
-                                                  op.getNumberOfLayers(), op.getGHBConduct(), op.getBoundaryCondition());
-                }
+                                                  op.getNumberOfLayers(), op.getGHBConduct(), op.getBoundaryCondition());}
 
                 if (op.getNumberOfLayers() > 1) {
                     LOG(userinfo) << "Building the model layer(s) below";
@@ -318,7 +315,7 @@ namespace GlobalFlow {
                     nodes->emplace_back(new Model::StandardNode(nodes,
                                                                 lat,
                                                                 lon,
-                                                                1e+6 * area * Model::si::square_meter,
+                                                                1e+6 * area * Model::si::square_meter, // todo: recalculate this in dataset (not here)
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 std::sqrt(1e+6 * area)*Model::si::meter,
                                                                 (large_num) spatID,
