@@ -1,9 +1,10 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_nz.csv",
+      "nodes": "grid_na.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 4603,
+      "number_of_nodes_per_layer": 396787,
+
       "number_of_rows": 0,
       "number_of_cols": 0,
       "edge_length_rows": 9000.0,
@@ -33,8 +34,8 @@
       "solver": "PCG",
       "iterations": 10000,
       "inner_itter": 50,
-      "closing_crit_head": 1e-185,
-      "closing_crit_zeta": 1e-7,
+      "closing_crit_head": 1e-20,
+      "closing_crit_zeta": 1e-8,
       "head_change": 1,
       "zeta_change": 1,
       "damping": "false",
@@ -60,7 +61,7 @@
         "initial_head": 0,
         "K": [
           0.27,
-          0.027
+          0.00027
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
@@ -69,7 +70,7 @@
         ],
         "anisotropy": [
           10,
-          100
+          10
         ],
         "specific_yield": 0.15,
         "specific_storage": 0.000015,

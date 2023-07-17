@@ -1,9 +1,9 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid.csv",
+      "nodes": "grid_nz.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 2161074,
+      "number_of_nodes_per_layer": 4603,
       "number_of_rows": 0,
       "number_of_cols": 0,
       "edge_length_rows": 9000.0,
@@ -13,7 +13,7 @@
       "confinement": [
         "true"
       ],
-      "density_variable": "true",
+      "density_variable": "false",
       "density_zones": [
         1000,
         1025
@@ -32,7 +32,7 @@
       "solver": "PCG",
       "iterations": 10000,
       "inner_itter": 50,
-      "closing_crit_head": 1e-20,
+      "closing_crit_head": 1e-100,
       "closing_crit_zeta": 1e-8,
       "head_change": 1,
       "zeta_change": 0.1,
