@@ -843,41 +843,53 @@ Calculate
              * @param nodeIDs The internal IDs and position in vector
              * @param neighbour The position relative to the cell
              */
-            void setNeighbours(std::vector<large_num> const& nodeIDs, NeighbourPosition neighbourPosition) {
+            void setNeighbours(std::unordered_map<int, large_num> nodeIDs, NeighbourPosition neighbourPosition) {
+                /*
+                 * RefIDs:
+                 *                  (this)
+                 *                  BACK
+                 *                   |
+                 *                   \/
+                 *                  0   1
+                 * (this) RIGHT ->  (neig)  <- LEFT (this)
+                 *                  2   3
+                 *                   /\
+                 *                   |
+                 *                  FRONT
+                 *                  (this)
+                 */
+
                 if (get<int, RefID>() == -1) {
-                    for (large_num nodeID : nodeIDs){
+                    for (int i = 0; i < nodeIDs.size(); ++i){
                         if (neighbourPosition == Model::FRONT){
-                            if (nodes->at(nodeID)->get<int, RefID>() == 2) {
-                                neighbours[Model::FRONTLEFT] = nodeID;
-                            } else if (nodes->at(nodeID)->get<int, RefID>() == 3) {
-                                neighbours[Model::FRONTRIGHT] = nodeID;
+                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 2) {
+                                neighbours[Model::FRONTLEFT] = nodeIDs[i];
+                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 3) {
+                                neighbours[Model::FRONTRIGHT] = nodeIDs[i];
                             }
                         }
                         if (neighbourPosition == Model::BACK){
-                            if (nodes->at(nodeID)->get<int, RefID>() == 0) {
-                                neighbours[Model::BACKLEFT] = nodeID;
-                            } else if (nodes->at(nodeID)->get<int, RefID>() == 1) {
-                                neighbours[Model::BACKRIGHT] = nodeID;
+                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 0) {
+                                neighbours[Model::BACKLEFT] = nodeIDs[i];
+                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 1) {
+                                neighbours[Model::BACKRIGHT] = nodeIDs[i];
                             }
                         }
                         if (neighbourPosition == Model::LEFT){
-                            if (nodes->at(nodeID)->get<int, RefID>() == 1) {
-                                neighbours[Model::LEFTFRONT] = nodeID;
-                            } else if (nodes->at(nodeID)->get<int, RefID>() == 3) {
-                                neighbours[Model::LEFTBACK] = nodeID;
+                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 1) {
+                                neighbours[Model::LEFTFRONT] = nodeIDs[i];
+                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 3) {
+                                neighbours[Model::LEFTBACK] = nodeIDs[i];
                             }
                         }
                         if (neighbourPosition == Model::RIGHT){
-                            if (nodes->at(nodeID)->get<int, RefID>() == 0) {
-                                neighbours[Model::RIGHTFRONT] = nodeID;
-                            } else if (nodes->at(nodeID)->get<int, RefID>() == 2) {
-                                neighbours[Model::RIGHTBACK] = nodeID;
+                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 0) {
+                                neighbours[Model::RIGHTFRONT] = nodeIDs[i];
+                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 2) {
+                                neighbours[Model::RIGHTBACK] = nodeIDs[i];
                             }
                         }
                     }
-
-
-
                 }
             }
 

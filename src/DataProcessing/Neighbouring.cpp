@@ -98,7 +98,7 @@ void buildBySpatID(NodeVector nodes,
     auto lu = setNeighbourPositions();
 
     large_num nodeID;
-    std::vector<large_num> nodeIDs_neig;
+    std::unordered_map<int, large_num> nodeIDs_neig;
     large_num spatID;
     large_num spatID_neig;
     int refID;
@@ -117,7 +117,7 @@ void buildBySpatID(NodeVector nodes,
                     if (nodeIDs_neig.empty()) {
                         continue;
                     }
-                    if (refID == -1 and nodeIDs_neig.size() == 1) {
+                    if (nodeIDs_neig.size() == 1) {
                         nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
                     } else {
                         nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
