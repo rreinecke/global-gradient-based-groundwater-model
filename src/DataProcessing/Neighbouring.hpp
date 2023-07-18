@@ -48,25 +48,23 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int laye
 * Builds a map of neighbouring nodes based spatial Id's and resolution
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
-void buildByLatLon(NodeVector nodes, large_num resolution, int numberOfLayers, double oceanConduct,
+void buildBySpatID(NodeVector nodes,
+                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
+                   double resolution,
+                   int lonRange,
+                   int numberOfLayers,
+                   double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition);
 
-void addNeighbourOrBoundary(NodeVector nodes, large_num nodeID, double boundaryConduct,
-                            Simulation::Options::BoundaryCondition boundaryCondition, int layer, int resolution);
-
-void addBoundary(NodeVector nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                 large_num pos, int layer, Model::NeighbourPosition positionOfBoundary)
-
-/**
-* Builds a map of neighbouring nodes based spatial Id's and resolution
-* Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
-*/
-void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, large_num resolution,
-                   int numberOfLayers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
+std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions();
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-large_num getNeighbourSpatID(large_num spatID, int j, int res);
+large_num getNeighbourSpatID(large_num spatID, int j, double res, int lonRange);
+
+void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
+                 large_num nodeID, int layer);
+
 
 
 /**

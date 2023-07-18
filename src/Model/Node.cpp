@@ -52,7 +52,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificYield,
                              double specificStorage,
                              bool confined,
-                             int refinementLevel,
+                             int refID,
                              bool densityVariable,
                              std::vector<quantity<Dimensionless>> delnus,
                              std::vector<quantity<Dimensionless>> nusInZones,
@@ -83,7 +83,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.set<int, RefinementLevel> (refinementLevel);
+    fields.set<int, RefID> (refID);
     fields.set<bool, DensityVariable> (densityVariable);
     fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<std::vector<quantity<Dimensionless>>, NusInZones> (nusInZones);

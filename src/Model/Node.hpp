@@ -369,7 +369,7 @@ namespace GlobalFlow {
                           double specificYield,
                           double specificStorage,
                           bool confined,
-                          int refinementLevel,
+                          int refID,
                           bool densityVariable,
                           std::vector<t_dim> delnus,
                           std::vector<t_dim> nusInZones,
@@ -646,6 +646,8 @@ Calculate
 
             double getLon() {return get<double, Lon>();}
 
+            int getRefID() {return get<int, RefID>(); }
+
             t_s_meter getArea(){return get<t_s_meter, Area>();}
 
             t_meter getElevation(){return get<t_meter, Elevation>();}
@@ -834,7 +836,50 @@ Calculate
              * @param ID The internal ID and position in vector
              * @param neighbour The position relative to the cell
              */
-            void setNeighbour(large_num ID, NeighbourPosition neighbour) { neighbours[neighbour] = ID; }
+            void setNeighbour(large_num ID, NeighbourPosition neighbourPosition) { neighbours[neighbourPosition] = ID; }
+
+            /**
+             * @brief Add multiple neighbours in one direction
+             * @param nodeIDs The internal IDs and position in vector
+             * @param neighbour The position relative to the cell
+             */
+            void setNeighbours(std::vector<large_num> const& nodeIDs, NeighbourPosition neighbourPosition) {
+                if (get<int, RefID>() == -1) {
+                    for (large_num nodeID : nodeIDs){
+                        if (neighbourPosition == Model::FRONT){
+                            if (nodes->at(nodeID)->get<int, RefID>() == 2) {
+                                neighbours[Model::FRONTLEFT] = nodeID;
+                            } else if (nodes->at(nodeID)->get<int, RefID>() == 3) {
+                                neighbours[Model::FRONTRIGHT] = nodeID;
+                            }
+                        }
+                        if (neighbourPosition == Model::BACK){
+                            if (nodes->at(nodeID)->get<int, RefID>() == 0) {
+                                neighbours[Model::BACKLEFT] = nodeID;
+                            } else if (nodes->at(nodeID)->get<int, RefID>() == 1) {
+                                neighbours[Model::BACKRIGHT] = nodeID;
+                            }
+                        }
+                        if (neighbourPosition == Model::LEFT){
+                            if (nodes->at(nodeID)->get<int, RefID>() == 1) {
+                                neighbours[Model::LEFTFRONT] = nodeID;
+                            } else if (nodes->at(nodeID)->get<int, RefID>() == 3) {
+                                neighbours[Model::LEFTBACK] = nodeID;
+                            }
+                        }
+                        if (neighbourPosition == Model::RIGHT){
+                            if (nodes->at(nodeID)->get<int, RefID>() == 0) {
+                                neighbours[Model::RIGHTFRONT] = nodeID;
+                            } else if (nodes->at(nodeID)->get<int, RefID>() == 2) {
+                                neighbours[Model::RIGHTBACK] = nodeID;
+                            }
+                        }
+                    }
+
+
+
+                }
+            }
 
             int getNumofNeighbours() { return (int) neighbours.size(); }
 
@@ -2503,7 +2548,7 @@ Calculate
                          double specificYield,
                          double specificStorage,
                          bool confined,
-                         int refinementLevel,
+                         int refID,
                          bool densityVariable,
                          std::vector<t_dim> delnus,
                          std::vector<t_dim> nusInZones,
@@ -2515,7 +2560,7 @@ Calculate
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    confined, refinementLevel, densityVariable, delnus, nusInZones, effPorosity,
+                                    confined, refID, densityVariable, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation

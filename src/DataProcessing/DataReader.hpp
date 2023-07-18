@@ -52,8 +52,8 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupSpatIDtoNodeIDs <SpatID, vector<NodeID>>*/
-        std::unordered_map<large_num, std::vector<large_num>> lookupSpatIDtoNodeIDs;
+        /** @var lookupSpatIDtoNodeIDs <SpatID, Layer, RefID, NodeID>*/
+        std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> lookupSpatIDtoNodeIDs;
         /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
         std::unordered_map<large_num, std::vector<large_num>> lookupArcIDtoSpatIDs;
     public:
@@ -89,23 +89,24 @@ namespace GlobalFlow {
         }
 
         /**
-         * @brief Check weather id exists in the simulation
+         * @brief Check whether id exists in the simulation
          * @param spatID Global identifier, can be different from position in node vector
          * @param layer Layer the node is in
          * @return nodeID The position in the node vector
          */
-        inline large_num check(large_num spatID, int layer = 0) {
-            std::vector<large_num> nodeIDs;
+        inline large_num check(large_num spatID, int layer) {
+            std::unordered_map<int, large_num> nodeIDs;
             try {
-                nodeIDs = lookupSpatIDtoNodeIDs[spatID];
+                nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
             }
             catch (const std::out_of_range &ex) {
                 return -1;
             }
+
             if (nodeIDs.empty()){
                 return -1;
             }
-            return nodeIDs[layer];
+            return nodeIDs[0];
         }
 
         /**
@@ -121,7 +122,7 @@ namespace GlobalFlow {
             double data = 0;
             large_num nodeID = 0;
             while (in.read_row(spatID, data)) {
-                nodeID = check(spatID);
+                nodeID = check(spatID, 0); // layer = 0
                 if (nodeID == -1) {
                     continue;
                 }
@@ -160,15 +161,17 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        void addMappingSpatIDtoNodeIDs(large_num spatID, large_num nodeID) {
-            lookupSpatIDtoNodeIDs[spatID].push_back(std::move(nodeID));
+        void addMappingSpatIDtoNodeIDs(large_num spatID, int layer, int refID, large_num nodeID) {
+
+            lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID;
         };
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<large_num, std::vector<large_num>> &getMappingSpatIDtoNodeIDs() {
+        const std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>>&
+        getMappingSpatIDtoNodeIDs() {
             return lookupSpatIDtoNodeIDs;
         };
 
