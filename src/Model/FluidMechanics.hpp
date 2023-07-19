@@ -34,7 +34,7 @@ namespace GlobalFlow {
 
         /**
          * @class FluidMechanics
-         * Provides helper functions for conductance calulcations
+         * Provides helper functions for conductance calculations
          */
         class FluidMechanics {
         public:
@@ -45,7 +45,7 @@ namespace GlobalFlow {
              */
             t_meter calcDeltaV(t_meter head, t_meter elevation, t_meter verticalSize) noexcept;
 
-            t_s_meter_t calculateEFoldingConductance(FlowInputHor flow, t_meter folding_self, t_meter folding_neig);
+            t_s_meter_t calculateEFoldingConductance(FlowInputHor const& flow, t_meter folding_self, t_meter folding_neig);
 
             /**
              * @brief Calculates the horizontal flow between two nodes
@@ -54,7 +54,7 @@ namespace GlobalFlow {
              * Calculates the harmonic mean conductance between two nodes.
              * $C = 2 \times EdgeLenght_1 \times \frac{ (TR_1 \times TR_2)}{(TR_1 \times EdgeLenght_1 + TR_2 \times EdgeLenght_2)}$
              */
-            t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
+            t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept;
 
             /**
              * Get the coefficients for storage and P components
@@ -72,7 +72,7 @@ namespace GlobalFlow {
              * @param flow a tuple of inputs about the aquifer
              * @return the vertical conductance
              */
-            t_s_meter_t calculateVerticalConductance(FlowInputVert flow) noexcept;
+            t_s_meter_t calculateVerticalConductance(FlowInputVert const& flow) noexcept;
 
             /**
              * Criv = Krb/e*L*W

@@ -51,6 +51,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double anisotropy,
                              double specificYield,
                              double specificStorage,
+                             bool useEfolding,
                              bool confined,
                              int refID,
                              bool densityVariable,
@@ -70,6 +71,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set < unsigned long int, ID > (identifier);
     fields.set<quantity<Velocity>, K>(conduct);
     fields.set<quantity<Meter>, Head>(head);
+    fields.set<bool, UseEfolding>(useEfolding);
     fields.set<bool, Confinement>(confined);
     fields.emplace<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
     fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);

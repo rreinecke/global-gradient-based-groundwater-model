@@ -84,7 +84,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 void
 buildBottomLayers(NodeVector nodes,
                   int layers,
-                  std::vector<bool> conf,
+                  std::vector<bool> confined,
                   std::vector<int> aquifer_depth,
                   std::vector<double> conductances,
                   std::vector<double> anisotropies);

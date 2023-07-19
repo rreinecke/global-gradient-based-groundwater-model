@@ -129,7 +129,7 @@ namespace GlobalFlow {
              * E-Folding function as defined by Ying Fan et al. e^(-(Depth - Factor)).
              */
             t_dim efoldingFromData(t_meter z) {
-                t_meter folding = get<t_meter, EFolding>();
+                auto folding = get<t_meter, EFolding>();
                 if (folding == 0.0 * si::meter)
                     return 1 * si::si_dimensionless;
                 //Alter if a different size should be used and not full vertical size
@@ -368,6 +368,7 @@ namespace GlobalFlow {
                           double anisotropy,
                           double specificYield,
                           double specificStorage,
+                          bool useEfolding,
                           bool confined,
                           int refID,
                           bool densityVariable,
@@ -386,7 +387,24 @@ Get Properties
 
             large_num getID() { return get<large_num, ID>(); }
 
+            t_vel getK__pure() noexcept { return get<t_vel, K>(); }
 
+            /**
+             * @brief Get hydraulic conductivity
+             * @return hydraulic conductivity (scaled by e-folding)
+             */
+            t_vel getK() noexcept {
+                if (simpleK) { return get<t_vel, K>() * get<t_dim, StepModifier>(); }
+                t_dim e_fold = 1 * si::si_dimensionless;
+                if (get<int, Layer>() > 0) {
+                    e_fold = efoldingFromData(get<t_meter, VerticalSize>());
+                }
+                t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
+                if (out < 1e-20 * si::meter / day) {
+                    out = 1e-20 * si::meter / day;
+                }
+                return out;
+            }
 
 /*****************************************************************
 Set Properties
@@ -503,6 +521,28 @@ Helpers
                                        get<bool, Confinement>());
             }
 
+            /**
+             * @brief Cuts off all heads above surface elevation
+             * @warning Should only be used in spin up phase!
+             * @return Bool if node was reset
+             */
+            bool resetFloodingHead() noexcept {
+                auto elevation = get<t_meter, Elevation>();
+                if (get<t_meter, Head>() > elevation) {
+                    set < t_meter, Head > (elevation);
+                    return true;
+                }
+                return false;
+            }
+
+            /**
+             * @brief Scales river conduct by 50%
+             * @warning Should only be used in spin up phase
+             */
+            void scaleRiverConduct() {
+                eq_flow = eq_flow * 1.5;
+            }
+
 /*****************************************************************
 Calculate
 ******************************************************************/
@@ -526,6 +566,7 @@ Calculate
                         //There is a neighbour node
                         t_s_meter_t conductance;
                         //TODO check for option!
+
                         //if (get<int, Layer>() > 0) {
                         //    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
                         //}else{
@@ -570,49 +611,6 @@ Calculate
              */
             t_vol_t getLateralOutFlows() {
                 return calcLateralFlows<Head>(true) * get<t_dim, StepModifier>();
-            }
-
-            /**
-             * @brief Cuts off all heads above surface elevation
-             * @warning Should only be used in spin up phase!
-             * @return Bool if node was reset
-             */
-            bool resetFloodingHead() noexcept {
-                auto elevation = get<t_meter, Elevation>();
-                if (get<t_meter, Head>() > elevation) {
-                    set < t_meter, Head > (elevation);
-                    return true;
-                }
-                return false;
-            }
-
-            /**
-             * @brief Scales river conduct by 50%
-             * @warning Should only be used in spin up phase
-             */
-            void scaleRiverConduct() {
-                eq_flow = eq_flow * 1.5;
-            }
-
-
-
-            t_vel getK__pure() noexcept { return get<t_vel, K>(); }
-
-            /**
-             * @brief Get hydraulic conductivity
-             * @return hydraulic conductivity (scaled by e-folding)
-             */
-            t_vel getK() noexcept {
-                if (simpleK) { return get<t_vel, K>() * get<t_dim, StepModifier>(); }
-                t_dim e_fold = 1 * si::si_dimensionless;
-                if (get<int, Layer>() > 0) {
-                    e_fold = efoldingFromData(get<t_meter, VerticalSize>());
-                }
-                t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
-                if (out < 1e-20 * si::meter / day) {
-                    out = 1e-20 * si::meter / day;
-                }
-                return out;
             }
 
             /**
@@ -2273,35 +2271,39 @@ Calculate
              * The left hand side of the equation
              */
             std::unordered_map<large_num, t_s_meter_t> getMatrixEntries() {
-                size_t numC = 7;
+                size_t numC = 11;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
                 t_s_meter_t conduct;
 
                 //Get all conductances from neighbouring cells
                 std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::TOP, NeighbourPosition::BACK, NeighbourPosition::DOWN, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                        {NeighbourPosition::TOP, NeighbourPosition::DOWN,
+                         NeighbourPosition::FRONT, NeighbourPosition::BACK,
+                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT,
+                         NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT, // for refined nodes
+                         NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
+                         NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
+                         NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
                     conduct = 0 * si::square_meter / day;
-                    if (got == neighbours.end()) {
-                        //No neighbouring node
-                        // continue;
-                    } else {
-                        //There is a neighbour node
+                    if (got == neighbours.end()) { //No neighbouring node
+                    } else { //There is a neighbour node
                         if (got->first == TOP or got->first == DOWN) {
                             conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                             //LOG(debug) << "vertical conductance: " << conduct.value();
-                        } else {
+                        } else if (got->first == FRONT or got->first == BACK or
+                                   got->first == LEFT or got->first == RIGHT){
                             //TODO check for option!
-                            //if (get<int, Layer>() > 0) {
-                            //    conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
-                            //}else{
-                            conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                            //LOG(debug) << "horizontal conductance: " << conduct.value();
-                            //}
+                            if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
+                                conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                                //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
+                            }else{
+                                conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                                //LOG(debug) << "horizontal conductance: " << conduct.value();
+                            }
                         }
                         NANChecker(conduct.value(), "Conductances");
 
@@ -2556,6 +2558,7 @@ Calculate
                          double anisotropy,
                          double specificYield,
                          double specificStorage,
+                         bool useEfolding,
                          bool confined,
                          int refID,
                          bool densityVariable,
@@ -2568,7 +2571,7 @@ Calculate
                          double slopeAdjFactor,
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
-                                    head, aquiferDepth, anisotropy, specificYield, specificStorage,
+                                    head, aquiferDepth, anisotropy, specificYield, specificStorage, useEfolding,
                                     confined, refID, densityVariable, delnus, nusInZones, effPorosity,
                                     maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
@@ -2644,9 +2647,9 @@ Calculate
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15, 0.000015, 0, true, true,
-                    {0.0, 0.1}, {0.0, 0.1}, 0.2, 0.2, 0.2, 0.1, 0.1,
-                    0.001 * si::meter) {}
+                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15,
+                    0.000015, false, true, 0, true,{0.0, 0.1}, {0.0, 0.1},
+                    0.2, 0.2, 0.2, 0.1, 0.1,0.001 * si::meter) {}
 
         private:
             friend class NodeInterface;

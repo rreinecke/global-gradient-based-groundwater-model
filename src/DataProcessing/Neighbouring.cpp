@@ -116,10 +116,8 @@ void buildBySpatID(NodeVector nodes,
             for (int j = 0; j < lu.size(); ++j) {
                 if (refID == 0) { // #### set neighbour(s) of unrefined node
                     spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
-                    LOG(debug) << "j = " << j << ", spatID_neig = " << spatID_neig;
                     if (spatIDtoNodeIDs.contains(spatID_neig)) {
                         nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
-                        LOG(debug) << "nodeID = " << nodeID << ", nodeIDs_neig.size() = " << nodeIDs_neig.size();
                         if (nodeIDs_neig.empty()) {
                         } else if (nodeIDs_neig.size() == 1) {
                             nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
@@ -270,12 +268,12 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
  * Adds additional layers and connects nodes
  * @param nodes
  * @param layers
- * @param conf
+ * @param confined
  * @param aquifer_thickness
  */
         void buildBottomLayers(NodeVector nodes,
                                int numberOfLayers,
-                               std::vector<bool> conf,
+                               std::vector<bool> confined,
                                std::vector<int> aquifer_thickness,
                                std::vector<double> conductances,
                                std::vector<double> anisotropies) {
@@ -302,6 +300,7 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
             double anisotropy;
             double specificYield;
             double specificStorage;
+            bool useEfolding;
             int refID;
             bool densityVariable;
             std::vector<Model::quantity<Model::Dimensionless>> delnus;
@@ -337,6 +336,7 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
                     specificStorage =
                             nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>, Model::SpecificStorage>
                                     ().value();
+                    useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
                     refID = nodes->at(i)->getProperties().get<int, Model::RefID>();
                     densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
                     delnus = nodes->at(i)->getProperties().
@@ -374,7 +374,8 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
                                                                     anisotropy,
                                                                     specificYield,
                                                                     specificStorage,
-                                                                    conf[j + 1],
+                                                                    useEfolding,
+                                                                    confined[j + 1],
                                                                     refID,
                                                                     densityVariable,
                                                                     delnus,

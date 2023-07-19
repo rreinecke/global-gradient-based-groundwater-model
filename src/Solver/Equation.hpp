@@ -49,7 +49,7 @@ namespace GlobalFlow {
  */
         class Equation {
         public:
-            Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation::Options options);
+            Equation(NodeVector nodes, Simulation::Options options);
 
             ~Equation();
 
@@ -109,7 +109,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * Toogle the steady-state in all nodes
+             * Toggle the steady-state in all nodes
              * @return
              */
             bool toggleSteadyState() {
@@ -285,6 +285,7 @@ namespace GlobalFlow {
         void inline adjustZetaHeights();
 
         bool SteadyState = false;
+
         //Only for testing purposes
         bool simpleHead = true;
 

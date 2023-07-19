@@ -50,7 +50,7 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
         step.first->toggleSteadyState();
     }
-
+    /*
     int stepNumber = 1;
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper) {
@@ -94,7 +94,7 @@ void StandaloneRunner::simulate() {
         step.first->solve();
         sim.printMassBalances(debug);
     }
-
+    */
     delete reader;
 }
 

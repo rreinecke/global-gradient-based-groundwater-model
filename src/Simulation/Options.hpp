@@ -64,12 +64,13 @@ namespace GlobalFlow {
             std::string SPATID_ARCID{""};
 
             //++General configuration++//
-            long NUMBER_OF_NODES_PER_LAYER{0};
+            unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
             long NUMBER_OF_ROWS{0};
             long NUMBER_OF_COLS{0};
             double EDGE_LENGTH_ROWS{0.0};
             double EDGE_LENGTH_COLS{0.0};
             int LAYERS{0};
+            bool USE_EFOLDING{false};
             int IITER{0};
             int I_ITTER{0};
             double RCLOSE_HEAD{0.1};
@@ -136,6 +137,8 @@ namespace GlobalFlow {
             void setDamping(bool set) { DAMPING = set; }
 
             bool isDampingEnabled() { return DAMPING; }
+
+            bool useEfolding() { return USE_EFOLDING; }
 
             double getMinDamp() { return MIN_DAMP; }
 
@@ -204,7 +207,7 @@ namespace GlobalFlow {
 
             int getInnerItter() { return I_ITTER; }
 
-            long
+            unsigned long int
             getNumberOfNodesPerLayer() {
                 return NUMBER_OF_NODES_PER_LAYER;
             };

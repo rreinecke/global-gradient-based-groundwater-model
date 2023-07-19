@@ -38,10 +38,9 @@ namespace GlobalFlow {
             return t;
         }
 
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateEFoldingConductance(FlowInputHor
-                                                                                   flow,
-                                                                                   t_meter folding_self, t_meter
-                                                                                   folding_neig) {
+        quantity<MeterSquaredPerTime> FluidMechanics::calculateEFoldingConductance(FlowInputHor const& flow,
+                                                                                   t_meter folding_self,
+                                                                                   t_meter folding_neig) {
             t_vel k_neig;
             t_vel k_self;
             t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
@@ -54,28 +53,26 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self, head_neig, head_self, ele_neig, ele_self,
-                     deltaV_neig, deltaV_self, confined) = flow;
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self, head_neig,
+                     head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
-            quantity<MeterSquaredPerTime> t; //transmissivity
 
             quantity<MeterSquaredPerTime> transmissivity_self =
                     calcEfoldingTrans(k_self, folding_self, ele_self, head_self);
             quantity<MeterSquaredPerTime> transmissivity_neig =
                     calcEfoldingTrans(k_neig, folding_neig, ele_neig, head_neig);
-            // Question: this function is never used. Remove? Repair? Develop?
-            // TODO pick up here. Calculate two directions of flow (LeftRight & FrontBack) separately
-            // In this case, there is no need to have both EdgeLengths in this function
-            // TODO first find the location in the code, where flow is passed over to the next node
-            out = (2.0 * edgeLength_self) * ((transmissivity_self * transmissivity_neig)
-                                             / (transmissivity_self * edgeLength_neig +
-                                                transmissivity_neig * edgeLength_self));
 
-            NANChecker(out.value(), "E-folding based Conductance");
+            if (transmissivity_neig != 0 * si::square_meter / day and
+                transmissivity_self != 0 * si::square_meter / day) {
+                out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
+                                                / (transmissivity_self * edgeLength_neig +
+                                                   transmissivity_neig * edgeLength_self));
+            }
+            NANChecker(out.value(), "E-folding based Harmonic Mean Conductance");
             return out;
         }
 
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor flow)noexcept {
+        quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept {
             t_vel k_neig;
             t_vel k_self;
             t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
@@ -88,15 +85,17 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig, head_self, ele_neig, ele_self,
-                     deltaV_neig, deltaV_self, confined) = flow;
+            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig,
+                     head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
+            LOG(debug) << "edgeLength_self = " << edgeLength_self.value() << ", edgeLength_neig = " << edgeLength_neig.value();
+            /*
             //Used if non dry-out approach is used
             // FIXME need to be checked here
             t_meter threshold_saturated_thickness{1e-5 * si::meter};
 
-            //Cell is not confined layer -> we need to calculate transmissivity dependant on head
+            //Cell is not confined layer -> we need to calculate transmissivity dependent on head
             enum e_dry {
                 NONE, SELF, NEIG
             };
@@ -113,24 +112,24 @@ namespace GlobalFlow {
                     dry = NEIG;
                 }
                 //TODO One of the cells is "dry" - Upstream weighting instead of harmonic mean
-            }
+            }*/
 
             //Transmissivity = K * thickness of prism
             quantity<MeterSquaredPerTime> transmissivity_self = deltaV_self * k_self;
             quantity<MeterSquaredPerTime> transmissivity_neig = deltaV_neig * k_neig;
 
-            if (transmissivity_neig != out and transmissivity_self != out) {
+            if (transmissivity_neig != 0 * si::square_meter / day and
+                transmissivity_self != 0 * si::square_meter / day) {
                 out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
                                                  / (transmissivity_self * edgeLength_neig +
                                                     transmissivity_neig * edgeLength_self));
             }
-
             NANChecker(out.value(), "Harmonic Mean Conductance");
             return out;
         };
 
         quantity<MeterSquaredPerTime>
-        FluidMechanics::calculateVerticalConductance(FlowInputVert flowInputVer) noexcept {
+        FluidMechanics::calculateVerticalConductance(FlowInputVert const& flowInputVer) noexcept {
             t_vel k_vert_neig;
             t_vel k_vert_self;
             t_meter verticalSize_self;

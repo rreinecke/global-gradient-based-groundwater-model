@@ -465,12 +465,11 @@ namespace GlobalFlow {
         private:
             NodeVector nodes;
 
-            int initNodes() {
+            void initNodes() {
                 LOG(userinfo) << FMAG(BOLD("Starting G³M"));
                 nodes->reserve(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers());
                 reader->initNodes(nodes);
                 reader->readData(op);
-                return op.getNumberOfNodesPerLayer();
             };
 
 

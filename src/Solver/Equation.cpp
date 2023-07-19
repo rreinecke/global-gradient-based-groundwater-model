@@ -3,12 +3,13 @@
 namespace GlobalFlow {
 namespace Solver {
 
-Equation::Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodesPerLayer << std::endl;
-
-    this->numberOfNodesPerLayer = numberOfNodesPerLayer;
+Equation::Equation(NodeVector nodes, Simulation::Options options) : options(options) {
+    this->numberOfNodesPerLayer = options.getNumberOfNodesPerLayer();
     this->numberOfLayers = options.getNumberOfLayers();
     this->numberOfNodesTotal = numberOfNodesPerLayer * numberOfLayers;
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodesPerLayer << " nodes on " << numberOfLayers <<
+    " layer(s) (in total " << numberOfNodesTotal << " nodes)" << std::endl;
+
     this->IITER = options.getMaxIterations();
     this->RCLOSE_HEAD = options.getConverganceCriteriaHead();
     this->RCLOSE_ZETA = options.getConverganceCriteriaZeta();
