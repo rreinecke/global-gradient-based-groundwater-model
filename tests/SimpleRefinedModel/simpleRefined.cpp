@@ -21,12 +21,13 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
     myfile.open ("node_attributes_refined.csv");
-    myfile << "nodeID,refID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,recharge" << std::endl;
+    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         sim.getNodes()->at(j)->setSimpleK();
 
         myfile << j << "," <<
+               sim.getNodes()->at(j)->getSpatID() << "," <<
                sim.getNodes()->at(j)->getRefID() << "," <<
                sim.getNodes()->at(j)->getLon() << "," <<
                sim.getNodes()->at(j)->getLat() << "," <<

@@ -848,49 +848,46 @@ Calculate
                  * RefIDs:
                  *                  (this)
                  *                  BACK
-                 *                   |
-                 *                   \/
-                 *                  0   1
-                 * (this) RIGHT ->  (neig)  <- LEFT (this)
-                 *                  2   3
-                 *                   /\
-                 *                   |
+                 *                  ||  ||
+                 *                  \/  \/
+                 *              =>  1   2  <=
+                 * (this) RIGHT     (neig)    LEFT (this)
+                 *              =>  3   4  <=
+                 *                  /\  /\
+                 *                  ||  ||
                  *                  FRONT
                  *                  (this)
                  */
-
-                if (get<int, RefID>() == -1) {
-                    for (int i = 0; i < nodeIDs.size(); ++i){
-                        if (neighbourPosition == Model::FRONT){
-                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 2) {
-                                neighbours[Model::FRONTLEFT] = nodeIDs[i];
-                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 3) {
-                                neighbours[Model::FRONTRIGHT] = nodeIDs[i];
-                            }
-                        }
-                        if (neighbourPosition == Model::BACK){
-                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 0) {
-                                neighbours[Model::BACKLEFT] = nodeIDs[i];
-                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 1) {
-                                neighbours[Model::BACKRIGHT] = nodeIDs[i];
-                            }
-                        }
-                        if (neighbourPosition == Model::LEFT){
-                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 1) {
-                                neighbours[Model::LEFTFRONT] = nodeIDs[i];
-                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 3) {
-                                neighbours[Model::LEFTBACK] = nodeIDs[i];
-                            }
-                        }
-                        if (neighbourPosition == Model::RIGHT){
-                            if (nodes->at(nodeIDs[i])->get<int, RefID>() == 0) {
-                                neighbours[Model::RIGHTFRONT] = nodeIDs[i];
-                            } else if (nodes->at(nodeIDs[i])->get<int, RefID>() == 2) {
-                                neighbours[Model::RIGHTBACK] = nodeIDs[i];
-                            }
+                 for (auto nodeID : nodeIDs){
+                    if (neighbourPosition == Model::FRONT){
+                        if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                            neighbours[Model::FRONTLEFT] = nodeID.second;
+                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                            neighbours[Model::FRONTRIGHT] = nodeID.second;
                         }
                     }
-                }
+                    if (neighbourPosition == Model::BACK){
+                        if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                            neighbours[Model::BACKLEFT] = nodeID.second;
+                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                            neighbours[Model::BACKRIGHT] = nodeID.second;
+                        }
+                    }
+                    if (neighbourPosition == Model::LEFT){
+                        if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                            neighbours[Model::LEFTFRONT] = nodeID.second;
+                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                            neighbours[Model::LEFTBACK] = nodeID.second;
+                        }
+                    }
+                    if (neighbourPosition == Model::RIGHT){
+                        if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                            neighbours[Model::RIGHTFRONT] = nodeID.second;
+                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                            neighbours[Model::RIGHTBACK] = nodeID.second;
+                        }
+                    }
+                 }
             }
 
             int getNumofNeighbours() { return (int) neighbours.size(); }

@@ -55,8 +55,11 @@ namespace GlobalFlow {
  * @brief function to add boundaries to nodes with no neighbours
  *
  */
-void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-            large_num nodeID, int layer) {
+void addBoundary(NodeVector const& nodes,
+                 double boundaryConduct,
+                 Simulation::Options::BoundaryCondition boundaryCondition,
+                 large_num nodeID,
+                 int layer) {
 
     if (layer > 0) {
         return;
@@ -89,7 +92,7 @@ void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Op
 void buildBySpatID(NodeVector nodes,
                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                    double resolution,
-                   int lonRange,
+                   int lonRange, int latRange, bool isGlobal,
                    int numberOfLayers,
                    double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
@@ -99,8 +102,10 @@ void buildBySpatID(NodeVector nodes,
 
     large_num nodeID;
     std::unordered_map<int, large_num> nodeIDs_neig;
+    large_num nodeID_ref_neig;
+    large_num nodeID_neig;
     large_num spatID;
-    large_num spatID_neig;
+    int spatID_neig;
     int refID;
 
     for (int layer = 0; layer < numberOfLayers; ++layer) {
@@ -109,29 +114,68 @@ void buildBySpatID(NodeVector nodes,
             spatID = nodes->at(nodeID)->getSpatID();
             refID = nodes->at(nodeID)->getRefID();
             for (int j = 0; j < lu.size(); ++j) {
-                spatID_neig = getNeighbourSpatID(spatID, j, resolution, lonRange);
-                //if (spatID_neig > 0) {
-                if (spatIDtoNodeIDs.contains(spatID_neig) and
-                    not spatIDtoNodeIDs.at(spatID_neig).empty()) { //Neighbour id exists in landmask
-                    nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); // todo multiple nodeIDs for each layer (maybe one more level of depth in this)
-                    if (nodeIDs_neig.empty()) {
-                        continue;
-                    }
-                    if (nodeIDs_neig.size() == 1) {
-                        nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
+                if (refID == 0) { // #### set neighbour(s) of unrefined node
+                    spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
+                    LOG(debug) << "j = " << j << ", spatID_neig = " << spatID_neig;
+                    if (spatIDtoNodeIDs.contains(spatID_neig)) {
+                        nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
+                        LOG(debug) << "nodeID = " << nodeID << ", nodeIDs_neig.size() = " << nodeIDs_neig.size();
+                        if (nodeIDs_neig.empty()) {
+                        } else if (nodeIDs_neig.size() == 1) {
+                            nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
+                        } else {
+                            nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
+                        }
                     } else {
-                        nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
+                        addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer);
                     }
-                } else {// Neighbour is not in landmask
-                    // Calling function defined above to add boundary
-                    //LOG(userinfo) << "adding boundary at nodeID" << nodeID;
-                    addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer);
+                } else { // ####  set neighbour of refined node ####
+                    setNeigOfRefNode(nodes, spatID, j, resolution, lonRange, latRange, isGlobal, layer, refID, nodeID,
+                                     spatIDtoNodeIDs, boundaryConduct, boundaryCondition);
                 }
-                //}
             }
         }
     }
 
+}
+
+
+void setNeigOfRefNode(NodeVector nodes, large_num spatID, int j, double resolution,
+                      int lonRange, int latRange, bool isGlobal, int layer, int refID, large_num nodeID,
+                      std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
+                      double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
+
+    auto neighbourPositions = setNeighbourPositions();
+
+    std::unordered_map<int, std::vector<int>> mapping;
+    mapping[0] = {1, 2, 3, 4}; // FRONT
+    mapping[1] = {3, 4, 1, 2}; // BACK
+    mapping[2] = {2, 4, 1, 3}; // RIGHT
+    mapping[3] = {1, 3, 2, 4}; // LEFT
+
+    auto neigbourOutsideRefinedNode = [spatID, j, resolution, lonRange, latRange, isGlobal, spatIDtoNodeIDs, layer,
+                                       nodes, boundaryConduct, boundaryCondition, nodeID]
+                                               (int index, Model::NeighbourPosition neighbourPosition) {
+        int spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
+        if (spatIDtoNodeIDs.contains(spatID_neig)) {
+            std::unordered_map<int, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); //.at(mapping.at(j)[2]);
+            if (nodeIDs_neig.size() == 1) {
+                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition);
+            } else {
+                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(index), neighbourPosition);
+            }
+        } else { addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer); }
+    };
+
+    if (refID == mapping.at(j)[0]) {
+        neigbourOutsideRefinedNode(mapping.at(j)[2], neighbourPositions[j]);
+    } else if (refID == mapping.at(j)[1]) {
+        neigbourOutsideRefinedNode(mapping.at(j)[3], neighbourPositions[j]);
+    }
+    if (refID == mapping.at(j)[2] or refID == mapping.at(j)[3]) { // set neighbour within refined node (same spatID)
+        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+        nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neighbourPositions[j]);
+    }
 }
 
 std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
@@ -162,27 +206,27 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
  * @param res
  * @return
  */
-        large_num getNeighbourSpatID(large_num spatID, int j, double res, int lonRange) {
+        int getNeighbourSpatID(int spatID, int j, double res, int lonRange, int latRange, bool isGlobal) {
             int rowLength{(int) std::round(lonRange / res)};
+            int colLength{(int) std::round(latRange / res)};
             assert(rowLength % 2 == 0 && "resolution is impossible");
             switch (j) {
-                case 0: //NORTH
-                    if (spatID > rowLength) {
-                        return spatID - rowLength;
-                    }
-                case 1: //SOUTH
-                    if (spatID < (rowLength / 2) * rowLength - rowLength) {
-                        return spatID + rowLength;
-                    }
-                case 2: //EAST
-                    if (spatID % rowLength == 0) {
-
-                        return spatID - rowLength + 1;
+                case 0: //FRONT
+                    if (spatID >= rowLength) { return spatID - rowLength; } else { return -1; }
+                    break;
+                case 1: //BACK
+                    if (spatID <= colLength * rowLength - rowLength) { return spatID + rowLength; } else { return -1; }
+                    break;
+                case 2: //RIGHT
+                    if ((spatID + 1) % rowLength == 0) {
+                        if (isGlobal) { return spatID - rowLength + 1; } else { return -1; }
                     } else { return spatID + 1; }
-                case 3: //WEST
-                    if ((spatID - 1) % rowLength == 0) {
-                        return spatID + rowLength - 1;
+                    break;
+                case 3: //LEFT
+                    if (spatID % rowLength == 0) {
+                        if (isGlobal) { return spatID + rowLength - 1; } else { return -1; }
                     } else { return spatID - 1; }
+                    break;
                 default:
                     return -1;
             }
