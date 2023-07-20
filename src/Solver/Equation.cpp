@@ -130,7 +130,7 @@ Equation::updateMatrix() {
     Eigen::initParallel();
     Index threads = Eigen::nbThreads();
 #endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+//#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
         //LOG(userinfo) << "node: " << j;
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();

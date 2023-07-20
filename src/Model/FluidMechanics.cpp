@@ -89,7 +89,7 @@ namespace GlobalFlow {
                      head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
-            LOG(debug) << "edgeLength_self = " << edgeLength_self.value() << ", edgeLength_neig = " << edgeLength_neig.value();
+            //LOG(debug) << "edgeLength_self = " << edgeLength_self.value() << ", edgeLength_neig = " << edgeLength_neig.value();
             /*
             //Used if non dry-out approach is used
             // FIXME need to be checked here
@@ -127,6 +127,7 @@ namespace GlobalFlow {
             NANChecker(out.value(), "Harmonic Mean Conductance");
             return out;
         };
+
 
         quantity<MeterSquaredPerTime>
         FluidMechanics::calculateVerticalConductance(FlowInputVert const& flowInputVer) noexcept {

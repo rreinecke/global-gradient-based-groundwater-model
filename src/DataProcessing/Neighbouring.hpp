@@ -42,7 +42,7 @@ using large_num = unsigned long int;
  * @param grid
  * @param layers
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers);
+void buildByGrid(NodeVector nodes, Matrix<int> grid, large_num nodesPerLayer, int layers);
 
 /**
 * Builds a map of neighbouring nodes based spatial Id's and resolution

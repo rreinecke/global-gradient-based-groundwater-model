@@ -560,7 +560,7 @@ Calculate
                          NeighbourPosition::RIGHT};
 
                 for (const auto &position: possible_neighbours) {
-                    std::unordered_map<NeighbourPosition, large_num>::const_iterator got = neighbours.find(position);
+                    auto got = neighbours.find(position);
                     if (got == neighbours.end()) {//No neighbouring node
                     } else {
                         //There is a neighbour node
@@ -780,13 +780,13 @@ Calculate
              * this calculates the needed additional exchange volume
              */
             t_vol_t calculateDewateredFlow() noexcept {
-                map_itter hasDown = neighbours.find(DOWN);
-                map_itter hasUp = neighbours.find(TOP);
+                auto hasDown = neighbours.find(DOWN);
+                auto hasUp = neighbours.find(TOP);
                 t_vol_t out = 0 * si::cubic_meter / day;
 
                 if (hasDown != neighbours.end()) {
-                    t_meter elev = getAt<t_meter, Elevation>(hasDown);
-                    t_meter head_n = getAt<t_meter, Head>(hasDown);
+                    auto elev = getAt<t_meter, Elevation>(hasDown);
+                    auto head_n = getAt<t_meter, Head>(hasDown);
                     //Check if a dewatered condition is present
                     if (head_n < elev and get<t_meter, Head>() > elev) {
                         t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
@@ -795,8 +795,8 @@ Calculate
                 }
 
                 if (hasUp != neighbours.end()) {
-                    t_meter elev = getAt<t_meter, Elevation>(hasUp);
-                    t_meter head_n = getAt<t_meter, Head>(hasUp);
+                    auto elev = getAt<t_meter, Elevation>(hasUp);
+                    auto head_n = getAt<t_meter, Head>(hasUp);
                     //Check if a dewatered condition is present
                     if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
                         t_s_meter_t conductance_above =
@@ -1824,7 +1824,7 @@ Calculate
              */
             t_vol_t getFluxTop() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                map_itter got = neighbours.find(NeighbourPosition::TOP);
+                auto got = neighbours.find(NeighbourPosition::TOP);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
@@ -1842,7 +1842,7 @@ Calculate
              */
             t_vol_t getFluxDown() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                map_itter got = neighbours.find(NeighbourPosition::DOWN);
+                auto got = neighbours.find(NeighbourPosition::DOWN);
                 if (got == neighbours.end()) { // no neighbour at position
                 } else {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
@@ -2172,10 +2172,10 @@ Calculate
              * @return meter
              */
             t_meter getLengthNeig(map_itter got){
-                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
-                    return getAt<t_meter, EdgeLengthFrontBack>(got);
-                } else if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK){
+                if ( isLeftOrRight(got->first) ) {
                     return getAt<t_meter, EdgeLengthLeftRight>(got);
+                } else if ( isFrontOrBack(got->first) ) {
+                    return getAt<t_meter, EdgeLengthFrontBack>(got);
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
                 }
@@ -2187,10 +2187,10 @@ Calculate
              * @return meter
              */
             t_meter getLengthSelf(map_itter got){
-                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
-                    return get<t_meter, EdgeLengthFrontBack>();
-                } else if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK){
+                if ( isLeftOrRight(got->first) ){
                     return get<t_meter, EdgeLengthLeftRight>();
+                } else if ( isFrontOrBack(got->first) ){
+                    return get<t_meter, EdgeLengthFrontBack>();
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
                 }
@@ -2202,13 +2202,23 @@ Calculate
              * @return meter
              */
             t_meter getWidthSelf(map_itter got) {
-                if (got->first == NeighbourPosition::LEFT or got->first == NeighbourPosition::RIGHT){
-                    return get<t_meter, EdgeLengthLeftRight>();
-                } else if (got->first == NeighbourPosition::FRONT or got->first == NeighbourPosition::BACK){
+                if ( isLeftOrRight(got->first) ){
                     return get<t_meter, EdgeLengthFrontBack>();
+                } else if ( isFrontOrBack(got->first)  ){
+                    return get<t_meter, EdgeLengthLeftRight>();
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
                 }
+            }
+
+            bool isLeftOrRight(NeighbourPosition neig) {
+                return (neig == LEFT or neig == RIGHT or
+                        neig == LEFTFRONT or neig == LEFTBACK or neig == RIGHTFRONT or neig == RIGHTBACK);
+            }
+
+            bool isFrontOrBack(NeighbourPosition neig) {
+                return (neig == FRONT or neig == BACK or
+                        neig == FRONTLEFT or neig == FRONTRIGHT or neig == BACKLEFT or neig == BACKRIGHT);
             }
 
             /**
@@ -2294,15 +2304,15 @@ Calculate
                         if (got->first == TOP or got->first == DOWN) {
                             conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                             //LOG(debug) << "vertical conductance: " << conduct.value();
-                        } else if (got->first == FRONT or got->first == BACK or
-                                   got->first == LEFT or got->first == RIGHT){
-                            //TODO check for option!
+                        } else { //if (got->first == FRONT or got->first == BACK or got->first == LEFT or got->first == RIGHT){
                             if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                                conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                                conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got),
+                                                                                 get<t_meter, EFolding>(),
+                                                                                 getAt<t_meter, EFolding>(got));
                                 //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
-                            }else{
+                            } else {
                                 conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                                //LOG(debug) << "horizontal conductance: " << conduct.value();
+                                    //LOG(debug) << "horizontal conductance: " << conduct.value();
                             }
                         }
                         NANChecker(conduct.value(), "Conductances");

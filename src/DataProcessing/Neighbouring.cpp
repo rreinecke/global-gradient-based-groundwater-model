@@ -10,7 +10,7 @@ namespace GlobalFlow {
  * @param nodesPerLayer
  * @param layers
  */
-        void buildByGrid(NodeVector const& nodes, Matrix<int> grid, int nodesPerLayer, int layers) {
+        void buildByGrid(NodeVector nodes, Matrix<int> grid, large_num nodesPerLayer, int layers) {
             //id->row,col
             int rows = grid[0].size();
             int cols = grid.size();
