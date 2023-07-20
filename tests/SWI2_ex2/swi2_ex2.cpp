@@ -1,15 +1,15 @@
-#include "simpleVDF2.hpp"
+#include "swi2_ex2.hpp"
 
 
 namespace GlobalFlow {
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_simpleVDF2.json");
+    op.load("data/config_swi2_ex2.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF2DataReader();
+    reader = new DataProcessing::SWI2_ex2_DataReader();
     sim = Simulation::Simulation(op, reader);
 
     LOG(debug) << sim.getNodes()->at(1);
@@ -62,7 +62,7 @@ void StandaloneRunner::simulate() {
 void StandaloneRunner::getResults() {}
 
 void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF2.json", sim).write();
+    DataProcessing::DataOutput::OutputManager("data/out_swi2_ex2.json", sim).write();
 }
 
 StandaloneRunner::StandaloneRunner() {}

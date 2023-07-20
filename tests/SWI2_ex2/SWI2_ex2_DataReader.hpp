@@ -1,5 +1,5 @@
-#ifndef TESTING_SIMPLEVDF3DATAREADER_HPP
-#define TESTING_SIMPLEVDF3DATAREADER_HPP
+#ifndef TESTING_SWI2_EX2_DATAREADER_HPP
+#define TESTING_SWI2_EX2_DATAREADER_HPP
 
 #include "../../src/DataProcessing/DataReader.hpp"
 #include "../../src/Model/Node.hpp"
@@ -8,9 +8,9 @@
 namespace GlobalFlow {
     namespace DataProcessing {
 
-        class SimpleVDF3DataReader : public DataReader {
+        class SWI2_ex2_DataReader : public DataReader {
         public:
-            SimpleVDF3DataReader() { }
+            SWI2_ex2_DataReader() { }
 
             virtual void readData(Simulation::Options op) {
                 LOG(userinfo) << "Building the initial model layer";
@@ -39,17 +39,6 @@ namespace GlobalFlow {
                                 op.getVDFLock(),
                                 op.getDensityZones());
 
-                LOG(userinfo) << "Building the model layer(s) below";
-                DataProcessing::buildBottomLayers(nodes,
-                                                  op.getNumberOfLayers(),
-                                                  op.getConfinements(),
-                                                  op.getAquiferDepth(),
-                                                  op.getInitialK(),
-                                                  op.getAnisotropy());
-
-                LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
-
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
 
@@ -58,13 +47,8 @@ namespace GlobalFlow {
                     readConduct(buildDir(op.getLithology()));
                 }
 
-                if (op.isInitialHeadFromFile()){
-                    LOG(userinfo) << "Initializing head";
-                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
-                }
-
-                LOG(userinfo) << "Reading the groundwater recharge";
-                readGWRecharge(buildDir(op.getRecharge()));
+                //LOG(userinfo) << "Reading the groundwater recharge";
+                //readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
                 readHeadBoundary(buildDir(op.getKGHBDir()));
@@ -82,6 +66,14 @@ namespace GlobalFlow {
                         readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
                     }
                 }
+
+                if (op.isInitialHeadFromFile()){
+                    LOG(userinfo) << "Initializing head";
+                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                }
+
+                LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
+                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
             }
 
         private:
@@ -155,17 +147,17 @@ namespace GlobalFlow {
                                                                 minDepthFactor,
                                                                 slopeAdjFactor,
                                                                 vdfLock * Model::si::meter));
-
                     for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
                         lookupSpatIDtoNodeIDs[spatID].push_back(nodeID + (numberOfNodesPerLayer * layer));
                     }
-                    ++nodeID;
+                    nodeID++;
                 }
+
                 return out;
             };
 
-
             void readConduct(std::string path) {
+
                 readTwoColumns(path, [this](double data, int nodeID) {
                     if (data > 10) {
                         LOG(debug) << "Very high conductance value at spatID "<<nodeID<<". Possible Data Error";
@@ -186,14 +178,15 @@ namespace GlobalFlow {
              */
             void readHeadBoundary(std::string path) {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "head", "conduct");
+                in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
                 large_num spatID{0};
-                double head{0};
+                double elevation{0};
                 double conduct{0};
                 std::vector<large_num> nodeIDs;
-                large_num nodeID;
+                large_num nodeID{0};
 
-                while (in.read_row(spatID, head, conduct)) {
+                while (in.read_row(spatID, elevation, conduct)) {
+                    large_num nodeID = 0;
                     try {
                         nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                     }
@@ -204,42 +197,22 @@ namespace GlobalFlow {
                     if (nodeIDs.empty()){
                         continue;
                     }
-                    nodeID = nodeIDs[0]; // only at layer 0
+                    nodeID = nodeIDs[0];
                     nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                       head * Model::si::meter,
+                                                       elevation * Model::si::meter,
                                                        conduct,
-                                                       head * Model::si::meter);
+                                                       elevation * Model::si::meter);
                 }
             }
 
             void readGWRecharge(std::string path) {
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "layer", "recharge");
-                large_num spatID{0};
-                int layer{0};
-                double recharge{0};
-                std::vector<large_num> nodeIDs;
-                large_num nodeID{0};
-
-                while (in.read_row(spatID, layer, recharge)) {
-                    try {
-                        nodeIDs = this->lookupSpatIDtoNodeIDs.at(spatID);
-                    }
-                    catch (const std::out_of_range &ex) {
-                        //if Node does not exist ignore entry
-                        continue;
-                    }
-                    if (nodeIDs.empty()){
-                        continue;
-                    }
-                    nodeID = nodeIDs[layer];
+                readTwoColumns(path, [this](double data, int nodeID) {
                     nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                        0 * Model::si::meter,
-                                                       recharge * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
+                                                       data * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
                                                        0 * Model::si::meter);
-                }
+                });
             }
-
 
             void readInitialHeads(std::string path) {
                 readTwoColumns(path, [this](double data, int nodeID) {
@@ -247,7 +220,7 @@ namespace GlobalFlow {
                 });
             }
 
-            void readZonesSourcesSinks(std::string path,  std::vector<double> densityZones) {
+            void readZonesSourcesSinks(std::string path, std::vector<double> densityZones) {
                 /**
                  * Here we use zoneOfSinks and zoneOfSources (containing values between 0 and number of density zones).
                  * Thus, sources and sinks are associated to the respective zone. Rule: zoneOfSinks <= zoneOfSources
@@ -259,8 +232,8 @@ namespace GlobalFlow {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
                 large_num spatID{0};
-                int zoneOfSinks{0};
-                int zoneOfSources{0};
+                double zoneOfSinks{0};
+                double zoneOfSources{0};
                 std::vector<large_num> nodeIDs;
 
                 while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
@@ -271,17 +244,17 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    for (int nodeID : nodeIDs) { // apply to all layers at this spatID
+                    for (large_num nodeID : nodeIDs) { // apply to all layers at this spatID
                         nodes->at(nodeID)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources, densityZones.size());
                     }
                 }
             }
 
-            void readInitialZetas(int numberOfNodesPerLayer, int numberOfLayers, const std::string pathZetas) {
+            void readInitialZetas(int numberOfNodesPerLayer, int numberOfLayers, std::string pathZetas) {
                 double topOfNode;
                 double bottomOfNode;
                 large_num spatID{0};
-                int localZetaID{0};
+                double localZetaID{0};
                 double zeta{0};
 
                 // add zeta surfaces to top and bottom of each node
@@ -296,8 +269,8 @@ namespace GlobalFlow {
 
                 // read initial data for density surfaces
                 std::vector<large_num> nodeIDs;
-                large_num nodeID = 0;
-                for (int layer = 0; layer < numberOfLayers; ++layer) {
+                large_num nodeID{0};
+                for (int layer = 0; layer < numberOfLayers; layer++) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
                     inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
@@ -307,7 +280,7 @@ namespace GlobalFlow {
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        if(nodeIDs.empty()){
+                        if (nodeIDs.empty()){
                             continue;
                         }
                         nodeID = nodeIDs[layer];
@@ -332,7 +305,7 @@ namespace GlobalFlow {
                 return nusInZones;
             }
 
-            std::vector<Model::quantity<Model::Dimensionless>> calcDelnus( std::vector<double> densityZones) {
+            std::vector<Model::quantity<Model::Dimensionless>> calcDelnus(std::vector<double> densityZones) {
                 double densityFresh = 1000.0;
                 std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
                 std::vector<Model::quantity<Model::Dimensionless>> delnus;
@@ -351,4 +324,4 @@ namespace GlobalFlow {
         };
     }
 }
-#endif //TESTING_SIMPLEVDF3DATAREADER_HPP
+#endif //TESTING_SWI2_EX2_2DATAREADER_HPP

@@ -91,7 +91,7 @@ class SimpleDataReader : public DataReader {
         int
         readLandMaskRefined(NodeVector nodes,
                      std::string path,
-                     int numberOfNodesPerLayer,
+                     large_num numberOfNodesPerLayer,
                      int numberOfLayers,
                      double defaultK,
                      double initialHead,
@@ -110,7 +110,7 @@ class SimpleDataReader : public DataReader {
                      double vdfLock,
                      std::vector<double> densityZones) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "refID");
+            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
             double X{0};
             double Y{0};
             double area{0};
