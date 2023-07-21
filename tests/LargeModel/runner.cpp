@@ -45,17 +45,22 @@ namespace GlobalFlow {
         // For node infos:
         std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head,zeta1" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,neighbour_count,neighbours,hyd_cond,hasGHB,elevation,initial_head" << std::endl;
         // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
+            std::string neighbours{""};
+            for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
+                neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+            }
             myfile <<
                    sim.getNodes()->at(j)->getID() << "," <<
                    std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision) << "," <<
                    sim.getNodes()->at(j)->getLon() << "," <<
                    sim.getNodes()->at(j)->getLat() << "," <<
                    //sim.getNodes()->at(j)->getArea().value() << "," <<
-                   //sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                   sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                   neighbours << "," <<
                    sim.getNodes()->at(j)->getK().value() << "," <<
                    sim.getNodes()->at(j)->hasGHB() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
@@ -71,6 +76,7 @@ namespace GlobalFlow {
                    //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
                    //sim.getNodes()->at(j)->getZeta(1).value() <<
                    std::endl;
+
         }
         myfile.close();
     }

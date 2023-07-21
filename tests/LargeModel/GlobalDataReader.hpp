@@ -88,13 +88,14 @@ namespace GlobalFlow {
                     //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
                     DataProcessing::buildBySpatID(nodes,
                                                   this->getMappingSpatIDtoNodeIDs(),
-                                                  0.08333,
+                                                  0.08333, // todo move to config
                                                   360,
                                                   180,
                                                   true,
                                                   op.getNumberOfLayers(),
                                                   op.getGHBConduct(),
-                                                  op.getBoundaryCondition());}
+                                                  op.getBoundaryCondition());
+                }
 
                 if (op.getNumberOfLayers() > 1) {
                     LOG(userinfo) << "Building the model layer(s) below";
@@ -106,7 +107,7 @@ namespace GlobalFlow {
                                                       op.getAnisotropy());
 
                     LOG(userinfo) << "Copying neighbours to bottom layer(s)";
-                    DataProcessing::copyNeighboursToBottomLayers(nodes,op.getNumberOfLayers());
+                    DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
 
                     if (op.useEfolding()) {
                         LOG(userinfo) << "Reading e-folding";
@@ -141,6 +142,7 @@ namespace GlobalFlow {
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
                                           return (((recharge / 1000) * area) / 365);});
+                LOG(userinfo) << "nodes->size() " << nodes->size();
 
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
@@ -149,6 +151,7 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getRiverElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
+                LOG(userinfo) << "nodes->size() " << nodes->size();
 
 
                 LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
@@ -156,6 +159,7 @@ namespace GlobalFlow {
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getLocalLakes()),
                                      buildDir(op.getLocalWetlands()));
+                LOG(userinfo) << "nodes->size() " << nodes->size();
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading initial zeta heights";
@@ -178,6 +182,8 @@ namespace GlobalFlow {
                     setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
                                                            op.getAquiferDepth()[0]);
                 }
+                LOG(userinfo) << "nodes->size() " << nodes->size();
+
             }
 
             template<class T>
