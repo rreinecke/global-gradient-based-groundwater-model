@@ -555,9 +555,7 @@ Calculate
             template<class HeadType>
             t_vol_t calcLateralFlows(bool onlyOut) {
                 t_vol_t lateral_flow{0 * si::cubic_meter / day};
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT, NeighbourPosition::LEFT,
-                         NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
@@ -565,16 +563,15 @@ Calculate
                     } else {
                         //There is a neighbour node
                         t_s_meter_t conductance;
-                        //TODO check for option!
 
-                        //if (get<int, Layer>() > 0) {
-                        //    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
-                        //}else{
+                        if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
+                            conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                        } else {
                         conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                        //}
+                        }
 
                         t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
-                        //}
+
                         if (onlyOut) {
                             if (flow.value() > 0) { lateral_flow = lateral_flow - flow; }
                         } else { lateral_flow = lateral_flow - flow; }
@@ -996,6 +993,79 @@ Calculate
                 return true;
             }
 
+            t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
+                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional layers
+                t_dim alpha{0};
+                t_s_meter_t conductance;
+                t_meter head_contributor;
+                auto head = get<t_meter, Head>();
+                map_itter contributor;
+
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal_refined();
+
+                for (const auto &position: possible_neighbours) {
+                    auto got = neighbours.find(position);
+                    if (got == neighbours.end()) {
+                        continue;
+                    } else {
+                        alpha = 0; // todo: what if contributor is refined?
+                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        contributor = getContributor(got); // contributor is named "j" in USG documentaion
+                        head_contributor = getAt<t_meter, Head>(contributor);
+
+                        out += alpha * conductance * (head - head_contributor);
+                        // todo add out to contributing neighbour
+                    }
+                }
+
+                return out;
+            }
+
+            map_itter getContributor(map_itter got){ // todo what if contributor(s) are refined?
+                if (got->first == NeighbourPosition::FRONTLEFT or got->first == NeighbourPosition::BACKLEFT) {
+                    return neighbours.find(NeighbourPosition::LEFT);
+                }
+                else if (got->first == NeighbourPosition::FRONTRIGHT or got->first == NeighbourPosition::BACKRIGHT) {
+                    return neighbours.find(NeighbourPosition::RIGHT);
+                }
+                else if (got->first == NeighbourPosition::LEFTFRONT or got->first == NeighbourPosition::RIGHTFRONT) {
+                    return neighbours.find(NeighbourPosition::FRONT);
+                }
+                else if (got->first == NeighbourPosition::LEFTBACK or got->first == NeighbourPosition::RIGHTBACK) {
+                    return neighbours.find(NeighbourPosition::BACK);
+                } else {
+                    throw "No contributor found for ghost node correction";
+                }
+            }
+
+            static std::forward_list<NeighbourPosition> getPossibleNeighbours_vertical() {
+                return {NeighbourPosition::TOP, NeighbourPosition::DOWN};
+            }
+
+            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal_refined() {
+                return {NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT, // for refined nodes
+                        NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
+                        NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
+                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
+            }
+
+            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal_unrefined(){
+                return {NeighbourPosition::BACK, NeighbourPosition::FRONT,
+                        NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+            }
+
+            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal(){
+                std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_horizontal_unrefined();
+                possiblePositions.merge(getPossibleNeighbours_horizontal_refined());
+                return possiblePositions;
+            }
+
+            static std::forward_list<NeighbourPosition> getPossibleNeighbours(){
+                std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_vertical();
+                possiblePositions.merge(getPossibleNeighbours_horizontal());
+                return possiblePositions;
+            }
             /**
              * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
              * @param initialZetas the zeta surface height in meters
@@ -1514,13 +1584,11 @@ Calculate
             t_vol_t getPseudoSourceBelowZeta(int localZetaID) {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
 
                 // pseudo source term calculation (in 2 parts)
                 for (const auto &position: possible_neighbours) {
-                    map_itter got = neighbours.find(position);
+                    auto got = neighbours.find(position);
                     if (got == neighbours.end()) {
                         continue;
                     } else {
@@ -1599,15 +1667,12 @@ Calculate
             t_vol_t getTipToeFlow(int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::LEFT, NeighbourPosition::RIGHT,
-                         NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::TOP, NeighbourPosition::DOWN};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours();
 
                 // tip and toe flow calculation (in 8 parts)
                 if (isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     for (const auto &position: possible_neighbours) {
-                        map_itter got = neighbours.find(position);
+                        auto got = neighbours.find(position);
                         if (got == neighbours.end()) { // do nothing if neighbour does not exist
                         } else {
                             if (!at(got)->isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
@@ -1731,9 +1796,7 @@ Calculate
                 if (nodeInactive) { return out; }
                  */
                 auto delnus = get<std::vector<t_dim>, Delnus>();
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
 
                 // pseudo source term calculation
                 for (const auto &position: possible_neighbours) {
@@ -1799,8 +1862,7 @@ Calculate
             t_vol_t getVerticalFluxCorrections(){
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::TOP, NeighbourPosition::DOWN};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_vertical();
 
                 for (const auto &position : possible_neighbours) {
                     auto got = neighbours.find(position); // todo: enhance (this check is done multiple times for top)
@@ -1959,9 +2021,7 @@ Calculate
                 t_meter delta_self; // potential zeta height adjustment for this node
                 t_meter delta_neig; // potential zeta height adjustment for neighbour node
                 t_meter delta_opp; // potential zeta height adjustment for opposite neighbour node
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
 
                 for (const auto &position : possible_neighbours) {
                     auto got = neighbours.find(position);
@@ -2116,11 +2176,9 @@ Calculate
                 for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                     if (isZetaAtTop(localZetaID) or isZetaAtBottom(localZetaID)) {
                         // iterate through horizontal neighbours
-                        std::forward_list<NeighbourPosition> possible_neighbours =
-                                {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                                 NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                        std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
                         for (const auto &position: possible_neighbours) {
-                            map_itter got = neighbours.find(position);
+                            auto got = neighbours.find(position);
                             if (got == neighbours.end()) { //No horizontal neighbouring node
                             } else {
                                 /* if nodes can be inactive: return at inactive nodes
@@ -2287,14 +2345,7 @@ Calculate
                 t_s_meter_t conduct;
 
                 //Get all conductances from neighbouring cells
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::TOP, NeighbourPosition::DOWN,
-                         NeighbourPosition::FRONT, NeighbourPosition::BACK,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT,
-                         NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT, // for refined nodes
-                         NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
-                         NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
-                         NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours();
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
@@ -2304,7 +2355,7 @@ Calculate
                         if (got->first == TOP or got->first == DOWN) {
                             conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                             //LOG(debug) << "vertical conductance: " << conduct.value();
-                        } else { //if (got->first == FRONT or got->first == BACK or got->first == LEFT or got->first == RIGHT){
+                        } else {
                             if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
                                 conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got),
                                                                                  get<t_meter, EFolding>(),
@@ -2352,9 +2403,7 @@ Calculate
                 size_t numC = 5;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
                 std::vector<t_s_meter_t> zoneConductances;
@@ -2409,8 +2458,14 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
+                bool useGhostNodeCorrection = true;
+                t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
+                if(useGhostNodeCorrection) {
+                    ghostNodeCorrection = getGhostNodeCorrection();
+                }
+                LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 
-                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow;
+                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
@@ -2497,14 +2552,13 @@ Calculate
              */
             quantity<Velocity> getVelocity(map_itter pos) {
                 t_vol_t lateral_flow{0 * si::cubic_meter / day};
-                t_meter vert_size = get<t_meter, VerticalSize>();
+                auto vert_size = get<t_meter, VerticalSize>();
                 t_s_meter_t conductance;
-                //TODO check for option!
-                //if (get<int, Layer>() > 0) {
-                //    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(pos), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(pos));
-                //}else{
-                conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
-                //}
+                if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
+                    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(pos), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(pos));
+                } else {
+                    conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
+                }
 
                 lateral_flow = conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(pos));
                 return lateral_flow / (vert_size * vert_size);
@@ -2520,11 +2574,10 @@ Calculate
                 quantity<Velocity> Vx{0};
                 quantity<Velocity> Vy{0};
 
-                std::forward_list<NeighbourPosition> possible_neighbours =
-                        {NeighbourPosition::BACK, NeighbourPosition::FRONT,
-                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
+                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
+
                 for (const auto &position: possible_neighbours) {
-                    map_itter got = neighbours.find(position);
+                    auto got = neighbours.find(position);
                     if (got == neighbours.end()) {
                         continue;
                     }
