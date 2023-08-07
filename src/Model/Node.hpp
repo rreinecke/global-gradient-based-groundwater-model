@@ -496,9 +496,9 @@ Helpers
             FlowInputHor createDataTuple(map_itter got) {
                 return std::make_tuple(at(got)->getK(),
                                        getK(),
-                                       getLengthNeig(got), // length of neighbour node
-                                       getLengthSelf(got), // length of this node
-                                       getWidthSelf(got), // width of this node
+                                       at(got)->getNodeLength(got), // length of neighbour node (parallel to direction)
+                                       getNodeLength(got), // length of this node (parallel to direction)
+                                       getNodeWidth(got), // width of this node (perpendicular to direction)
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -994,80 +994,159 @@ Calculate
             }
 
             /**
-             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and source file
-             * Fortran code file "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation (explicit)
+             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and Fortran code
+             * file "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation (explicit), adding to RHS
              * @return
              */
             t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
-                t_dim alpha{0};
-                t_s_meter_t conductance;
-                t_meter head_contributor;
-                auto head = get<t_meter, Head>();
-                map_itter contributor;
 
-                std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal_refined();
+                std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
+                        getPossibleNeighbours_horizontal_refined();
 
-                for (const auto &position: possible_neighbours) {
-                    auto got = neighbours.find(position);
-                    if (got == neighbours.end()) {
-                        continue;
-                    } else {
-                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                        contributor = getContributor(got); // contributor is named "j" in USG documentation
-                        alpha = 0.75; // todo: what if contributor is refined?
-
-                        head_contributor = getAt<t_meter, Head>(contributor);
-
-                        out += alpha * conductance * (head - head_contributor);
-                        // todo add out to contributing neighbour
-                    }
-                }
-
+                out -= calculateGhostNodeCorrection(possibleRefinedNeighbours);
+                LOG(debug) << "getGhostNodeCorrection = " << out.value();
                 return out;
             }
 
-            map_itter getContributor(map_itter got){ // todo what if contributor(s) are refined?
-                if (got->first == NeighbourPosition::FRONTLEFT or got->first == NeighbourPosition::BACKLEFT) {
-                    return neighbours.find(NeighbourPosition::LEFT);
+            t_vol_t getGhostNodeCorrectionFromNeighbours() {
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
+                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
+
+                std::forward_list<NeighbourPosition> possibleUnrefinedNeighbours =
+                        getPossibleNeighbours_horizontal_unrefined();
+
+                for (const auto &unrefinedNeigPos: possibleUnrefinedNeighbours) {
+                    auto unrefinedNeig = neighbours.find(unrefinedNeigPos);
+                    if (unrefinedNeig == neighbours.end()) {
+                        continue;
+                    } else {
+                        std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
+                                getPossibleNeighbours_horizontal_refined(unrefinedNeigPos);
+
+                        out += at(unrefinedNeig)->calculateGhostNodeCorrection(possibleRefinedNeighbours);
+                    }
                 }
-                else if (got->first == NeighbourPosition::FRONTRIGHT or got->first == NeighbourPosition::BACKRIGHT) {
-                    return neighbours.find(NeighbourPosition::RIGHT);
+                LOG(debug) << "getGhostNodeCorrectionFromNeighbours = " << out.value();
+                return out;
+            }
+
+            t_vol_t calculateGhostNodeCorrection(std::forward_list<NeighbourPosition> possibleRefNeigPos){
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
+                t_dim alpha{0};
+                t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
+                t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
+                t_s_meter_t conductance;
+                t_meter head_contributor;
+                auto head = get<t_meter, Head>();
+
+                for (const auto &position: possibleRefNeigPos) {
+                    auto refinedNeig = neighbours.find(position);
+                    if (refinedNeig == neighbours.end()) {
+                        continue;
+                    } else {
+
+                        auto contributor = neighbours.find(getPotentialContributor(refinedNeig)); // contributor is named "j" in USG documentation
+                        if (contributor == neighbours.end()) { // at model boundary: no contributor
+                            return out;
+                        }
+
+                        t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
+                        t_s_meter_t transmissivity_neig =
+                                getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
+
+                        if (transmissivity_neig != 0 * si::square_meter / day and
+                            transmissivity_self != 0 * si::square_meter / day) {
+                            contributorConductance =
+                                    (getNodeWidth(contributor) + at(contributor)->getNodeWidth(contributor)) *
+                                    ((transmissivity_self * transmissivity_neig)
+                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) +
+                                        transmissivity_neig * getNodeLength(contributor) * 0.5));
+                        }
+
+                        nodeConductance = getNodeWidth(contributor) *
+                                          (transmissivity_self / (getNodeLength(contributor) * 0.25));
+
+                        alpha = contributorConductance /
+                                (contributorConductance + nodeConductance); // todo: what if contributor is refined?
+                        //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
+
+                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
+                        //LOG(debug) << "conductance = " << conductance.value();
+
+                        head_contributor = getAt<t_meter, Head>(contributor);
+                        out += conductance * (alpha * (head - head_contributor));
+                    }
                 }
-                else if (got->first == NeighbourPosition::LEFTFRONT or got->first == NeighbourPosition::RIGHTFRONT) {
-                    return neighbours.find(NeighbourPosition::FRONT);
+                return out;
+            }
+
+            static NeighbourPosition
+            getPotentialContributor(map_itter refinedNeig){ // todo what if contributor(s) are refined?
+                if (refinedNeig->first == NeighbourPosition::FRONTLEFT or
+                        refinedNeig->first == NeighbourPosition::BACKLEFT) {
+                    return NeighbourPosition::LEFT;
                 }
-                else if (got->first == NeighbourPosition::LEFTBACK or got->first == NeighbourPosition::RIGHTBACK) {
-                    return neighbours.find(NeighbourPosition::BACK);
+                else if (refinedNeig->first == NeighbourPosition::FRONTRIGHT or
+                        refinedNeig->first == NeighbourPosition::BACKRIGHT) {
+                    return NeighbourPosition::RIGHT;
+                }
+                else if (refinedNeig->first == NeighbourPosition::LEFTFRONT or
+                        refinedNeig->first == NeighbourPosition::RIGHTFRONT) {
+                    return NeighbourPosition::FRONT;
+                }
+                else if (refinedNeig->first == NeighbourPosition::LEFTBACK or
+                        refinedNeig->first == NeighbourPosition::RIGHTBACK) {
+                    return NeighbourPosition::BACK;
                 } else {
                     throw "No contributor found for ghost node correction";
                 }
             }
 
-            static std::forward_list<NeighbourPosition> getPossibleNeighbours_vertical() {
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours_vertical() {
                 return {NeighbourPosition::TOP, NeighbourPosition::DOWN};
             }
 
-            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal_refined() {
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours_horizontal_refined() {
                 return {NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT, // for refined nodes
                         NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
                         NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
                         NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
             }
 
-            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal_unrefined(){
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours_horizontal_refined(NeighbourPosition neighbourPosition) {
+                if (neighbourPosition == NeighbourPosition::FRONT) {
+                    return {NeighbourPosition::LEFTBACK, NeighbourPosition::RIGHTBACK};
+                } else if (neighbourPosition == NeighbourPosition::BACK) {
+                    return {NeighbourPosition::LEFTFRONT, NeighbourPosition::RIGHTFRONT};
+                } else if (neighbourPosition == NeighbourPosition::RIGHT) {
+                    return {NeighbourPosition::FRONTLEFT, NeighbourPosition::BACKLEFT};
+                } else if (neighbourPosition == NeighbourPosition::LEFT) {
+                    return {NeighbourPosition::FRONTRIGHT, NeighbourPosition::BACKRIGHT};
+                } else {
+                    throw "Position unavailable for function getPossibleNeighbours_horizontal_refined";
+                }
+            }
+
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours_horizontal_unrefined(){
                 return {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
             }
 
-            static std::forward_list<NeighbourPosition> getPossibleNeighbours_horizontal(){
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours_horizontal(){
                 std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_horizontal_unrefined();
                 possiblePositions.merge(getPossibleNeighbours_horizontal_refined());
                 return possiblePositions;
             }
 
-            static std::forward_list<NeighbourPosition> getPossibleNeighbours(){
+            static std::forward_list<NeighbourPosition>
+            getPossibleNeighbours(){
                 std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_vertical();
                 possiblePositions.merge(getPossibleNeighbours_horizontal());
                 return possiblePositions;
@@ -1735,8 +1814,8 @@ Calculate
                     if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
                         zoneThickness = 0 * si::meter;
                     } else {
-                        zoneThickness = ((getLengthNeig(got) * deltaZeta) + (getLengthSelf(got) * deltaZeta_neig)) /
-                                        (getLengthNeig(got) + getLengthSelf(got));
+                        zoneThickness = ((getLengthNeig(got) * deltaZeta) + (getNodeLength(got) * deltaZeta_neig)) /
+                                        (getLengthNeig(got) + getNodeLength(got));
                         sumOfZoneThicknesses += zoneThickness;
                     }
                     NANChecker(zoneThickness.value(), "zoneThickness");
@@ -2017,12 +2096,6 @@ Calculate
              * @note in SWI2 documentation: "Tip and Toe Tracking", in SWI2 code: SSWI2_HORZMOVE
              */
             void horizontalZetaMovement(){
-                std::unordered_map<NeighbourPosition, NeighbourPosition> oppositePositions;
-                oppositePositions[NeighbourPosition::BACK] = NeighbourPosition::FRONT;
-                oppositePositions[NeighbourPosition::FRONT] = NeighbourPosition::BACK;
-                oppositePositions[NeighbourPosition::LEFT] = NeighbourPosition::RIGHT;
-                oppositePositions[NeighbourPosition::RIGHT] = NeighbourPosition::LEFT;
-
                 t_meter maxDelta; // maximum "allowed" height difference of a zeta surface n between adjacent nodes
                 t_meter delta_self; // potential zeta height adjustment for this node
                 t_meter delta_neig; // potential zeta height adjustment for neighbour node
@@ -2031,28 +2104,28 @@ Calculate
 
                 for (const auto &position : possible_neighbours) {
                     auto got = neighbours.find(position);
-                    auto got_opp = neighbours.find(oppositePositions[position]);
+                    auto got_opp = neighbours.find(getOppositePosition(position));
                     if (got == neighbours.end()) { // no neighbour at position or opposite side
                     } else {
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             if (isZetaBetween(localZetaID)) { // or localZetaID == 0
                                 // get max delta of zeta between nodes
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
-                                    maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
+                                    maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
                                 } else if (at(got)->isZetaAtTop(localZetaID)) {
-                                    maxDelta = 0.5 * (getLengthSelf(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
+                                    maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
                                 }
                                 //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
 
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
                                 delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
                                                   ((getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
+                                                   ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) +
                                                     (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
                                 // if tracking tip/toe: lower/raise this zeta surface in neighbouring node by:
                                 delta_neig = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getLengthSelf(got)) +
+                                                  ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) /
+                                                   ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) +
                                                     (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
 
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
@@ -2085,7 +2158,7 @@ Calculate
                                         if (at(got_opp)->isZetaBetween(localZetaID)) { // or localZetaID == 0
                                             // change zeta in other direction neighbour
                                                 delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
-                                                             (getLengthSelf(got) * get<t_dim, EffectivePorosity>()) /
+                                                             (getNodeLength(got) * get<t_dim, EffectivePorosity>()) /
                                                              (getLengthNeig(got_opp) *
                                                               getAt<t_dim, EffectivePorosity>(got_opp)));
                                                 t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
@@ -2099,6 +2172,24 @@ Calculate
                         }
                     }
                 }
+            }
+
+            NeighbourPosition getOppositePosition(NeighbourPosition position) {
+                    if (position == NeighbourPosition::BACK or
+                            position == NeighbourPosition::BACKLEFT or position == NeighbourPosition::BACKRIGHT) {
+                        return NeighbourPosition::FRONT;
+                    } else if (position == NeighbourPosition::FRONT or
+                        position == NeighbourPosition::FRONTLEFT or position == NeighbourPosition::FRONTRIGHT) {
+                        return NeighbourPosition::BACK;
+                    } else if (position == NeighbourPosition::LEFT or
+                               position == NeighbourPosition::LEFTFRONT or position == NeighbourPosition::LEFTBACK) {
+                        return NeighbourPosition::RIGHT;
+                    } else if (position == NeighbourPosition::RIGHT or
+                               position == NeighbourPosition::RIGHTFRONT or position == NeighbourPosition::RIGHTBACK) {
+                        return NeighbourPosition::LEFT;
+                    } else {
+                        throw "Position unavailable for function getOppositePosition";
+                    }
             }
 
             /**
@@ -2203,10 +2294,10 @@ Calculate
 
                                 // calculate delta zeta of node and neighbour
                                 delta_self = maxDelta * (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
+                                                 (get<t_dim, EffectivePorosity>() * getNodeLength(got) +
                                                  getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
-                                delta_neig = maxDelta * (get<t_dim, EffectivePorosity>() * getLengthSelf(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getLengthSelf(got) +
+                                delta_neig = maxDelta * (get<t_dim, EffectivePorosity>() * getNodeLength(got)) /
+                                                 (get<t_dim, EffectivePorosity>() * getNodeLength(got) +
                                                  getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
@@ -2250,7 +2341,7 @@ Calculate
              * @param got neighbour node
              * @return meter
              */
-            t_meter getLengthSelf(map_itter got){
+            t_meter getNodeLength(map_itter got){
                 if ( isLeftOrRight(got->first) ){
                     return get<t_meter, EdgeLengthLeftRight>();
                 } else if ( isFrontOrBack(got->first) ){
@@ -2265,7 +2356,7 @@ Calculate
              * @param got neighbour node
              * @return meter
              */
-            t_meter getWidthSelf(map_itter got) {
+            t_meter getNodeWidth(map_itter got) {
                 if ( isLeftOrRight(got->first) ){
                     return get<t_meter, EdgeLengthFrontBack>();
                 } else if ( isFrontOrBack(got->first)  ){
@@ -2467,7 +2558,8 @@ Calculate
                 bool useGhostNodeCorrection = true;
                 t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
                 if(useGhostNodeCorrection) {
-                    ghostNodeCorrection = getGhostNodeCorrection();
+                    ghostNodeCorrection = getGhostNodeCorrection() + getGhostNodeCorrectionFromNeighbours();
+
                 }
                 //LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 

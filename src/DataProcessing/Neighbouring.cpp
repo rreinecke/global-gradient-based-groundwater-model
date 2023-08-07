@@ -136,8 +136,9 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
 
     auto neighbourPositions = setNeighbourPositions();
 
-    std::unordered_map<int, std::vector<int>> mapping;
-    mapping[0] = {1, 2, 3, 4}; // FRONT
+    std::unordered_map<int, std::vector<int>> mapping; // mapping of neighbour position to refIDs
+    mapping[0] = {1, 2, 3, 4}; // neighbour is at FRONT -> if refID of this node is 1 or 2: neighbour outside refined node
+                               //                       -> if refID of this node is 3 or 4: neighbour inside refined node
     mapping[1] = {3, 4, 1, 2}; // BACK
     mapping[2] = {2, 4, 1, 3}; // RIGHT
     mapping[3] = {1, 3, 2, 4}; // LEFT
@@ -172,21 +173,10 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
 std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
     // unrefined positions
     std::unordered_map<int, Model::NeighbourPosition> neighbourPositions;
-    neighbourPositions[0] = Model::FRONT; // formerly NORTH
-    neighbourPositions[1] = Model::BACK; // formerly SOUTH
-    neighbourPositions[2] = Model::RIGHT; // formerly EAST
-    neighbourPositions[3] = Model::LEFT; // formerly WEST
-    /*if (refined) {
-        // refined positions
-        neighbourPositions[4] = Model::FRONTLEFT;
-        neighbourPositions[5] = Model::FRONTRIGHT;
-        neighbourPositions[6] = Model::BACKLEFT;
-        neighbourPositions[7] = Model::BACKRIGHT;
-        neighbourPositions[8] = Model::RIGHTFRONT;
-        neighbourPositions[9] = Model::RIGHTBACK;
-        neighbourPositions[10] = Model::LEFTFRONT;
-        neighbourPositions[11] = Model::LEFTBACK;
-    }*/
+    neighbourPositions[0] = Model::FRONT;
+    neighbourPositions[1] = Model::BACK;
+    neighbourPositions[2] = Model::RIGHT;
+    neighbourPositions[3] = Model::LEFT;
     return neighbourPositions;
 }
 
