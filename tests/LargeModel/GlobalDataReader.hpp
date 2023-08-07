@@ -92,7 +92,7 @@ namespace GlobalFlow {
                                                   360,
                                                   180,
                                                   true,
-                                                  op.getNumberOfLayers(),
+                                                  op.getNumberOfNodesPerLayer(),
                                                   op.getGHBConduct(),
                                                   op.getBoundaryCondition());
                 }
@@ -142,7 +142,6 @@ namespace GlobalFlow {
                 readGWRechargeMapping(buildDir(op.getRecharge()),
                                       [](const double &recharge, const double &area) {
                                           return (((recharge / 1000) * area) / 365);});
-                LOG(userinfo) << "nodes->size() " << nodes->size();
 
                 LOG(userinfo) << "Reading rivers";
                 if (op.isKRiverFromFile()) {
@@ -151,7 +150,6 @@ namespace GlobalFlow {
                     readBlueCells(buildDir(op.getRiverElevation()),
                                   calculateRiverStage(buildDir(op.getRiverExtent())));
                 }
-                LOG(userinfo) << "nodes->size() " << nodes->size();
 
 
                 LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
@@ -159,7 +157,6 @@ namespace GlobalFlow {
                                      buildDir(op.getGlobalWetlands()),
                                      buildDir(op.getLocalLakes()),
                                      buildDir(op.getLocalWetlands()));
-                LOG(userinfo) << "nodes->size() " << nodes->size();
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading initial zeta heights";
@@ -182,7 +179,6 @@ namespace GlobalFlow {
                     setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
                                                            op.getAquiferDepth()[0]);
                 }
-                LOG(userinfo) << "nodes->size() " << nodes->size();
 
             }
 

@@ -12,7 +12,7 @@
       {
         "name": "zeta1_large",
         "type": "csv",
-        "field": "Zeta1",
+        "field": "Head",
         "ID": "true",
         "position": "true",
         "all_layers": "true"

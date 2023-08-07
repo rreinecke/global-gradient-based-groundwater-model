@@ -1,16 +1,16 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_nz.csv",
+      "nodes": "grid.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 4603,
+      "number_of_nodes_per_layer": 2161074,
       "number_of_rows": 0,
       "number_of_cols": 0,
       "edge_length_rows": 9000.0,
       "edge_length_cols": 9000.0,
-      "threads": 1,
+      "threads": 20,
       "layers": 2,
-      "use_efolding": true,
+      "use_efolding": false,
       "confinement": [
         "true",
         "true"
@@ -34,7 +34,7 @@
       "solver": "PCG",
       "iterations": 10000,
       "inner_itter": 50,
-      "closing_crit_head": 1e-185,
+      "closing_crit_head": 1e-80,
       "closing_crit_zeta": 1e-7,
       "head_change": 1,
       "zeta_change": 1,
@@ -70,7 +70,7 @@
         ],
         "anisotropy": [
           10,
-          100
+          10
         ],
         "specific_yield": 0.15,
         "specific_storage": 0.000015,

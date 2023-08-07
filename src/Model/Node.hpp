@@ -993,9 +993,14 @@ Calculate
                 return true;
             }
 
+            /**
+             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and source file
+             * Fortran code file "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation (explicit)
+             * @return
+             */
             t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional layers
+                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
                 t_dim alpha{0};
                 t_s_meter_t conductance;
                 t_meter head_contributor;
@@ -1009,9 +1014,10 @@ Calculate
                     if (got == neighbours.end()) {
                         continue;
                     } else {
-                        alpha = 0; // todo: what if contributor is refined?
                         conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                        contributor = getContributor(got); // contributor is named "j" in USG documentaion
+                        contributor = getContributor(got); // contributor is named "j" in USG documentation
+                        alpha = 0.75; // todo: what if contributor is refined?
+
                         head_contributor = getAt<t_meter, Head>(contributor);
 
                         out += alpha * conductance * (head - head_contributor);
@@ -2463,7 +2469,7 @@ Calculate
                 if(useGhostNodeCorrection) {
                     ghostNodeCorrection = getGhostNodeCorrection();
                 }
-                LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
+                //LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;

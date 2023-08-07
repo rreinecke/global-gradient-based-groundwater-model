@@ -93,51 +93,44 @@ void buildBySpatID(NodeVector nodes,
                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                    double resolution,
                    int lonRange, int latRange, bool isGlobal,
-                   int numberOfLayers,
+                   large_num numberOfNodesPerLayer,
                    double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
-    large_num nodes_per_layer = nodes->size() / numberOfLayers;
-
     auto lu = setNeighbourPositions();
 
-    large_num nodeID;
     std::unordered_map<int, large_num> nodeIDs_neig;
     large_num spatID;
     int spatID_neig;
     int refID;
 
-    for (int layer = 0; layer < numberOfLayers; ++layer) {
-        for (int i = 0; i < nodes_per_layer; ++i) {
-            nodeID = i + (nodes_per_layer * layer);
-            spatID = nodes->at(nodeID)->getSpatID();
-            refID = nodes->at(nodeID)->getRefID();
-            for (int j = 0; j < lu.size(); ++j) {
-                if (refID == 0) { // #### set neighbour(s) of unrefined node
-                    spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
-                    if (spatIDtoNodeIDs.contains(spatID_neig)) {
-                        nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
-                        if (nodeIDs_neig.empty()) {
-                        } else if (nodeIDs_neig.size() == 1) {
-                            nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
-                        } else {
-                            nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
-                        }
+    for (large_num nodeID = 0; nodeID < numberOfNodesPerLayer; ++nodeID) {
+        spatID = nodes->at(nodeID)->getSpatID();
+        refID = nodes->at(nodeID)->getRefID();
+        for (int j = 0; j < lu.size(); ++j) {
+            if (refID == 0) { // #### set neighbour(s) of unrefined node
+                spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
+                if (spatIDtoNodeIDs.contains(spatID_neig)) {
+                    nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(0); // layer = 0
+                    if (nodeIDs_neig.empty()) {
+                    } else if (nodeIDs_neig.size() == 1) {
+                        nodes->at(nodeID)->setNeighbour(nodeIDs_neig[0], lu[j]);
                     } else {
-                        addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer);
+                        nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
                     }
-                } else { // ####  set neighbour of refined node ####
-                    setNeigOfRefinedNode(nodes, spatID, j, resolution, lonRange, latRange, isGlobal, layer, refID, nodeID,
-                                     spatIDtoNodeIDs, boundaryConduct, boundaryCondition);
+                } else {
+                    addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0); // layer = 0
                 }
+            } else { // ####  set neighbour of refined node ####
+                setNeigOfRefinedNode(nodes, spatID, j, resolution, lonRange, latRange, isGlobal, refID, nodeID,
+                                 spatIDtoNodeIDs, boundaryConduct, boundaryCondition);
             }
         }
     }
-
 }
 
 
 void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
-                      int lonRange, int latRange, bool isGlobal, int layer, int refID, large_num nodeID,
+                      int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID,
                       std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                       double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
 
@@ -149,18 +142,20 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
     mapping[2] = {2, 4, 1, 3}; // RIGHT
     mapping[3] = {1, 3, 2, 4}; // LEFT
 
-    auto neighbourOutsideRefinedNode = [spatID, j, resolution, lonRange, latRange, isGlobal, spatIDtoNodeIDs, layer,
+    auto neighbourOutsideRefinedNode = [spatID, j, resolution, lonRange, latRange, isGlobal, spatIDtoNodeIDs,
                                        nodes, boundaryConduct, boundaryCondition, nodeID]
                                                (int index, Model::NeighbourPosition neighbourPosition) {
         int spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
         if (spatIDtoNodeIDs.contains(spatID_neig)) {
-            std::unordered_map<int, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
+            std::unordered_map<int, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(0); // layer = 0
             if (nodeIDs_neig.size() == 1) {
-                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition);
+                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition); // refID = 0
             } else {
                 nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(index), neighbourPosition);
             }
-        } else { addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer); }
+        } else {
+            addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0); // layer = 0
+        }
     };
 
     if (refID == mapping.at(j)[0]) {
@@ -169,7 +164,7 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
         neighbourOutsideRefinedNode(mapping.at(j)[3], neighbourPositions[j]);
     }
     if (refID == mapping.at(j)[2] or refID == mapping.at(j)[3]) { // set neighbour within refined node (same spatID)
-        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(0).at(refID); // layer = 0
         nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neighbourPositions[j]);
     }
 }
@@ -228,42 +223,37 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
             }
         }
 
-
 /**
- * @brief
- * @param from is position in vector of top layer node
- * @param to is position in vector of node that receive neighbouring information
- */
-        void copyNeighbours(large_num from, large_num to, NodeVector nodes, large_num layer_shift) {
-            auto neighbours = nodes->at(from)->getListOfNeighbours();
-            for (const auto &n: neighbours) {
-                if (n.first == Model::DOWN or n.first == Model::TOP) {
-                    continue;
-                }
-                nodes->at(to)->setNeighbour(n.second + layer_shift, n.first);
-            }
-        }
-
-/**
- * @brief Copies cardinal points of top layer to all bottom layers
+ * @brief Copies neighbours of top layer to all bottom layers
  * @param nodes
- * @param layers
+ * @param numberOfLayers
  */
         void copyNeighboursToBottomLayers(NodeVector nodes, int numberOfLayers) {
             assert(numberOfLayers && "0 layers does not make sense");
-            if (numberOfLayers == 1) {
-                return;
-            }
-            size_t nodesPerLayer = nodes->size() / numberOfLayers;
+            if (numberOfLayers == 1) { return; }
+            large_num nodesPerLayer = nodes->size() / numberOfLayers;
 
+            // iterate through nodeIDs of top layer
             for (large_num from_nodeID = 0; from_nodeID < nodesPerLayer; ++from_nodeID) {
+                // get neighbours of node in top layer
+                auto neighbours = nodes->at(from_nodeID)->getListOfNeighbours();
+
+                // iterate through bottom layers
                 for (int to_layer = 1; to_layer < numberOfLayers; ++to_layer) {
+                    // calculate nodeIDs in bottom layer
                     large_num to_nodeID = from_nodeID + (nodesPerLayer * to_layer);
 
-                    copyNeighbours(from_nodeID, to_nodeID, nodes, nodesPerLayer * to_layer);
+                    // iterate through neighbours of top layer
+                    for (const auto &n: neighbours) {
+                        if (n.first == Model::DOWN or n.first == Model::TOP) {
+                            continue; // ignore TOP and DOWN neighbours
+                        }
+                        // copy neighbour
+                        large_num newNeighbourNodeID = n.second + (nodesPerLayer * to_layer);
+                        nodes->at(to_nodeID)->setNeighbour(newNeighbourNodeID, n.first);
+                    }
                 }
             }
-
         }
 
 /**

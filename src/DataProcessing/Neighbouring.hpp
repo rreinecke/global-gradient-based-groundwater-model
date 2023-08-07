@@ -52,13 +52,11 @@ void buildBySpatID(NodeVector nodes,
                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                    double resolution,
                    int lonRange, int latRange, bool isGlobal,
-                   int numberOfLayers,
+                   large_num numberOfNodesPerLayer,
                    double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition);
 
 std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions();
-
-void copyNeighbours(large_num from, large_num to, NodeVector nodes, large_num layer_shift);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
@@ -68,7 +66,7 @@ void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Op
                  large_num nodeID, int layer);
 
 void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
-                      int lonRange, int latRange, bool isGlobal, int layer, int refID, large_num nodeID,
+                      int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID,
                       std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                       double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition);
 
