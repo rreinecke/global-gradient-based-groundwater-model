@@ -994,8 +994,8 @@ Calculate
             }
 
             /**
-             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and Fortran code
-             * file "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation (explicit), adding to RHS
+             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and Fortran file
+             * "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation, adding to RHS (lines 208-211)
              * @return
              */
             t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
@@ -1006,7 +1006,7 @@ Calculate
                         getPossibleNeighbours_horizontal_refined();
 
                 out -= calculateGhostNodeCorrection(possibleRefinedNeighbours);
-                LOG(debug) << "getGhostNodeCorrection = " << out.value();
+                //LOG(debug) << "nodeID = " << get<large_num, ID>() << ", getGhostNodeCorrection = " << out.value();
                 return out;
             }
 
@@ -1023,16 +1023,16 @@ Calculate
                         continue;
                     } else {
                         std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
-                                getPossibleNeighbours_horizontal_refined(unrefinedNeigPos);
+                                getPossibleNeighboursForGNCFromNeighbours(unrefinedNeigPos);
 
-                        out += at(unrefinedNeig)->calculateGhostNodeCorrection(possibleRefinedNeighbours);
+                        out -= at(unrefinedNeig)->calculateGhostNodeCorrection(possibleRefinedNeighbours);
                     }
                 }
-                LOG(debug) << "getGhostNodeCorrectionFromNeighbours = " << out.value();
+                //LOG(debug) << "nodeID = " << get<large_num, ID>() << ", getGhostNodeCorrectionFromNeighbours = " << out.value();
                 return out;
             }
 
-            t_vol_t calculateGhostNodeCorrection(std::forward_list<NeighbourPosition> possibleRefNeigPos){
+            t_vol_t calculateGhostNodeCorrection(const std::forward_list<NeighbourPosition>& possibleRefNeigPos){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 t_dim alpha{0};
                 t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
@@ -1049,7 +1049,7 @@ Calculate
 
                         auto contributor = neighbours.find(getPotentialContributor(refinedNeig)); // contributor is named "j" in USG documentation
                         if (contributor == neighbours.end()) { // at model boundary: no contributor
-                            return out;
+                            continue;
                         }
 
                         t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
@@ -1077,6 +1077,10 @@ Calculate
 
                         head_contributor = getAt<t_meter, Head>(contributor);
                         out += conductance * (alpha * (head - head_contributor));
+                        //LOG(debug) << "GNC for nodeID " << get<large_num, ID>() <<
+                        //        " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
+                        //                " with contributor " << getAt<large_num, ID>(contributor) <<
+                        //                        " = " << out.value();
                     }
                 }
                 return out;
@@ -1118,7 +1122,7 @@ Calculate
             }
 
             static std::forward_list<NeighbourPosition>
-            getPossibleNeighbours_horizontal_refined(NeighbourPosition neighbourPosition) {
+            getPossibleNeighboursForGNCFromNeighbours(NeighbourPosition neighbourPosition) {
                 if (neighbourPosition == NeighbourPosition::FRONT) {
                     return {NeighbourPosition::LEFTBACK, NeighbourPosition::RIGHTBACK};
                 } else if (neighbourPosition == NeighbourPosition::BACK) {
@@ -1128,7 +1132,7 @@ Calculate
                 } else if (neighbourPosition == NeighbourPosition::LEFT) {
                     return {NeighbourPosition::FRONTRIGHT, NeighbourPosition::BACKRIGHT};
                 } else {
-                    throw "Position unavailable for function getPossibleNeighbours_horizontal_refined";
+                    throw "Position unavailable for function getPossibleNeighboursForGNCFromNeighbours";
                 }
             }
 
@@ -2555,11 +2559,11 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
-                bool useGhostNodeCorrection = true;
+                bool useGhostNodeCorrection = false;
                 t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
                 if(useGhostNodeCorrection) {
                     ghostNodeCorrection = getGhostNodeCorrection() + getGhostNodeCorrectionFromNeighbours();
-
+                    LOG(debug) << "ghostNodeCorrection = " << ghostNodeCorrection.value();
                 }
                 //LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 
