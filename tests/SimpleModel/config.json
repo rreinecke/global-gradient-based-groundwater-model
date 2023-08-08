@@ -11,6 +11,7 @@
       "edge_length_cols":3.162277,
       "threads": 1,
       "layers": 2,
+      "use_efolding": false,
       "confinement": [
         "true",
         "true"
