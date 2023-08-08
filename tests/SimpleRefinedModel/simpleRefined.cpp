@@ -21,7 +21,7 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
     myfile.open ("node_attributes_refined.csv");
-    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,recharge" << std::endl;
+    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         sim.getNodes()->at(j)->setSimpleK();
@@ -35,6 +35,7 @@ void StandaloneRunner::writeNodeInfosToCSV(){
                sim.getNodes()->at(j)->getElevation().value() << "," <<
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
+               sim.getNodes()->at(j)->hasGHB() << "," <<
                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
                std::endl;
     }

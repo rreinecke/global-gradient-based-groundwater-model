@@ -67,6 +67,10 @@ class SimpleDataReader : public DataReader {
 
             LOG(userinfo) << "Defining rivers";
             //readRiverConductance(buildDir(op.getKRiver()));
+
+            LOG(userinfo) << "Adding GHB conductance";
+            readHeadBoundary(buildDir(op.getKGHBDir()));
+
         }
 
     private:
@@ -269,6 +273,30 @@ class SimpleDataReader : public DataReader {
                 continue;
             }
             nodes->at(nodeID)->setHead_direct(data);
+        }
+    }
+
+    void readHeadBoundary(std::string path) {
+        io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+        in.read_header(io::ignore_no_column, "spatID", "head", "conduct", "refID");
+        large_num spatID{0};
+        double head{0};
+        double conduct{0};
+        large_num nodeID;
+        int refID{0};
+
+        while (in.read_row(spatID, head, conduct, refID)) {
+            try {
+                nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(0).at(refID); // layer = 0
+            }
+            catch (const std::out_of_range &ex) {
+                //if Node does not exist ignore entry
+                continue;
+            }
+            nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                               head * Model::si::meter,
+                                               conduct,
+                                               head * Model::si::meter);
         }
     }
 

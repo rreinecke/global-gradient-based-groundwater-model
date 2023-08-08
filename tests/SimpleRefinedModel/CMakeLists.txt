@@ -15,5 +15,6 @@ configure_file(data/heads.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/heads_simpl
 configure_file(data/lithology.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/lithology_simpleRefined.csv COPYONLY)
 configure_file(data/recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_simpleRefined.csv COPYONLY)
 configure_file(data/rivers.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/rivers_simpleRefined.csv COPYONLY)
+configure_file(data/ghb_conductance.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductance_simpleRefined.csv COPYONLY)
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_simpleRefined.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_simpleRefined.json COPYONLY)
