@@ -59,24 +59,26 @@ void addBoundary(NodeVector const& nodes,
                  double boundaryConduct,
                  Simulation::Options::BoundaryCondition boundaryCondition,
                  large_num nodeID,
-                 int layer) {
+                 int layer, bool isGlobal) {
 
     if (layer > 0) {
         return;
     }
 
-    switch (boundaryCondition) {
-        case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
-            auto head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
-            nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, head, boundaryConduct, head);
+    if (isGlobal){
+        switch (boundaryCondition) {
+            case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
+                auto head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
+                nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, head, boundaryConduct, head);
+            }
+                break;
+            case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
+                nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, 0 * Model::si::meter,
+                                                   boundaryConduct, 0 * Model::si::meter);
+            }
+            default:
+                break;
         }
-            break;
-        case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
-            nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, 0 * Model::si::meter,
-                                            boundaryConduct, 0 * Model::si::meter);
-        }
-        default:
-            break;
     }
 }
 
@@ -118,7 +120,7 @@ void buildBySpatID(NodeVector nodes,
                         nodes->at(nodeID)->setNeighbours(nodeIDs_neig, lu[j]);
                     }
                 } else {
-                    addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0); // layer = 0
+                    addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0, isGlobal); // layer = 0
                 }
             } else { // ####  set neighbour of refined node ####
                 setNeigOfRefinedNode(nodes, spatID, j, resolution, lonRange, latRange, isGlobal, refID, nodeID,
@@ -155,7 +157,7 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
                 nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(index), neighbourPosition);
             }
         } else {
-            addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0); // layer = 0
+                addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0, isGlobal); // layer = 0
         }
     };
 

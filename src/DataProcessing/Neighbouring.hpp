@@ -63,7 +63,7 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 int getNeighbourSpatID(int spatID, int j, double res, int lonRange, int latRange, bool isGlobal);
 
 void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                 large_num nodeID, int layer);
+                 large_num nodeID, int layer, bool isGlobal);
 
 void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
                       int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID,
