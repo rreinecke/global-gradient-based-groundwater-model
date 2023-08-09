@@ -43,9 +43,9 @@ namespace GlobalFlow {
                                                                                    t_meter folding_neig) {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
-            t_meter edgeLength_self; // edge length in flow direction (of this node)
-            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
+            t_meter nodeLength_neig; // node length in flow direction (of neighbour)
+            t_meter nodeLength_self; // node length in flow direction (of this node)
+            t_meter nodeWidth_self; // node length perpendicular to flow direction (of this node)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -53,7 +53,7 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self, head_neig,
+            std::tie(k_neig, k_self, nodeLength_neig, nodeLength_self, nodeWidth_self, head_neig,
                      head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
 
@@ -64,9 +64,9 @@ namespace GlobalFlow {
 
             if (transmissivity_neig != 0 * si::square_meter / day and
                 transmissivity_self != 0 * si::square_meter / day) {
-                out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
-                                                / (transmissivity_self * edgeLength_neig +
-                                                   transmissivity_neig * edgeLength_self));
+                out = (2.0 * nodeWidth_self) * ((transmissivity_self * transmissivity_neig)
+                                                / (transmissivity_self * nodeLength_neig +
+                                                   transmissivity_neig * nodeLength_self));
             }
             NANChecker(out.value(), "E-folding based Harmonic Mean Conductance");
             return out;
@@ -75,9 +75,9 @@ namespace GlobalFlow {
         quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept {
             t_vel k_neig;
             t_vel k_self;
-            t_meter edgeLength_neig; // edge length in flow direction (of neighbour)
-            t_meter edgeLength_self; // edge length in flow direction (of this node)
-            t_meter edgeWidth_self; // edge length perpendicular to flow direction (of this node)
+            t_meter nodeLength_neig; // node length in flow direction (of neighbour)
+            t_meter nodeLength_self; // node length in flow direction (of this node)
+            t_meter nodeWidth; // node length perpendicular to flow direction (of smaller node of the two interacting)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -85,11 +85,11 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, edgeLength_neig, edgeLength_self, edgeWidth_self,head_neig,
+            std::tie(k_neig, k_self, nodeLength_neig, nodeLength_self, nodeWidth,head_neig,
                      head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
 
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
-            //LOG(debug) << "edgeLength_self = " << edgeLength_self.value() << ", edgeLength_neig = " << edgeLength_neig.value();
+            //LOG(debug) << "nodeLength_self = " << nodeLength_self.value() << ", nodeLength_neig = " << nodeLength_neig.value();
             /*
             //Used if non dry-out approach is used
             // FIXME need to be checked here
@@ -120,9 +120,9 @@ namespace GlobalFlow {
 
             if (transmissivity_neig != 0 * si::square_meter / day and
                 transmissivity_self != 0 * si::square_meter / day) {
-                out = (2.0 * edgeWidth_self) * ((transmissivity_self * transmissivity_neig)
-                                                 / (transmissivity_self * edgeLength_neig +
-                                                    transmissivity_neig * edgeLength_self));
+                out = nodeWidth * ((transmissivity_self * transmissivity_neig)
+                        / (transmissivity_self * nodeLength_neig * 0.5 + // half of neighbour node's length
+                        transmissivity_neig * nodeLength_self * 0.5)); // half of this node's length
             }
             NANChecker(out.value(), "Harmonic Mean Conductance");
             return out;
