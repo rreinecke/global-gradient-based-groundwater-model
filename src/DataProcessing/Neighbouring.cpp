@@ -138,36 +138,47 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
 
     auto neighbourPositions = setNeighbourPositions();
 
-    std::unordered_map<int, std::vector<int>> mapping; // mapping of neighbour position to refIDs
-    mapping[0] = {1, 2, 3, 4}; // neighbour is at FRONT -> if refID of this node is 1 or 2: neighbour outside refined node
-                               //                       -> if refID of this node is 3 or 4: neighbour inside refined node
-    mapping[1] = {3, 4, 1, 2}; // BACK
-    mapping[2] = {2, 4, 1, 3}; // RIGHT
-    mapping[3] = {1, 3, 2, 4}; // LEFT
+    std::unordered_map<int, std::vector<int>> mapOutside; // mapping of neighbour position to refIDs
+    mapOutside[0] = {1, 2, 3, 4}; // neighbour is at FRONT -> if refID of this node is 1 or 2: neighbour outside refined node
+    mapOutside[1] = {3, 4, 1, 2}; // BACK
+    mapOutside[2] = {2, 4, 1, 3}; // RIGHT
+    mapOutside[3] = {1, 3, 2, 4}; // LEFT
 
     auto neighbourOutsideRefinedNode = [spatID, j, resolution, lonRange, latRange, isGlobal, spatIDtoNodeIDs,
                                        nodes, boundaryConduct, boundaryCondition, nodeID]
-                                               (int index, Model::NeighbourPosition neighbourPosition) {
+                                               (int ref_id, Model::NeighbourPosition neighbourPosition) {
         int spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
         if (spatIDtoNodeIDs.contains(spatID_neig)) {
             std::unordered_map<int, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(0); // layer = 0
             if (nodeIDs_neig.size() == 1) {
                 nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition); // refID = 0
             } else {
-                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(index), neighbourPosition);
+                nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(ref_id), neighbourPosition);
             }
         } else {
                 addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, 0, isGlobal); // layer = 0
         }
     };
 
-    if (refID == mapping.at(j)[0]) {
-        neighbourOutsideRefinedNode(mapping.at(j)[2], neighbourPositions[j]);
-    } else if (refID == mapping.at(j)[1]) {
-        neighbourOutsideRefinedNode(mapping.at(j)[3], neighbourPositions[j]);
+    // set neighbour outside refined node (need to find spatID and find out whether that node is refined or not)
+    if (refID == mapOutside.at(j)[0]) {
+        neighbourOutsideRefinedNode(mapOutside.at(j)[2], neighbourPositions[j]);
+    } else if (refID == mapOutside.at(j)[1]) {
+        neighbourOutsideRefinedNode(mapOutside.at(j)[3], neighbourPositions[j]);
     }
-    if (refID == mapping.at(j)[2] or refID == mapping.at(j)[3]) { // set neighbour within refined node (same spatID)
-        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(0).at(refID); // layer = 0
+
+    // set neighbour within refined node (same spatID, thus we can just set the neighbour)
+    std::unordered_map<int, std::vector<int>> mapInside; // mapping of neighbour position to refIDs
+    mapInside[0] = {3, 4, 1, 2}; // neighbour is at FRONT -> if refID of this node is 3 or 4: neighbour inside refined node
+    mapInside[1] = {1, 2, 3, 4}; // BACK
+    mapInside[2] = {1, 3, 2, 4}; // RIGHT
+    mapInside[3] = {2, 4, 1, 3}; // LEFT
+
+    if (refID == mapInside.at(j)[0]) {
+        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(0).at(mapInside.at(j)[2]); // layer = 0
+        nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neighbourPositions[j]);
+    } else if (refID == mapInside.at(j)[1]){
+        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(0).at(mapInside.at(j)[3]); // layer = 0
         nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neighbourPositions[j]);
     }
 }
