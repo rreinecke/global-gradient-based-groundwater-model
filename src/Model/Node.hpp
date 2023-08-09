@@ -60,19 +60,19 @@ namespace GlobalFlow {
  */
         enum NeighbourPosition {
             TOP = 1,
-            DOWN,
-            RIGHT,
-            LEFT,
-            FRONT,
-            BACK,
-            RIGHTFRONT,
-            RIGHTBACK,
-            LEFTFRONT,
-            LEFTBACK,
-            FRONTLEFT,
-            FRONTRIGHT,
-            BACKLEFT,
-            BACKRIGHT
+            DOWN,       // 2
+            RIGHT,      // 3
+            LEFT,       // 4
+            FRONT,      // 5
+            BACK,       // 6
+            RIGHTFRONT, // 7
+            RIGHTBACK,  // 8
+            LEFTFRONT,  // 9
+            LEFTBACK,   // 10
+            FRONTLEFT,  // 11
+            FRONTRIGHT, // 12
+            BACKLEFT,   // 13
+            BACKRIGHT   // 14
         };
     }
 }
@@ -498,7 +498,7 @@ Helpers
                                        getK(),
                                        at(got)->getNodeLength(got), // length of neighbour node (parallel to direction)
                                        getNodeLength(got), // length of this node (parallel to direction)
-                                       getNodeWidth(got), // width of this node (perpendicular to direction)
+                                       std::min(getNodeWidth(got), at(got)->getNodeWidth(got)), // width of smaller node (perpendicular to direction)
                                        getAt<t_meter, HeadType>(got),
                                        get<t_meter, HeadType>(),
                                        getAt<t_meter, Elevation>(got),
@@ -1000,6 +1000,7 @@ Calculate
              */
             t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
+
                 if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
 
                 std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
@@ -1034,11 +1035,6 @@ Calculate
 
             t_vol_t calculateGhostNodeCorrection(const std::forward_list<NeighbourPosition>& possibleRefNeigPos){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                t_dim alpha{0};
-                t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
-                t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
-                t_s_meter_t conductance;
-                t_meter head_contributor;
                 auto head = get<t_meter, Head>();
 
                 for (const auto &position: possibleRefNeigPos) {
@@ -1046,6 +1042,14 @@ Calculate
                     if (refinedNeig == neighbours.end()) {
                         continue;
                     } else {
+                        // conductance to the refined neighbour node
+                        t_s_meter_t conductance =
+                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
+                        //LOG(debug) << "conductance = " << conductance.value();
+
+                        // todo: if contributor is refined: loop starts here
+                        t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
+                        t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
 
                         auto contributor = neighbours.find(getPotentialContributor(refinedNeig)); // contributor is named "j" in USG documentation
                         if (contributor == neighbours.end()) { // at model boundary: no contributor
@@ -1058,25 +1062,27 @@ Calculate
 
                         if (transmissivity_neig != 0 * si::square_meter / day and
                             transmissivity_self != 0 * si::square_meter / day) {
-                            contributorConductance =
-                                    (getNodeWidth(contributor) + at(contributor)->getNodeWidth(contributor)) *
+                            t_meter nodeWidth = std::min(getNodeWidth(contributor),
+                                                         at(contributor)->getNodeWidth(contributor));
+                            // conductance from contributor node to ghost node
+                            // (includes half of contributor node (0.5 below) and quarter of this node (0.25 below))
+                            contributorConductance = nodeWidth *
                                     ((transmissivity_self * transmissivity_neig)
-                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) +
-                                        transmissivity_neig * getNodeLength(contributor) * 0.5));
+                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) * 0.5 +
+                                        transmissivity_neig * getNodeLength(contributor) * 0.25));
                         }
 
+                        // conductance from this node's center to ghost node inside this node
+                        // (distance is a quarter of this node's length (0.25 below))
                         nodeConductance = getNodeWidth(contributor) *
                                           (transmissivity_self / (getNodeLength(contributor) * 0.25));
 
-                        alpha = contributorConductance /
-                                (contributorConductance + nodeConductance); // todo: what if contributor is refined?
+                        // the alpha coefficient is used to weigh influence on ghost node height difference
+                        t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
                         //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
 
-                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
-                        //LOG(debug) << "conductance = " << conductance.value();
-
-                        head_contributor = getAt<t_meter, Head>(contributor);
-                        out += conductance * (alpha * (head - head_contributor));
+                        // calculate ghost node correction
+                        out += conductance * (alpha * (head - getAt<t_meter, Head>(contributor)));
                         //LOG(debug) << "GNC for nodeID " << get<large_num, ID>() <<
                         //        " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
                         //                " with contributor " << getAt<large_num, ID>(contributor) <<
@@ -2561,13 +2567,22 @@ Calculate
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 bool useGhostNodeCorrection = false;
                 t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
+                t_vol_t ghostNodeCorrectionFromNeighbours {0 * (si::cubic_meter / day)};
+
                 if(useGhostNodeCorrection) {
-                    ghostNodeCorrection = getGhostNodeCorrection() + getGhostNodeCorrectionFromNeighbours();
-                    LOG(debug) << "ghostNodeCorrection = " << ghostNodeCorrection.value();
+                    ghostNodeCorrection = getGhostNodeCorrection();
+                    ghostNodeCorrectionFromNeighbours = getGhostNodeCorrectionFromNeighbours();
+                    if (ghostNodeCorrection.value() != 0) {
+                        //LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrection = " << ghostNodeCorrection.value();
+                    }
+                    if (ghostNodeCorrectionFromNeighbours.value() != 0) {
+                        //LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrection = " << ghostNodeCorrectionFromNeighbours.value();
+                    }
                 }
                 //LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 
-                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection;
+                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection +
+                        ghostNodeCorrectionFromNeighbours;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
