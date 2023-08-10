@@ -18,6 +18,34 @@ void StandaloneRunner::setupSimulation() {
     _eq = sim.getEquation();
 }
 
+void StandaloneRunner::writeNodeInfosToCSV(){
+    std::ofstream myfile;
+    myfile.open ("node_attributes_simple.csv");
+    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
+
+    for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        sim.getNodes()->at(j)->setSimpleK();
+        std::string neighbours{""};
+        for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
+            neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+        }
+        myfile << j << "," <<
+               sim.getNodes()->at(j)->getSpatID() << "," <<
+               sim.getNodes()->at(j)->getRefID() << "," <<
+               sim.getNodes()->at(j)->getLon() << "," <<
+               sim.getNodes()->at(j)->getLat() << "," <<
+               sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+               neighbours << "," <<
+               sim.getNodes()->at(j)->getElevation().value() << "," <<
+               sim.getNodes()->at(j)->getBottom().value() << "," <<
+               sim.getNodes()->at(j)->getK().value() << "," <<
+               sim.getNodes()->at(j)->hasGHB() << "," <<
+               sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+               std::endl;
+    }
+    myfile.close();
+}
+
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
@@ -97,6 +125,7 @@ int main() {
     GlobalFlow::StandaloneRunner runner;
     runner.loadSettings();
     runner.setupSimulation();
+    runner.writeNodeInfosToCSV();
     runner.simulate();
     return EXIT_SUCCESS;
 }

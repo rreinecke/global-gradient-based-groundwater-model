@@ -22,7 +22,7 @@
 #include "set"
 #include <fstream>
 #include "../../src/Misc/colors.hpp"
-#include "SimpleDataReader.hpp"
+#include "SimpleRefinedDataReader.hpp"
 
 namespace GlobalFlow {
 

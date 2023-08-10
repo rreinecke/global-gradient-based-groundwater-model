@@ -1,18 +1,17 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_simpleRefined.csv",
+      "nodes": "grid_refinedCoast.csv",
       "row_cols": "false",
-      "number_of_nodes_per_layer": 127,
+      "number_of_nodes_per_layer": 130,
       "number_of_rows": 0,
       "number_of_cols": 0,
       "edge_length_rows": 0,
       "edge_length_cols": 0,
       "threads": 1,
-      "layers": 2,
+      "layers": 1,
       "use_efolding": "false",
       "confinement": [
-        "true",
         "true"
       ],
       "cache": "false",
@@ -44,7 +43,7 @@
   "input": {
     "data_config": {
       "k_from_file": "true",
-      "k_ghb_from_file": "false",
+      "k_ghb_from_file": "true",
       "specific_storage_from_file": "false",
       "specific_yield_from_file": "false",
       "k_river_from_file": "true",
@@ -59,16 +58,13 @@
       "effective_porosity": 0.2,
       "initial_head": 100,
       "K": [
-        0.008,
         0.008
       ],
       "ghb_K": 800,
       "aquifer_thickness": [
-        10,
         10
       ],
       "anisotropy": [
-        10,
         10
       ],
       "specific_yield": 0.15,
@@ -79,11 +75,12 @@
       ]
     },
     "data": {
-      "recharge": "recharge_simpleRefined.csv",
-      "elevation": "elevation_simpleRefined.csv",
-      "lithology": "lithology_simpleRefined.csv",
-      "river_conductance": "rivers_simpleRefined.csv",
-      "initial_head": "heads_simpleRefined.csv"
+      "recharge": "recharge_refinedCoast.csv",
+      "elevation": "elevation_refinedCoast.csv",
+      "ghb_conductance": "ghb_conductance_refinedCoast.csv",
+      "lithology": "lithology_refinedCoast.csv",
+      "river_conductance": "rivers_refinedCoast.csv",
+      "initial_head": "heads_refinedCoast.csv"
     }
   }
   }

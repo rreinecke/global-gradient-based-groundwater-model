@@ -37,26 +37,21 @@ class SimpleDataReader : public DataReader {
             LOG(userinfo) << "Building grid by spatial ID (refined)";
             DataProcessing::buildBySpatID(nodes,
                                           this->getMappingSpatIDtoNodeIDs(),
-                                          1, // resolution = 0.0833 <- input for global models
-                                          10, // lonRange = 360
-                                          10, // latRange = 180
+                                          2, // resolution = 0.0833 <- input for global models
+                                          20, // lonRange = 360
+                                          20, // latRange = 180
                                           false, // isGlobal = true
                                           op.getNumberOfNodesPerLayer(),
                                           op.getGHBConduct(),
                                           op.getBoundaryCondition());
 
-            if (op.getNumberOfLayers() > 1) {
-                LOG(userinfo) << "Building the model layer(s) below";
-                DataProcessing::buildBottomLayers(nodes,
-                                                  op.getNumberOfLayers(),
-                                                  op.getConfinements(),
-                                                  op.getAquiferDepth(),
-                                                  op.getInitialK(),
-                                                  op.getAnisotropy());
-
-                LOG(userinfo) << "Copying neighbours to bottom layer(s)";
-                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
-            }
+            LOG(userinfo) << "Building the bottom layers";
+            DataProcessing::buildBottomLayers(nodes,
+                                              op.getNumberOfLayers(),
+                                              op.getConfinements(),
+                                              op.getAquiferDepth(),
+                                              op.getInitialK(),
+                                              op.getAnisotropy());
 
             LOG(userinfo) << "Reading lithology";
             readConduct(buildDir(op.getLithology()));
@@ -71,10 +66,10 @@ class SimpleDataReader : public DataReader {
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
             LOG(userinfo) << "Defining rivers";
-            readRiverConductance(buildDir(op.getKRiver()));
+            //readRiverConductance(buildDir(op.getKRiver()));
 
             LOG(userinfo) << "Adding GHB conductance";
-            //readHeadBoundary(buildDir(op.getKGHBDir()));
+            readHeadBoundary(buildDir(op.getKGHBDir()));
 
         }
 
