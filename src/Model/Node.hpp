@@ -170,7 +170,6 @@ namespace GlobalFlow {
             int numOfExternalFlows{0};
             bool initial_head{true};
             bool simpleDistance{false};
-            bool simpleK{false};
             bool steadyState{false};
             int zoneOfSinks; // individual for each node
             int zoneOfSources; // individual for each node
@@ -251,7 +250,6 @@ namespace GlobalFlow {
                 ar & numOfExternalFlows;
                 ar & initial_head;
                 ar & simpleDistance;
-                ar & simpleK;
                 ar & steadyState;
                 ar & fields;
                 ar & cached;
@@ -394,16 +392,19 @@ Get Properties
              * @return hydraulic conductivity (scaled by e-folding)
              */
             t_vel getK() noexcept {
-                if (simpleK) { return get<t_vel, K>() * get<t_dim, StepModifier>(); }
-                t_dim e_fold = 1 * si::si_dimensionless;
-                if (get<int, Layer>() > 0) {
-                    e_fold = efoldingFromData(get<t_meter, VerticalSize>());
+                if (get<bool, UseEfolding>()){
+                    t_dim e_fold{1 * si::si_dimensionless};
+                    if (get<int, Layer>() > 0) {
+                        e_fold = efoldingFromData(get<t_meter, VerticalSize>());
+                    }
+                    t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
+                    if (out < 1e-20 * si::meter / day) {
+                        out = 1e-20 * si::meter / day;
+                    }
+                    return out;
+                } else {
+                    return get<t_vel, K>() * get<t_dim, StepModifier>();
                 }
-                t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
-                if (out < 1e-20 * si::meter / day) {
-                    out = 1e-20 * si::meter / day;
-                }
-                return out;
             }
 
 /*****************************************************************
@@ -633,7 +634,6 @@ Calculate
              */
             void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
 
-            void setSimpleK(){simpleK = true;}
 
             int getSpatID() {return (int) get<large_num, SpatID>();}
 
@@ -2048,21 +2048,80 @@ Calculate
                 }
             }
 
+            /** // todo together with zone budgets (at each time step); todo solve the down and top issue
+             * @brief Instantaneous mixing of water, as described in SWI2 documentation under "Vertical Leakage Between
+             * Aquifers": (2) when freshwater leaks up into an aquifer containing only saline water, that freshwater is
+             *                added as saline water
+             *            (4) when saline water leaks down into an aquifer containing only freshwater, that saline water
+             *                is added as freshwater
+             * @note in SWI2 code: SSWI2_IMIX
+             */
+            t_vol_t instantaneousMixing(int localZetaID, bool downwardFlow) {
+                t_vol_t out = 0 * (si::cubic_meter / day);
+                int zetaIDNeig{0};
+                int zetaID{0};
+
+                auto down = neighbours.find(NeighbourPosition::DOWN);
+                // skip nodes that do not have a bottom neighbour
+                if (down == neighbours.end()) { // no neighbour at position
+                    return out; // return 0
+                } else {
+                    // skip if dimensionless density at bottom of this node is below or equal to
+                    // dimension less density at the top of down node
+                    if (getNusBot() <= at(down)->getNusTop()){
+                        return out; // return 0
+                    }
+
+                    // skip if head in this or neighbour node is below node bottom
+                    if (get<t_meter, Head>() < (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()) or
+                        getAt<t_meter, Head>(down) <
+                        (getAt<t_meter, Elevation>(down) - getAt<t_meter, VerticalSize>(down))) {
+                        return out; // return 0
+                    }
+
+                    t_vol_t fluxDown = getFluxDown();
+
+                    // if flox down is positive
+                    if (fluxDown > (0 * (si::cubic_meter / day))) {
+                        // if dim-less density at bottom of down neighbour is greater or equal to
+                        // dim-less density at the bottom of this node
+                        if (at(down)->getNusBot() >= getNusBot()) {
+                            return out; // return 0
+                        }
+                        // if dim-less density at top of this node is smaller or equal to
+                        // dim-less density at the top of neighbour node
+                        if (getNusTop() <= at(down)->getNusTop()){
+                            return out; // return 0
+                        }
+                    }
+
+                    // todo solve the issue with top and down here: currently we need to return two values
+                    if (downwardFlow) { // if water flows from this node to down node
+                        if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) {
+                            return out; // return fluxDown
+                        }
+                    } else { // if water flows from this node to top node // todo perhaps remove this
+                        if (at(down)->isZetaAtTop(localZetaID) and !at(down)->isZetaAtTop(localZetaID + 1)) {
+                            return -out; // return -fluxDown
+                        }
+                    }
+                }
+                return out;
+            }
 
             /**
-             * @brief vertical movement of zeta surfaces through top of this node
-             * @param localZetaID zeta surface id in this node
+             * @brief Vertical movement of zeta surfaces through top of this node. This function is required to move a
+             * zeta surface with the height equal to the top of a lower node and bottom to an upper node. Without this
+             * function, that zeta surface would be stuck there since the other only consider "active" surfaces (which
+             * are between the top and bottom of a node)
              * @note in SWI2 code: SSWI2_VERTMOVE
-             * This function is required to move a zeta surface with the height equal to the top of a lower node and
-             * bottom to an upper node. Without this function, that zeta surface would be stuck there since the other
-             * only consider "active" surfaces (which are between the top and bottom of a node)
              */
             void verticalZetaMovement() {
                 // skip nodes where head is below the bottom of the node
                 t_vol_t fluxCorrectionTop; // in SWI2: qztop
                 t_s_meter_t verticalConductanceTop;
                 t_meter deltaZeta;
-                map_itter top = neighbours.find(NeighbourPosition::TOP);
+                auto top = neighbours.find(NeighbourPosition::TOP);
                 // skip nodes that do not have a top neighbour
                 if (top == neighbours.end()) { // no neighbour at position
                 } else {
@@ -2076,9 +2135,11 @@ Calculate
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
                             if (isZetaAtTop(localZetaID) &&
                                 at(top)->isZetaAtBottom(localZetaID)) {
+
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxTop();
                                 //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
+
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop > (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
@@ -2086,6 +2147,7 @@ Calculate
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
+
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
@@ -2565,7 +2627,7 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
-                bool useGhostNodeCorrection = false;
+                bool useGhostNodeCorrection = true;
                 t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
                 t_vol_t ghostNodeCorrectionFromNeighbours {0 * (si::cubic_meter / day)};
 
@@ -2797,7 +2859,6 @@ Calculate
             ar & numOfExternalFlows;
             ar & initial_head;
             ar & simpleDistance;
-            ar & simpleK;
             ar & steadyState;
             ar & fields;
             ar & cached;
@@ -2855,7 +2916,6 @@ Calculate
                 ar & numOfExternalFlows;
                 ar & initial_head;
                 ar & simpleDistance;
-                ar & simpleK;
                 ar & steadyState;
                 ar & fields;
                 ar & cached;
