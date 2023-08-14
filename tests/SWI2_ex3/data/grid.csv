@@ -1,4 +1,4 @@
-spatID,X,Y,area,col,row
+spatID,lon,lat,area,col,row
 0,0,0,20,0,0
 1,0,1,20,0,1
 2,0,2,20,0,2

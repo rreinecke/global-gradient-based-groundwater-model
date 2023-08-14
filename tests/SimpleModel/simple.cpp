@@ -11,10 +11,6 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleDataReader();
     sim = Simulation::Simulation(op, reader);
-    //disabling e-folding
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
-    }
     _eq = sim.getEquation();
 }
 
@@ -24,7 +20,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
         std::string neighbours{""};
         for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
             neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
@@ -98,8 +93,10 @@ void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running transient steps with changed stresses";
     Simulation::Stepper transientStepper2 = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper2) {
+        LOG(userinfo) << "Running transient step " << stepNumber;
         step.first->solve();
         sim.printMassBalances(debug);
+        stepNumber++;
     }
 
     DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
@@ -114,9 +111,7 @@ void StandaloneRunner::writeData() {
 
 }
 
-StandaloneRunner::StandaloneRunner() {
-
-}
+StandaloneRunner::StandaloneRunner() = default;
 
 }//ns
 

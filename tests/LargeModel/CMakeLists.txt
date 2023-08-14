@@ -22,6 +22,7 @@ configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../da
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
 configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
+configure_file(../../data_5min/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/effective_porosity.csv COPYONLY)
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
 configure_file(../../data_5min/caspian_data.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/caspian_data.csv COPYONLY)
 

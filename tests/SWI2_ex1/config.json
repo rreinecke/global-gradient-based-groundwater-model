@@ -1,7 +1,7 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_simpleVDF1.csv",
+      "nodes": "grid_swi2_ex1.csv",
       "row_cols": "true",
       "number_of_nodes_per_layer": 50,
       "number_of_rows": 50,
@@ -10,6 +10,7 @@
       "edge_length_cols": 1,
       "threads": 20,
       "layers": 1,
+      "use_efolding": false,
       "confinement": [
         "true"
       ],
@@ -43,7 +44,7 @@
     "input": {
       "data_config": {
         "aquifer_depth_from_file": "false",
-        "effective_porosity_from_file": "false",
+        "effective_porosity_from_file": "true",
         "efold_as_array": "false",
         "eq_wtd_from_file": "false",
         "initial_head_from_file": "false",
@@ -75,12 +76,12 @@
         ]
       },
       "data": {
-        "effective_porosity": "effective_porosity_simpleVDF1.csv",
-        "elevation": "elevation_simpleVDF1.csv",
-        "ghb_conductance": "ghb_conductance_simpleVDF1.csv",
-        "initial_zetas": "initial_zetas_simpleVDF1.csv",
-        "recharge": "recharge_simpleVDF1.csv",
-        "zones_sources_sinks": "zones_sources_sinks_simpleVDF1.csv"
+        "effective_porosity": "effective_porosity_swi2_ex1.csv",
+        "elevation": "elevation_swi2_ex1.csv",
+        "ghb_conductance": "ghb_conductance_swi2_ex1.csv",
+        "initial_zetas": "initial_zetas_swi2_ex1.csv",
+        "recharge": "recharge_swi2_ex1.csv",
+        "zones_sources_sinks": "zones_sources_sinks_swi2_ex1.csv"
       }
     }
   }

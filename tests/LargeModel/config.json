@@ -44,7 +44,7 @@
     "input": {
       "data_config": {
         "aquifer_depth_from_file": "false",
-        "effective_porosity_from_file": "false",
+        "effective_porosity_from_file": "true",
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
@@ -77,6 +77,7 @@
       },
       "data": {
         "elevation": "elevation.csv",
+        "effective_porosity": "effective_porosity.csv",
         "equal_water_table_depth": "mean_wtd.csv",
         "initial_zetas": "initial_zetas_global.csv",
         "global_lakes": "G_GLOLAK.csv",

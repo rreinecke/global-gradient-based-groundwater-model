@@ -1,21 +1,16 @@
-#include "simpleVDF1.hpp"
+#include "swi2_ex1.hpp"
 
 
 namespace GlobalFlow {
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_simpleVDF1.json");
+    op.load("data/config_swi2_ex1.json");
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleVDF1DataReader();
+    reader = new DataProcessing::SWI2_ex1_DataReader();
     sim = Simulation::Simulation(op, reader);
-
-    //disabling e-folding
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
-    }
     _eq = sim.getEquation();
 }
 
@@ -25,8 +20,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
         myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1],recharge" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            sim.getNodes()->at(j)->setSimpleK();
-
             myfile << j << "," <<
                    sim.getNodes()->at(j)->getLon() << "," <<
                    sim.getNodes()->at(j)->getLat() << "," <<
@@ -77,11 +70,11 @@ void StandaloneRunner::simulate() {
 void StandaloneRunner::getResults() {}
 
 void StandaloneRunner::writeData() {
-    DataProcessing::DataOutput::OutputManager("data/out_simpleVDF1.json", sim).write();
+    DataProcessing::DataOutput::OutputManager("data/out_swi2_ex1.json", sim).write();
 }
 
 
-StandaloneRunner::StandaloneRunner() {}
+StandaloneRunner::StandaloneRunner() = default;
 
 }//ns
 

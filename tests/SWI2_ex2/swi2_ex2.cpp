@@ -11,14 +11,11 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SWI2_ex2_DataReader();
     sim = Simulation::Simulation(op, reader);
-
-    LOG(debug) << sim.getNodes()->at(1);
-
-    //disabling e-folding
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
-    }
     _eq = sim.getEquation();
+}
+
+void StandaloneRunner::writeNodeInfosToCSV(){
+    // empty
 }
 
 void StandaloneRunner::simulate() {
@@ -65,7 +62,7 @@ void StandaloneRunner::writeData() {
     DataProcessing::DataOutput::OutputManager("data/out_swi2_ex2.json", sim).write();
 }
 
-StandaloneRunner::StandaloneRunner() {}
+StandaloneRunner::StandaloneRunner() = default;
 
 }//ns
 
@@ -74,6 +71,7 @@ int main() {
     GlobalFlow::StandaloneRunner runner;
     runner.loadSettings();
     runner.setupSimulation();
+    runner.writeNodeInfosToCSV();
     runner.simulate();
     runner.writeData();
     return EXIT_SUCCESS;

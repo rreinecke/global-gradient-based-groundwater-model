@@ -11,10 +11,6 @@ void StandaloneRunner::loadSettings() {
 void StandaloneRunner::setupSimulation() {
     reader = new DataProcessing::SimpleDataReader();
     sim = Simulation::Simulation(op, reader);
-    //disabling e-folding
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
-    }
     _eq = sim.getEquation();
 }
 
@@ -24,7 +20,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
         std::string neighbours{""};
         for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
             neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";

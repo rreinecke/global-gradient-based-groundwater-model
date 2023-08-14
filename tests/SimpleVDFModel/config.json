@@ -1,7 +1,7 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_simpleVDF4.csv",
+      "nodes": "grid_simpleVDF.csv",
       "row_cols": "true",
       "number_of_nodes_per_layer": 100,
       "number_of_rows": 10,
@@ -10,6 +10,7 @@
       "edge_length_cols": 10,
       "threads": 1,
       "layers": 1,
+      "use_efolding": false,
       "confinement": [
         "true"
       ],
@@ -75,13 +76,13 @@
         ]
       },
       "data": {
-        "elevation": "elevation_simpleVDF4.csv",
-        "ghb_conductance": "ghb_conductance_simpleVDF4.csv",
-        "initial_zetas": "initial_zetas_simpleVDF4.csv",
-        "zones_sources_sinks": "zones_sources_sinks_simpleVDF4.csv",
-        "recharge": "recharge_simpleVDF4.csv",
-        "initial_heads": "heads_simpleVDF4.csv",
-        "river_conductance": "rivers_simpleVDF4.csv"
+        "elevation": "elevation_simpleVDF.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
+        "initial_zetas": "initial_zetas_simpleVDF.csv",
+        "zones_sources_sinks": "zones_sources_sinks_simpleVDF.csv",
+        "recharge": "recharge_simpleVDF.csv",
+        "initial_heads": "heads_simpleVDF.csv",
+        "river_conductance": "rivers_simpleVDF.csv"
       }
     }
   }

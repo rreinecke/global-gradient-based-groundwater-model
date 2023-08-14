@@ -63,8 +63,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1],recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        sim.getNodes()->at(j)->setSimpleK();
-
         myfile << j << "," <<
                sim.getNodes()->at(j)->getLon() << "," <<
                sim.getNodes()->at(j)->getLat() << "," <<
@@ -79,7 +77,7 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile.close();
 }
 
-StandaloneRunner::StandaloneRunner() {}
+StandaloneRunner::StandaloneRunner() = default;
 
 }//ns
 

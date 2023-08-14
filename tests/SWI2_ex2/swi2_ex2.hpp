@@ -40,6 +40,9 @@ namespace GlobalFlow {
             setupSimulation();
 
             void
+            writeNodeInfosToCSV();
+
+            void
             simulate();
 
             void

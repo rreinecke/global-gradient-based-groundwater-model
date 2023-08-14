@@ -6,17 +6,12 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_two_layers.json");
+        op.load("data/config.json");
     }
 
     void Runner::setupSimulation() {
         reader = new DataProcessing::GlobalDataReader();
         sim = Simulation::Simulation(op, reader);
-
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            sim.getNodes()->at(j)->setSimpleK();
-        }
-        LOG(debug) << "simple k set for all nodes" << std::endl;
         _eq = sim.getEquation();
     }
 

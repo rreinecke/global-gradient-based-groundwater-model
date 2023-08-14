@@ -1,7 +1,7 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_simpleVDF3.csv",
+      "nodes": "grid_swi2_ex3.csv",
       "row_cols": "true",
       "number_of_nodes_per_layer": 200,
       "number_of_rows": 200,
@@ -10,6 +10,7 @@
       "edge_length_cols": 1,
       "threads": 20,
       "layers": 3,
+      "use_efolding": false,
       "confinement": [
         "true",
         "true",
@@ -83,12 +84,12 @@
         ]
       },
       "data": {
-        "effective_porosity": "effective_porosity_simpleVDF3.csv",
-        "elevation": "elevation_simpleVDF3.csv",
-        "ghb_conductance": "ghb_conductance_simpleVDF3.csv",
-        "initial_zetas": "initial_zetas_simpleVDF3.csv",
-        "zones_sources_sinks": "zones_sources_sinks_simpleVDF3.csv",
-        "recharge": "recharge_simpleVDF3.csv"
+        "effective_porosity": "effective_porosity_swi2_ex3.csv",
+        "elevation": "elevation_swi2_ex3.csv",
+        "ghb_conductance": "ghb_conductance_swi2_ex3.csv",
+        "initial_zetas": "initial_zetas_swi2_ex3.csv",
+        "zones_sources_sinks": "zones_sources_sinks_swi2_ex3.csv",
+        "recharge": "recharge_swi2_ex3.csv"
       }
     }
   }
