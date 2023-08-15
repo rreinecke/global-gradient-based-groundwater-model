@@ -67,8 +67,8 @@ namespace GlobalFlow {
             unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
             long NUMBER_OF_ROWS{0};
             long NUMBER_OF_COLS{0};
-            double EDGE_LENGTH_ROWS{0.0};
-            double EDGE_LENGTH_COLS{0.0};
+            double EDGE_LENGTH_LEFT_RIGHT{0.0};
+            double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
             bool USE_EFOLDING{false};
             int IITER{0};
@@ -224,12 +224,12 @@ namespace GlobalFlow {
 
             double
             getEdgeLengthLeftRight() {
-                return EDGE_LENGTH_ROWS;
+                return EDGE_LENGTH_LEFT_RIGHT;
             };
 
             double
             getEdgeLengthFrontBack() {
-                return EDGE_LENGTH_COLS;
+                return EDGE_LENGTH_FRONT_BACK;
             };
 
             int

@@ -853,35 +853,40 @@ Calculate
                  *                  FRONT
                  *                  (this)
                  */
-                 for (auto nodeID : nodeIDs){
-                    if (neighbourPosition == Model::FRONT){
-                        if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
-                            neighbours[Model::FRONTLEFT] = nodeID.second;
-                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
-                            neighbours[Model::FRONTRIGHT] = nodeID.second;
-                        }
-                    }
-                    if (neighbourPosition == Model::BACK){
-                        if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
-                            neighbours[Model::BACKLEFT] = nodeID.second;
-                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
-                            neighbours[Model::BACKRIGHT] = nodeID.second;
-                        }
-                    }
-                    if (neighbourPosition == Model::LEFT){
-                        if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
-                            neighbours[Model::LEFTFRONT] = nodeID.second;
-                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
-                            neighbours[Model::LEFTBACK] = nodeID.second;
-                        }
-                    }
-                    if (neighbourPosition == Model::RIGHT){
-                        if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
-                            neighbours[Model::RIGHTFRONT] = nodeID.second;
-                        } else if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
-                            neighbours[Model::RIGHTBACK] = nodeID.second;
-                        }
-                    }
+                 if (nodeIDs.empty()) {
+                 } else if (nodeIDs.size() == 1) {
+                     neighbours[neighbourPosition] = nodeIDs[0];
+                 } else {
+                     for (auto nodeID: nodeIDs) {
+                         if (neighbourPosition == Model::FRONT) {
+                             if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                                 neighbours[Model::FRONTLEFT] = nodeID.second;
+                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                                 neighbours[Model::FRONTRIGHT] = nodeID.second;
+                             }
+                         }
+                         if (neighbourPosition == Model::BACK) {
+                             if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                                 neighbours[Model::BACKLEFT] = nodeID.second;
+                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                                 neighbours[Model::BACKRIGHT] = nodeID.second;
+                             }
+                         }
+                         if (neighbourPosition == Model::LEFT) {
+                             if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                                 neighbours[Model::LEFTFRONT] = nodeID.second;
+                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                                 neighbours[Model::LEFTBACK] = nodeID.second;
+                             }
+                         }
+                         if (neighbourPosition == Model::RIGHT) {
+                             if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                                 neighbours[Model::RIGHTFRONT] = nodeID.second;
+                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                                 neighbours[Model::RIGHTBACK] = nodeID.second;
+                             }
+                         }
+                     }
                  }
             }
 

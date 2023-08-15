@@ -42,10 +42,9 @@ namespace GlobalFlow {
 
             void readData(Simulation::Options op) override {
                 LOG(userinfo) << "Building the top model layer";
-                std::vector<std::vector<int>> grid;
-
                 LOG(userinfo) << "- reading land mask (with default values from config)";
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
                              op.isConfined(0), op.isDensityVariable(),

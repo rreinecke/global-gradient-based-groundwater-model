@@ -13,32 +13,27 @@ namespace GlobalFlow {
             SimpleVDFDataReader() { }
 
             void readData(Simulation::Options op) override {
-                LOG(userinfo) << "Building the initial model layer";
-                std::vector<std::vector<int>> grid;
-                grid = readGrid(nodes,
-                                buildDir(op.getNodesDir()),
-                                op.getNumberOfNodesPerLayer(),
-                                op.getNumberOfLayers(),
-                                op.getNumberOfRows(),
-                                op.getNumberOfCols(),
-                                op.getInitialK()[0],
-                                op.getInitialHead(),
-                                op.getAquiferDepth()[0],
-                                op.getAnisotropy()[0],
-                                op.getSpecificYield(),
-                                op.getSpecificStorage(),
-                                op.getEdgeLengthLeftRight(),
-                                op.getEdgeLengthFrontBack(),
-                                op.useEfolding(),
-                                op.isConfined(0),
-                                op.isDensityVariable(),
-                                op.getEffectivePorosity(),
-                                op.getMaxTipSlope(),
-                                op.getMaxToeSlope(),
-                                op.getMinDepthFactor(),
-                                op.getSlopeAdjFactor(),
-                                op.getVDFLock(),
-                                op.getDensityZones());
+
+                LOG(userinfo) << "Reading land mask (with default values from config)";
+                readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
+                op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
+                op.isConfined(0), op.isDensityVariable(),
+                op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
+                op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+
+
+                LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                DataProcessing::buildBySpatID(nodes,
+                this->getMappingSpatIDtoNodeIDs(),
+                1, // resolution = 0.0833 <- input for global models
+                10, // lonRange = 360
+                10, // latRange = 180
+                false, // isGlobal = true
+                op.getNumberOfNodesPerLayer(),
+                op.getGHBConduct(),
+                op.getBoundaryCondition());
 
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,
@@ -47,9 +42,6 @@ namespace GlobalFlow {
                                                   op.getAquiferDepth(),
                                                   op.getInitialK(),
                                                   op.getAnisotropy());
-
-                LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
-                DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
 
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));

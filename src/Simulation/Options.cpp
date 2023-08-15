@@ -50,8 +50,8 @@ namespace GlobalFlow {
             NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
             NUMBER_OF_ROWS = config.get<long>("number_of_rows");
             NUMBER_OF_COLS = config.get<long>("number_of_cols");
-            EDGE_LENGTH_ROWS = config.get<double>("edge_length_rows");
-            EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
+            EDGE_LENGTH_LEFT_RIGHT = config.get<double>("edge_length_left_right");
+            EDGE_LENGTH_FRONT_BACK = config.get<double>("edge_length_front_back");
             THREADS = config.get<int>("threads");
             LAYERS = config.get<int>("layers");
             USE_EFOLDING = config.get<bool>("use_efolding");

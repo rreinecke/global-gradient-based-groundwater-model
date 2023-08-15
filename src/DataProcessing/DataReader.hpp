@@ -324,6 +324,8 @@ namespace GlobalFlow {
         readLandMask(NodeVector nodes,
                      std::string path,
                      large_num numberOfNodesPerLayer,
+                     double edgeLengthLeftRight,
+                     double edgeLengthFrontBack,
                      int numberOfLayers,
                      double defaultK,
                      double initialHead,
@@ -349,17 +351,23 @@ namespace GlobalFlow {
             large_num spatID{0};
             large_num nodeID{0};
             int refID{0};
+
             lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
             std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
             while (in.read_row(spatID, lon, lat, area)) {
+
+                if (edgeLengthLeftRight == edgeLengthFrontBack) {
+                    edgeLengthLeftRight = edgeLengthFrontBack = std::sqrt(area);
+                }
+
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             lat,
                                                             lon,
                                                             area * Model::si::square_meter,
-                                                            std::sqrt(area)*Model::si::meter,
-                                                            std::sqrt(area)*Model::si::meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
@@ -828,16 +836,16 @@ namespace GlobalFlow {
             }
         };
 
-        void readInitialZetas(int numberOfNodesPerLayer, int numberOfLayers, const std::string pathZetas) {
+        void readInitialZetas(large_num numberOfNodesPerLayer, int numberOfLayers, const std::string& pathZetas) {
             double topOfNode;
             double bottomOfNode;
             large_num spatID{0};
-            double localZetaID{0};
+            int localZetaID{0};
             double zeta{0};
             double head{0};
 
             // add zeta surfaces to top and bottom of each node
-            int numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
+            large_num numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
             for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter){
                 topOfNode = nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
                 bottomOfNode = topOfNode - nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::VerticalSize>().value();

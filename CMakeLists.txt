@@ -51,7 +51,7 @@ add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
-# Simple Demo Model for refined grids
+# Simple Demo Models for refined grids
 ################################
 add_subdirectory(tests/SimpleRefinedModel)
 set(simple_refined_src ${SOURCE})

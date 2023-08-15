@@ -13,6 +13,8 @@ namespace GlobalFlow {
             SWI2_ex3_DataReader() = default;
 
             void readData(Simulation::Options op) override {
+                LOG(userinfo) << "Reading land mask (with default values from config)";
+
                 LOG(userinfo) << "Building the initial model layer";
                 std::vector<std::vector<int>> grid;
                 grid = readGrid(nodes,
@@ -40,6 +42,16 @@ namespace GlobalFlow {
                                 op.getVDFLock(),
                                 op.getDensityZones());
 
+                /*
+                readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
+                             op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
+                             op.isConfined(0), op.isDensityVariable(),
+                             op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+*/
+
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
@@ -50,6 +62,19 @@ namespace GlobalFlow {
 
                 LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
                 DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
+
+                /*LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                DataProcessing::buildBySpatID(nodes,
+                                              this->getMappingSpatIDtoNodeIDs(),
+                                              1, // resolution = 0.0833 <- input for global models
+                                              1, // lonRange = 360
+                                              200, // latRange = 180
+                                              false, // isGlobal = true
+                                              op.getNumberOfLayers(),
+                                              op.getNumberOfNodesPerLayer(),
+                                              op.getGHBConduct(),
+                                              op.getBoundaryCondition());
+*/
 
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));

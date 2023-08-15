@@ -15,7 +15,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 5);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     int stepNumber{1};
 
     for (Simulation::step step : stepper) {
@@ -38,7 +38,7 @@ void StandaloneRunner::simulate() {
     }
 
     LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 5);
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         step.first->toggleSteadyState();
@@ -60,19 +60,27 @@ void StandaloneRunner::writeData() {
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
     myfile.open ("node_attributes_vdf3.csv");
-    myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1],recharge" << std::endl;
+    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,zeta[1],recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        std::string neighbours{""};
+        for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
+            neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+        }
         myfile << j << "," <<
-               sim.getNodes()->at(j)->getLon() << "," <<
-               sim.getNodes()->at(j)->getLat() << "," <<
-               sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
-               sim.getNodes()->at(j)->getElevation().value() << "," <<
-               sim.getNodes()->at(j)->getBottom().value() << "," <<
-               sim.getNodes()->at(j)->getK().value() << "," <<
-               sim.getNodes()->at(j)->getZeta(1).value() << "," <<
-               sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
-               std::endl;
+            sim.getNodes()->at(j)->getSpatID() << "," <<
+            sim.getNodes()->at(j)->getRefID() << "," <<
+            sim.getNodes()->at(j)->getLon() << "," <<
+            sim.getNodes()->at(j)->getLat() << "," <<
+            sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+            neighbours << "," <<
+            sim.getNodes()->at(j)->getElevation().value() << "," <<
+            sim.getNodes()->at(j)->getBottom().value() << "," <<
+            sim.getNodes()->at(j)->getK().value() << "," <<
+            sim.getNodes()->at(j)->hasGHB() << "," <<
+            sim.getNodes()->at(j)->getZeta(1).value() << "," <<
+            sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+            std::endl;
     }
     myfile.close();
 }

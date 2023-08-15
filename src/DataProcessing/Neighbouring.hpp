@@ -52,7 +52,7 @@ void buildBySpatID(NodeVector nodes,
                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                    double resolution,
                    int lonRange, int latRange, bool isGlobal,
-                   large_num numberOfNodesPerLayer,
+                   int layers, large_num numberOfNodesPerLayer,
                    double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition);
 
@@ -66,7 +66,7 @@ void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Op
                  large_num nodeID, int layer, bool isGlobal);
 
 void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
-                      int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID,
+                      int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID, int layer,
                       std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
                       double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition);
 

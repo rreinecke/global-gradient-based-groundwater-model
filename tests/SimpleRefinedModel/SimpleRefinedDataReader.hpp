@@ -16,6 +16,8 @@ class SimpleDataReader : public DataReader {
             readLandMaskRefined(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodesPerLayer(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.getNumberOfLayers(),
                             op.getInitialK()[0],
                             op.getInitialHead(),
