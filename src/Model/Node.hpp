@@ -645,6 +645,10 @@ Calculate
 
             t_s_meter getArea(){return get<t_s_meter, Area>();}
 
+            t_meter getEdgeLengthLeftRight(){return get<t_meter, EdgeLengthLeftRight>();}
+
+            t_meter getEdgeLengthFrontBack(){return get<t_meter, EdgeLengthFrontBack>();}
+
             t_meter getElevation(){return get<t_meter, Elevation>();}
 
             t_meter getBottom(){return get<t_meter, Elevation>() - get<t_meter, VerticalSize>();}
@@ -2650,7 +2654,7 @@ Calculate
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection +
                         ghostNodeCorrectionFromNeighbours;
-                //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
+                LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
                 if (get<bool, DensityVariable>()) {
@@ -2659,14 +2663,14 @@ Calculate
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    //if (pseudoSourceNode.value() != 0) {
-                    //    LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
-                    //}
+                    if (pseudoSourceNode.value() != 0) {
+                        LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    }
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-                    //if (verticalFluxCorrections.value() != 0) {
-                        //LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
-                    //}
+                    if (verticalFluxCorrections.value() != 0) {
+                        LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    }
 
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
