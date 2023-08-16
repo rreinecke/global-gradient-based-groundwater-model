@@ -24,7 +24,7 @@ namespace GlobalFlow {
             step.first->toggleSteadyState();
             step.first->solve();
             LOG(userinfo) << "Step " << stepNumber << ":\n";
-            LOG(userinfo) << "- Solved head with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
+            LOG(userinfo) << "- Solved with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
             step.first->toggleSteadyState();
             ++stepNumber;

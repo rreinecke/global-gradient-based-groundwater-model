@@ -645,6 +645,8 @@ Calculate
 
             t_s_meter getArea(){return get<t_s_meter, Area>();}
 
+            t_dim getEffectivePorosity(){return get<t_dim, EffectivePorosity>();}
+
             t_meter getEdgeLengthLeftRight(){return get<t_meter, EdgeLengthLeftRight>();}
 
             t_meter getEdgeLengthFrontBack(){return get<t_meter, EdgeLengthFrontBack>();}
@@ -1572,33 +1574,6 @@ Calculate
                 return out;
             }
 
-            /**
-             * @brief set the zeta position in the node as at top/bottom/between the first and last zeta surface
-             * @param localZetaID zeta surface id in this node
-             * @note in SWI2: SSWI2_SET_IPLPOS (lines 4358-4383)
-             */
-            /*void setZetasPosInNode() {
-                std::vector<std::string> zetasPosInNode;
-                for (int localZetaID = 0; localZetaID < getZetas().size(); localZetaID++){
-                    //if (localZetaID == 0) {
-                    //    tmp = "between"; // SWI2 line 4362: worked around this by checking whether localZetaID == 0
-                    //} else
-                    if (getZeta(localZetaID) >= getZetas().front()) {
-                        zetasPosInNode.emplace_back("top");
-                    } else if (getZeta(localZetaID) <= getZetas().back() or
-                               get<t_meter, Head>() < (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) {
-                        zetasPosInNode.emplace_back("bottom");
-                    } else { //if (getZeta(localZetaID) < getZetas().front() and getZetas(localZetaID) > getZetas().back()){
-                        zetasPosInNode.emplace_back("between");
-                    } // todo: if nodes can be inactive: additional else if
-                    //LOG(debug) << "getZetaPosInNode(localZetaID=" << localZetaID << ") = " << out << std::endl;
-                }
-                set<std::vector<std::string>, ZetasPosInNode>(zetasPosInNode);
-            }
-            */
-
-            //std::string getZetaPosInNode(int localZetaID){ return get<std::vector<std::string>, ZetasPosInNode>()[localZetaID]; }
-
             bool isZetaAtTop(int localZetaID){
                 return (getZetaTZero(localZetaID) >= getZetasTZero().front());
             }
@@ -1617,6 +1592,11 @@ Calculate
                 for (int localZetaID = 0; localZetaID < getZetas().size(); ++localZetaID){
                     if (isZetaBetween(localZetaID)){ return true;}
                 }
+                return false;
+            }
+
+            bool isZetaActive(int localZetaID){
+                if(isZetaBetween(localZetaID) and getEffectivePorosity().value() > 0){ return true; }
                 return false;
             }
 
@@ -2654,7 +2634,7 @@ Calculate
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection +
                         ghostNodeCorrectionFromNeighbours;
-                LOG(debug) << "RHS constant density: " << out.value() << std::endl;
+                //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
                 if (get<bool, DensityVariable>()) {
@@ -2663,14 +2643,14 @@ Calculate
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    if (pseudoSourceNode.value() != 0) {
-                        LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
-                    }
+                    //if (pseudoSourceNode.value() != 0) {
+                    //    LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
+                    //}
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-                    if (verticalFluxCorrections.value() != 0) {
-                        LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
-                    }
+                    //if (verticalFluxCorrections.value() != 0) {
+                    //    LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
+                    //}
 
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
@@ -2698,6 +2678,9 @@ Calculate
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
                 //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
+                //if (out.value() == 0) {
+                //    LOG(debug) << "getRHS(localZetaID) is 0 at " << get<large_num,ID>();
+                //}
                 NANChecker(out.value(), "getRHS(int localZetaID)");
                 return out;
             }

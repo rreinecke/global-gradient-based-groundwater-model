@@ -130,7 +130,7 @@ Equation::updateMatrix() {
     Eigen::initParallel();
     Index threads = Eigen::nbThreads();
 #endif
-//#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
         //LOG(userinfo) << "node: " << j;
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
@@ -142,7 +142,7 @@ Equation::updateMatrix() {
     }
 
     //Check if after iteration former 0 values turned to non-zero
-    if ((not A.isCompressed()) and isCached) {
+    if ((not A.isCompressed()) and isCached) { // Question: is this neccessary?
         LOG(numerics) << "Recompressing Matrix";
         A.makeCompressed();
     }
@@ -156,16 +156,19 @@ void inline
 Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     Index n = A_zetas.outerSize();
     large_num numInactive{0};
-    bool isActive;
     index_mapping.clear();
 
     // finding inactive nodes
+#ifdef EIGEN_HAS_OPENMP
+    Eigen::initParallel();
+    Index threads = Eigen::nbThreads();
+#endif
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
-        isActive = (nodes->at(i + iterOffset)->isZetaBetween(localZetaID));
-        if (isActive) {
+        if ( nodes->at(i + iterOffset)->isZetaActive(localZetaID) ) {
             index_mapping[i] = i - numInactive;
         } else {
-            numInactive++; // tracking how many have been set inactive
+            ++numInactive; // tracking how many have been set inactive
             index_mapping[i] = -1; // these entries will be ignored ( e.g. in loop filling A_zeta, x_zeta and b_zeta)
         }
     }
@@ -178,28 +181,24 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
-
-#ifdef EIGEN_HAS_OPENMP
-    Eigen::initParallel();
-    Index threads = Eigen::nbThreads();
-#endif
-//#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-    for (large_num nodeIter = 0; nodeIter < numberOfNodesPerLayer; ++nodeIter) {
-        auto id = index_mapping[nodeIter];
+    
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+    for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
+        auto id = index_mapping[j];
         if (id != -1) {
             //---------------------Left: fill matrix A_zeta and initiate x_zetas
-            addToA_zeta(nodeIter, iterOffset, localZetaID);
-            x_zetas(id) = nodes->at(nodeIter + iterOffset)->getZeta(localZetaID).value();
+            addToA_zeta(j, iterOffset, localZetaID);
+            x_zetas(id) = nodes->at(j + iterOffset)->getZeta(localZetaID).value();
             //---------------------Right
-            b_zetas(id) = nodes->at(nodeIter + iterOffset)->getRHS(localZetaID).value();
+            b_zetas(id) = nodes->at(j + iterOffset)->getRHS(localZetaID).value();
         }
     }
 
     //Check if after iteration former 0 values turned to non-zero
-    //if ((not A_zetas.isCompressed()) and isCached_zetas) {
-    //    LOG(numerics) << "Recompressing Matrix (zetas)";
-    //    A_zetas.makeCompressed();
-    //}
+    if ((not A_zetas.isCompressed()) and isCached_zetas) {
+        LOG(numerics) << "Recompressing Matrix (zetas)";
+        A_zetas.makeCompressed();
+    }
 }
 
 void inline
@@ -214,10 +213,16 @@ Equation::preconditioner() {
 
 void inline
 Equation::preconditioner_zetas() {
+    Eigen::SelfAdjointEigenSolver<SparseMatrix<pr_t>> selfAdjointSolver(A_zetas);
+    if ( selfAdjointSolver.info() != Success) {
+        LOG(numerics) << "A_zetas is not self-adjoint!";
+        throw "Fail before decomposing";
+    }
+
     LOG(numerics) << "Decomposing Matrix (zetas)";
     cg_zetas.compute(A_zetas);
     if (cg_zetas.info() != Success) {
-        LOG(numerics) << "Fail in decomposing matrix (zetas)";
+        LOG(userinfo) << "Fail in decomposing matrix (zetas)";
         throw "Fail in decomposing matrix (zetas)";
     }
 }
@@ -483,13 +488,10 @@ Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
 
-//#pragma omp parallel for
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
-
         large_num iterOffset = layer * numberOfNodesPerLayer;
 
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
-//#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
@@ -499,13 +501,13 @@ Equation::solve_zetas(){
                 continue;
             }
 
-            //if (!isCached_zetas) {
-            //    LOG(numerics) << "Compressing matrix (zetas)";
-            //    A_zetas.makeCompressed();
-            //
-            //    LOG(numerics) << "Cached Matrix (zetas)";
-            //   isCached_zetas = true;
-            //}
+            if (!isCached_zetas) {
+                LOG(numerics) << "Compressing matrix (zetas)";
+                A_zetas.makeCompressed();
+
+                LOG(numerics) << "Cached Matrix (zetas)";
+                isCached_zetas = true;
+            }
 
             //LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
             preconditioner_zetas();
@@ -606,7 +608,7 @@ Equation::solve_zetas(){
                 LOG(numerics) << "Zeta change bigger: " << zetaFail;
 
 
-                updateMatrix_zetas(iterOffset, localZetaID);
+                updateMatrix_zetas(layer, localZetaID);
                 if (A_zetas.size() == 0) { // if matrix is empty, go to next iteration
                     continue;
                 }

@@ -27,6 +27,8 @@
 #include <unordered_set>
 
 #include "../../lib/Eigen/Sparse"
+#include "../../lib/Eigen/Dense" // todo remove if not required by SelfAdjointEigenSolver
+
 #include "../../lib/Eigen/Core"
 //#include "../../lib/Eigen/PardisoSupport"
 #include "../Model/Node.hpp"
@@ -209,6 +211,8 @@ namespace GlobalFlow {
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
+
+
 
         bool vdf{false};
 
