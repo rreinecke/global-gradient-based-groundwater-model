@@ -48,23 +48,8 @@ namespace GlobalFlow {
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
                              op.isConfined(0), op.isDensityVariable(),
-                             op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
+                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
-
-                LOG(userinfo) << "- reading mapping of SpatID to ArcID";
-                readSpatIDtoArcID(buildDir(op.getMapping()));
-
-                LOG(userinfo) << "- building grid by SpatID";
-                //DataProcessing::buildNeighbourMap(nodes, i, op.getNumberOfLayers(), op.getOceanConduct(), op.getBoundaryCondition());
-                DataProcessing::buildBySpatID(nodes,
-                                              this->getMappingSpatIDtoNodeIDs(),
-                                              0.08333, // todo move to config
-                                              360,
-                                              180,
-                                              true,
-                                              op.getNumberOfNodesPerLayer(),
-                                              op.getGHBConduct(),
-                                              op.getBoundaryCondition());
 
                 if (op.getNumberOfLayers() > 1) {
                     LOG(userinfo) << "Building the model layer(s) below";
@@ -74,7 +59,24 @@ namespace GlobalFlow {
                                                       op.getAquiferDepth(),
                                                       op.getInitialK(),
                                                       op.getAnisotropy());
+                }
 
+                LOG(userinfo) << "- reading mapping of SpatID to ArcID";
+                readSpatIDtoArcID(buildDir(op.getMapping()));
+
+                LOG(userinfo) << "- building grid by SpatID";
+                DataProcessing::buildBySpatID(nodes,
+                                              this->getMappingSpatIDtoNodeIDs(),
+                                              0.08333, // todo move to config
+                                              360,
+                                              180,
+                                              true,
+                                              op.getNumberOfLayers(),
+                                              op.getNumberOfNodesPerLayer(),
+                                              op.getGHBConduct(),
+                                              op.getBoundaryCondition());
+
+                if (op.getNumberOfLayers() > 1) {
                     LOG(userinfo) << "Copying neighbours to bottom layer(s)";
                     DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
 

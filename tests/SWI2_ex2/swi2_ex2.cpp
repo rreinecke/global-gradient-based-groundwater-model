@@ -1,6 +1,5 @@
 #include "swi2_ex2.hpp"
 
-
 namespace GlobalFlow {
 
 void StandaloneRunner::loadSettings() {
@@ -20,39 +19,16 @@ void StandaloneRunner::writeNodeInfosToCSV(){
 
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 1000);
-    int stepNumber = 1;
-
-    // for saving zetas in a csv
-    std::ofstream myfile;
-    myfile.open ("zetas.csv");
-    myfile << "timestep,nodeID,zetaID,zeta" << std::endl;
+    int stepNumber{1};
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-
-        if (stepNumber == 1) {
-            step.first->toggleSteadyState();
-        }
+        step.first->toggleSteadyState();
         step.first->solve();
+        step.first->toggleSteadyState();
         sim.printMassBalances(debug);
-
-        // for saving zetas in a csv
-        int zetaID;
-        double zeta;
-        zetaID = 1;
-        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
-        }
-        zetaID = 2;
-        for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-            zeta = sim.getNodes()->at(nodeID)->getZeta(zetaID).value();
-            myfile << stepNumber << "," << nodeID << "," << zetaID << "," << zeta << std::endl;
-        }
-
-        stepNumber++;
+        ++stepNumber;
     }
-    myfile.close(); // for saving zetas in a csv
     //sim.save();
 }
 

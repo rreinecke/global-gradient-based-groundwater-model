@@ -43,6 +43,7 @@ class SimpleDataReader : public DataReader {
                                           20, // lonRange = 360
                                           20, // latRange = 180
                                           false, // isGlobal = true
+                                          op.getNumberOfLayers(),
                                           op.getNumberOfNodesPerLayer(),
                                           op.getGHBConduct(),
                                           op.getBoundaryCondition());

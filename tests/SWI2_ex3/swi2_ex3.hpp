@@ -40,22 +40,22 @@ namespace GlobalFlow {
             setupSimulation();
 
             void
+            writeNodeInfosToCSV();
+
+            void
             simulate();
 
             void
             getResults();
 
             void
-            writeNodeInfosToCSV();
-
-            void
             writeData();
 
         private:
-            Solver::Equation *_eq;
+            Solver::Equation *_eq{};
             Simulation::Options op;
             Simulation::Simulation sim;
-            DataProcessing::SWI2_ex3_DataReader *reader;
+            DataProcessing::SWI2_ex3_DataReader *reader{};
     };
 
 }//ns

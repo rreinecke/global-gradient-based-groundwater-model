@@ -36,17 +36,6 @@ class SimpleDataReader : public DataReader {
                          op.getVDFLock(),
                         op.getDensityZones());
 
-            LOG(userinfo) << "Building grid by spatial ID";
-            DataProcessing::buildBySpatID(nodes,
-                                          this->getMappingSpatIDtoNodeIDs(),
-                                          1, // resolution = 0.0833 <- input for global models
-                                          10, // lonRange = 360
-                                          10, // latRange = 180
-                                          false, // isGlobal = true
-                                          op.getNumberOfNodesPerLayer(),
-                                          op.getGHBConduct(),
-                                          op.getBoundaryCondition());
-
             LOG(userinfo) << "Building the bottom layers";
             DataProcessing::buildBottomLayers(nodes,
                                               op.getNumberOfLayers(),
@@ -54,6 +43,18 @@ class SimpleDataReader : public DataReader {
                                               op.getAquiferDepth(),
                                               op.getInitialK(),
                                               op.getAnisotropy());
+
+            LOG(userinfo) << "Building grid by spatial ID";
+            DataProcessing::buildBySpatID(nodes,
+                                          this->getMappingSpatIDtoNodeIDs(),
+                                          1, // resolution = 0.0833 <- input for global models
+                                          10, // lonRange = 360
+                                          10, // latRange = 180
+                                          false, // isGlobal = true
+                                          op.getNumberOfLayers(),
+                                          op.getNumberOfNodesPerLayer(),
+                                          op.getGHBConduct(),
+                                          op.getBoundaryCondition());
 
             LOG(userinfo) << "Reading hydraulic parameters";
             readConduct(buildDir(op.getLithology()));

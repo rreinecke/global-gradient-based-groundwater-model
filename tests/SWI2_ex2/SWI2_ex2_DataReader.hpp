@@ -19,7 +19,7 @@ namespace GlobalFlow {
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
                              op.isConfined(0), op.isDensityVariable(),
-                             op.getEffectivePorosity(), op.getMaxToeSlope(), op.getMaxToeSlope(),
+                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
 
                 LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
@@ -29,6 +29,7 @@ namespace GlobalFlow {
                                               1, // lonRange = 360
                                               60, // latRange = 180
                                               false, // isGlobal = true
+                                              op.getNumberOfLayers(),
                                               op.getNumberOfNodesPerLayer(),
                                               op.getGHBConduct(),
                                               op.getBoundaryCondition());
