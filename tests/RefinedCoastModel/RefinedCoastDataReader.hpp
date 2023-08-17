@@ -39,10 +39,10 @@ class SimpleDataReader : public DataReader {
             LOG(userinfo) << "Building grid by spatial ID (refined)";
             DataProcessing::buildBySpatID(nodes,
                                           this->getMappingSpatIDtoNodeIDs(),
-                                          2, // resolution = 0.0833 <- input for global models
-                                          20, // lonRange = 360
-                                          20, // latRange = 180
-                                          false, // isGlobal = true
+                                          op.getResolution(),
+                                          op.getLonRange(),
+                                          op.getLatRange(),
+                                          op.isGlobal(),
                                           op.getNumberOfLayers(),
                                           op.getNumberOfNodesPerLayer(),
                                           op.getGHBConduct(),

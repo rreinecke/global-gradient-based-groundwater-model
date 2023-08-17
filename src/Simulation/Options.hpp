@@ -65,8 +65,9 @@ namespace GlobalFlow {
 
             //++General configuration++//
             unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
-            long NUMBER_OF_ROWS{0};
-            long NUMBER_OF_COLS{0};
+            long LAT_RANGE{0};
+            long LON_RANGE{0};
+            double RESOLUTION{0.0};
             double EDGE_LENGTH_LEFT_RIGHT{0.0};
             double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
@@ -114,7 +115,7 @@ namespace GlobalFlow {
             bool effective_porosity_from_file{false};
             bool zones_sources_sinks_from_file{false};
 
-            bool ROW_COLS{false};
+            bool IS_GLOBAL{false};
             double MAX_HEAD_CHANGE{0.01};
             double MAX_ZETA_CHANGE{0.01};
             bool DAMPING{false};
@@ -203,7 +204,7 @@ namespace GlobalFlow {
 
             std::string getEffectivePorosityDir() {return EFFECTIVE_POROSITY_FILE;}
 
-            bool isRowCol() { return ROW_COLS; }
+            bool isGlobal() { return IS_GLOBAL; }
 
             int getInnerItter() { return I_ITTER; }
 
@@ -213,14 +214,19 @@ namespace GlobalFlow {
             };
 
             long
-            getNumberOfRows() {
-                return NUMBER_OF_ROWS;
+            getLatRange() {
+                return LAT_RANGE;
             };
 
             long
-            getNumberOfCols() {
-                return NUMBER_OF_COLS;
+            getLonRange() {
+                return LON_RANGE;
             };
+
+            double
+            getResolution() {
+                return RESOLUTION;
+            }
 
             double
             getEdgeLengthLeftRight() {

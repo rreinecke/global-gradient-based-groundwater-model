@@ -46,10 +46,11 @@ namespace GlobalFlow {
 
             pt::ptree config = tree.get_child("model_config");
             NODES = config.get<std::string>("nodes");
-            ROW_COLS = config.get<bool>("row_cols");
             NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
-            NUMBER_OF_ROWS = config.get<long>("number_of_rows");
-            NUMBER_OF_COLS = config.get<long>("number_of_cols");
+            LAT_RANGE = config.get<long>("lat_range");
+            LON_RANGE = config.get<long>("lon_range");
+            IS_GLOBAL = config.get<bool>("is_global");
+            RESOLUTION = config.get<double>("resolution");
             EDGE_LENGTH_LEFT_RIGHT = config.get<double>("edge_length_left_right");
             EDGE_LENGTH_FRONT_BACK = config.get<double>("edge_length_front_back");
             THREADS = config.get<int>("threads");

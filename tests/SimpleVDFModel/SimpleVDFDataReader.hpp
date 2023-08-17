@@ -26,15 +26,15 @@ namespace GlobalFlow {
 
                 LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
                 DataProcessing::buildBySpatID(nodes,
-                this->getMappingSpatIDtoNodeIDs(),
-                1, // resolution = 0.0833 <- input for global models
-                10, // lonRange = 360
-                10, // latRange = 180
-                false, // isGlobal = true
-                op.getNumberOfLayers(),
-                op.getNumberOfNodesPerLayer(),
-                op.getGHBConduct(),
-                op.getBoundaryCondition());
+                                              this->getMappingSpatIDtoNodeIDs(),
+                                              op.getResolution(),
+                                              op.getLonRange(),
+                                              op.getLatRange(),
+                                              op.isGlobal(),
+                                              op.getNumberOfLayers(),
+                                              op.getNumberOfNodesPerLayer(),
+                                              op.getGHBConduct(),
+                                              op.getBoundaryCondition());
 
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,

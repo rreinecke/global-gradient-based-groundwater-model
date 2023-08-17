@@ -2,10 +2,11 @@
   "config": {
     "model_config": {
       "nodes": "grid_nz.csv",
-      "row_cols": "false",
       "number_of_nodes_per_layer": 4603,
-      "number_of_rows": 0,
-      "number_of_cols": 0,
+      "lon_range": 360,
+      "lat_range": 180,
+      "is_global": true,
+      "resolution": 0.08333,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
       "threads": 1,

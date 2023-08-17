@@ -67,10 +67,10 @@ namespace GlobalFlow {
                 LOG(userinfo) << "- building grid by SpatID";
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeIDs(),
-                                              0.08333, // todo move to config
-                                              360,
-                                              180,
-                                              true,
+                                              op.getResolution(),
+                                              op.getLonRange(),
+                                              op.getLatRange(),
+                                              op.isGlobal(),
                                               op.getNumberOfLayers(),
                                               op.getNumberOfNodesPerLayer(),
                                               op.getGHBConduct(),

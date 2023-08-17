@@ -2,10 +2,11 @@
   "config": {
     "model_config": {
       "nodes": "grid_refinedCoast.csv",
-      "row_cols": "false",
       "number_of_nodes_per_layer": 130,
-      "number_of_rows": 0,
-      "number_of_cols": 0,
+      "lon_range": 20,
+      "lat_range": 20,
+      "is_global": false,
+      "resolution": 2,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
       "threads": 1,

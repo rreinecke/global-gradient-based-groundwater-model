@@ -2,10 +2,11 @@
   "config": {
     "model_config": {
       "nodes": "grid_simpleRefined.csv",
-      "row_cols": "false",
       "number_of_nodes_per_layer": 127,
-      "number_of_rows": 0,
-      "number_of_cols": 0,
+      "lon_range": 10,
+      "lat_range": 10,
+      "is_global": false,
+      "resolution": 1,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
       "threads": 1,

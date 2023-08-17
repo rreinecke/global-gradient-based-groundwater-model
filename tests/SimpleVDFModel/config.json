@@ -2,10 +2,11 @@
   "config": {
     "model_config": {
       "nodes": "grid_simpleVDF.csv",
-      "row_cols": "true",
       "number_of_nodes_per_layer": 100,
-      "number_of_rows": 10,
-      "number_of_cols": 10,
+      "lon_range": 10,
+      "lat_range": 10,
+      "is_global": false,
+      "resolution": 1,
       "edge_length_left_right": 10,
       "edge_length_front_back": 10,
       "threads": 1,

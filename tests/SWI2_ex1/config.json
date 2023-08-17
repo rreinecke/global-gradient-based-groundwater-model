@@ -2,10 +2,11 @@
   "config": {
     "model_config": {
       "nodes": "grid_swi2_ex1.csv",
-      "row_cols": "true",
       "number_of_nodes_per_layer": 50,
-      "number_of_rows": 50,
-      "number_of_cols": 1,
+      "lon_range": 1,
+      "lat_range": 50,
+      "is_global": false,
+      "resolution": 1,
       "edge_length_left_right": 1,
       "edge_length_front_back": 5,
       "threads": 20,
