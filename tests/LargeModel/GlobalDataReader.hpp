@@ -26,132 +26,136 @@
 #include "../../src/Model/Units.hpp"
 
 namespace GlobalFlow {
-    namespace DataProcessing {
+namespace DataProcessing {
         /**
          * @class GlobalDataReader
          * @implements DataReader
          * @brief This class provides methods for loading large input data
          * The paths are specified in the json file in in the data folder
          */
-        class GlobalDataReader : public DataReader {
-        public:
-            /**
-             * @brief Constructor
-             */
-            GlobalDataReader() = default;
+class GlobalDataReader : public DataReader {
+    public:
+        /**
+         * @brief Constructor
+         */
+        GlobalDataReader() = default;
 
-            void readData(Simulation::Options op) override {
-                LOG(userinfo) << "Building the top model layer";
-                LOG(userinfo) << "- reading land mask (with default values from config)";
-                readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
-                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
-                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
-                             op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.isDensityVariable(),
-                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+        /**
+         * @brief overriding read data for the large model
+         * @param op
+         * @note Number of nodes per layer for global: 2161074, for North America: 396787, for New Zealand: 4603
+         */
+        void readData(Simulation::Options op) override {
+            LOG(userinfo) << "Reading land mask (with default values from config)";
+            readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                         op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                         op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
+                         op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
+                         op.isConfined(0), op.isDensityVariable(),
+                         op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
+                         op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
 
-                if (op.getNumberOfLayers() > 1) {
-                    LOG(userinfo) << "Building the model layer(s) below";
-                    DataProcessing::buildBottomLayers(nodes,
-                                                      op.getNumberOfLayers(),
-                                                      op.getConfinements(),
-                                                      op.getAquiferDepth(),
-                                                      op.getInitialK(),
-                                                      op.getAnisotropy());
-                }
-
-                LOG(userinfo) << "- reading mapping of SpatID to ArcID";
-                readSpatIDtoArcID(buildDir(op.getMapping()));
-
-                LOG(userinfo) << "- building grid by SpatID";
-                DataProcessing::buildBySpatID(nodes,
-                                              this->getMappingSpatIDtoNodeIDs(),
-                                              op.getResolution(),
-                                              op.getLonRange(),
-                                              op.getLatRange(),
-                                              op.isGlobal(),
-                                              op.getNumberOfLayers(),
-                                              op.getNumberOfNodesPerLayer(),
-                                              op.getGHBConduct(),
-                                              op.getBoundaryCondition());
-
-                if (op.getNumberOfLayers() > 1) {
-                    LOG(userinfo) << "Copying neighbours to bottom layer(s)";
-                    DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
-
-                    if (op.useEfolding()) {
-                        LOG(userinfo) << "Reading e-folding";
-                        readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
-                    }
-                }
-
-                if(op.isKGHBFromFile()) {
-                    LOG(userinfo) << "Reading the boundary condition";
-                    readHeadBoundary(buildDir(op.getKGHBDir()));
-                }
-
-                if (op.isKFromFile()) {
-                    LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConduct(buildDir(op.getLithology()));
-                }
-
-                LOG(userinfo) << "Reading elevation";
-                readElevation(buildDir(op.getElevation()));
-
-                // read either initial head (default) or equilibrium water table depth from file, if available
-                if (op.isInitialHeadFromFile()){
-                    LOG(userinfo) << "Reading initial head";
-                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
-                } else if (op.isEqWTDFromFile()){
-                    LOG(userinfo) << "Reading equal water table depth";
-                    readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
-                }
-
-                LOG(userinfo) << "Reading groundwater recharge";
-                //readGWRecharge(buildDir(op.getRecharge()));
-                readGWRechargeMapping(buildDir(op.getRecharge()),
-                                      [](const double &recharge, const double &area) {
-                                          return (((recharge / 1000) * area) / 365);});
-
-                LOG(userinfo) << "Reading rivers";
-                if (op.isKRiverFromFile()) {
-                    readRiverConductance(buildDir(op.getKRiver()));
-                } else {
-                    readBlueCells(buildDir(op.getRiverElevation()),
-                                  calculateRiverStage(buildDir(op.getRiverExtent())));
-                }
-
-
-                LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
-                readLakesAndWetlands(buildDir(op.getGlobalLakes()),
-                                     buildDir(op.getGlobalWetlands()),
-                                     buildDir(op.getLocalLakes()),
-                                     buildDir(op.getLocalWetlands()));
-
-                if (op.isDensityVariable()) {
-                    LOG(userinfo) << "Reading initial zeta heights";
-                    readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
-                                     buildDir(op.getInitialZetasDir())); // requires elevation to be set
-
-                    if (op.isEffectivePorosityFromFile()) {
-                        LOG(userinfo) << "Reading effective porosity";
-                        readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    }
-
-                    if (op.isZonesSourcesSinksFromFile()) {
-                        LOG(userinfo) << "Reading zones of sources and sinks";
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
-                                              op.getDensityZones());
-                    }
-
-                    LOG(userinfo) << "Setting the variable density conditions at general head boundaries";
-                    // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
-                    setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
-                                                           op.getAquiferDepth()[0]);
-                }
-
+            if (op.getNumberOfLayers() > 1) {
+                LOG(userinfo) << "Building the model layer(s) below";
+                DataProcessing::buildBottomLayers(nodes,
+                                                  op.getNumberOfLayers(),
+                                                  op.getConfinements(),
+                                                  op.getAquiferDepth(),
+                                                  op.getInitialK(),
+                                                  op.getAnisotropy());
             }
-        };
-    }
+
+            LOG(userinfo) << "Setting neighbours by SpatID";
+            DataProcessing::buildBySpatID(nodes,
+                                          this->getMappingSpatIDtoNodeIDs(),
+                                          op.getResolution(),
+                                          op.getLonRange(),
+                                          op.getLatRange(),
+                                          op.isGlobal(),
+                                          op.getNumberOfLayers(),
+                                          op.getNumberOfNodesPerLayer(),
+                                          op.getGHBConduct(),
+                                          op.getBoundaryCondition());
+
+            if (op.getNumberOfLayers() > 1) {
+                LOG(userinfo) << "Copying neighbours to bottom layer(s)";
+                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
+
+                if (op.useEfolding()) {
+                    LOG(userinfo) << "Reading e-folding";
+                    readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
+                }
+            }
+
+            LOG(userinfo) << "Reading mapping of SpatID to ArcID";
+            readSpatIDtoArcID(buildDir(op.getMapping()));
+
+            if(op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading the boundary condition";
+                readHeadBoundary(buildDir(op.getKGHBDir()));
+            }
+
+            if (op.isKFromFile()) {
+                LOG(userinfo) << "Reading hydraulic conductivity";
+                readConduct(buildDir(op.getLithology()));
+            }
+
+            LOG(userinfo) << "Reading elevation";
+            readElevation(buildDir(op.getElevation()));
+
+            // read either initial head (default) or equilibrium water table depth from file, if available
+            if (op.isInitialHeadFromFile()){
+                LOG(userinfo) << "Reading initial head";
+                readInitialHeads((buildDir(op.getInitialHeadsDir())));
+            } else if (op.isEqWTDFromFile()){
+                LOG(userinfo) << "Reading equal water table depth";
+                readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
+            }
+
+            LOG(userinfo) << "Reading groundwater recharge";
+            //readGWRecharge(buildDir(op.getRecharge()));
+            readGWRechargeMapping(buildDir(op.getRecharge()),
+                                  [](const double &recharge, const double &area) {
+                                      return (((recharge / 1000) * area) / 365);});
+
+            LOG(userinfo) << "Reading rivers";
+            if (op.isKRiverFromFile()) {
+                readRiverConductance(buildDir(op.getKRiver()));
+            } else {
+                readBlueCells(buildDir(op.getRiverElevation()),
+                              calculateRiverStage(buildDir(op.getRiverExtent())));
+            }
+
+
+            LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
+            readLakesAndWetlands(buildDir(op.getGlobalLakes()),
+                                 buildDir(op.getGlobalWetlands()),
+                                 buildDir(op.getLocalLakes()),
+                                 buildDir(op.getLocalWetlands()));
+
+            if (op.isDensityVariable()) {
+                LOG(userinfo) << "Reading initial zeta heights";
+                readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
+                                 buildDir(op.getInitialZetasDir())); // requires elevation to be set
+
+                if (op.isEffectivePorosityFromFile()) {
+                    LOG(userinfo) << "Reading effective porosity";
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+                }
+
+                if (op.isZonesSourcesSinksFromFile()) {
+                    LOG(userinfo) << "Reading zones of sources and sinks";
+                    readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
+                                          op.getDensityZones());
+                }
+
+                LOG(userinfo) << "Setting the variable density conditions at general head boundaries";
+                // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
+                setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
+                                                       op.getAquiferDepth()[0]);
+            }
+
+        }
+    };
+}
 }

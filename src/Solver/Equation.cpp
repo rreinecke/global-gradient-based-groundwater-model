@@ -142,7 +142,7 @@ Equation::updateMatrix() {
     }
 
     //Check if after iteration former 0 values turned to non-zero
-    if ((not A.isCompressed()) and isCached) { // Question: is this neccessary?
+    if ((not A.isCompressed()) and isCached) { // Question: is this necessary?
         LOG(numerics) << "Recompressing Matrix";
         A.makeCompressed();
     }
@@ -159,11 +159,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     index_mapping.clear();
 
     // finding inactive nodes
-#ifdef EIGEN_HAS_OPENMP
-    Eigen::initParallel();
-    Index threads = Eigen::nbThreads();
-#endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+//#pragma omp parallel for
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
         if ( nodes->at(i + iterOffset)->isZetaActive(localZetaID) ) {
             index_mapping[i] = i - numInactive;
@@ -182,7 +178,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
     
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+//#pragma omp parallel for
     for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         auto id = index_mapping[j];
         if (id != -1) {
@@ -490,8 +486,8 @@ Equation::solve_zetas(){
 
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
-
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
+#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";

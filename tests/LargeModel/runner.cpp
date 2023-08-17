@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config.json");
+        op.load("data/config_two_layers.json");
     }
 
     void Runner::setupSimulation() {
@@ -16,7 +16,7 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 120);
         //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         int stepNumber{1};
