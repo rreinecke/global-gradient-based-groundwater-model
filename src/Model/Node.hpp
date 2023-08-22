@@ -1616,7 +1616,7 @@ Calculate
                 t_vol_t sources = 0.0 * (si::cubic_meter / day);
                 //LOG(userinfo) << "zoneToUse: " << zoneToUse << std::endl;
 
-                if (isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
+                if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     // if the new groundwater head is above or equal to the node bottom
                     if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) { // lines 3532-3536
                         // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
@@ -1679,8 +1679,8 @@ Calculate
                         // calculating zone conductances for pseudo source term calculation
                         std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
-                        if ((isZetaBetween(localZetaID) and // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
-                            at(got)->isZetaBetween(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
+                        if ((isZetaActive(localZetaID) and // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
+                            at(got)->isZetaActive(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
                             //%% head part %%
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
@@ -1754,12 +1754,12 @@ Calculate
                 std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours();
 
                 // tip and toe flow calculation (in 8 parts)
-                if (isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
+                if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     for (const auto &position: possible_neighbours) {
                         auto got = neighbours.find(position);
                         if (got == neighbours.end()) { // do nothing if neighbour does not exist
                         } else {
-                            if (!at(got)->isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
+                            if (!at(got)->isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                                 if ((position == NeighbourPosition::LEFT) or
                                     (position == NeighbourPosition::BACK) or
                                     (position == NeighbourPosition::RIGHT) or
@@ -2169,7 +2169,7 @@ Calculate
                     if (got == neighbours.end()) { // no neighbour at position or opposite side
                     } else {
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
-                            if (isZetaBetween(localZetaID)) { // or localZetaID == 0
+                            if (isZetaActive(localZetaID)) { // or localZetaID == 0
                                 // get max delta of zeta between nodes
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
@@ -2216,7 +2216,7 @@ Calculate
                                 if ((getZeta(localZetaID) - getZetas().back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
                                     if (got_opp == neighbours.end()){
                                     } else {
-                                        if (at(got_opp)->isZetaBetween(localZetaID)) { // or localZetaID == 0
+                                        if (at(got_opp)->isZetaActive(localZetaID)) { // or localZetaID == 0
                                             // change zeta in other direction neighbour
                                                 delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
                                                              (getNodeLength(got) * get<t_dim, EffectivePorosity>()) /
@@ -2262,7 +2262,7 @@ Calculate
                 for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                     //LOG(debug) << "getZetas()[localZetaID]: " << getZetas()[localZetaID].value() << std::endl;
 
-                    if (isZetaBetween(localZetaID)) { // or localZetaID == 0
+                    if (isZetaActive(localZetaID)) { // or localZetaID == 0
                         if (getZeta(localZetaID) < getZetas().back()) { setZeta(localZetaID, getZetas().back()); }
 
                         if (getZeta(localZetaID) > getZetas().front()) { setZeta(localZetaID, getZetas().front()); }
@@ -2573,8 +2573,8 @@ Calculate
                     zetaMovementConductance = 0 * (si::square_meter / day);
                     if (got == neighbours.end()) { // no neighbour at position
                     } else { // there is a neighbour at position
-                        if ((isZetaBetween(localZetaID) and
-                             at(got)->isZetaBetween(localZetaID))) {
+                        if ((isZetaActive(localZetaID) and
+                             at(got)->isZetaActive(localZetaID))) {
                             zoneConductances = getZoneConductances(got);
                             zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                             zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
@@ -2667,7 +2667,7 @@ Calculate
              */
             t_vol_t getRHS(int localZetaID){
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
-                if (isZetaBetween(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
+                if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
                 //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
