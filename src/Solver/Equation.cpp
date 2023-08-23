@@ -325,6 +325,14 @@ Equation::adjustZetaHeights() {
     }
 
 void inline
+Equation::updateVDFBudget(large_num iterOffset) {
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
+        nodes->at(k + iterOffset)->saveVDFMassBalance();
+    }
+}
+
+void inline
 Equation::updateBudget() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -623,7 +631,9 @@ Equation::solve_zetas(){
 
             //__itter_zetas = iterations; // Question: add this to output?
             //__error_zetas = cg_zetas.error_inf();
+
         }
+        updateVDFBudget(iterOffset);
         //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
         // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
     }
@@ -631,7 +641,6 @@ Equation::solve_zetas(){
 
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
-    // updateZetaBudget(); // Question: calculate zeta budgets?
 }
 
 

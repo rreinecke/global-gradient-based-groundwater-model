@@ -204,7 +204,7 @@ namespace GlobalFlow {
 
             /**
              * @brief Uses specific storage to calculate storativity
-             * @return Flow budget for cell depending on head change
+             * @return Squaremeter
              */
             t_s_meter getStorageCapacity__Primary() noexcept {
                 t_s_meter out = get<quantity<perUnit>, SpecificStorage>().value()
@@ -214,27 +214,27 @@ namespace GlobalFlow {
 
             /**
              * @brief Uses specific yield to calculate storativity
-             * @return Flow budget for cell depending on head change
+             * @return Squaremeter
              */
             t_s_meter getStorageCapacity__Secondary() noexcept {
                 return get<t_dim, SpecificYield>() * get<t_s_meter, Area>();
             }
 
             /**
-             * @brief Flow volume of cell
+             * @brief Flow volume IN or OUT of cell
              * @return Flow volume
              */
             template<typename CompareFunction>
             t_vol_t getFlow(CompareFunction compare) noexcept {
-                t_vol_t flow_v = 0.0 * si::cubic_meter / day;
-                t_vol_t stFlow = 0.0 * si::cubic_meter / day;
+                t_vol_t out = 0.0 * si::cubic_meter / day;
+                t_vol_t storageFlow = 0.0 * si::cubic_meter / day;
                 if (not steadyState) {
-                    stFlow = getTotalStorageFlow();
-                    if (compare(stFlow.value()))
-                        flow_v += boost::units::abs(stFlow);
+                    storageFlow = getTotalStorageFlow();
+                    if (compare(storageFlow.value()))
+                        out += boost::units::abs(storageFlow);
                 }
-                flow_v += getNonStorageFlow(std::forward<CompareFunction>(compare));
-                return flow_v.value() * si::cubic_meter / day;
+                out += getNonStorageFlow(std::forward<CompareFunction>(compare));
+                return out.value() * si::cubic_meter / day;
             }
 
         public:
@@ -741,7 +741,7 @@ Calculate
             }
 
             /**
-             * @brief Get flow budget of a specific external flows
+             * @brief Get flow budget of a specific external flow
              * @param &flow A external flow
              * @return Flow volume
              * Note: Water entering storage is treated as an outflow (-), that is a loss of water from the flow system
@@ -752,8 +752,8 @@ Calculate
                     return flow.getRecharge() * get<t_dim, StepModifier>();
                 }
                 t_vol_t ex;
-                t_meter eq_head = get<t_meter, EQHead>();
-                t_meter head = get<t_meter, Head>();
+                auto eq_head = get<t_meter, EQHead>();
+                auto head = get<t_meter, Head>();
                 t_vol_t recharge = 0 * si::cubic_meter / day;
                 try {
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
@@ -830,6 +830,74 @@ Calculate
             void saveMassBalance() noexcept {
                 fields.addTo<t_c_meter, OUT>(getCurrentOUT().value() * si::cubic_meter);
                 fields.addTo<t_c_meter, IN>(getCurrentIN().value() * si::cubic_meter);
+            }
+
+            /**
+             * @brief Get all current IN flow
+             * @return Flow volume
+             */
+            t_vol_t calculateCurrentVDFIN(int localZetaID) noexcept {
+                t_vol_t out = 0.0 * si::cubic_meter / day;
+                auto top = neighbours.find(NeighbourPosition::TOP);
+                // skip nodes that do not have a bottom neighbour
+                if (top == neighbours.end()) { // no neighbour at top
+                } else {
+                    // get flow in from instantaneous mixing with top neighbour
+                    out += at(top)->instantaneousMixing(localZetaID);
+                }
+                // get flow from tip and toe tracking change in zeta height
+                out += getZoneChangeBudget(localZetaID);
+                return out;
+            } // Question: is there a storage flow in VDF?
+
+            /**
+             * @brief Get all current OUT flow
+             * @return Flow volume
+             */
+            t_vol_t calculateCurrentVDFOUT(int localZetaID) noexcept {
+                t_vol_t out = 0.0 * si::cubic_meter / day;
+                // get flow out from instantaneous mixing with bottom neighbour
+                out -= instantaneousMixing(localZetaID);
+                // get flow from tip and toe tracking change in zeta height
+                out -= getZoneChangeBudget(localZetaID);
+                return out;
+            } // Question: is there a storage flow in VDF?
+
+            void saveVDFMassBalance() noexcept {
+                auto vdfOut = get<std::vector<t_c_meter>, VDFOUT>();
+                auto vdfIn = get<std::vector<t_c_meter>, VDFIN>();
+
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
+
+                    if (vdfOut.size() < getZetas().size()) {
+                        vdfOut.emplace_back(0 * si::cubic_meter);
+                        vdfIn.emplace_back(0 * si::cubic_meter);
+                    }
+                    vdfOut[localZetaID] += calculateCurrentVDFOUT(localZetaID).value() * si::cubic_meter;
+                    vdfIn[localZetaID] += calculateCurrentVDFIN(localZetaID).value() * si::cubic_meter;
+                }
+                set<std::vector<t_c_meter>, VDFOUT>(vdfOut);
+                set<std::vector<t_c_meter>, VDFIN>(vdfIn);
+            }
+
+            t_c_meter getVDFOUT() {
+                t_c_meter out = 0.0 * si::cubic_meter;
+
+                auto vdfOut = get<std::vector<t_c_meter>, VDFOUT>();
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
+                    out += vdfOut[localZetaID];
+                }
+                return out;
+            }
+
+            t_c_meter getVDFIN() {
+                t_c_meter out = 0.0 * si::cubic_meter;
+
+                auto vdfIn = get<std::vector<t_c_meter>, VDFIN>();
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
+                    out += vdfIn[localZetaID];
+                }
+                return out;
             }
 
             /**
@@ -1174,7 +1242,8 @@ Calculate
             }
             /**
              * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
-             * @param initialZetas the zeta surface height in meters
+             * @param localZetaID
+             * @param zeta the zeta surface height in meters
              */
             void addZeta(int localZetaID, t_meter zeta){
                 NANChecker(zeta.value(), "zeta (in addZeta)");
@@ -1580,7 +1649,7 @@ Calculate
 
             bool isZetaAtBottom(int localZetaID){
                 return (getZetaTZero(localZetaID) <= getZetasTZero().back() or
-                        get<t_meter, Head>() < (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()));
+                        getHead() < getBottom());
             }
 
             bool isZetaBetween(int localZetaID){
@@ -1618,7 +1687,7 @@ Calculate
 
                 if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     // if the new groundwater head is above or equal to the node bottom
-                    if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>())) { // lines 3532-3536
+                    if (get<t_meter, Head>() >= getBottom()) { // lines 3532-3536
                         // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
                         auto RHSConstantDensity = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
 
@@ -2008,7 +2077,7 @@ Calculate
                     return;
                 } else { // only clip if node is unconfined
                     t_meter head = get<t_meter, Head>();
-                    t_meter bottomOfNode = get<t_meter, Elevation>() - get<t_meter, VerticalSize>();
+                    t_meter bottomOfNode = getBottom();
                     t_meter topOfNode = get<t_meter, Elevation>();
                     t_meter updatedZeta;
                     // if groundwater head is BELOW the top of the node
@@ -2045,7 +2114,7 @@ Calculate
              *                is added as freshwater
              * @note in SWI2 code: SSWI2_IMIX
              */
-            t_vol_t instantaneousMixing(int localZetaID, bool downwardFlow) {
+            t_vol_t instantaneousMixing(int localZetaID) {
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 int zetaIDNeig{0};
                 int zetaID{0};
@@ -2062,39 +2131,86 @@ Calculate
                     }
 
                     // skip if head in this or neighbour node is below node bottom
-                    if (get<t_meter, Head>() < (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()) or
-                        getAt<t_meter, Head>(down) <
-                        (getAt<t_meter, Elevation>(down) - getAt<t_meter, VerticalSize>(down))) {
+                    if (getHead() < getBottom() or
+                        at(down)->getHead() < at(down)->getBottom()){
                         return out; // return 0
                     }
 
+                    // skip if localZetaID is not involved
+                    // todo find the zone number at the bottom of the top node and the top oft the down node
+                    // if (localZetaID != getZetaID(getNusBot())) { return out; }
+                    // if (localZetaID != getZetaID(at(down)->getNusTop())) { return out; }
+
+                    // calculate the flux down
                     t_vol_t fluxDown = getFluxDown();
 
-                    // if flox down is positive
+                    // if flux down is positive
                     if (fluxDown > (0 * (si::cubic_meter / day))) {
-                        // if dim-less density at bottom of down neighbour is greater or equal to
+                        // skip if dim-less density at bottom of down neighbour is greater or equal to
                         // dim-less density at the bottom of this node
                         if (at(down)->getNusBot() >= getNusBot()) {
                             return out; // return 0
                         }
-                        // if dim-less density at top of this node is smaller or equal to
+                        // skip if dim-less density at top of this node is smaller or equal to
                         // dim-less density at the top of neighbour node
                         if (getNusTop() <= at(down)->getNusTop()){
                             return out; // return 0
                         }
                     }
 
-                    // todo solve the issue with top and down here: currently we need to return two values
-                    if (downwardFlow) { // if water flows from this node to down node
-                        if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) {
-                            return out; // return fluxDown
-                        }
-                    } else { // if water flows from this node to top node // todo perhaps remove this
-                        if (at(down)->isZetaAtTop(localZetaID) and !at(down)->isZetaAtTop(localZetaID + 1)) {
-                            return -out; // return -fluxDown
-                        }
+                    if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) {
+                        return fluxDown; // return fluxDown
                     }
                 }
+                return out;
+            }
+
+
+            /**
+             * @brief
+             * @return
+             * @note in SWI2 code: SSWI2_ZCHG
+             */
+            t_vol_t getZoneChangeBudget(int localZetaID){
+                t_vol_t out = 0.0 * si::cubic_meter / day;
+
+                t_meter zeta = getZeta(localZetaID);
+                t_meter zetaBelow = getZeta(localZetaID + 1);
+                // if zeta below next zeta surface
+                if (zeta < zetaBelow){ // Question: potential problem here? (clangevin)
+                    // set zeta to height of next zeta
+                    zeta = zetaBelow;
+                }
+
+                // if head is below bottom of node
+                if (getHead() < getBottom()) {
+                    // set zetas to bottom of node (zone thickness = zero)
+                    zeta = getBottom();
+                    zetaBelow = getBottom();
+                }
+
+                t_meter zetaOld = get<std::vector<t_meter>, Zetas_TZero>()[localZetaID];
+                t_meter zetaBelowOld = get<std::vector<t_meter>, Zetas_TZero>()[localZetaID + 1];
+                // if old zeta is below next old zeta surface
+                if (zetaOld < zetaBelowOld) {
+                    // set zeta old to height of next zeta old
+                    zetaOld = zetaBelowOld;
+                }
+
+                // if old head is below bottom of node
+                if (get<t_meter, Head_TZero>() < getBottom()) {
+                    // set zetas to bottom of node (zone thickness = zero)
+                    zetaOld = getBottom();
+                    zetaBelowOld = getBottom();
+                }
+
+
+                // calculate previous zone volume
+                out = ((getEffectivePorosity() * get<t_s_meter, Area>()) *
+                       ((zetaOld - zetaBelowOld) - (zeta - zetaBelow))) /
+                        (day * get<t_dim, StepModifier>());
+
+
                 return out;
             }
 
@@ -2115,7 +2231,7 @@ Calculate
                 if (top == neighbours.end()) { // no neighbour at position
                 } else {
                     // if head is above the bottom of the node, both in this node AND in the node above (SWI2 line 2325)
-                    if (get<t_meter, Head>() >= (get<t_meter, Elevation>() - get<t_meter, VerticalSize>()) &&
+                    if (get<t_meter, Head>() >= getBottom() &&
                         getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
 
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
