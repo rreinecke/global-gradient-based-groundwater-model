@@ -241,6 +241,23 @@ namespace GlobalFlow {
             }
 
             /**
+             * Decide if its an In or Outflow
+             * @param fun
+             * @return
+             */
+            template<class Fun>
+            MassError inline getError(Fun fun) {
+                return getError([this, fun](int pos) {
+                                    double flow = fun(pos);
+                                    return flow < 0 ? flow : 0;
+                                }, // fun1 for getError(fun1, fun2): if flow at pos is negative return it, else return 0
+                                [this, fun](int pos) {
+                                    double flow = fun(pos);
+                                    return flow > 0 ? flow : 0;
+                                }); // fun2 for getError(fun1, fun2): if flow at pos is positive return it, else return 0
+            }
+
+            /**
              * Calculate the mass error
              * @param fun1 Function to get OutFlow
              * @param fun2 Function to get InFlow
@@ -318,23 +335,6 @@ namespace GlobalFlow {
                 STORAGE,
                 GENERAL_HEAD_BOUNDARY
             };
-
-            /**
-             * Decide if its an In or Outflow
-             * @param fun
-             * @return
-             */
-            template<class Fun>
-            MassError inline getError(Fun fun) {
-                return getError([this, fun](int pos) {
-                                    double flow = fun(pos);
-                                    return flow < 0 ? flow : 0;
-                                },
-                                [this, fun](int pos) {
-                                    double flow = fun(pos);
-                                    return flow > 0 ? flow : 0;
-                                });
-            }
 
             /**
              * Helper function for printing the mass balance for each flow

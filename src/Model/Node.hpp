@@ -822,7 +822,7 @@ Calculate
              * @brief Get all current OUT flow
              * @return Flow volume
              */
-            t_vol_t getCurrentOUT() noexcept { return getFlow([](double a) -> bool { return a < 0; }); }
+            t_vol_t getCurrentOUT() noexcept { return -getFlow([](double a) -> bool { return a < 0; }); }
 
             /**
              * @brief Tell cell to save its flow budget
