@@ -89,6 +89,21 @@ namespace GlobalFlow {
         }
 
         /**
+         * @brief Generic method for looping through files inside a directory and layers, applying a generic function
+         * @param path the directory
+         * @param files a vector of files
+         * @param numberOfLayers number of layers
+         * @param fun a function that is applied e.g. reading the data
+         */
+        template<class Fun>
+        void loopFilesAndLayers(std::string path, std::vector<std::string> files, int numberOfLayers, Fun fun) {
+            for (std::string file : files) {
+                std::string real_path = path + '/' + file;
+                fun(real_path, numberOfLayers);
+            }
+        }
+
+        /**
          * @brief Check whether id exists in the simulation
          * @param spatID Global identifier, can be different from position in node vector
          * @param layer Layer the node is in
@@ -835,13 +850,10 @@ namespace GlobalFlow {
             }
         };
 
-        void readInitialZetas(large_num numberOfNodesPerLayer, int numberOfLayers, const std::string& pathZetas) {
+        void readInitialZetas(large_num numberOfNodesPerLayer, int numberOfLayers, const std::string& path,
+                              std::vector<std::string> files) {
             double topOfNode;
             double bottomOfNode;
-            large_num spatID{0};
-            int localZetaID{0};
-            double zeta{0};
-            double head{0};
 
             // add zeta surfaces to top and bottom of each node
             large_num numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
@@ -854,22 +866,30 @@ namespace GlobalFlow {
             }
 
             // read initial data for density surfaces
-            large_num nodeID{0};
-            int refID{0};
-            for (int layer = 0; layer < numberOfLayers; ++layer) {
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(pathZetas);
-                inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
+            loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
+                int localZetaID{0};
+                int refID{0};
+                large_num spatID{0};
+                large_num nodeID{0};
+                double zeta{0};
 
-                while (inZetas.read_row(spatID, localZetaID, zeta)) {
-                    try {
-                        nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                for (int layer = 0; layer < numberOfLayers; ++layer) {
+
+                    io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(path);
+                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
+
+                    while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                        try {
+                            nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                        }
+                        catch (const std::out_of_range &ex) { // if node does not exist ignore entry
+                            continue;
+                        }
+                        nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                     }
-                    catch (const std::out_of_range &ex) { // if node does not exist ignore entry
-                        continue;
-                    }
-                    nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                 }
-            }
+            });
+
         };
 
         void readEffectivePorosity(std::string path) {

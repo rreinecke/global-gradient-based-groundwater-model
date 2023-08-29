@@ -116,13 +116,20 @@ namespace GlobalFlow {
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
             ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
 
-            bool efoldAsArray = data_config.get<bool>("efold_as_array");
+
             pt::ptree data = input.get_child("data");
 
+            bool efoldAsArray = data_config.get<bool>("efold_as_array");
             if (efoldAsArray){
                 EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));
             }
             EFOLDING = getOptional("e-folding", data);
+
+            bool initialZetasAsArray = data_config.get<bool>("initial_zetas_as_array");
+            if (initialZetasAsArray){
+                INITIAL_ZETAS_a = getArray("Zetas", data.get_child("zetas"));
+            }
+            INITIAL_ZETAS = getOptional("zetas", data);
 
             ELEVATION = getOptional("elevation", data);
             EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
@@ -147,8 +154,6 @@ namespace GlobalFlow {
             AQ_DEPTH = getOptional("aquifer_depth", data);
 
             INITIAL_HEAD_FILE = getOptional("initial_head", data);
-
-            INITIAL_ZETAS_FILE = getOptional("initial_zetas", data);
 
             INITIAL_ZONES = getOptional("initial_zones", data);
 

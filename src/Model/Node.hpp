@@ -1241,7 +1241,7 @@ Calculate
                 return possiblePositions;
             }
             /**
-             * @brief Add a zeta surface to the cell (bounded by elevation at top and cell bottom at bottom).
+             * @brief Add a zeta surface to the cell (bounded by elevation at top and by cell bottom at bottom).
              * @param localZetaID
              * @param zeta the zeta surface height in meters
              */
@@ -1266,7 +1266,7 @@ Calculate
                 set<std::vector<t_meter>,Zetas>(zetas);
                 set<std::vector<t_meter>,ZetasChange>(zetas); // todo make all 0
                 //todo throw error if height not in correct order
-                //LOG(debug) << "zeta[" << localZetaID << "] = " << getZeta(localZetaID).value() << std::endl;
+                LOG(debug) << "zeta[" << localZetaID << "] = " << getZeta(localZetaID).value() << ", size: " << getZetas().size() << std::endl;
             }
 
             /**

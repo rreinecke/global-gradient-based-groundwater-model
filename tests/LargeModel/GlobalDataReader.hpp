@@ -136,7 +136,7 @@ class GlobalDataReader : public DataReader {
             if (op.isDensityVariable()) {
                 LOG(userinfo) << "Reading initial zeta heights";
                 readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
-                                 buildDir(op.getInitialZetasDir())); // requires elevation to be set
+                                 buildDir(op.getInitialZetas()), op.getInitialZetas_a()); // requires elevation to be set
 
                 if (op.isEffectivePorosityFromFile()) {
                     LOG(userinfo) << "Reading effective porosity";

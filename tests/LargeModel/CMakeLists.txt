@@ -17,7 +17,6 @@ configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
 configure_file(data_5min/grid_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na.csv COPYONLY)
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
-configure_file(../../data_5min/initial_zetas_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/initial_zetas_global.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
@@ -36,15 +35,23 @@ configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINA
 ## global and local wetlands
 configure_file(../../data_5min/G_LOCWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCWET.csv COPYONLY)
 configure_file(../../data_5min/G_GLOWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_GLOWET.csv COPYONLY)
+
 ## global and local lakes
 configure_file(../../data_5min/G_LOCLAK.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCLAK.csv COPYONLY)
 configure_file(../../data_5min/G_GLOLAK.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_GLOLAK.csv COPYONLY)
+
 ## e-folding
 configure_file(../../data_5min/E-Folding/Africa_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Africa_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/Australia_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Australia_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/Eurasia_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Eurasia_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/N_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/N_America_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/S_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/S_America_F.csv COPYONLY)
+
 ## mapping from spatID (used in most of the data) to arcID (used in recharge data)
 configure_file(../../data_5min/spatID-arcID.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/spatID-arcID.csv COPYONLY)
 
+## zetas
+configure_file(../../data_5min/Zetas/initial_zeta1_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta1_global.csv COPYONLY)
+configure_file(../../data_5min/Zetas/initial_zeta2_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta2_global.csv COPYONLY)
+configure_file(../../data_5min/Zetas/initial_zeta3_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta3_global.csv COPYONLY)
+configure_file(../../data_5min/Zetas/initial_zeta4_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta4_global.csv COPYONLY)

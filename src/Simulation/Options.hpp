@@ -34,11 +34,13 @@ namespace GlobalFlow {
             std::vector<std::string> EFOLDING_a;
             std::vector<std::string> EQUAL_WATER_TABLE_DEPTH_a;
             std::vector<std::string> RIVER_ELEVATION_a;
+            std::vector<std::string> INITIAL_ZETAS_a;
 
             std::string ELEVATION{""};
             std::string EFOLDING{""};
             std::string EQUAL_WATER_TABLE_DEPTH{""};
             std::string RIVER_ELEVATION{""};
+            std::string INITIAL_ZETAS{""};
 
             std::string RECHARGE{""};
             std::string ZONES_SOURCES_SINKS_FILE{""};
@@ -200,8 +202,6 @@ namespace GlobalFlow {
 
             std::string getInitialHeadsDir() {return INITIAL_HEAD_FILE;}
 
-            std::string getInitialZetasDir() {return INITIAL_ZETAS_FILE;}
-
             std::string getEffectivePorosityDir() {return EFFECTIVE_POROSITY_FILE;}
 
             bool isGlobal() { return IS_GLOBAL; }
@@ -324,6 +324,11 @@ namespace GlobalFlow {
                 return EQUAL_WATER_TABLE_DEPTH;
             }
 
+            std::string
+            getInitialZetas() {
+                return INITIAL_ZETAS;
+            }
+
             std::string getRiverElevation() {
                 return RIVER_ELEVATION;
             }
@@ -346,6 +351,11 @@ namespace GlobalFlow {
             std::vector<std::string>
             getRiverElevation_a() {
                 return RIVER_ELEVATION_a;
+            }
+
+            std::vector<std::string>
+            getInitialZetas_a() {
+                return INITIAL_ZETAS_a;
             }
 
             std::string

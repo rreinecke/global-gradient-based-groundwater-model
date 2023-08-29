@@ -19,6 +19,10 @@
       "density_variable": "true",
       "density_zones": [
         1000,
+        1005,
+        1010,
+        1015,
+        1020,
         1025
       ],
       "max_tip_slope": 0.2,
@@ -50,6 +54,7 @@
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
+        "initial_zetas_as_array": true,
         "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
@@ -95,6 +100,15 @@
         "river_extent": "river_extent.csv",
         "spatID-arcID": "spatID-arcID.csv",
         "river_elevation": "surface_water_elevation.csv",
+        "zetas": {
+          "Zetas": [
+            "initial_zeta1_global.csv",
+            "initial_zeta2_global.csv",
+            "initial_zeta3_global.csv",
+            "initial_zeta4_global.csv"
+          ]
+        },
+
         "e-folding": {
           "E-Folding": [
             "Africa_F.csv",
