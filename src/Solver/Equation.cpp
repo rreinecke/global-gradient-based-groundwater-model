@@ -244,6 +244,7 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
         if (id != -1) {
             // todo get nodeID
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
+            nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
         }
     }
@@ -274,7 +275,7 @@ Equation::checkAllZetaSlopes(int localZetaID) {
 }*/
 
 void inline
-Equation::updateZetasAfterEquation() {
+Equation::updateZetas_TZero() {
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             nodes->at(k)->updateZetasTZero();
@@ -325,10 +326,10 @@ Equation::adjustZetaHeights() {
     }
 
 void inline
-Equation::updateVDFBudget(large_num iterOffset) {
+Equation::updateVDFBudget(bool areZetasAdjusted) {
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
-        nodes->at(k + iterOffset)->saveVDFMassBalance();
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->saveVDFMassBalance(areZetasAdjusted);
     }
 }
 
@@ -467,9 +468,6 @@ Equation::solve() {
         LOG(numerics) << "|Residual|_l2: " << cg.error();
     }
 
-    updateFinalHeads();
-    updateBudget();
-
     __itter = iterations;
     __error = cg.error_inf();
 
@@ -482,7 +480,10 @@ Equation::solve() {
      if(vdf) {
          solve_zetas();
      }
-}
+
+     updateBudget();
+     updateFinalHeads();
+    }
 
 /**
  * Solve Zeta Surface Equation
@@ -633,14 +634,18 @@ Equation::solve_zetas(){
             //__error_zetas = cg_zetas.error_inf();
 
         }
-        updateVDFBudget(iterOffset);
         //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
         // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
     }
-    updateZetasAfterEquation();
-
+    updateVDFBudget(false); // needs to be before updateZetas_TZero() // todo return a value here
+    
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
+
+    updateVDFBudget(true); // needs to be before updateZetas_TZero()
+
+    updateZetas_TZero();
+
 }
 
 

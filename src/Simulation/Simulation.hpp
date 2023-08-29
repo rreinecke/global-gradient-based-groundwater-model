@@ -86,7 +86,7 @@ namespace GlobalFlow {
 
         /**
          * @class MassError
-         * Simple container for the mass error calulations
+         * Simple container for the mass error calculations
          */
         class MassError {
         public:
@@ -274,7 +274,7 @@ namespace GlobalFlow {
                     in = in + fun2(j);
                 }
                 if (abs(in - out) > 0.00001) {
-                    error = ((100 * (in - out)) / ((in + out) / 2));
+                    error = ((100 * (in - abs(out))) / ((in + abs(out)) / 2));
                 }
                 MassError err(out, in, error);
                 return err;
@@ -425,7 +425,8 @@ namespace GlobalFlow {
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  In: " << totalErr.IN << "  Out: "
                            << totalErr.OUT;
                 MassError vdfErr = getVDFMassError();
-                LOG(level) << "VDF mass error: " << vdfErr.ERR << "  In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
+                LOG(level) << "VDF mass error: " << vdfErr.ERR << "  In (sum over all zones): " << vdfErr.IN <<
+                "  Out (sum over all zones): " << vdfErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);

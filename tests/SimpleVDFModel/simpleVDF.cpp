@@ -44,7 +44,7 @@ void StandaloneRunner::simulate() {
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         if (stepNumber == 1) {
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
         }
         step.first->solve();
         sim.printMassBalances(debug);

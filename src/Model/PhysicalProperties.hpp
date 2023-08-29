@@ -157,6 +157,8 @@ namespace GlobalFlow {
         struct IN;
         struct VDFOUT;
         struct VDFIN;
+        struct VDFOUT_ADJ;
+        struct VDFIN_ADJ;
         struct Head;
         struct EQHead;
         struct HeadChange;

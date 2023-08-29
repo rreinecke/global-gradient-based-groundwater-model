@@ -52,7 +52,6 @@ void StandaloneRunner::simulate() {
             step.first->toggleSteadyState();
         }
         step.first->solve();
-
         sim.printMassBalances(debug);
 
         // for saving zetas in a csv

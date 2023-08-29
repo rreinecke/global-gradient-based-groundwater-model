@@ -265,7 +265,7 @@ namespace GlobalFlow {
         /**
          * Calculate the final variable density flow budget
          */
-        void inline updateVDFBudget(large_num iterOffset);
+        void inline updateVDFBudget(bool areZetasAdjusted);
 
         /**
          * Calculate the final budget
@@ -289,7 +289,7 @@ namespace GlobalFlow {
 
         void inline checkAllZetaSlopes(int localZetaID);
 
-        void inline updateZetasAfterEquation();
+        void inline updateZetas_TZero();
 
         void inline adjustZetaHeights();
 

@@ -25,8 +25,8 @@ void StandaloneRunner::simulate() {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         step.first->toggleSteadyState();
         step.first->solve();
-        step.first->toggleSteadyState();
         sim.printMassBalances(debug);
+        step.first->toggleSteadyState();
         ++stepNumber;
     }
     //sim.save();

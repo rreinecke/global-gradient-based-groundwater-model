@@ -816,7 +816,7 @@ Calculate
              * @brief Get all current IN flow
              * @return Flow volume
              */
-            t_vol_t getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; }); }
+            t_vol_t getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; });}
 
             /**
              * @brief Get all current OUT flow
@@ -840,13 +840,18 @@ Calculate
                 t_vol_t out = 0.0 * si::cubic_meter / day;
                 auto top = neighbours.find(NeighbourPosition::TOP);
                 // skip nodes that do not have a bottom neighbour
-                if (top == neighbours.end()) { // no neighbour at top
-                } else {
-                    // get flow in from instantaneous mixing with top neighbour
-                    out += at(top)->instantaneousMixing(localZetaID);
+                if (top != neighbours.end()) { // no neighbour at top
+                    // get flow out from instantaneous mixing with bottom neighbour
+                    t_vol_t iMix = instantaneousMixing(localZetaID);
+                    if (iMix.value() > 0) {
+                        out += iMix;
+                    }
                 }
                 // get flow from tip and toe tracking change in zeta height
-                out += getZoneChangeBudget(localZetaID);
+                t_vol_t zoneChange = getZoneChangeBudget(localZetaID);
+                if (zoneChange.value() > 0) {
+                    out += zoneChange;
+                }
                 return out;
             } // Question: is there a storage flow in VDF?
 
@@ -856,28 +861,56 @@ Calculate
              */
             t_vol_t calculateCurrentVDFOUT(int localZetaID) noexcept {
                 t_vol_t out = 0.0 * si::cubic_meter / day;
-                // get flow out from instantaneous mixing with bottom neighbour
-                out -= instantaneousMixing(localZetaID);
+                auto top = neighbours.find(NeighbourPosition::TOP);
+                // skip nodes that do not have a bottom neighbour
+                if (top != neighbours.end()) {
+                    // get flow out from instantaneous mixing with bottom neighbour
+                    t_vol_t iMix = instantaneousMixing(localZetaID);
+                    if (iMix.value() < 0) {
+                        out += iMix;
+                    }
+                }
                 // get flow from tip and toe tracking change in zeta height
-                out -= getZoneChangeBudget(localZetaID);
+                t_vol_t zoneChange = getZoneChangeBudget(localZetaID);
+                if (zoneChange.value() < 0) {
+                    out += zoneChange;
+                }
                 return out;
-            } // Question: is there a storage flow in VDF?
+            } // Question: is there a storage flow in VDF? Do we need to check steady state?
 
-            void saveVDFMassBalance() noexcept {
-                auto vdfOut = get<std::vector<t_c_meter>, VDFOUT>();
-                auto vdfIn = get<std::vector<t_c_meter>, VDFIN>();
+            /**
+             * @brief save variable density flow mass balance in node property (called before and after adjustment)
+             * @param areZetasAdjusted
+             */
+            void saveVDFMassBalance(bool areZetasAdjusted) noexcept {
+                std::vector<t_c_meter> vdfOut;
+                std::vector<t_c_meter> vdfIn;
+
+                if (areZetasAdjusted) {
+                    vdfOut = get<std::vector<t_c_meter>, VDFOUT_ADJ>();
+                    vdfIn = get<std::vector<t_c_meter>, VDFIN_ADJ>();
+                } else {
+                    vdfOut = get<std::vector<t_c_meter>, VDFOUT>();
+                    vdfIn = get<std::vector<t_c_meter>, VDFIN>();
+                }
 
                 for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
-
-                    if (vdfOut.size() < getZetas().size()) {
+                    if (vdfOut.size() < getZetas().size()) { // if property not initialized fully yet
                         vdfOut.emplace_back(0 * si::cubic_meter);
                         vdfIn.emplace_back(0 * si::cubic_meter);
                     }
                     vdfOut[localZetaID] += calculateCurrentVDFOUT(localZetaID).value() * si::cubic_meter;
                     vdfIn[localZetaID] += calculateCurrentVDFIN(localZetaID).value() * si::cubic_meter;
                 }
-                set<std::vector<t_c_meter>, VDFOUT>(vdfOut);
-                set<std::vector<t_c_meter>, VDFIN>(vdfIn);
+
+                if (areZetasAdjusted) {
+                    set<std::vector<t_c_meter>, VDFOUT_ADJ>(vdfOut);
+                    set<std::vector<t_c_meter>, VDFIN_ADJ>(vdfIn);
+                } else {
+                    set<std::vector<t_c_meter>, VDFOUT>(vdfOut);
+                    set<std::vector<t_c_meter>, VDFIN>(vdfIn);
+                }
+
             }
 
             t_c_meter getVDFOUT() {
@@ -1266,7 +1299,7 @@ Calculate
                 set<std::vector<t_meter>,Zetas>(zetas);
                 set<std::vector<t_meter>,ZetasChange>(zetas); // todo make all 0
                 //todo throw error if height not in correct order
-                LOG(debug) << "zeta[" << localZetaID << "] = " << getZeta(localZetaID).value() << ", size: " << getZetas().size() << std::endl;
+                //LOG(debug) << "zeta[" << localZetaID << "] = " << getZeta(localZetaID).value() << ", size: " << getZetas().size() << std::endl;
             }
 
             /**
@@ -2167,8 +2200,9 @@ Calculate
 
 
             /**
-             * @brief
-             * @return
+             * @brief Calculates zone change budget of a node at localZetaID (for variable density flow budget)
+             * @param localZetaID
+             * @return Zone change budget
              * @note in SWI2 code: SSWI2_ZCHG
              */
             t_vol_t getZoneChangeBudget(int localZetaID){
@@ -2177,7 +2211,7 @@ Calculate
                 t_meter zeta = getZeta(localZetaID);
                 t_meter zetaBelow = getZeta(localZetaID + 1);
                 // if zeta below next zeta surface
-                if (zeta < zetaBelow){ // Question: potential problem here? (clangevin)
+                if (zeta < zetaBelow){ // Question: potential problem here? (by clangevin)
                     // set zeta to height of next zeta
                     zeta = zetaBelow;
                 }
@@ -2189,8 +2223,8 @@ Calculate
                     zetaBelow = getBottom();
                 }
 
-                t_meter zetaOld = get<std::vector<t_meter>, Zetas_TZero>()[localZetaID];
-                t_meter zetaBelowOld = get<std::vector<t_meter>, Zetas_TZero>()[localZetaID + 1];
+                t_meter zetaOld = getZetaTZero(localZetaID);
+                t_meter zetaBelowOld = getZetaTZero(localZetaID + 1);
                 // if old zeta is below next old zeta surface
                 if (zetaOld < zetaBelowOld) {
                     // set zeta old to height of next zeta old
@@ -2204,13 +2238,11 @@ Calculate
                     zetaBelowOld = getBottom();
                 }
 
-
-                // calculate previous zone volume
+                // calculate zone change ((zeta-zetaBelow) * Area is the current zone volume, with old zetas old vol)
                 out = ((getEffectivePorosity() * get<t_s_meter, Area>()) *
-                       ((zetaOld - zetaBelowOld) - (zeta - zetaBelow))) /
-                        (day * get<t_dim, StepModifier>());
-
-
+                       ((zeta - zetaBelow) - (zetaOld - zetaBelowOld))) /
+                        day; // not multiplying day by step size since we want to get the balance over full time step
+                //LOG(debug) << "zone change budget at localZetaID = " << localZetaID << ": " << out.value();
                 return out;
             }
 
@@ -2825,9 +2857,9 @@ Calculate
                         out += boost::units::abs(ex);
                     }
                 }
-                t_vol_t dwateredFlow = -calculateDewateredFlow();
-                if (compare(dwateredFlow.value())) {
-                    out += boost::units::abs(dwateredFlow);
+                t_vol_t dewateredFlow = -calculateDewateredFlow();
+                if (compare(dewateredFlow.value())) {
+                    out += boost::units::abs(dewateredFlow);
                 }
                 return out;
             }
