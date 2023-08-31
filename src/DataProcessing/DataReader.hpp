@@ -284,7 +284,7 @@ namespace GlobalFlow {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter));
-                for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
+                for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
                 nodeID++;
@@ -402,7 +402,7 @@ namespace GlobalFlow {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter));
-                for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
+                for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
                 nodeID++;
@@ -449,9 +449,11 @@ namespace GlobalFlow {
                         double elevation = nodes->at(nodeID)->getElevation().value();
 
                         if (zetaID == numZones){
+                            // set last zeta to bottom of node
                             zeta = (elevation - aquiferDepth) * Model::si::meter;
                         } else {
-                            zeta = elevation * Model::si::meter; // todo: or set this to GHB elevation?
+                            // set all but last zeta to top of node (most saline zone over full node height at boundary)
+                            zeta = elevation * Model::si::meter;
                         }
                         nodes->at(nodeID)->setZeta(zetaID, zeta);
                     }
@@ -876,7 +878,7 @@ namespace GlobalFlow {
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
 
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(path);
-                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta"); // todo rename col zeta
+                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
 
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
                         try {
