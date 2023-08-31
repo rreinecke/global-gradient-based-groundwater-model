@@ -1117,7 +1117,7 @@ Calculate
                                                         ExternalFlow(numOfExternalFlows, type,
                                                                         get<t_meter, Elevation>(),
                                                                         get<t_vel, K>() * get<t_meter, VerticalSize>(),
-                                                                        bottom))); // todo add edge length in different directions
+                                                                        bottom)));
                 } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
@@ -1355,17 +1355,28 @@ Calculate
                     zeta = getBottom();
                 }
 
+                // fill zetas and zetasChange vectors
                 std::vector<t_meter> zetas;
+                std::vector<t_meter> zetasChange;
                 if (localZetaID == 0) { // todo improve. perhaps better to check whether Zetas is initialized (but how?)
                     zetas.push_back(zeta);
+                    zetasChange.push_back(0 * si::meter);
                 } else {
                     zetas = getZetas();
+                    zetasChange = getZetasChange();
                     zetas.insert(zetas.begin() + localZetaID, zeta);
+                    zetasChange.insert(zetasChange.begin() + localZetaID, 0 * si::meter);
+                }
+
+                // set zetas and zetasChange vectors, if zetas vector is sorted
+                for (int zetaID = 0; zetaID < zetas.size() - 1; ++zetaID) {
+                    if (zetas[zetaID] < zetas[zetaID+1]) {
+                        LOG(userinfo) << "zeta at ID:" << zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
+                        throw "Vector of zetas needs to be sorted!";
+                    }
                 }
                 set<std::vector<t_meter>,Zetas>(zetas);
-                set<std::vector<t_meter>,ZetasChange>(zetas); // todo make all 0
-                //todo throw error if height not in correct order
-                //LOG(debug) << "zeta[" << localZetaID << "] = " << getZeta(localZetaID).value() << ", size: " << getZetas().size() << std::endl;
+                set<std::vector<t_meter>,ZetasChange>(zetas);
             }
 
             /**
@@ -1434,6 +1445,25 @@ Calculate
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
                     ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
+                }
+            }
+
+            /**
+             * @brief get one zeta surface height
+             * @param localZetaID
+             * @return meter
+             */
+            t_meter getZetaIfActive(int localZetaID) {
+
+                if (localZetaID < get<std::vector<t_meter>, Zetas>().size()){
+                    if (isZetaActive(localZetaID)) {
+                        return get<std::vector<t_meter>, Zetas>()[localZetaID];
+                    } else {
+                        return 0 * si::meter;
+                    }
+                } else {
+                    throw "Not set at nodeID " + std::to_string(getID()) +
+                          ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
 
@@ -1703,7 +1733,7 @@ Calculate
              * @note In SSWI2: SWIHCOF (line 3744)
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
-                t_s_meter_t out = (get<t_dim, EffectivePorosity>() * get<t_s_meter, Area>()) /
+                t_s_meter_t out = (getEffectivePorosity() * get<t_s_meter, Area>()) /
                                   (day); // * get<t_dim, StepModifier>()
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
@@ -1748,13 +1778,12 @@ Calculate
             }
 
             bool isZetaAtBottom(int localZetaID){
-                return (getZetaTZero(localZetaID) <= getZetasTZero().back() or
+                return (getZetaTZero(localZetaID) <= getZetasTZero().back() or // using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
                         getHead() < getBottom());
             }
 
             bool isZetaBetween(int localZetaID){
-                //if (localZetaID == 0) { // SWI2 line 4362: worked around this by checking whether localZetaID == 0
-                return !isZetaAtTop(localZetaID) and !isZetaAtBottom(localZetaID);
+                return (!isZetaAtTop(localZetaID) and !isZetaAtBottom(localZetaID));
             }
 
             bool isAnyZetaBetween(){
@@ -1765,8 +1794,7 @@ Calculate
             }
 
             bool isZetaActive(int localZetaID){
-                if(isZetaBetween(localZetaID) and getEffectivePorosity().value() > 0){ return true; }
-                return false;
+                return (isZetaBetween(localZetaID) and getEffectivePorosity().value() > 0);
             }
 
             /**
@@ -2212,22 +2240,21 @@ Calculate
                 if (top == neighbours.end()) { // no neighbour at position
                 } else {
                     // if head is above the bottom of the node, both in this node AND in the node above (SWI2 line 2325)
-                    if (get<t_meter, Head>() >= getBottom() &&
+                    if (get<t_meter, Head>() >= getBottom() and
                         getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
 
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
                             // - at the top of the current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
-                            if (isZetaAtTop(localZetaID) &&
-                                at(top)->isZetaAtBottom(localZetaID)) {
+                            if (isZetaAtTop(localZetaID) and at(top)->isZetaAtBottom(localZetaID)) {
 
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxTop();
                                 //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
 
                                 // if vertical flux through the top of the node is positive...
-                                if (fluxCorrectionTop > (0 * si::cubic_meter / day)) {
+                                if (fluxCorrectionTop.value() > 0 and at(top)->getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // * get<t_dim, StepModifier>()
                                     // ...lift zeta height of the lowest zeta surface in top node
@@ -2235,9 +2262,9 @@ Calculate
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
 
                                 // if vertical flux through the top of the node is negative...
-                                } else if (fluxCorrectionTop < (0 * si::cubic_meter / day)) {
+                                } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * get<t_dim, EffectivePorosity>()); //  * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getEffectivePorosity()); //  * get<t_dim, StepModifier>()
                                     //LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);
@@ -2275,16 +2302,20 @@ Calculate
                                 }
                                 //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
 
+                                if (getEffectivePorosity().value() == 0 and
+                                at(got)->getEffectivePorosity().value() == 0){
+                                    continue;
+                                }
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
                                 delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) +
-                                                    (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
+                                                  ((at(got)->getEffectivePorosity() * getLengthNeig(got)) /
+                                                   ((getEffectivePorosity() * getNodeLength(got)) +
+                                                    (at(got)->getEffectivePorosity() * getLengthNeig(got))));
                                 // if tracking tip/toe: lower/raise this zeta surface in neighbouring node by:
                                 delta_neig = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) /
-                                                   ((get<t_dim, EffectivePorosity>() * getNodeLength(got)) +
-                                                    (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got))));
+                                                  ((getEffectivePorosity() * getNodeLength(got)) /
+                                                   ((getEffectivePorosity() * getNodeLength(got)) +
+                                                    (at(got)->getEffectivePorosity() * getLengthNeig(got))));
 
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     //%% Toe tracking %%
@@ -2292,10 +2323,10 @@ Calculate
                                     //LOG(userinfo) << "zetaDif (toe): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         setZeta(localZetaID, getZeta(localZetaID) - delta_self);
-                                        //LOG(userinfo) << "zetaChange_self (toe): " << delta_self.value() << std::endl;
+                                        //LOG(userinfo) << "delta_self (toe): " << delta_self.value() << std::endl;
                                         t_meter zeta_back_neig = at(got)->getZetas().back();
                                         at(got)->setZeta(localZetaID, zeta_back_neig + delta_neig);
-                                        //LOG(userinfo) << "zetaChange_neig (toe): " << delta_neig.value() << std::endl;
+                                        //LOG(userinfo) << "delta_neig (toe): " << delta_neig.value() << std::endl;
                                     }
                                 } else if (at(got)->isZetaAtTop(localZetaID)) {
                                     //%% Tip tracking %%
@@ -2316,9 +2347,9 @@ Calculate
                                         if (at(got_opp)->isZetaActive(localZetaID)) { // or localZetaID == 0
                                             // change zeta in other direction neighbour
                                                 delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
-                                                             (getNodeLength(got) * get<t_dim, EffectivePorosity>()) /
+                                                             (getNodeLength(got) * getEffectivePorosity()) /
                                                              (getLengthNeig(got_opp) *
-                                                              getAt<t_dim, EffectivePorosity>(got_opp)));
+                                                              at(got_opp)->getEffectivePorosity()));
                                                 t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
                                                 at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
                                                 setZeta(localZetaID, getZetas().back());
@@ -2450,13 +2481,17 @@ Calculate
                                     maxDelta = get<t_meter, VDFLock>();
                                 }
 
+                                if (getEffectivePorosity().value() == 0 and
+                                    at(got)->getEffectivePorosity().value() == 0){
+                                    continue;
+                                }
                                 // calculate delta zeta of node and neighbour
-                                delta_self = maxDelta * (getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getNodeLength(got) +
-                                                 getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
-                                delta_neig = maxDelta * (get<t_dim, EffectivePorosity>() * getNodeLength(got)) /
-                                                 (get<t_dim, EffectivePorosity>() * getNodeLength(got) +
-                                                 getAt<t_dim, EffectivePorosity>(got) * getLengthNeig(got));
+                                delta_self = maxDelta * (at(got)->getEffectivePorosity() * getLengthNeig(got)) /
+                                                 (getEffectivePorosity() * getNodeLength(got) +
+                                                 at(got)->getEffectivePorosity() * getLengthNeig(got));
+                                delta_neig = maxDelta * (getEffectivePorosity() * getNodeLength(got)) /
+                                                 (getEffectivePorosity() * getNodeLength(got) +
+                                                 at(got)->getEffectivePorosity() * getLengthNeig(got));
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                                 // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour

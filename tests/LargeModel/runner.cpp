@@ -16,13 +16,13 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1200);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 100);
         //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         // for saving zetas in a csv
         std::ofstream myfile;
         myfile.open ("zetas.csv");
-        myfile << "timestep,spatID,lon,lat,head,zeta1,zeta2,zeta3,zeta4" << std::endl;
+        myfile << "timestep,spatID,lon,lat,head,effPor,zeta1,zeta2,zeta3,zeta4" << std::endl;
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {
@@ -38,10 +38,11 @@ namespace GlobalFlow {
                           sim.getNodes()->at(j)->getLon() << "," <<
                           sim.getNodes()->at(j)->getLat() << "," <<
                           sim.getNodes()->at(j)->getHead().value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(1).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(2).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(3).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(4).value() <<
+                          sim.getNodes()->at(j)->getEffectivePorosity().value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(1).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(2).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(3).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(4).value() <<
                           std::endl;
             }
 
