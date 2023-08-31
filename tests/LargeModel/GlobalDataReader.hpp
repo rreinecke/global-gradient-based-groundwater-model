@@ -119,13 +119,12 @@ class GlobalDataReader : public DataReader {
                                       return (((recharge / 1000) * area) / 365);});
 
             LOG(userinfo) << "Reading rivers";
-            if (op.isKRiverFromFile()) {
+            /*if (op.isKRiverFromFile()) {
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
                 readBlueCells(buildDir(op.getRiverElevation()),
                               calculateRiverStage(buildDir(op.getRiverExtent())));
-            }
-
+            }*/
 
             LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),
@@ -134,9 +133,9 @@ class GlobalDataReader : public DataReader {
                                  buildDir(op.getLocalWetlands()));
 
             if (op.isDensityVariable()) {
-                LOG(userinfo) << "Reading initial zeta heights";
+                LOG(userinfo) << "Reading initial heights of " << op.getInitialZetas_a().size() << " active zeta surfaces"; // requires elevation to be set
                 readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
-                                 buildDir(op.getInitialZetas()), op.getInitialZetas_a()); // requires elevation to be set
+                                 buildDir(op.getInitialZetas()), op.getInitialZetas_a());
 
                 if (op.isEffectivePorosityFromFile()) {
                     LOG(userinfo) << "Reading effective porosity";
@@ -154,7 +153,6 @@ class GlobalDataReader : public DataReader {
                 setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
                                                        op.getAquiferDepth()[0]);
             }
-
         }
     };
 }

@@ -446,7 +446,7 @@ namespace GlobalFlow {
             for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
                 if (nodes->at(nodeID)->hasGHB()){
                     for (int zetaID = 0; zetaID <= numZones; ++zetaID){
-                        double elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
+                        double elevation = nodes->at(nodeID)->getElevation().value();
 
                         if (zetaID == numZones){
                             zeta = (elevation - aquiferDepth) * Model::si::meter;

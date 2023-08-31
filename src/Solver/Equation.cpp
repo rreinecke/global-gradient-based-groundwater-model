@@ -287,49 +287,47 @@ void inline
 Equation::adjustZetaHeights() {
     LOG(debug) << "Calculating vertical zeta movement";
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->verticalZetaMovement();
-            //if (k >= 264 && k <= 266){
-            //    LOG(debug) << "zeta[" << 1 << "] at node " << k << " after verticalZetaMovement: " << nodes->at(k)->getZeta(1).value();
-            //}
-        }
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->verticalZetaMovement();
+    }
 
     LOG(debug) << "Calculating horizontal zeta movement";
 #pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->horizontalZetaMovement();
-        }
-
-        LOG(debug) << "Clipping inner zetas";
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->clipInnerZetas();
-        }
-        LOG(debug) << "Correcting crossing zetas";
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->correctCrossingZetas();
-        }
-
-        LOG(debug) << "Preventing zeta locking";
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->preventZetaLocking();
-        }
-
-/*#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-                LOG(debug) << "zeta surface " << localZetaID << " at node " << k << ": " << nodes->at(k)->getZeta(localZetaID).value();
-            }
-        }*/
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->horizontalZetaMovement();
     }
 
-void inline
-Equation::updateVDFBudget(bool areZetasAdjusted) {
+    LOG(debug) << "Clipping inner zetas";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        nodes->at(k)->saveVDFMassBalance(areZetasAdjusted);
+        nodes->at(k)->clipInnerZetas();
+    }
+    LOG(debug) << "Correcting crossing zetas";
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->correctCrossingZetas();
+    }
+
+    LOG(debug) << "Preventing zeta locking";
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->preventZetaLocking();
+    }
+}
+
+void inline
+Equation::updateZoneChange() {
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->saveZoneChange();
+    }
+}
+
+void inline
+Equation::updateVDFBudget() {
+#pragma omp parallel for
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->saveVDFMassBalance();
     }
 }
 
@@ -492,7 +490,6 @@ void
 Equation::solve_zetas(){
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
-
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
@@ -634,18 +631,15 @@ Equation::solve_zetas(){
             //__error_zetas = cg_zetas.error_inf();
 
         }
-        //LOG(numerics) << "Checking zeta slopes (after zeta height convergence)";
-        // checkAllZetaSlopes(); todo remove if not required (in SWI2 used for time-step adjustment)
     }
-    updateVDFBudget(false); // needs to be before updateZetas_TZero() // todo return a value here
-    
+    updateZoneChange();
+
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
 
-    updateVDFBudget(true); // needs to be before updateZetas_TZero()
+    updateVDFBudget();
 
     updateZetas_TZero();
-
 }
 
 

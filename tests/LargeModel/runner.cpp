@@ -16,20 +16,40 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 12);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1200);
         //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
+
+        // for saving zetas in a csv
+        std::ofstream myfile;
+        myfile.open ("zetas.csv");
+        myfile << "timestep,spatID,lon,lat,head,zeta1,zeta2,zeta3,zeta4" << std::endl;
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {
             step.first->toggleSteadyState();
             step.first->solve();
-            LOG(userinfo) << "Step " << stepNumber << ":\n";
-            LOG(userinfo) << "- Solved with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
+            LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iterations"; // and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
+
+            // for saving zetas in a csv
+            for (int j = 0; j < sim.getNodes()->size(); ++j) {
+                myfile << stepNumber << "," <<
+                          sim.getNodes()->at(j)->getSpatID() << "," <<
+                          sim.getNodes()->at(j)->getLon() << "," <<
+                          sim.getNodes()->at(j)->getLat() << "," <<
+                          sim.getNodes()->at(j)->getHead().value() << "," <<
+                          sim.getNodes()->at(j)->getZeta(1).value() << "," <<
+                          sim.getNodes()->at(j)->getZeta(2).value() << "," <<
+                          sim.getNodes()->at(j)->getZeta(3).value() << "," <<
+                          sim.getNodes()->at(j)->getZeta(4).value() <<
+                          std::endl;
+            }
+
             step.first->toggleSteadyState();
             ++stepNumber;
         }
         sim.save();
+        myfile.close(); // for saving zetas in a csv
     }
 
     void Runner::writeData() {
@@ -41,7 +61,6 @@ namespace GlobalFlow {
         std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
         myfile << "nodeID,spatID,lon,lat,neighbour_count,neighbours,hyd_cond,hasGHB,elevation,initial_head" << std::endl;
-        // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             std::string neighbours{""};

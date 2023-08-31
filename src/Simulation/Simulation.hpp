@@ -425,8 +425,8 @@ namespace GlobalFlow {
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  In: " << totalErr.IN << "  Out: "
                            << totalErr.OUT;
                 MassError vdfErr = getVDFMassError();
-                LOG(level) << "VDF mass error: " << vdfErr.ERR << "  In (sum over all zones): " << vdfErr.IN <<
-                "  Out (sum over all zones): " << vdfErr.OUT;
+                LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR << "  In: " << vdfErr.IN <<
+                "  Out: " << vdfErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);

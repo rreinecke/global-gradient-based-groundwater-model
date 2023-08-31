@@ -262,10 +262,16 @@ namespace GlobalFlow {
          */
         void inline updateIntermediateZetas(large_num iterOffset, int localZetaID);
 
+
+        /**
+         * Update zone change
+         */
+        void inline updateZoneChange();
+
         /**
          * Calculate the final variable density flow budget
          */
-        void inline updateVDFBudget(bool areZetasAdjusted);
+        void inline updateVDFBudget();
 
         /**
          * Calculate the final budget

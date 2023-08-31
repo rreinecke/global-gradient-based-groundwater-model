@@ -157,8 +157,8 @@ namespace GlobalFlow {
         struct IN;
         struct VDFOUT;
         struct VDFIN;
-        struct VDFOUT_ADJ;
-        struct VDFIN_ADJ;
+        struct ZCHG_OUT;
+        struct ZCHG_IN;
         struct Head;
         struct EQHead;
         struct HeadChange;
@@ -208,8 +208,10 @@ namespace GlobalFlow {
                 PhysicalProperty<quantity < d_time>, StepSize>,
         PhysicalProperty<t_c_meter, OUT>,
         PhysicalProperty<t_c_meter, IN>,
-        PhysicalProperty<std::vector<t_c_meter>, VDFOUT>,
-        PhysicalProperty<std::vector<t_c_meter>, VDFIN>,
+        PhysicalProperty<t_c_meter, VDFOUT>,
+        PhysicalProperty<t_c_meter, VDFIN>,
+        PhysicalProperty<t_c_meter, ZCHG_OUT>,
+        PhysicalProperty<t_c_meter, ZCHG_IN>,
         PhysicalProperty<t_meter, Head>,
         PhysicalProperty<t_meter, EQHead>,
         PhysicalProperty<t_meter, HeadChange>,
