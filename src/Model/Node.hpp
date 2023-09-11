@@ -1355,7 +1355,7 @@ Calculate
                     zeta = getBottom();
                 }
 
-                // fill zetas and zetasChange vectors
+                // add initial values to vectors "zetas" and "zetasChange"
                 std::vector<t_meter> zetas;
                 std::vector<t_meter> zetasChange;
                 if (localZetaID == 0) { // todo improve. perhaps better to check whether Zetas is initialized (but how?)
