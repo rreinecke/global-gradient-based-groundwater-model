@@ -16,13 +16,14 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 100);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 10);
         //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
 
         // for saving zetas in a csv
         std::ofstream myfile;
-        myfile.open ("zetas.csv");
-        myfile << "timestep,spatID,lon,lat,head,effPor,zeta1,zeta2,zeta3,zeta4" << std::endl;
+        myfile.open ("timestep_results.csv");
+        //myfile << "timestep,spatID,lon,lat,head,zeta1,zeta2,zeta3,zeta4" << std::endl;
+        myfile << "timestep,spatID,lon,lat,head" << std::endl;
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {
@@ -38,11 +39,10 @@ namespace GlobalFlow {
                           sim.getNodes()->at(j)->getLon() << "," <<
                           sim.getNodes()->at(j)->getLat() << "," <<
                           sim.getNodes()->at(j)->getHead().value() << "," <<
-                          sim.getNodes()->at(j)->getEffectivePorosity().value() << "," <<
-                          sim.getNodes()->at(j)->getZetaIfActive(1).value() << "," <<
-                          sim.getNodes()->at(j)->getZetaIfActive(2).value() << "," <<
-                          sim.getNodes()->at(j)->getZetaIfActive(3).value() << "," <<
-                          sim.getNodes()->at(j)->getZetaIfActive(4).value() <<
+                          //sim.getNodes()->at(j)->getZetaIfActive(1).value() << "," <<
+                          //sim.getNodes()->at(j)->getZetaIfActive(2).value() << "," <<
+                          //sim.getNodes()->at(j)->getZetaIfActive(3).value() << "," <<
+                          //sim.getNodes()->at(j)->getZetaIfActive(4).value() <<
                           std::endl;
             }
 
@@ -61,12 +61,12 @@ namespace GlobalFlow {
         // For node infos:
         std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,neighbour_count,neighbours,hyd_cond,hasGHB,elevation,initial_head" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,neighbour_count,hyd_cond,hasGHB,effPor,elevation,initial_head" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
-            std::string neighbours{""};
+            std::string neighboursStr{""};
             for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
-                neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+                neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
             }
             myfile <<
                    sim.getNodes()->at(j)->getID() << "," <<
@@ -75,9 +75,10 @@ namespace GlobalFlow {
                    sim.getNodes()->at(j)->getLat() << "," <<
                    //sim.getNodes()->at(j)->getArea().value() << "," <<
                    sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
-                   neighbours << "," <<
+                   //neighboursStr << "," <<
                    sim.getNodes()->at(j)->getK().value() << "," <<
                    sim.getNodes()->at(j)->hasGHB() << "," <<
+                   sim.getNodes()->at(j)->getEffectivePorosity() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::LAKE).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
@@ -86,12 +87,11 @@ namespace GlobalFlow {
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
                    sim.getNodes()->at(j)->getHead().value() <<
-                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
                    //sim.getNodes()->at(j)->getZeta(1).value() <<
                    std::endl;
-
         }
         myfile.close();
     }
