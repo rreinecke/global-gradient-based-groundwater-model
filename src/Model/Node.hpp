@@ -560,9 +560,7 @@ Calculate
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
-                    if (got == neighbours.end()) {//No neighbouring node
-                    } else {
-                        //There is a neighbour node
+                    if (got != neighbours.end()) { //There is a neighbour node
                         t_s_meter_t conductance;
 
                         if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
@@ -1868,9 +1866,7 @@ Calculate
                 // pseudo source term calculation (in 2 parts)
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
-                    if (got == neighbours.end()) {
-                        continue;
-                    } else {
+                    if (got != neighbours.end()) {
                         // calculating zone conductances for pseudo source term calculation
                         std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
@@ -1952,8 +1948,7 @@ Calculate
                 if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     for (const auto &position: possible_neighbours) {
                         auto got = neighbours.find(position);
-                        if (got == neighbours.end()) { // do nothing if neighbour does not exist
-                        } else {
+                        if (got != neighbours.end()) {
                             if (!at(got)->isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                                 if ((position == NeighbourPosition::LEFT) or
                                     (position == NeighbourPosition::BACK) or
@@ -2080,15 +2075,16 @@ Calculate
                 // pseudo source term calculation
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
-                    if (got == neighbours.end()) { // no neighbour at position
-                        continue;
-                    }
-                    if (isAnyZetaBetween() or at(got)->isAnyZetaBetween()){ // check if there are any active zeta surfaces
-                        std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
-                        for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++){
-                            t_s_meter_t zoneConductanceCum = getZoneConductanceCum(zetaID, zoneConductances);
-                            t_vol_t pseudoSource = delnus[zetaID] * zoneConductanceCum * (at(got)->getZeta(zetaID) - getZeta(zetaID));
-                            out -= pseudoSource;
+                    if (got != neighbours.end()) {
+                        if (isAnyZetaBetween() or
+                            at(got)->isAnyZetaBetween()) { // check if there are any active zeta surfaces
+                            std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
+                            for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
+                                t_s_meter_t zoneConductanceCum = getZoneConductanceCum(zetaID, zoneConductances);
+                                t_vol_t pseudoSource = delnus[zetaID] * zoneConductanceCum *
+                                                       (at(got)->getZeta(zetaID) - getZeta(zetaID));
+                                out -= pseudoSource;
+                            }
                         }
                     }
                 }
@@ -2107,8 +2103,7 @@ Calculate
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
                 auto got = neighbours.find(NeighbourPosition::TOP);
-                if (got == neighbours.end()) {//No top node
-                } else {//Current node has a top node
+                if (got != neighbours.end()){ //Current node has a top node
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] *
@@ -2136,8 +2131,7 @@ Calculate
 
                 for (const auto &position : possible_neighbours) {
                     auto got = neighbours.find(position); // todo: enhance (this check is done multiple times for top)
-                    if (got == neighbours.end()) {//No top or down node
-                    } else {//Current node has a top or down node
+                    if (got != neighbours.end()) {//Current node has a top or down node
                         if (position == NeighbourPosition::TOP) {
                             out -= getVerticalFluxCorrection();
                         }
@@ -2157,8 +2151,7 @@ Calculate
             t_vol_t getFluxTop() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 auto got = neighbours.find(NeighbourPosition::TOP);
-                if (got == neighbours.end()) { // no neighbour at position
-                } else {
+                if (got != neighbours.end()) {
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) - fluxFromTopNode;
@@ -2175,8 +2168,7 @@ Calculate
             t_vol_t getFluxDown() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
                 auto got = neighbours.find(NeighbourPosition::DOWN);
-                if (got == neighbours.end()) { // no neighbour at position
-                } else {
+                if (got != neighbours.end()) {
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) + fluxFromDownNode;
@@ -2290,10 +2282,11 @@ Calculate
                 for (const auto &position : possible_neighbours) {
                     auto got = neighbours.find(position);
                     auto got_opp = neighbours.find(getOppositePosition(position));
-                    if (got == neighbours.end()) { // no neighbour at position or opposite side
-                    } else {
+                    if (got != neighbours.end()) {
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
-                            if (isZetaActive(localZetaID)) { // or localZetaID == 0
+                            if (isZetaActive(localZetaID)) {
+                                //if ()
+
                                 // get max delta of zeta between nodes
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
@@ -2302,10 +2295,7 @@ Calculate
                                 }
                                 //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
 
-                                if (getEffectivePorosity().value() == 0 and
-                                at(got)->getEffectivePorosity().value() == 0){
-                                    continue;
-                                }
+
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
                                 delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
                                                   ((at(got)->getEffectivePorosity() * getLengthNeig(got)) /
@@ -2319,7 +2309,7 @@ Calculate
 
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     //%% Toe tracking %%
-                                    t_meter zetaDif = abs(getZeta(localZetaID) - at(got)->getZetas().back());
+                                    t_meter zetaDif = getZeta(localZetaID) - at(got)->getZetas().back();
                                     //LOG(userinfo) << "zetaDif (toe): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         setZeta(localZetaID, getZeta(localZetaID) - delta_self);
@@ -2330,7 +2320,7 @@ Calculate
                                     }
                                 } else if (at(got)->isZetaAtTop(localZetaID)) {
                                     //%% Tip tracking %%
-                                    t_meter zetaDif = abs(at(got)->getZetas().front() - getZeta(localZetaID));
+                                    t_meter zetaDif = at(got)->getZetas().front() - getZeta(localZetaID);
                                     //LOG(userinfo) << "zetaDif (tip): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         setZeta(localZetaID, getZeta(localZetaID) + delta_self);
@@ -2342,9 +2332,8 @@ Calculate
                                 }
 
                                 if ((getZeta(localZetaID) - getZetas().back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
-                                    if (got_opp == neighbours.end()){
-                                    } else {
-                                        if (at(got_opp)->isZetaActive(localZetaID)) { // or localZetaID == 0
+                                    if (got_opp != neighbours.end()){
+                                        if (at(got_opp)->isZetaActive(localZetaID)) {
                                             // change zeta in other direction neighbour
                                                 delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
                                                              (getNodeLength(got) * getEffectivePorosity()) /
@@ -2465,8 +2454,7 @@ Calculate
                         std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
                         for (const auto &position: possible_neighbours) {
                             auto got = neighbours.find(position);
-                            if (got == neighbours.end()) { //No horizontal neighbouring node
-                            } else {
+                            if (got != neighbours.end()) {
                                 /* if nodes can be inactive: return at inactive nodes
                                 if (at(got)->nodeInactive) { return; }
                                  */
@@ -2640,8 +2628,7 @@ Calculate
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
                     conduct = 0 * si::square_meter / day;
-                    if (got == neighbours.end()) { //No neighbouring node
-                    } else { //There is a neighbour node
+                    if (got != neighbours.end()) { //There is a neighbour node
                         if (got->first == TOP or got->first == DOWN) {
                             conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
                             //LOG(debug) << "vertical conductance: " << conduct.value();
@@ -2703,8 +2690,7 @@ Calculate
                 for (const auto &position: possible_neighbours) {
                     map_itter got = neighbours.find(position);
                     zetaMovementConductance = 0 * (si::square_meter / day);
-                    if (got == neighbours.end()) { // no neighbour at position
-                    } else { // there is a neighbour at position
+                    if (got != neighbours.end()) { // there is a neighbour at position
                         if ((isZetaActive(localZetaID) and
                              at(got)->isZetaActive(localZetaID))) {
                             zoneConductances = getZoneConductances(got);
@@ -2881,21 +2867,20 @@ Calculate
 
                 for (const auto &position: possible_neighbours) {
                     auto got = neighbours.find(position);
-                    if (got == neighbours.end()) {
-                        continue;
-                    }
-                    if (got->first == NeighbourPosition::LEFT) {
-                        Vx += -getVelocity(got);
-                    }
-                    if (got->first == NeighbourPosition::BACK) {
-                        Vy += -getVelocity(got);
-                    }
+                    if (got != neighbours.end()) {
+                        if (got->first == NeighbourPosition::LEFT) {
+                            Vx += -getVelocity(got);
+                        }
+                        if (got->first == NeighbourPosition::BACK) {
+                            Vy += -getVelocity(got);
+                        }
 
-                    if (got->first == NeighbourPosition::RIGHT) {
-                        Vx += getVelocity(got);
-                    }
-                    if (got->first == NeighbourPosition::FRONT) {
-                        Vy += getVelocity(got);
+                        if (got->first == NeighbourPosition::RIGHT) {
+                            Vx += getVelocity(got);
+                        }
+                        if (got->first == NeighbourPosition::FRONT) {
+                            Vy += getVelocity(got);
+                        }
                     }
                 }
 
