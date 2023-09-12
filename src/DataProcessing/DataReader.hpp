@@ -722,8 +722,8 @@ namespace GlobalFlow {
                                                    riverElevation * Model::si::meter,
                                                    conduct,
                                                    riverBottom * Model::si::meter);
-                LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
-                              riverBottom << ", riverElevation = " << riverElevation;
+                //LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
+                //              riverBottom << ", riverElevation = " << riverElevation;
                 //LOG(debug) << "K = " << K << ", length = " << length << ", width = " << width << ", bankfull_depth = "
                 //           << bankfull_depth;
             }

@@ -16,7 +16,7 @@
         "true",
         "true"
       ],
-      "density_variable": "false",
+      "density_variable": "true",
       "density_zones": [
         1000,
         1005,

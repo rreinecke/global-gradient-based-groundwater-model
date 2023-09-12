@@ -22,8 +22,8 @@ namespace GlobalFlow {
         // for saving zetas in a csv
         std::ofstream myfile;
         myfile.open ("timestep_results.csv");
-        //myfile << "timestep,spatID,lon,lat,head,zeta1,zeta2,zeta3,zeta4" << std::endl;
-        myfile << "timestep,spatID,lon,lat,head" << std::endl;
+        myfile << "timestep,spatID,lon,lat,head,zeta1,zeta2,zeta3,zeta4" << std::endl;
+        //myfile << "timestep,spatID,lon,lat,head" << std::endl;
 
         int stepNumber{1};
         for (Simulation::step step : stepper) {
@@ -38,11 +38,11 @@ namespace GlobalFlow {
                           sim.getNodes()->at(j)->getSpatID() << "," <<
                           sim.getNodes()->at(j)->getLon() << "," <<
                           sim.getNodes()->at(j)->getLat() << "," <<
-                          sim.getNodes()->at(j)->getHead().value() <<
-                          //sim.getNodes()->at(j)->getZetaIfActive(1).value() << "," <<
-                          //sim.getNodes()->at(j)->getZetaIfActive(2).value() << "," <<
-                          //sim.getNodes()->at(j)->getZetaIfActive(3).value() << "," <<
-                          //sim.getNodes()->at(j)->getZetaIfActive(4).value() <<
+                          sim.getNodes()->at(j)->getHead().value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(1).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(2).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(3).value() << "," <<
+                          sim.getNodes()->at(j)->getZetaIfActive(4).value() <<
                           std::endl;
             }
 

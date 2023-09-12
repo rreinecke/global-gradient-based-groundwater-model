@@ -2218,26 +2218,26 @@ Calculate
                 if (get<bool, Confinement>()){
                     return;
                 } else { // only clip if node is unconfined
-                    t_meter head = get<t_meter, Head>();
+                    auto head = get<t_meter, Head>();
                     t_meter bottomOfNode = getBottom();
-                    t_meter topOfNode = get<t_meter, Elevation>();
-                    t_meter updatedZeta;
+                    auto topOfNode = get<t_meter, Elevation>();
+                    t_meter newHeight;
                     // if groundwater head is BELOW the top of the node
                     if (head < topOfNode) {
                         // if groundwater head is ABOVE the bottom of the node
                         if (head > bottomOfNode) {
-                            updatedZeta = head;
+                            newHeight = head;
                         // if groundwater head is BELOW OR EQUAL to the bottom of the node
                         } else { // head <= bottomOfNode
-                            updatedZeta = bottomOfNode;
+                            newHeight = bottomOfNode;
                         }
                         // update the first zeta surface
-                        getZetas().front() = updatedZeta;
+                        setZeta(0, newHeight);
 
                         // update all other zeta surfaces that are ABOVE the updated first zeta surface
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
-                            if (getZetas()[localZetaID] > updatedZeta) {
-                                setZeta(localZetaID, updatedZeta);
+                            if (getZeta(localZetaID) > newHeight) {
+                                setZeta(localZetaID, newHeight);
                             }
                         }
                     // if groundwater head is ABOVE OR EQUAL to the top of the node
@@ -2318,7 +2318,7 @@ Calculate
                     if (got != neighbours.end()) {
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             if (isZetaActive(localZetaID)) {
-                                //if ()
+                                //if () // todo
 
                                 // get max delta of zeta between nodes
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
@@ -2410,11 +2410,8 @@ Calculate
              */
             void clipInnerZetas() {
                 for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
-                    //LOG(debug) << "getZetas()[localZetaID]: " << getZetas()[localZetaID].value() << std::endl;
-
-                    if (isZetaActive(localZetaID)) { // or localZetaID == 0
+                    if (isZetaActive(localZetaID)) {
                         if (getZeta(localZetaID) < getZetas().back()) { setZeta(localZetaID, getZetas().back()); }
-
                         if (getZeta(localZetaID) > getZetas().front()) { setZeta(localZetaID, getZetas().front()); }
                     }
                 }
@@ -2425,18 +2422,18 @@ Calculate
              * @param localZetaID zeta surface id in this node
              * @note in SWI2 code: SSWI2_ZETACROSS
              * todo: debug with this info:
-             *  n | n2      | n3
-             *  1 | -       | -
-             *  2 | 1       | 1,2,3
-             *  3 | 2,1     | 2,3,4; 1,2,3,4
-             *  4 | 3,2,1   | 3,4,5; 2,3,4,5; 1,2,3,4,5
+             *  localZetaID | x       | n
+             *  1           | -       | -
+             *  2           | 1       | 1,2,3
+             *  3           | 2,1     | 2,3,4; 1,2,3,4
+             *  4           | 3,2,1   | 3,4,5; 2,3,4,5; 1,2,3,4,5
              */
             void correctCrossingZetas(){
                 t_meter zetaDifferenceCap = 0.001 * si::meter; // todo move to config
                 t_meter zetaAverage;
                 t_meter zetaSum;
-                int n2_min;
-                int n2_max;
+                int n_min;
+                int n_max;
                 for (int localZetaID = 1; localZetaID < getZetas().size() - 2; localZetaID++) {
                     // if zeta surface n is very close to or lower than the zeta surface that SHOULD be below (n+1)
                     if (getZeta(localZetaID) - getZeta(localZetaID + 1) < zetaDifferenceCap) {
@@ -2446,19 +2443,19 @@ Calculate
                         setZeta(localZetaID + 1, zetaAverage);
                         // if there are zeta surfaces above that could possibly be crossing
                         if (localZetaID >= 2) {
-                            for (int x = 1; x < localZetaID - 1; x++) {
+                            for (int x = 1; x < localZetaID - 1; ++x) {
                                 // create a range from n_min (n-x) to n_max (n+1)
-                                n2_min = localZetaID - x;
-                                n2_max = localZetaID + 1;
-                                // if a zeta surface above (n-x) crosses or is very close to zeta surface below (n+1)
-                                //  (which is now at the same, averaged, height of zeta surface n)
-                                if (getZeta(n2_min) - getZeta(n2_max) < zetaDifferenceCap) {
-                                    // calculate the average height from that zeta surface above (n-x) until
-                                    //  the zeta surface below (n+1)
-                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { zetaSum += getZeta(n2); }
-                                    zetaAverage = zetaSum / ((n2_max - n2_min) * si::si_dimensionless); // todo check whether that is true
+                                n_min = localZetaID - x;
+                                n_max = localZetaID + 1;
+                                // if a zeta surface above (n_min) crosses or is very close to zeta surface below (n_max)
+                                // (which is now at the same, averaged, height of zeta surface n)
+                                if (getZeta(n_min) - getZeta(n_max) < zetaDifferenceCap) {
+                                    // calculate the average height from that zeta surface above (n_min) until
+                                    //  the zeta surface below (n_max)
+                                    for (int n = n_min; n <= n_max; n++) { zetaSum += getZeta(n); }
+                                    zetaAverage = zetaSum / ((n_max - n_min) * si::si_dimensionless); // todo check whether that is true
                                     // set every zeta surface between n-1 and n+1 to the averaged value
-                                    for (int n2 = n2_min; n2 <= n2_max; n2++) { getZeta(n2) = zetaAverage; }
+                                    for (int n = n_min; n <= n_max; n++) { setZeta(n, zetaAverage); }
                                 }
                             }
                         }
