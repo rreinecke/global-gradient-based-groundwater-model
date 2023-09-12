@@ -320,9 +320,9 @@ namespace GlobalFlow {
 
                 if (pNode->hasGHB()) {
                     stream << "\nGHB conductance: "
-                           << pNode->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY).getConductance().value();
+                           << pNode->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY).value();
                     stream << "\nGHB elevation: "
-                           << pNode->getExternalFlowByName(Model::GENERAL_HEAD_BOUNDARY).getFlowHead().value();
+                           << pNode->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY).value();
                 }
 
                 if (pNode->hasTypeOfExternalFlow(RECHARGE)){
@@ -709,9 +709,11 @@ Calculate
              * @throw OutOfRangeException
              */
             ExternalFlow & getExternalFlowByName(FlowType type) {
-                if (externalFlows.find(type) == externalFlows.end())
-                    throw std::out_of_range("No such flow");
-                return externalFlows.at(type);
+                if (hasTypeOfExternalFlow(type)) {
+                    return externalFlows.at(type);
+                } else {
+                    throw std::out_of_range("No such flow: " + std::to_string(type) + " at nodeID " + std::to_string(getID()));
+                }
             }
 
             /**
@@ -726,6 +728,45 @@ Calculate
                     }
                 }
                 return 0 * si::cubic_meter / day;
+            }
+
+            /**
+             * @brief Get conductance of an external flow by its FlowType
+             * @param type The flow type
+             * @return Conductance
+             */
+            t_s_meter_t getExternalFlowConductance(FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    return externalFlows.at(type).getConductance();
+                } else {
+                    return 0 * si::square_meter / day;
+                }
+            }
+
+            /**
+             * @brief Get head of an external flow by its FlowType
+             * @param type The flow type
+             * @return Head
+             */
+            t_meter getExternalFlowElevation(FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    return externalFlows.at(type).getFlowElevation();
+                } else {
+                    return 0 * si::meter;
+                }
+            }
+
+            /**
+            * @brief Get bottom of an external flow by its FlowType
+            * @param type The flow type
+            * @return Bottom
+            */
+            t_meter getExternalFlowBottom(FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    return externalFlows.at(type).getBottom();
+                } else {
+                    return 0 * si::meter;
+                }
             }
 
             /**
@@ -1096,7 +1137,7 @@ Calculate
              */
             int addExternalFlow(FlowType type, t_meter flowHead, double cond, t_meter bottom) {
                 if (hasTypeOfExternalFlow(type)) {
-                    //LOG(debug) << "! adding a flow that is already existing for cell"
+                    //LOG(debug) << "Adding flow " << std::to_string(type) << " that already existed at nodeID: " << getID();
                     //currently it is assumed that only one external flow of one type is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
@@ -1104,20 +1145,12 @@ Calculate
 
                 if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
                     externalFlows.insert(std::make_pair(type,
-                                                        ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
+                                                        ExternalFlow(numOfExternalFlows,
+                                                                     cond * (si::cubic_meter / day),
                                                                      type)));
-                } else if (type == EVAPOTRANSPIRATION) { // todo remove
-                    externalFlows.insert(std::make_pair(type,
-                                                        ExternalFlow(numOfExternalFlows, flowHead, bottom,
-                                                                     cond * (si::cubic_meter / day))));
-                } else if (type == FLOODPLAIN_DRAIN) {  // TODO remove
-                    externalFlows.insert(std::make_pair(type,
-                                                        ExternalFlow(numOfExternalFlows, type,
-                                                                        get<t_meter, Elevation>(),
-                                                                        get<t_vel, K>() * get<t_meter, VerticalSize>(),
-                                                                        bottom)));
                 } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
-                externalFlows.insert(std::make_pair(type,
+                    //LOG(debug) << "Adding flow " << std::to_string(type) << " to nodeID: " << getID();
+                    externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
                                                                  flowHead,
@@ -1605,11 +1638,11 @@ Calculate
              */
             void updateExternalFlowConduct(double amount, FlowType type) {
                 if (hasTypeOfExternalFlow(type)) {
-                    t_meter flowHead = getExternalFlowByName(type).getFlowHead();
-                    double conduct = getExternalFlowByName(type).getConductance().value() * amount;
-                    t_meter bottom = getExternalFlowByName(type).getBottom();
+                    t_meter flowElev = getExternalFlowElevation(type);
+                    double conduct = getExternalFlowConductance(type).value() * amount;
+                    t_meter bottom = getExternalFlowBottom(type);
                     removeExternalFlow(type);
-                    addExternalFlow(type, flowHead, conduct, bottom);
+                    addExternalFlow(type, flowElev, conduct, bottom);
                 }
             }
 
@@ -1620,11 +1653,11 @@ Calculate
             */
             void updateExternalFlowFlowHead(double amount, FlowType type) {
                 if (hasTypeOfExternalFlow(type)) {
-                    t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount;
-                    double conduct = getExternalFlowByName(type).getConductance().value();
-                    t_meter bottom = getExternalFlowByName(type).getBottom();
+                    t_meter flowElevation = getExternalFlowElevation(type) * amount;
+                    double conduct = getExternalFlowConductance(type).value();
+                    t_meter bottom = getExternalFlowBottom(type);
                     removeExternalFlow(type);
-                    addExternalFlow(type, flowHead, conduct, bottom);
+                    addExternalFlow(type, flowElevation, conduct, bottom);
                 }
             }
 
@@ -1654,7 +1687,7 @@ Calculate
                     ExternalFlow& externalFlow = getExternalFlowByName(type);
                     t_meter delta{amount * si::meter};
                     t_meter bottom{externalFlow.getBottom()};
-                    t_meter flowHead{externalFlow.getFlowHead() + delta};
+                    t_meter flowHead{externalFlow.getFlowElevation() + delta};
                     //The river is dry
                     if(std::isnan(amount)){ flowHead = bottom; }
                     double conduct{externalFlow.getConductance().value()};
@@ -1685,11 +1718,11 @@ Calculate
              */
             void updateLakeBottoms(double amount) {
                 if (hasTypeOfExternalFlow(LAKE)) {
-                    t_meter flowHead = getExternalFlowByName(LAKE).getFlowHead();
-                    double conduct = getExternalFlowByName(LAKE).getConductance().value();
-                    t_meter bottom = getExternalFlowByName(LAKE).getBottom() * amount;
+                    t_meter flowElevation = getExternalFlowElevation(LAKE);
+                    double conduct = getExternalFlowConductance(LAKE).value();
+                    t_meter bottom = getExternalFlowBottom(LAKE) * amount;
                     removeExternalFlow(LAKE);
-                    addExternalFlow(LAKE, flowHead, conduct, bottom);
+                    addExternalFlow(LAKE, flowElevation, conduct, bottom);
                 }
             }
 

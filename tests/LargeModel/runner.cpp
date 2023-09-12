@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_two_layers.json");
+        op.load("data/config.json");
     }
 
     void Runner::setupSimulation() {
@@ -61,7 +61,7 @@ namespace GlobalFlow {
         // For node infos:
         std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,hyd_cond,hasGHB,effPor,recharge,lake,wetland,river,river_cond,river_bottom,river_head,elevation,initial_head" << std::endl;
+        myfile << "nodeID,river,river_cond,river_bottom,river_elev,elevation,initial_head" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             std::string neighboursStr;
@@ -70,24 +70,24 @@ namespace GlobalFlow {
             }
             myfile <<
                    sim.getNodes()->at(j)->getID() << "," <<
-                   std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision) << "," <<
-                   sim.getNodes()->at(j)->getLon() << "," <<
-                   sim.getNodes()->at(j)->getLat() << "," <<
-                   sim.getNodes()->at(j)->getArea().value() << "," <<
-                   sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                   //std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision) << "," <<
+                   //sim.getNodes()->at(j)->getLon() << "," <<
+                   //sim.getNodes()->at(j)->getLat() << "," <<
+                   //sim.getNodes()->at(j)->getArea().value() << "," <<
+                   //sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
                    //neighboursStr << "," <<
-                   sim.getNodes()->at(j)->getK().value() << "," <<
-                   sim.getNodes()->at(j)->hasGHB() << "," <<
-                   sim.getNodes()->at(j)->getEffectivePorosity() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::LAKE).value() << "," <<
+                   //sim.getNodes()->at(j)->getK().value() << "," <<
+                   //sim.getNodes()->at(j)->hasGHB() << "," <<
+                   //sim.getNodes()->at(j)->getEffectivePorosity() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::LAKE).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
+                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() << "," <<
                    sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
+                   sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM).value() << "," <<
+                   sim.getNodes()->at(j)->getExternalFlowBottom(Model::RIVER_MM).value() << "," <<
+                   sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM).value() << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
                    sim.getNodes()->at(j)->getHead().value() <<
                    //sim.getNodes()->at(j)->getZeta(1).value() <<

@@ -704,9 +704,6 @@ namespace GlobalFlow {
                 catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                     continue;
                 }
-                if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
-                    throw "Error in reading spatID";
-                }
 
                 double bankfull_depth = riverStage[nodeID][0];
                 double width = riverStage[nodeID][1];
@@ -725,8 +722,10 @@ namespace GlobalFlow {
                                                    riverElevation * Model::si::meter,
                                                    conduct,
                                                    riverBottom * Model::si::meter);
-                //LOG(debug) << "conduct = " << conduct << ", K = " << K <<
-                //              ", length = " << length << ", width = " << width << ", bankfull_depth = " << bankfull_depth;
+                LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
+                              riverBottom << ", riverElevation = " << riverElevation;
+                //LOG(debug) << "K = " << K << ", length = " << length << ", width = " << width << ", bankfull_depth = "
+                //           << bankfull_depth;
             }
         };
 
@@ -774,21 +773,19 @@ namespace GlobalFlow {
                     }
 
 
-                    double elevation = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>().value();
+                    double elevation = nodes->at(nodeID)->getElevation().value();
                     try {
-                        elevation = nodes->at(nodeID)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value();
+                        elevation = nodes->at(nodeID)->getExternalFlowElevation(Model::RIVER_MM).value();
                     } catch (const std::out_of_range &ex) {}
 
-                    double flowHead = elevation;
+                    double flowElevation = elevation;
                     double bottom = elevation;
-                    double K_s = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Velocity>, Model::K>().value();
+                    double K_s = nodes->at(nodeID)->getK().value();
                     if (itter == 1) {
                         //global wetlands
                         percentage = percentage * 0.8;
                     }
-                    double A_s =
-                            nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value() *
-                            percentage;
+                    double A_s = nodes->at(nodeID)->getArea().value() * percentage;
                     double M = 5;
                     //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
                     double conduct = (K_s * A_s) / M;
@@ -798,34 +795,34 @@ namespace GlobalFlow {
 
                     //LOG(debug) << "itter = " << itter << ", conduct = " << conduct;
                     if (itter == 0) {
-                        //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
                         //Global LAKE
-                        //flowHead -= 10;
+                        //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
+                        //flowElevation -= 10;
                         bottom -= 100;
                         nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE,
-                                                           flowHead * Model::si::meter,
+                                                           flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     } else if (itter == 1) {
                         //Global WETLANDS
                         bottom -= 2;
                         nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_WETLAND,
-                                                           flowHead * Model::si::meter,
+                                                           flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     } else if (itter == 2) {
                         //Local LAKE
-                        //flowHead -= 10;
+                        //flowElevation -= 10;
                         bottom -= 10;
                         nodes->at(nodeID)->addExternalFlow(Model::LAKE,
-                                                           flowHead * Model::si::meter,
+                                                           flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     } else {
                         //Local WETLANDS
                         bottom -= 2;
                         nodes->at(nodeID)->addExternalFlow(Model::WETLAND,
-                                                           flowHead * Model::si::meter,
+                                                           flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     }

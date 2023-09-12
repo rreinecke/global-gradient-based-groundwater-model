@@ -254,16 +254,14 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                Model::Head>
-                                                ().value());
+                                                Model::Head>().value());
                             });
                         }
                         case FieldType::EQ_HEAD : {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                Model::EQHead>
-                                                ().value());
+                                                Model::EQHead>().value());
                             });
                         }
                         case FieldType::IN : {
@@ -286,9 +284,7 @@ namespace GlobalFlow {
                                 return convert<T>((simulation.getNodes()->at(i)->getLateralFlows().value() /
                                                    simulation.getNodes()->at(
                                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                                           Model::Area>().value()) * 1000);
                             });
                         }
                         case FieldType::LATERAL_OUT_FLOW : {
@@ -296,9 +292,7 @@ namespace GlobalFlow {
                                 return convert<T>((simulation.getNodes()->at(i)->getLateralOutFlows().value() /
                                                    simulation.getNodes()->at(
                                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                                           Model::Area>().value()) *1000);
                             });
                         }
                         case FieldType::WETLANDS : {
@@ -315,8 +309,7 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(
-                                            Model::RIVER_MM).getFlowHead().value();
+                                    out = simulation.getNodes()->at(i)->getExternalFlowElevation(Model::RIVER_MM).value();
                                 }
                                 catch ( std::exception &e) {
                                 }
@@ -330,8 +323,7 @@ namespace GlobalFlow {
                                     out = simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
                                 catch ( std::exception &e) {
                                 }
@@ -388,8 +380,7 @@ namespace GlobalFlow {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
                                 catch ( std::exception &e) {
                                 }
@@ -406,9 +397,7 @@ namespace GlobalFlow {
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
                                                 Model::Elevation>().value() -
                                         simulation.getNodes()->at(i)->getProperties().get<
-                                                Model::quantity<Model::Meter>,
-                                                Model::Head>
-                                                ().value());
+                                                Model::quantity<Model::Meter>, Model::Head>().value());
                             });
                         }
                         case FieldType::RIVER_CONDUCT : {
@@ -419,8 +408,7 @@ namespace GlobalFlow {
                                             simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
                                             simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
                                             simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
-                                            simulation.getNodes()->at(i)->getEqFlow()
-                                            ).value();
+                                            simulation.getNodes()->at(i)->getEqFlow()).value();
                                 }
                                 catch ( std::exception &e) {}
                                 return convert<T>(out);
@@ -434,8 +422,7 @@ namespace GlobalFlow {
                                             simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
                                             simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
                                             simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
-                                            simulation.getNodes()->at(i)->getEqFlow()
-                                            ).value();
+                                            simulation.getNodes()->at(i)->getEqFlow()).value();
                                 }
                                 catch ( std::exception &e) {}
                                 return convert<T>(out);
@@ -482,8 +469,7 @@ namespace GlobalFlow {
                                             Model::GENERAL_HEAD_BOUNDARY).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
                                 catch ( std::exception &e) {}
                                 if (out > 0) {
@@ -500,8 +486,7 @@ namespace GlobalFlow {
                                             Model::GLOBAL_WETLAND).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
                                 catch ( std::exception &e) {}
                                 if (out > 0) {
