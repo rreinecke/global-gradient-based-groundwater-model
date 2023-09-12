@@ -119,12 +119,12 @@ class GlobalDataReader : public DataReader {
                                       return (((recharge / 1000) * area) / 365);});
 
             LOG(userinfo) << "Reading rivers";
-            /*if (op.isKRiverFromFile()) {
+            if (op.isKRiverFromFile()) {
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
                 readBlueCells(buildDir(op.getRiverElevation()),
                               calculateRiverStage(buildDir(op.getRiverExtent())));
-            }*/
+            }
 
             LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),

@@ -620,7 +620,7 @@ namespace GlobalFlow {
                     //double QMax = K * size;
                     NANChecker(recharge, "Broken recharge value");
                     double q_rech = convertToRate(recharge,
-                                                  nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>().value());
+                                                  nodes->at(nodeID)->getArea().value());
                     //NANChecker(QMax, "QMax Problem");
                     NANChecker(q_rech, "Recharge-init Problem");
 
@@ -802,7 +802,7 @@ namespace GlobalFlow {
                         //Global LAKE
                         //flowHead -= 10;
                         bottom -= 100;
-                        nodes->at(nodeID)->addExternalFlow(Model::LAKE, // Question: GLOBAL_LAKE?
+                        nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE,
                                                            flowHead * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);

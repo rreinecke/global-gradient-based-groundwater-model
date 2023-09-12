@@ -159,7 +159,6 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     index_mapping.clear();
 
     // finding inactive nodes
-//#pragma omp parallel for
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
         if ( nodes->at(i + iterOffset)->isZetaActive(localZetaID) ) {
             index_mapping[i] = i - numInactive;
@@ -178,7 +177,6 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
     
-//#pragma omp parallel for
     for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         auto id = index_mapping[j];
         if (id != -1) {
@@ -265,14 +263,6 @@ Equation::updateTopZetasToHeads() {
             nodes->at(k)->setTopZetaToHead();
         }
 }
-
-/*void inline // todo: in SWI2: required for zeta time step adjustment
-Equation::checkAllZetaSlopes(int localZetaID) {
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
-            nodes->at(k)->checkZetaSlopes();
-        }
-}*/
 
 void inline
 Equation::updateZetas_TZero() {
@@ -493,7 +483,6 @@ Equation::solve_zetas(){
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
         LOG(debug) << "Finding zeta surface heights in layer " << layer;
-//#pragma omp parallel for
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
             LOG(debug) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
