@@ -51,6 +51,7 @@
       "k_river_from_file": "true",
       "aquifer_depth_from_file": "false",
       "initial_head_from_file": "false",
+      "initial_zetas_as_array": "false",
       "efold_as_array": "false",
       "eq_wtd_from_file": "false",
       "effective_porosity_from_file": "false",

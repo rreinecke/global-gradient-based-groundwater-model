@@ -415,7 +415,7 @@ namespace GlobalFlow {
          * @brief Read in a custom definition for the general head boundary
          * @param path Where to read from
          */
-        void readHeadBoundary(std::string path) {
+        virtual void readHeadBoundary(std::string path) {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
             large_num spatID{0};
@@ -469,7 +469,7 @@ namespace GlobalFlow {
          * @brief Read in a custom definition file for initial heads
          * @param path Where to read the file from
          */
-        void readInitialHeads(std::string path) {
+        virtual void readInitialHeads(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
                 nodes->at(nodeID)->setHead_direct(data);
             });
@@ -480,7 +480,7 @@ namespace GlobalFlow {
          * Structured as: spatID, Head, Bottom, Conduct
          * @param path Where to read the file from
          */
-        void readRiverConductance(std::string path) {
+        virtual void readRiverConductance(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
             large_num spatID{0};
@@ -541,7 +541,7 @@ namespace GlobalFlow {
          * as it affects layers below
          * @param path Where to read the file from
          */
-        void readElevation(std::string path) {
+        virtual void readElevation(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
                 nodes->at(nodeID)->setElevation(data * Model::si::meter);
             });
@@ -640,7 +640,7 @@ namespace GlobalFlow {
          * @brief Read cell conductance definition
          * @param path Where to read the file from
          */
-        void readConduct(std::string path) {
+        virtual void readConduct(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
                 if (data != 0) { // todo check the impact of the default value on the result! median of glhymps is 0.273
                     //0 is possible data error, known to occur with Gleeson based map
@@ -857,8 +857,8 @@ namespace GlobalFlow {
             // add zeta surfaces to top and bottom of each node
             large_num numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
             for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter){
-                topOfNode = nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::Elevation>().value();
-                bottomOfNode = topOfNode - nodes->at(nodeIter)->getProperties().get<Model::quantity<Model::Meter>,Model::VerticalSize>().value();
+                topOfNode = nodes->at(nodeIter)->getElevation().value();
+                bottomOfNode = nodes->at(nodeIter)->getBottom().value();
 
                 nodes->at(nodeIter)->addZeta(0, topOfNode * Model::si::meter);
                 nodes->at(nodeIter)->addZeta(1, bottomOfNode * Model::si::meter);

@@ -9,15 +9,13 @@ namespace DataProcessing {
 
 class SimpleDataReader : public DataReader {
     public:
-        SimpleDataReader() { }
+        SimpleDataReader() = default;
 
-        virtual void readData(Simulation::Options op) {
+        void readData(Simulation::Options op) override {
             LOG(userinfo) << "Building the initial model layer";
             readLandMaskRefined(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodesPerLayer(),
-                            op.getEdgeLengthLeftRight(),
-                            op.getEdgeLengthFrontBack(),
                             op.getNumberOfLayers(),
                             op.getInitialK()[0],
                             op.getInitialHead(),
@@ -36,6 +34,16 @@ class SimpleDataReader : public DataReader {
                             op.getVDFLock(),
                             op.getDensityZones());
 
+            if (op.getNumberOfLayers() > 1) {
+                LOG(userinfo) << "Building the model layer(s) below";
+                DataProcessing::buildBottomLayers(nodes,
+                                                  op.getNumberOfLayers(),
+                                                  op.getConfinements(),
+                                                  op.getAquiferDepth(),
+                                                  op.getInitialK(),
+                                                  op.getAnisotropy());
+            }
+
             LOG(userinfo) << "Building grid by spatial ID (refined)";
             DataProcessing::buildBySpatID(nodes,
                                           this->getMappingSpatIDtoNodeIDs(),
@@ -49,14 +57,6 @@ class SimpleDataReader : public DataReader {
                                           op.getBoundaryCondition());
 
             if (op.getNumberOfLayers() > 1) {
-                LOG(userinfo) << "Building the model layer(s) below";
-                DataProcessing::buildBottomLayers(nodes,
-                                                  op.getNumberOfLayers(),
-                                                  op.getConfinements(),
-                                                  op.getAquiferDepth(),
-                                                  op.getInitialK(),
-                                                  op.getAnisotropy());
-
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
                 DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
             }
@@ -76,7 +76,7 @@ class SimpleDataReader : public DataReader {
             LOG(userinfo) << "Defining rivers";
             readRiverConductance(buildDir(op.getKRiver()));
 
-            LOG(userinfo) << "Adding GHB conductance";
+            //LOG(userinfo) << "Adding GHB conductance";
             //readHeadBoundary(buildDir(op.getKGHBDir()));
 
         }
@@ -135,15 +135,13 @@ class SimpleDataReader : public DataReader {
             std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
             while (in.read_row(spatID, X, Y, area, refID)) {
-                //area is in km needs to be in m
-                //TODO implement a container for these parameters
                 nodes->emplace_back(new Model::StandardNode(nodes,
                                                             Y,
                                                             X,
                                                             area * Model::si::square_meter,
                                                             std::sqrt(area)*Model::si::meter,
                                                             std::sqrt(area)*Model::si::meter,
-                                                            spatID, // spatID
+                                                            spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
                                                             initialHead * Model::si::meter,
@@ -163,7 +161,7 @@ class SimpleDataReader : public DataReader {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter));
-                for (int layer = 0; layer < numberOfLayers; layer++) { // todo: not ideal. move to neighbouring?
+                for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                     //LOG(debug) << "spatID: " << spatID << ", nodeID: " << nodeID << "refID = " << refID;
                 }
@@ -173,7 +171,7 @@ class SimpleDataReader : public DataReader {
             return nodeID - 1;
         };
 
-        void readConduct(std::string path) {
+        void readConduct(std::string path) override {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");
             large_num spatID{0};
@@ -194,7 +192,7 @@ class SimpleDataReader : public DataReader {
             }
         };
 
-        void readElevation(std::string path) {
+        void readElevation(std::string path) override {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");
             large_num spatID{0};
@@ -215,7 +213,7 @@ class SimpleDataReader : public DataReader {
             }
         };
 
-        void readRiverConductance(std::string path) {
+        void readRiverConductance(std::string path) override {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct", "refID");
             large_num spatID{0};
@@ -238,7 +236,7 @@ class SimpleDataReader : public DataReader {
             }
         }
 
-        void readGWRecharge(std::string path) {
+        void readGWRecharge(std::string path) override {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "layer", "recharge", "refID");
             large_num spatID{0};
@@ -264,7 +262,7 @@ class SimpleDataReader : public DataReader {
             }
         }
 
-    void readInitialHeads(std::string path) {
+    void readInitialHeads(std::string path) override {
         io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
         in.read_header(io::ignore_no_column, "spatID", "data", "refID");
         large_num spatID{0};
@@ -284,7 +282,7 @@ class SimpleDataReader : public DataReader {
         }
     }
 
-    void readHeadBoundary(std::string path) {
+    void readHeadBoundary(std::string path) override {
         io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
         in.read_header(io::ignore_no_column, "spatID", "head", "conduct", "refID");
         large_num spatID{0};
@@ -306,32 +304,6 @@ class SimpleDataReader : public DataReader {
                                                conduct,
                                                head * Model::si::meter);
         }
-    }
-
-    std::vector<Model::quantity<Model::Dimensionless>> calcNusInZones(std::vector<double> densityZones){
-        double densityFresh = 1000.0;
-        std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
-        for (int id = 0; id < densityZones.size(); id++) {
-            // nus of zones is equal to nus of zeta surface below
-            nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
-        }
-        return nusInZones;
-    }
-
-    std::vector<Model::quantity<Model::Dimensionless>> calcDelnus(std::vector<double> densityZones) {
-        double densityFresh = 1000.0;
-        std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
-        std::vector<Model::quantity<Model::Dimensionless>> delnus;
-        for (int id = 0; id < densityZones.size(); id++) {
-            // nus of zones is equal to nus of zeta surface below
-            nusInZones.push_back(((densityZones[id] - densityFresh) / densityFresh) * Model::si::si_dimensionless);
-            if (id == 0) {
-                delnus.push_back(nusInZones[id]); // density difference in top zone
-            } else {
-                delnus.push_back((nusInZones[id] - nusInZones[id - 1]));
-            }
-        }
-        return delnus;
     }
 };
 }

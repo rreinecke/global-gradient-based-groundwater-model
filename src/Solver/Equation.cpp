@@ -278,29 +278,34 @@ Equation::adjustZetaHeights() {
     LOG(debug) << "Calculating vertical zeta movement";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        //LOG(debug) << "nodeID: " << k << ", zeta 0: " << nodes->at(k)->getZeta(0).value() << ", zeta 1: " << nodes->at(k)->getZeta(1).value() << ", zeta 2: " << nodes->at(k)->getZeta(2).value();
         nodes->at(k)->verticalZetaMovement();
     }
 
     LOG(debug) << "Calculating horizontal zeta movement";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        //LOG(debug) << "nodeID: " << k << ", zeta 0: " << nodes->at(k)->getZeta(0).value() << ", zeta 1: " << nodes->at(k)->getZeta(1).value() << ", zeta 2: " << nodes->at(k)->getZeta(2).value();
         nodes->at(k)->horizontalZetaMovement();
     }
 
     LOG(debug) << "Clipping inner zetas";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        //LOG(debug) << "nodeID: " << k << ", zeta 0: " << nodes->at(k)->getZeta(0).value() << ", zeta 1: " << nodes->at(k)->getZeta(1).value() << ", zeta 2: " << nodes->at(k)->getZeta(2).value();
         nodes->at(k)->clipInnerZetas();
     }
     LOG(debug) << "Correcting crossing zetas";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        //LOG(debug) << "nodeID: " << k << ", zeta 0: " << nodes->at(k)->getZeta(0).value() << ", zeta 1: " << nodes->at(k)->getZeta(1).value() << ", zeta 2: " << nodes->at(k)->getZeta(2).value();
         nodes->at(k)->correctCrossingZetas();
     }
 
     LOG(debug) << "Preventing zeta locking";
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        //LOG(debug) << "nodeID: " << k << ", zeta 0: " << nodes->at(k)->getZeta(0).value() << ", zeta 1: " << nodes->at(k)->getZeta(1).value() << ", zeta 2: " << nodes->at(k)->getZeta(2).value();
         nodes->at(k)->preventZetaLocking();
     }
 }
@@ -540,11 +545,9 @@ Equation::solve_zetas(){
 
                 //Solve inner iterations
                 x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
-                //LOG(debug) << "x_zetas of layer " << layer << " (after outer iteration " << iterations << "):\n" << x_zetas << std::endl;
-
                 updateIntermediateZetas(iterOffset, localZetaID);
 
-                int innerItter = cg_zetas.iterations();
+                int innerItter = (int) cg_zetas.iterations();
 
                 if (innerItter == 0 and iterations == 0) {
                     LOG(numerics) << "Zeta surfaces: convergence criterion to small - no iterations";
@@ -585,28 +588,23 @@ Equation::solve_zetas(){
                 oldMaxZeta = maxZeta;
 
                 /**
-                 * @brief residual norm convergence // todo make function of this
+                 * @brief residual norm convergence // Question: make function of this?
                  */
-
                 LOG(numerics) << "Inner iterations (zetas): " << innerItter;
                 if (cg_zetas.info() == Success and iterations != 0) {
                     LOG(numerics) << "cg_zetas success";
                     break;
                 }
-
                 LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
                 LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
                 LOG(numerics) << "Zeta change bigger: " << zetaFail;
 
-
                 updateMatrix_zetas(layer, localZetaID);
-                if (A_zetas.size() == 0) { // if matrix is empty, go to next iteration
-                    continue;
-                }
-                //LOG(debug) << "A_zetas (after outer iteration " << iterations << "):\n" << A_zetas << std::endl;
-                //LOG(debug) << "b_zetas (after outer iteration " << iterations << "):\n" << b_zetas << std::endl;
-                preconditioner_zetas();
 
+                // if matrix is empty, go to next iteration
+                if (A_zetas.size() == 0) { continue; }
+
+                preconditioner_zetas();
                 iterations++;
             }
 
@@ -618,6 +616,7 @@ Equation::solve_zetas(){
 
             //__itter_zetas = iterations; // Question: add this to output?
             //__error_zetas = cg_zetas.error_inf();
+            //LOG(debug) << "x_zetas[" << localZetaID << "] on node layer " << layer << ":\n" << x_zetas << std::endl;
 
         }
     }

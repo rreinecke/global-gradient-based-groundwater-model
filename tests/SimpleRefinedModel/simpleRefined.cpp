@@ -50,18 +50,21 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
         step.first->toggleSteadyState();
     }
-
-    int stepNumber = 1;
+/*
+    int stepNumber{1};
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper) {
         LOG(userinfo) << "Running transient step " << stepNumber;
+        step.first->toggleSteadyState();
 
         step.first->solve();
         sim.printMassBalances(debug);
+        step.first->toggleSteadyState();
 
         stepNumber++;
     }
-
+*/
+    /*
     //Changing stresses
     std::vector<int> ids = {8,
             9,
@@ -91,10 +94,12 @@ void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running transient steps with changed stresses";
     Simulation::Stepper transientStepper2 = Simulation::Stepper(_eq, Simulation::DAY, 10);
     for (Simulation::step step : transientStepper2) {
+        LOG(userinfo) << "Running transient step " << stepNumber;
         step.first->solve();
         sim.printMassBalances(debug);
+        stepNumber++;
     }
-
+    */
     delete reader;
 }
 

@@ -1377,11 +1377,9 @@ Calculate
              */
             void addZeta(int localZetaID, t_meter zeta){
                 NANChecker(zeta.value(), "zeta (in addZeta)");
-
                 // limit zeta value to node top and bottom (in SWI2: lines 660-680)
-                auto topOfNode = get<t_meter, Elevation>();
-                if (zeta > topOfNode - get<t_meter, VDFLock>()) {
-                    zeta = topOfNode;
+                if (zeta > getElevation() - get<t_meter, VDFLock>()) {
+                    zeta = getElevation();
                 } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
                     zeta = getBottom();
                 }
@@ -1389,7 +1387,7 @@ Calculate
                 // add initial values to vectors "zetas" and "zetasChange"
                 std::vector<t_meter> zetas;
                 std::vector<t_meter> zetasChange;
-                if (localZetaID == 0) { // todo improve. perhaps better to check whether Zetas is initialized (but how?)
+                if (localZetaID == 0) {
                     zetas.push_back(zeta);
                     zetasChange.push_back(0 * si::meter);
                 } else {
@@ -1408,6 +1406,7 @@ Calculate
                 }
                 set<std::vector<t_meter>,Zetas>(zetas);
                 set<std::vector<t_meter>,ZetasChange>(zetas);
+                //LOG(debug) << "nodeID: " << getID() << ", localZetaID: " << localZetaID << ", zeta: " << zeta.value() << ", getZeta: " << getZeta(localZetaID).value();
             }
 
             /**
@@ -1804,19 +1803,40 @@ Calculate
                 return out;
             }
 
+            /**
+             * @brief Checking if zeta surface is at node top or at head
+             * @param localZetaID
+             * @return bool
+             * @note using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
+             */
             bool isZetaAtTop(int localZetaID){
                 return (getZetaTZero(localZetaID) >= getZetasTZero().front());
             }
 
+            /**
+             * @brief Checking if zeta surface is at node bottom
+             * @param localZetaID
+             * @return bool
+             * @note using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
+             */
             bool isZetaAtBottom(int localZetaID){
-                return (getZetaTZero(localZetaID) <= getZetasTZero().back() or // using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
+                return (getZetaTZero(localZetaID) <= getZetasTZero().back() or
                         getHead() < getBottom());
             }
 
+            /**
+             * @brief Checking if zeta surface between top and bottom
+             * @param localZetaID
+             * @return bool
+             */
             bool isZetaBetween(int localZetaID){
                 return (!isZetaAtTop(localZetaID) and !isZetaAtBottom(localZetaID));
             }
 
+            /**
+             * @brief Checking if any zeta surface is at node top or bottom
+             * @return bool
+             */
             bool isAnyZetaBetween(){
                 for (int localZetaID = 0; localZetaID < getZetas().size(); ++localZetaID){
                     if (isZetaBetween(localZetaID)){ return true;}
@@ -1824,6 +1844,11 @@ Calculate
                 return false;
             }
 
+            /**
+             * @brief Checking if zeta surface is active (between top and bottom and porosity above zero)
+             * @param localZetaID
+             * @return bool
+             */
             bool isZetaActive(int localZetaID){
                 return (isZetaBetween(localZetaID) and getEffectivePorosity().value() > 0);
             }
@@ -2220,7 +2245,7 @@ Calculate
                 } else { // only clip if node is unconfined
                     auto head = get<t_meter, Head>();
                     t_meter bottomOfNode = getBottom();
-                    auto topOfNode = get<t_meter, Elevation>();
+                    auto topOfNode = getElevation();
                     t_meter newHeight;
                     // if groundwater head is BELOW the top of the node
                     if (head < topOfNode) {
@@ -2421,20 +2446,19 @@ Calculate
              * @brief Adjust zeta surfaces if they have crossed or their height difference is below a minimum value
              * @param localZetaID zeta surface id in this node
              * @note in SWI2 code: SSWI2_ZETACROSS
-             * todo: debug with this info:
              *  localZetaID | x       | n
              *  1           | -       | -
              *  2           | 1       | 1,2,3
-             *  3           | 2,1     | 2,3,4; 1,2,3,4
-             *  4           | 3,2,1   | 3,4,5; 2,3,4,5; 1,2,3,4,5
+             *  3           | 1,2     | 2,3,4; 1,2,3,4
+             *  4           | 1,2,3   | 3,4,5; 2,3,4,5; 1,2,3,4,5
              */
             void correctCrossingZetas(){
                 t_meter zetaDifferenceCap = 0.001 * si::meter; // todo move to config
                 t_meter zetaAverage;
                 t_meter zetaSum;
-                int n_min;
-                int n_max;
-                for (int localZetaID = 1; localZetaID < getZetas().size() - 2; localZetaID++) {
+                int zetaRef;
+                int counter;
+                for (int localZetaID = 1; localZetaID < getZetas().size() - 2; ++localZetaID) {
                     // if zeta surface n is very close to or lower than the zeta surface that SHOULD be below (n+1)
                     if (getZeta(localZetaID) - getZeta(localZetaID + 1) < zetaDifferenceCap) {
                         // make the zeta height of both surfaces their average
@@ -2442,20 +2466,23 @@ Calculate
                         setZeta(localZetaID, zetaAverage);
                         setZeta(localZetaID + 1, zetaAverage);
                         // if there are zeta surfaces above that could possibly be crossing
-                        if (localZetaID >= 2) {
-                            for (int x = 1; x < localZetaID - 1; ++x) {
-                                // create a range from n_min (n-x) to n_max (n+1)
-                                n_min = localZetaID - x;
-                                n_max = localZetaID + 1;
-                                // if a zeta surface above (n_min) crosses or is very close to zeta surface below (n_max)
-                                // (which is now at the same, averaged, height of zeta surface n)
-                                if (getZeta(n_min) - getZeta(n_max) < zetaDifferenceCap) {
-                                    // calculate the average height from that zeta surface above (n_min) until
-                                    //  the zeta surface below (n_max)
-                                    for (int n = n_min; n <= n_max; n++) { zetaSum += getZeta(n); }
-                                    zetaAverage = zetaSum / ((n_max - n_min) * si::si_dimensionless); // todo check whether that is true
-                                    // set every zeta surface between n-1 and n+1 to the averaged value
-                                    for (int n = n_min; n <= n_max; n++) { setZeta(n, zetaAverage); }
+                        for (int x = 1; x < localZetaID; ++x) {
+                            zetaSum = 0 * si::meter;
+                            // create a range from n_min (n-x) to n_max (n+1)
+                            zetaRef = localZetaID - x;
+                            // if surface zetaRef crosses (or is very close to) the zeta surface at localZetaID+1
+                            if (getZeta(zetaRef) - getZeta(localZetaID + 1) < zetaDifferenceCap) {
+                                // sum heights from zetaRef surface to localZetaID+1
+                                counter = 0;
+                                for (int n = zetaRef; n <= localZetaID + 1; ++n) {
+                                    zetaSum += getZeta(n);
+                                    ++counter;
+                                }
+                                if (counter != 0){
+                                    // calculate the average height from surface zetaRef to localZetaID+1
+                                    zetaAverage = zetaSum / (counter * si::si_dimensionless);
+                                    // set all zeta surfaces from zetaRef to localZetaID+1 to that average
+                                    for (int n = zetaRef; n <= localZetaID + 1; ++n) { setZeta(n, zetaAverage); }
                                 }
                             }
                         }
@@ -2771,14 +2798,10 @@ Calculate
                 if(useGhostNodeCorrection) {
                     ghostNodeCorrection = getGhostNodeCorrection();
                     ghostNodeCorrectionFromNeighbours = getGhostNodeCorrectionFromNeighbours();
-                    if (ghostNodeCorrection.value() != 0) {
-                        //LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrection = " << ghostNodeCorrection.value();
-                    }
-                    if (ghostNodeCorrectionFromNeighbours.value() != 0) {
-                        //LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrection = " << ghostNodeCorrectionFromNeighbours.value();
+                    if (ghostNodeCorrection.value() != 0 or ghostNodeCorrectionFromNeighbours.value() != 0) {
+                        LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrectionBalance = " << ghostNodeCorrection.value() + ghostNodeCorrectionFromNeighbours.value();
                     }
                 }
-                //LOG(userinfo) << "ghostNodeCorrection: " << ghostNodeCorrection.value() << std::endl;
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection +
                         ghostNodeCorrectionFromNeighbours;
@@ -2791,14 +2814,9 @@ Calculate
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-                    //if (pseudoSourceNode.value() != 0) {
-                    //    LOG(debug) << "pseudoSourceNode: " << pseudoSourceNode.value() << std::endl;
-                    //}
+
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-                    //if (verticalFluxCorrections.value() != 0) {
-                    //    LOG(debug) << "verticalFluxCorrections: " << verticalFluxCorrections.value() << std::endl;
-                    //}
 
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
