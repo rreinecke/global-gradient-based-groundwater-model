@@ -47,7 +47,7 @@ class GlobalDataReader : public DataReader {
          */
         void readData(Simulation::Options op) override {
             LOG(userinfo) << "Reading land mask (with default values from config)";
-            readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+            readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                          op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                          op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                          op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
@@ -80,7 +80,9 @@ class GlobalDataReader : public DataReader {
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
                 DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
+            }
 
+            if (op.getNumberOfLayers() > 1) {
                 if (op.useEfolding()) {
                     LOG(userinfo) << "Reading e-folding";
                     readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
