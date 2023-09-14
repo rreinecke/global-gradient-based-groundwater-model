@@ -212,7 +212,7 @@ namespace GlobalFlow {
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
 
-
+        bool gnc{false};
 
         bool vdf{false};
 
@@ -272,6 +272,11 @@ namespace GlobalFlow {
          * Calculate the final variable density flow budget
          */
         void inline updateVDFBudget();
+
+        /**
+        * Calculate the ghost node correction flow budget
+        */
+        void inline updateGNCBudget();
 
         /**
          * Calculate the final budget

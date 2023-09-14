@@ -29,10 +29,10 @@ PhysicalProperties initProperties() { // Question:: init all properties?
     fields.emplace<quantity<d_time>, StepSize>(1 * day);
     fields.emplace<quantity<CubicMeter>, OUT>(0.0 * si::cubic_meter);
     fields.emplace<quantity<CubicMeter>, IN>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, VDFOUT>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, VDFIN>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, VDFOUT>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, VDFIN>(0.0 * si::cubic_meter);
+    fields.emplace<quantity<CubicMeter>, VDF_OUT>(0.0 * si::cubic_meter);
+    fields.emplace<quantity<CubicMeter>, VDF_IN>(0.0 * si::cubic_meter);
+    fields.emplace<quantity<CubicMeter>, GNC_OUT>(0.0 * si::cubic_meter);
+    fields.emplace<quantity<CubicMeter>, GNC_IN>(0.0 * si::cubic_meter);
     fields.emplace<quantity<Meter>, Head>(1 * si::meter);
     fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);

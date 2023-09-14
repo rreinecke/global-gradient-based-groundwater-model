@@ -105,6 +105,8 @@ namespace GlobalFlow {
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
+            GRID_REFINED = config.get<bool>("grid_refined");
+
             DENSITY_VARIABLE = config.get<bool>("density_variable");
             DENSITY_ZONES = getTypeArray<double>("density_zones", config);
             MAX_TIP_SLOPE = config.get<double>("max_tip_slope");

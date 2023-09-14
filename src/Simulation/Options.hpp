@@ -94,6 +94,8 @@ namespace GlobalFlow {
             std::string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
             std::vector<bool> CONFINED{};
+            // refinement information
+            bool GRID_REFINED{false};
             // density information
             bool DENSITY_VARIABLE{false};
             std::vector<double> DENSITY_ZONES{1000.0};
@@ -242,6 +244,8 @@ namespace GlobalFlow {
             getNumberOfLayers() {
                 return LAYERS;
             }
+
+            bool isGridRefined() { return GRID_REFINED; }
 
             bool isDensityVariable() { return DENSITY_VARIABLE; }
 

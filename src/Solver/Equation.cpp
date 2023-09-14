@@ -18,7 +18,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     this->isAdaptiveDamping = options.isDampingEnabled();
     this->dampMin = options.getMinDamp();
     this->dampMax = options.getMaxDamp();
-    this->vdf = options.isDensityVariable();
+    this->vdf = options.isDensityVariable(); // vdf = Variable Density Flow
+    this->gnc = options.isGridRefined(); // gnc = Ghost Node Correction
 
     this->inner_iterations = options.getInnerItter();
 
@@ -327,6 +328,14 @@ Equation::updateVDFBudget() {
 }
 
 void inline
+Equation::updateGNCBudget() {
+#pragma omp parallel for
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->saveGNCMassBalance();
+        }
+    }
+
+void inline
 Equation::updateBudget() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -475,6 +484,9 @@ Equation::solve() {
      }
 
      updateBudget();
+     if(gnc) {
+         updateGNCBudget();
+     }
      updateFinalHeads();
     }
 

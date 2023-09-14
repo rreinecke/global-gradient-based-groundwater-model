@@ -5,17 +5,18 @@
       "number_of_nodes_per_layer": 4603,
       "lon_range": 360,
       "lat_range": 180,
-      "is_global": true,
+      "is_global": "true",
       "resolution": 0.08333,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
       "threads": 50,
       "layers": 1,
-      "use_efolding": false,
+      "use_efolding": "false",
       "confinement": [
         "true"
       ],
-      "density_variable": true,
+      "grid_refined": "false",
+      "density_variable": "true",
       "density_zones": [
         1000,
         1005,

@@ -16,6 +16,7 @@
         "true",
         "true"
       ],
+      "grid_refined": "true",
       "density_variable": "false",
       "density_zones": [
         1000

@@ -20,7 +20,7 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        std::string neighbours{""};
+        std::string neighbours;
         for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
             neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
         }
@@ -50,8 +50,6 @@ void StandaloneRunner::simulate() {
         sim.printMassBalances(debug);
         step.first->toggleSteadyState();
     }
-
-    //DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
 
     int stepNumber = 1;
     Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::DAY, 10);
@@ -87,16 +85,11 @@ void StandaloneRunner::simulate() {
         stepNumber++;
     }
 
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
     delete reader;
 }
 
-void StandaloneRunner::getResults() {
-
-}
-
 void StandaloneRunner::writeData() {
-
+    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
 }
 
 StandaloneRunner::StandaloneRunner() = default;
@@ -110,5 +103,6 @@ int main() {
     runner.setupSimulation();
     runner.writeNodeInfosToCSV();
     runner.simulate();
+    runner.writeData();
     return EXIT_SUCCESS;
 }

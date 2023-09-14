@@ -16,6 +16,7 @@
       "confinement": [
         "true"
       ],
+      "grid_refined": "false",
       "density_variable": "true",
       "density_zones": [
         1000,

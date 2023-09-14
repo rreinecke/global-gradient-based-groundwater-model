@@ -308,6 +308,15 @@ namespace GlobalFlow {
             }
 
             /**
+             * Get the mass balance for the current step
+             * @return
+             */
+            MassError getGNCMassError() {
+                return getError([this](int pos) { return nodes->at(pos)->getGNCOUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getGNCIN().value(); } );
+            }
+
+            /**
              * Get the flow lost to external flows
              * @return
              */
@@ -419,14 +428,21 @@ namespace GlobalFlow {
             void printMassBalances(custom_severity_level level) {
                 LOG(level) << "All units in cubic meter per step size";
                 MassError currentErr = getCurrentMassError();
-                LOG(level) << "Step mass error: " << currentErr.ERR << "  In: " << currentErr.IN << "  Out: "
-                           << currentErr.OUT;
+                LOG(level) << "Step mass error: " << currentErr.ERR <<
+                                "  In: " << currentErr.IN <<
+                                "  Out: " << currentErr.OUT;
                 MassError totalErr = getMassError();
-                LOG(level) << "Total mass error: " << totalErr.ERR << "  In: " << totalErr.IN << "  Out: "
-                           << totalErr.OUT;
+                LOG(level) << "Total mass error: " << totalErr.ERR <<
+                                "  In: " << totalErr.IN <<
+                                "  Out: " << totalErr.OUT;
                 MassError vdfErr = getVDFMassError();
-                LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR << "  In: " << vdfErr.IN <<
-                "  Out: " << vdfErr.OUT;
+                LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
+                                "  In: " << vdfErr.IN <<
+                                "  Out: " << vdfErr.OUT;
+                MassError gncErr = getGNCMassError();
+                LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
+                           "  In: " << gncErr.IN <<
+                           "  Out: " << gncErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);

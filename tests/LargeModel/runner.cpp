@@ -57,7 +57,7 @@ namespace GlobalFlow {
     }
 
     void Runner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
+	    DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
     }
 
     void Runner::writeNodeInfosToCSV(){
@@ -104,7 +104,7 @@ namespace GlobalFlow {
         myfile.close();
     }
 
-    Runner::Runner() {}
+    Runner::Runner() = default;
 
 }//ns
 

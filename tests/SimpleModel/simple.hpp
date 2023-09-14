@@ -52,10 +52,10 @@ namespace GlobalFlow {
         writeData();
 
     private:
-        Solver::Equation *_eq;
+        Solver::Equation *_eq{};
         Simulation::Options op;
         Simulation::Simulation sim;
-        DataProcessing::SimpleDataReader *reader;
+        DataProcessing::SimpleDataReader *reader{};
     };
 
 }//ns

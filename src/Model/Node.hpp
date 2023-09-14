@@ -1002,11 +1002,11 @@ Calculate
 
             /**
              * @brief save variable density flow mass balance in node property (called before and after adjustment)
-             * @param areZetasAdjusted
+             * @param
              */
             void saveVDFMassBalance() noexcept {
-                auto vdfOut = get<t_c_meter, VDFOUT>();;
-                auto vdfIn = get<t_c_meter, VDFIN>();
+                t_c_meter vdfOut = getVDFOUT();;
+                t_c_meter vdfIn = getVDFIN();
 
                 // add current instantaneous mixing budget
                 vdfOut += getInstantaneousMixing(false);
@@ -1030,13 +1030,40 @@ Calculate
                     vdfIn +=  deltaZoneChangeOut;
                 }
 
-                set<t_c_meter, VDFOUT>(vdfOut);
-                set<t_c_meter, VDFIN>(vdfIn);
+                set<t_c_meter, VDF_OUT>(vdfOut);
+                set<t_c_meter, VDF_IN>(vdfIn);
             }
 
-            t_c_meter getVDFOUT() { return get<t_c_meter, VDFOUT>(); }
+            t_c_meter getVDFOUT() { return get<t_c_meter, VDF_OUT>(); }
 
-            t_c_meter getVDFIN() { return get<t_c_meter, VDFIN>(); }
+            t_c_meter getVDFIN() { return get<t_c_meter, VDF_IN>(); }
+
+            void saveGNCMassBalance(){
+                t_c_meter gncOut = getGNCOUT();
+                t_c_meter gncIn = getGNCIN();
+
+                t_c_meter gncFromUnrefinedNodes = getGNCFromUnrefinedNodes().value() * si::cubic_meter;
+                t_c_meter gncToRefinedNode = getGNCToRefinedNode().value() * si::cubic_meter;
+
+                if (gncFromUnrefinedNodes.value() < 0) {
+                    gncOut += gncFromUnrefinedNodes;
+                } else {
+                    gncIn += gncFromUnrefinedNodes;
+                }
+
+                if (gncToRefinedNode.value() < 0) {
+                    gncOut += gncToRefinedNode;
+                } else {
+                    gncIn += gncToRefinedNode;
+                }
+
+                set<t_c_meter, GNC_OUT>(gncOut);
+                set<t_c_meter, GNC_IN>(gncIn);
+            }
+
+            t_c_meter getGNCOUT() { return get<t_c_meter, GNC_OUT>(); }
+
+            t_c_meter getGNCIN() { return get<t_c_meter, GNC_IN>(); }
 
             /**
              * @brief Add a neighbour
@@ -1207,7 +1234,7 @@ Calculate
              * "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation, adding to RHS (lines 208-211)
              * @return
              */
-            t_vol_t getGNCFromUnrefinedNodes(){ // todo: check if correction really needs to be done only for the larger cell
+            t_vol_t getGNCFromUnrefinedNodes(){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
                 if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
@@ -2842,7 +2869,7 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
-                bool useGhostNodeCorrection = true;
+                bool useGhostNodeCorrection = true; // todo move to config
                 t_vol_t gncFromUnrefined {0 * (si::cubic_meter / day)};
                 t_vol_t gncToRefined {0 * (si::cubic_meter / day)};
 

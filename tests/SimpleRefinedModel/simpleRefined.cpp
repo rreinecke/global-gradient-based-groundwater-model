@@ -20,7 +20,7 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        std::string neighbours{""};
+        std::string neighbours;
         for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
             neighbours += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
         }
@@ -44,7 +44,7 @@ void StandaloneRunner::writeNodeInfosToCSV(){
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running a steady state step";
+        LOG(userinfo) << "Running a steady state step"; // to initialize heads
         step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
@@ -88,17 +88,11 @@ void StandaloneRunner::simulate() {
     delete reader;
 }
 
-void StandaloneRunner::getResults() {
-
-}
-
 void StandaloneRunner::writeData() {
     DataProcessing::DataOutput::OutputManager("data/out_simpleRefined.json", sim).write();
 }
 
-StandaloneRunner::StandaloneRunner() {
-
-}
+StandaloneRunner::StandaloneRunner() = default;
 
 }//ns
 
