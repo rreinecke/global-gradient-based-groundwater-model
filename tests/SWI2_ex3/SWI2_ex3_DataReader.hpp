@@ -95,10 +95,9 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-
                     nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                        0 * Model::si::meter,
-                                                       recharge * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value(),
+                                                       recharge * nodes->at(nodeID)->getArea().value(),
                                                        0 * Model::si::meter);
                 }
             }

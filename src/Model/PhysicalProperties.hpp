@@ -159,6 +159,8 @@ namespace GlobalFlow {
         struct VDFIN;
         struct ZCHG_OUT;
         struct ZCHG_IN;
+        struct GNC_OUT;
+        struct GNC_IN;
         struct Head;
         struct EQHead;
         struct HeadChange;
@@ -212,6 +214,8 @@ namespace GlobalFlow {
         PhysicalProperty<t_c_meter, VDFIN>,
         PhysicalProperty<t_c_meter, ZCHG_OUT>,
         PhysicalProperty<t_c_meter, ZCHG_IN>,
+        PhysicalProperty<t_c_meter, GNC_OUT>,
+        PhysicalProperty<t_c_meter, GNC_IN>,
         PhysicalProperty<t_meter, Head>,
         PhysicalProperty<t_meter, EQHead>,
         PhysicalProperty<t_meter, HeadChange>,

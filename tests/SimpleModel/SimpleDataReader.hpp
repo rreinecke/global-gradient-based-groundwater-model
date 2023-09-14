@@ -36,13 +36,15 @@ class SimpleDataReader : public DataReader {
                          op.getVDFLock(),
                         op.getDensityZones());
 
-            LOG(userinfo) << "Building the bottom layers";
-            DataProcessing::buildBottomLayers(nodes,
-                                              op.getNumberOfLayers(),
-                                              op.getConfinements(),
-                                              op.getAquiferDepth(),
-                                              op.getInitialK(),
-                                              op.getAnisotropy());
+            if (op.getNumberOfLayers() > 1) {
+                LOG(userinfo) << "Building the bottom layers";
+                DataProcessing::buildBottomLayers(nodes,
+                                                  op.getNumberOfLayers(),
+                                                  op.getConfinements(),
+                                                  op.getAquiferDepth(),
+                                                  op.getInitialK(),
+                                                  op.getAnisotropy());
+            }
 
             LOG(userinfo) << "Building grid by spatial ID";
             DataProcessing::buildBySpatID(nodes,
@@ -53,11 +55,18 @@ class SimpleDataReader : public DataReader {
                                           op.isGlobal(),
                                           op.getNumberOfLayers(),
                                           op.getNumberOfNodesPerLayer(),
-                                          op.getGHBConduct(),
+                                          op.getGHBConduct(), // default conductance of general head boundary
                                           op.getBoundaryCondition());
 
-            LOG(userinfo) << "Reading hydraulic parameters";
+            if (op.getNumberOfLayers() > 1) {
+                LOG(userinfo) << "Copying neighbours to bottom layer(s)";
+                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
+            }
+
+            LOG(userinfo) << "Reading lithology";
             readConduct(buildDir(op.getLithology()));
+
+            LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
 
             LOG(userinfo) << "Reading the groundwater recharge";
@@ -68,9 +77,6 @@ class SimpleDataReader : public DataReader {
 
             LOG(userinfo) << "Defining rivers";
             readRiverConductance(buildDir(op.getKRiver()));
-
-            //LOG(userinfo) << "Building grid by rows and columns (boundaries need to be specified in with a file)";
-            //DataProcessing::buildByGrid(nodes, grid, op.getNumberOfNodesPerLayer(), op.getNumberOfLayers());
         }
 
     private:

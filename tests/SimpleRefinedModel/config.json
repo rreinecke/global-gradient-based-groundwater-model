@@ -5,7 +5,7 @@
       "number_of_nodes_per_layer": 127,
       "lon_range": 10,
       "lat_range": 10,
-      "is_global": false,
+      "is_global": "false",
       "resolution": 1,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
@@ -16,10 +16,6 @@
         "true",
         "true"
       ],
-      "cache": "false",
-      "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
-      "sensitivity": "false",
       "density_variable": "false",
       "density_zones": [
         1000
@@ -28,7 +24,11 @@
       "max_toe_slope": 0.0,
       "min_depth_factor": 0.0,
       "slope_adj_factor": 0.0,
-      "vdf_lock": 0.0
+      "vdf_lock": 0.0,
+      "cache": "false",
+      "adaptive_step_size": "false",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
     },
     "numerics": {
       "solver": "PCG",

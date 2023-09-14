@@ -1207,7 +1207,7 @@ Calculate
              * "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation, adding to RHS (lines 208-211)
              * @return
              */
-            t_vol_t getGhostNodeCorrection(){ // todo: check if correction really needs to be done only for the larger cell
+            t_vol_t getGNCFromUnrefinedNodes(){ // todo: check if correction really needs to be done only for the larger cell
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
                 if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
@@ -1220,21 +1220,69 @@ Calculate
                 return out;
             }
 
+            /**
+             * @brief Ghost Node Correction following MODFLOW-USG documentation by Panday et al. (2013) and Fortran file
+             * "disu2gncn.f" of the MODFLOW-USG package. Using symmetric implementation, adding to RHS (lines 208-211)
+             * @return
+             */
+            t_vol_t getGNCToRefinedNode(){
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
+
+                if (get<int, RefID>() == 0) { return out;}
+
+                // get neighbours at left, right, front or back
+                std::forward_list<NeighbourPosition> neighbours_LRFB = getPossibleNeighbours_LRFB();
+
+                for (const auto &neigPos: neighbours_LRFB) {
+                    auto neig = neighbours.find(neigPos);
+                    if (neig != neighbours.end()) {
+                        // if neighbour is unrefined
+                        if (at(neig)->get<int, RefID>() == 0) {
+                            // get the refined neighbour position this node has relative to that unrefined
+                            NeighbourPosition thisNode = getRefinedNeighbourPositionToUnrefinedNeighbour(get<int, RefID>(), neigPos);
+
+                            out += at(neig)->calculateGhostNodeCorrection({thisNode});
+                        }
+                    }
+                }
+                //LOG(debug) << "nodeID = " << get<large_num, ID>() << ", getGhostNodeCorrectionFromNeighbours = " << out.value();
+                return out;
+            }
+
+            static NeighbourPosition
+            getRefinedNeighbourPositionToUnrefinedNeighbour(int refID, NeighbourPosition neigPos){
+                if (refID == 1){
+                    if (neigPos == NeighbourPosition::FRONT) { return NeighbourPosition::BACKLEFT;}
+                    if (neigPos == NeighbourPosition::LEFT) { return NeighbourPosition::RIGHTFRONT;}
+                } else if (refID == 2){
+                    if (neigPos == NeighbourPosition::FRONT) { return NeighbourPosition::BACKRIGHT;}
+                    if (neigPos == NeighbourPosition::RIGHT) { return NeighbourPosition::LEFTFRONT;}
+                } else if (refID == 3){
+                    if (neigPos == NeighbourPosition::BACK) { return NeighbourPosition::FRONTLEFT;}
+                    if (neigPos == NeighbourPosition::LEFT) { return NeighbourPosition::RIGHTBACK;}
+                } else if (refID == 4){
+                    if (neigPos == NeighbourPosition::BACK) { return NeighbourPosition::FRONTRIGHT;}
+                    if (neigPos == NeighbourPosition::RIGHT) { return NeighbourPosition::LEFTBACK;}
+                } else {
+                    throw "invalid refID";
+                }
+                throw "Mismatch between refID and neigPos";
+            }
+
             t_vol_t getGhostNodeCorrectionFromNeighbours() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
 
-                std::forward_list<NeighbourPosition> possibleUnrefinedNeighbours =
-                        getPossibleNeighbours_horizontal_unrefined();
+                std::forward_list<NeighbourPosition> possibleUnrefinedNeighbours = getPossibleNeighbours_LRFB();
 
                 for (const auto &unrefinedNeigPos: possibleUnrefinedNeighbours) {
                     auto unrefinedNeig = neighbours.find(unrefinedNeigPos);
-                    if (unrefinedNeig == neighbours.end()) {
-                        continue;
-                    } else {
+                    if (unrefinedNeig != neighbours.end()) {
+                        // get respective possible refined neighbours (for one refinement: "2" neighbours)
                         std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
                                 getPossibleNeighboursForGNCFromNeighbours(unrefinedNeigPos);
 
+                        // subtract the GNC for those "2"" potential
                         out -= at(unrefinedNeig)->calculateGhostNodeCorrection(possibleRefinedNeighbours);
                     }
                 }
@@ -1244,17 +1292,14 @@ Calculate
 
             t_vol_t calculateGhostNodeCorrection(const std::forward_list<NeighbourPosition>& possibleRefNeigPos){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                auto head = get<t_meter, Head>();
+                t_meter head = getHead();
 
                 for (const auto &position: possibleRefNeigPos) {
                     auto refinedNeig = neighbours.find(position);
-                    if (refinedNeig == neighbours.end()) {
-                        continue;
-                    } else {
+                    if (refinedNeig != neighbours.end()) {
                         // conductance to the refined neighbour node
                         t_s_meter_t conductance =
                                 mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
-                        //LOG(debug) << "conductance = " << conductance.value();
 
                         // todo: if contributor is refined: loop starts here
                         t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
@@ -1291,7 +1336,7 @@ Calculate
                         //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
 
                         // calculate ghost node correction
-                        out += conductance * (alpha * (head - getAt<t_meter, Head>(contributor)));
+                        out += conductance * (alpha * (getHead() - at(contributor)->getHead()));
                         //LOG(debug) << "GNC for nodeID " << get<large_num, ID>() <<
                         //        " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
                         //                " with contributor " << getAt<large_num, ID>(contributor) <<
@@ -1336,6 +1381,12 @@ Calculate
                         NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
             }
 
+            /**
+             * @brief Get the list of possible refined neighbours for "GNC from neighbours"
+             * @param neighbourPosition
+             * @return List of neighbour positions
+             * @note These refined neighbours are the ones that this node contributes to. They are "around the corner".
+             */
             static std::forward_list<NeighbourPosition>
             getPossibleNeighboursForGNCFromNeighbours(NeighbourPosition neighbourPosition) {
                 if (neighbourPosition == NeighbourPosition::FRONT) {
@@ -1352,14 +1403,14 @@ Calculate
             }
 
             static std::forward_list<NeighbourPosition>
-            getPossibleNeighbours_horizontal_unrefined(){
+            getPossibleNeighbours_LRFB(){
                 return {NeighbourPosition::BACK, NeighbourPosition::FRONT,
                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
             }
 
             static std::forward_list<NeighbourPosition>
             getPossibleNeighbours_horizontal(){
-                std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_horizontal_unrefined();
+                std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_LRFB();
                 possiblePositions.merge(getPossibleNeighbours_horizontal_refined());
                 return possiblePositions;
             }
@@ -2792,19 +2843,23 @@ Calculate
                 }
                 //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
                 bool useGhostNodeCorrection = true;
-                t_vol_t ghostNodeCorrection {0 * (si::cubic_meter / day)};
-                t_vol_t ghostNodeCorrectionFromNeighbours {0 * (si::cubic_meter / day)};
+                t_vol_t gncFromUnrefined {0 * (si::cubic_meter / day)};
+                t_vol_t gncToRefined {0 * (si::cubic_meter / day)};
 
                 if(useGhostNodeCorrection) {
-                    ghostNodeCorrection = getGhostNodeCorrection();
-                    ghostNodeCorrectionFromNeighbours = getGhostNodeCorrectionFromNeighbours();
-                    if (ghostNodeCorrection.value() != 0 or ghostNodeCorrectionFromNeighbours.value() != 0) {
-                        LOG(debug) << "nodeID " << get<large_num, ID>() << ", ghostNodeCorrectionBalance = " << ghostNodeCorrection.value() + ghostNodeCorrectionFromNeighbours.value();
-                    }
+                    gncFromUnrefined = getGNCFromUnrefinedNodes();
+                    gncToRefined = getGNCToRefinedNode();
+                    //ghostNodeCorrectionFromNeighbours = getGhostNodeCorrectionFromNeighbours();
+                    /*if (gncFromUnrefined.value() != 0 or gncToRefined.value() != 0) {
+                        LOG(debug) << "nodeID," << get<large_num, ID>() <<
+                                ",gncFromUnrefined," << gncFromUnrefined.value() <<
+                                ",gncToRefined," << gncToRefined.value() <<
+                                ",ghostNodeCorrectionBalance," << gncFromUnrefined.value() + gncToRefined.value();
+                    }*/
                 }
 
-                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + ghostNodeCorrection +
-                        ghostNodeCorrectionFromNeighbours;
+                t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + gncFromUnrefined +
+                        gncToRefined;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 

@@ -16,6 +16,8 @@ class SimpleDataReader : public DataReader {
             readLandMaskRefined(nodes,
                             buildDir(op.getNodesDir()),
                             op.getNumberOfNodesPerLayer(),
+                            op.getEdgeLengthLeftRight(),
+                            op.getEdgeLengthFrontBack(),
                             op.getNumberOfLayers(),
                             op.getInitialK()[0],
                             op.getInitialHead(),
@@ -75,10 +77,6 @@ class SimpleDataReader : public DataReader {
 
             LOG(userinfo) << "Defining rivers";
             readRiverConductance(buildDir(op.getKRiver()));
-
-            //LOG(userinfo) << "Adding GHB conductance";
-            //readHeadBoundary(buildDir(op.getKGHBDir()));
-
         }
 
     private:
@@ -104,6 +102,8 @@ class SimpleDataReader : public DataReader {
         readLandMaskRefined(NodeVector nodes,
                      std::string path,
                      large_num numberOfNodesPerLayer,
+                     double edgeLengthLeftRight,
+                     double edgeLengthFrontBack,
                      int numberOfLayers,
                      double defaultK,
                      double initialHead,
@@ -122,9 +122,9 @@ class SimpleDataReader : public DataReader {
                      double vdfLock,
                      std::vector<double> densityZones) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "X", "Y", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
-            double X{0};
-            double Y{0};
+            in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
+            double lon{0};
+            double lat{0};
             double area{0};
             int refID{0};
             large_num nodeID{0};
@@ -134,13 +134,18 @@ class SimpleDataReader : public DataReader {
             std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
-            while (in.read_row(spatID, X, Y, area, refID)) {
+            while (in.read_row(spatID, lon, lat, area, refID)) {
+
+                if (edgeLengthLeftRight == edgeLengthFrontBack) {
+                    edgeLengthLeftRight = edgeLengthFrontBack = std::sqrt(area);
+                }
+
                 nodes->emplace_back(new Model::StandardNode(nodes,
-                                                            Y,
-                                                            X,
+                                                            lat,
+                                                            lon,
                                                             area * Model::si::square_meter,
-                                                            std::sqrt(area)*Model::si::meter,
-                                                            std::sqrt(area)*Model::si::meter,
+                                                            edgeLengthLeftRight * Model::si::meter,
+                                                            edgeLengthFrontBack * Model::si::meter,
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
@@ -163,7 +168,6 @@ class SimpleDataReader : public DataReader {
                                                             vdfLock * Model::si::meter));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
-                    //LOG(debug) << "spatID: " << spatID << ", nodeID: " << nodeID << "refID = " << refID;
                 }
                 nodeID++;
             }
@@ -218,21 +222,24 @@ class SimpleDataReader : public DataReader {
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct", "refID");
             large_num spatID{0};
             double head{0};
-            int refID{0};
             double conduct{0};
             double bottom{0};
             large_num nodeID;
+            int layer{0};
+            int refID{0};
 
             while (in.read_row(spatID, head, bottom, conduct, refID)) {
                 try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(0).at(refID); //layer = 0
+                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID); //layer = 0
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                nodes->at(nodeID)->addExternalFlow(Model::RIVER, head * Model::si::meter, conduct,
-                                                  bottom * Model::si::meter);
+                nodes->at(nodeID)->addExternalFlow(Model::RIVER,
+                                                   head * Model::si::meter,
+                                                   conduct,
+                                                   bottom * Model::si::meter);
             }
         }
 
@@ -255,9 +262,7 @@ class SimpleDataReader : public DataReader {
                 }
                 nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                 0 * Model::si::meter,
-                                                   recharge * nodes->at(nodeID)->getProperties().get < Model::quantity <
-                                                        Model::SquareMeter > ,
-                                                        Model::Area > ().value(),
+                                                   recharge * nodes->at(nodeID)->getArea().value(),
                                                 0 * Model::si::meter);
             }
         }
