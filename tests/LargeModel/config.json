@@ -1,7 +1,7 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_nz.csv",
+      "nodes": "grid_nz_refined.csv",
       "number_of_nodes_per_layer": 4603,
       "lon_range": 360,
       "lat_range": 180,

@@ -234,7 +234,7 @@ namespace GlobalFlow {
                         out += boost::units::abs(storageFlow);
                 }
                 out += getNonStorageFlow(std::forward<CompareFunction>(compare));
-                return out.value() * si::cubic_meter / day;
+                return out;
             }
 
         public:

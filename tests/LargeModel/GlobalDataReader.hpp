@@ -47,14 +47,23 @@ class GlobalDataReader : public DataReader {
          */
         void readData(Simulation::Options op) override {
             LOG(userinfo) << "Reading land mask (with default values from config)";
-            readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
-                         op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
-                         op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
-                         op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                         op.isConfined(0), op.isDensityVariable(),
-                         op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                         op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
-
+            if (op.isGridRefined()){
+                readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
+                             op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
+                             op.isConfined(0), op.isDensityVariable(),
+                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+            } else {
+                readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
+                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(), op.getAquiferDepth()[0],
+                             op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
+                             op.isConfined(0), op.isDensityVariable(),
+                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+            }
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,
