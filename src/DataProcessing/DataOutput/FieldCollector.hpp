@@ -125,7 +125,7 @@ namespace GlobalFlow {
                     {"Gl_Wetland_Inflow",  FieldType::GL_WETLAND_IN},
                     {"Wetland_Inflow",     FieldType::WETLAND_IN},
                     {"Lake_Inflow",        FieldType::LAKE_IN},
-                    {"Gl_Lake_Inflow",     FieldType::GL_LAKE_IN}
+                    {"Gl_Lake_Inflow",     FieldType::GL_LAKE_IN},
                     {"Zeta1",              FieldType::ZETA1},
                     {"Zeta2",              FieldType::ZETA2}
             };

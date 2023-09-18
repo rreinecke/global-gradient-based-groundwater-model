@@ -169,7 +169,7 @@ namespace GlobalFlow {
                     {FieldType::WETLAND_IN,         InternalType::DOUBLE},
                     {FieldType::LAKE_IN,            InternalType::DOUBLE},
                     {FieldType::ZETA1,              InternalType::DOUBLE},
-                    {FieldType::ZETA2,              InternalType::DOUBLE}
+                    {FieldType::ZETA2,              InternalType::DOUBLE},
                     {FieldType::GL_LAKE_IN,         InternalType::DOUBLE}
             };
 

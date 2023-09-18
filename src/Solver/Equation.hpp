@@ -129,11 +129,11 @@ namespace GlobalFlow {
              * Set the correct stepsize (default is DAY) // todo remove if not needed
              * @param mod
              */
-            void updateStepModifier(double mod) {
+            void updateStepSize(double mod) {
                 std::for_each(nodes->begin(),
                               nodes->end(),
                               [mod](std::unique_ptr<Model::NodeInterface> const &node) {
-                    node->updateStepModifier(mod);
+                    node->updateStepSize(mod);
                 });
             }
 

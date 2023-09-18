@@ -672,7 +672,7 @@ Calculate
              */
             void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
 
-            void updateStepModifier(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
+            void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
 
             /**
              * @brief Storage capacity based on yield or specific storage
@@ -750,7 +750,7 @@ Calculate
              */
             t_meter getExternalFlowElevation(FlowType type) {
                 if (hasTypeOfExternalFlow(type)) {
-                    return externalFlows.at(type).getFlowElevation();
+                    return externalFlows.at(type).getFlowHead();
                 } else {
                     return 0 * si::meter;
                 }
@@ -801,7 +801,7 @@ Calculate
             }
             t_vol_t eqFlow = getEqFlow();
             if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
-                if (flow.flowIsHeadDependant(head)) {
+                if (flow.flowIsHeadDependent(head)) {
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
                          flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                 } else { // flow is not head dependent when the head is below the bottom of the simulated cell

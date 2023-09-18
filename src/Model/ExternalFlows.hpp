@@ -86,16 +86,16 @@ namespace GlobalFlow {
              * @brief Constructor for RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
              * @param id
              * @param type
-             * @param flowElevation
+             * @param flowHead
              * @param cond
              * @param bottom
              */
             ExternalFlow(int id,
                          FlowType type,
-                         t_meter flowElevation,
+                         t_meter flowHead,
                          t_s_meter_t cond,
                          t_meter bottom)
-                    : ID(id), type(type), flowElevation(flowElevation), conductance(cond), bottom(bottom) {}
+                    : ID(id), type(type), flowHead(flowHead), conductance(cond), bottom(bottom) {}
 
             /**
              * @brief Constructor for RECHARGE, FAST_SURFACE_RUNOFF and NET_ABSTRACTION
@@ -104,18 +104,18 @@ namespace GlobalFlow {
              * @param type
              */
             ExternalFlow(int id, t_vol_t flow, FlowType type)
-                    : ID(id), type(type), flowElevation(0), conductance(0), bottom(0), special_flow(flow) {}
+                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(flow) {}
 
             /**
              * @brief Constructor for Evapotranspiration
              * @param id
-             * @param flowElevation
+             * @param flowHead
              * @param bottom
              * @param evapotrans
              * @return
              */
-            ExternalFlow(int id, t_meter flowElevation, t_meter bottom, t_vol_t evapotrans)
-                    : ID(id), type(EVAPOTRANSPIRATION), flowElevation(0), conductance(0), bottom(0),
+            ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
+                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
                       special_flow(evapotrans) {}
 
             /**
@@ -162,7 +162,7 @@ namespace GlobalFlow {
 
             t_vol_t getRecharge() const noexcept { return special_flow; }
 
-            t_meter getFlowElevation() const noexcept { return flowElevation; }
+            t_meter getFlowHead() const noexcept { return flowHead; }
 
             t_s_meter_t getDyn(t_vol_t current_recharge,
                                t_meter eq_head,
@@ -212,7 +212,7 @@ namespace GlobalFlow {
         private:
             const int ID;
             const FlowType type;
-            const t_meter flowElevation;
+            const t_meter flowHead;
             const t_s_meter_t conductance; //for special_flow same as q
             const t_vol_t special_flow;
             const t_meter bottom;

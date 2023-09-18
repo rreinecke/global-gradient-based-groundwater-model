@@ -452,14 +452,6 @@ namespace GlobalFlow {
              */
             void printMassBalances(custom_severity_level level) {
                 LOG(level) << "All units in cubic meter per step size";
-                MassError currentErr = getCurrentMassError();
-                LOG(level) << "Step mass error: " << currentErr.ERR <<
-                                "  In: " << currentErr.IN <<
-                                "  Out: " << currentErr.OUT;
-                MassError totalErr = getMassError();
-                LOG(level) << "Total mass error: " << totalErr.ERR <<
-                                "  In: " << totalErr.IN <<
-                                "  Out: " << totalErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
                 LOG(level) << "Rivers MM: " << getMassErrorByFlowName(RIVER_MM);
@@ -470,6 +462,18 @@ namespace GlobalFlow {
                 LOG(level) << "Recharge: " << getMassErrorByFlowName(RECHARGE);
                 LOG(level) << "Net abstraction from groundwater: " << getMassErrorByFlowName(NAG);
                 LOG(level) << "Storage (only valid if transient run): " << getMassErrorByFlowName(STORAGE);
+                MassError currentErr = getCurrentMassError();
+                LOG(level) << "Step mass error: " << currentErr.ERR <<
+                           "  In: " << currentErr.IN <<
+                           "  Out: " << currentErr.OUT;
+                MassError totalErr = getMassError();
+                LOG(level) << "Total mass error: " << totalErr.ERR <<
+                           "  In: " << totalErr.IN <<
+                           "  Out: " << totalErr.OUT;
+                if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
+                    LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
+                    throw new MassErrorTooBig();
+                }
 
                 if (op.isDensityVariable()){
                     MassError vdfErr = getVDFMassError();
@@ -499,11 +503,6 @@ namespace GlobalFlow {
                     LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
                                "  In: " << gncErr.IN <<
                                "  Out: " << gncErr.OUT;
-                }
-
-                if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
-                    LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
-                    throw new MassErrorTooBig();
                 }
             }
 
