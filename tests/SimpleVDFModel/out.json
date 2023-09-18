@@ -2,11 +2,20 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head",
+        "name": "head_simple_vdf",
         "type": "csv",
         "field": "Head",
-        "ID": "false",
-        "position": "true"
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
+      },
+      {
+        "name": "zeta1_simple_vdf",
+        "type": "csv",
+        "field": "Zeta1",
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
       }
     ],
     "InnerIteration": {

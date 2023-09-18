@@ -19,27 +19,30 @@
 namespace GlobalFlow {
     namespace Simulation {
 
-        /** @class Enum for stepsizes
+        /** @class Enum for step-sizes
          *  @bug cannot use double value e.g. for week: 7.5 should be a struct instead
          */
         enum TimeFrame {
             DAY = 1,
-	          WEEK = 7,
+            TWO_DAYS = 2,
+            FOUR_DAYS = 4,
+            WEEK = 7,
+            TEN_DAYS = 10,
             FORTNIGHT = 15,
-	          MONTH = 30,
-	          YEAR = 360
+	        MONTH = 30,
+	        YEAR = 365,
+            TWO_YEARS = 730
         };
 
         typedef std::pair<Solver::Equation *, double> step;
 
         /**
          * @class AbstractStepper An iterator in order to iterate simply over simulation steps
-         * Holds a pointer to the equation and the choosen stepsize
+         * Holds a pointer to the equation and the chosen step-size
          */
         class AbstractStepper {
         public:
-            virtual Solver::Equation *
-            get(int col) const = 0;
+            virtual Solver::Equation *get(int col) const = 0;
         };
 
         /**
@@ -76,8 +79,8 @@ namespace GlobalFlow {
                     _delta_t_n = __delta;
 
                     LOG(debug) << "Stepsize delta " << __delta;
-                    LOG(debug) << "Stepsize: " << _time *  __delta;
-                    _stepper->get(0)->updateStepSize(_time * __delta);
+                    LOG(debug) << "Stepsize: " << double(_time) *  __delta;
+                    _stepper->get(0)->updateStepModifier(double(_time) * __delta);
                     _pos = _pos + __delta;
                     LOG(debug) << "Current position " << _pos;
 
@@ -91,8 +94,8 @@ namespace GlobalFlow {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
                 _delta_t_n = __delta;
-                _stepper->get(0)->updateStepSize(_time * __delta);
-		            LOG(debug) << "Stepsize: " << _time * __delta;
+                _stepper->get(0)->updateStepModifier(double(_time) * __delta);
+		            LOG(debug) << "Stepsize: " << double(_time) * __delta;
                 _pos = _pos + __delta;
             }
 
@@ -114,7 +117,7 @@ namespace GlobalFlow {
 
             Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
                     : _equation(eq), _timeFrame(time), _steps(steps), _dyn(dynStep) {
-                _equation->updateStepSize(_timeFrame);
+                _equation->updateStepModifier(_timeFrame);
             }
 
             virtual Solver::Equation *

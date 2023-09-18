@@ -1,8 +1,0 @@
-configure_file(grid_oneLayer.txt ${CMAKE_CURRENT_BINARY_DIR}/grid_oneLayer.txt COPYONLY)
-configure_file(grid_multipleLayers.txt ${CMAKE_CURRENT_BINARY_DIR}/grid_multipleLayers.txt COPYONLY)
-configure_file(test_config.json ${CMAKE_CURRENT_BINARY_DIR}/test_config.json COPYONLY)
-configure_file(motherDefSIMPLE.csv ${CMAKE_CURRENT_BINARY_DIR}/motherDefSIMPLE.csv COPYONLY)
-configure_file(motherDefSIMPLE2.csv ${CMAKE_CURRENT_BINARY_DIR}/motherDefSIMPLE2.csv COPYONLY)
-configure_file(simple.txt ${CMAKE_CURRENT_BINARY_DIR}/simple.txt COPYONLY)
-configure_file(simple_3D.txt ${CMAKE_CURRENT_BINARY_DIR}/simple_3D.txt COPYONLY)
-configure_file(test_config_simple.json ${CMAKE_CURRENT_BINARY_DIR}/test_config_simple.json COPYONLY)

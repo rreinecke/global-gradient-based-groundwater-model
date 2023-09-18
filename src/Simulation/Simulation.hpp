@@ -86,7 +86,7 @@ namespace GlobalFlow {
 
         /**
          * @class MassError
-         * Simple container for the mass error calulations
+         * Simple container for the mass error calculations
          */
         class MassError {
         public:
@@ -120,7 +120,7 @@ namespace GlobalFlow {
                 if (serialize) {
                     LOG(stateinfo) << "Saving state for faster reboot..";
                     {
-                        std::ofstream ofs(saveName, ios::out | ios::binary);
+                        std::ofstream ofs(saveName,  std::ios::out |  std::ios::binary);
                         boost::archive::binary_oarchive outStream(ofs);
                         outStream << nodes;
                     }
@@ -129,15 +129,15 @@ namespace GlobalFlow {
             };
 
             void restore(){
-               if(loadNodes) {
-                   LOG(stateinfo) << "Restoring state..";
-                   {
-                        std::ifstream in(saveName, ios::in | ios::binary);
+                if(loadNodes) {
+                    LOG(stateinfo) << "Restoring state..";
+                    {
+                        std::ifstream in(saveName,  std::ios::in |  std::ios::binary);
                         boost::archive::binary_iarchive inStream(in);
                         inStream >> nodes;
-                   }
-                   LOG(stateinfo) << "Restored state successfully..";
-               }
+                    }
+                    LOG(stateinfo) << "Restored state successfully..";
+                }
             }
 
             /**
@@ -147,7 +147,7 @@ namespace GlobalFlow {
              */
             std::string NodeInfosByID(unsigned long nodeID) {
                 Model::NodeInterface *nodeInterface = nodes->at(nodeID).get();
-                string out("\n");
+                std::string out("\n");
                 out += "IN: ";
                 out += to_string(nodeInterface->getCurrentIN().value());
                 out += "\nOUT: ";
@@ -198,7 +198,7 @@ namespace GlobalFlow {
                         out += nodes->at(j)->getOUT().value();
                     }
                 }
-                ostringstream output;
+                std::ostringstream output;
                 output << to_string(in) << "\n";
                 output << to_string(out);
                 return output.str();
@@ -215,7 +215,7 @@ namespace GlobalFlow {
                     }
                 }
                 Model::NodeInterface *nodeInterface = nodes->at(id).get();
-                string out("");
+                std::string out("");
                 //Flows Budget for
                 //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Wetland
                 out += to_string(nodeID);
@@ -241,6 +241,23 @@ namespace GlobalFlow {
             }
 
             /**
+             * Decide if its an In or Outflow
+             * @param fun
+             * @return
+             */
+            template<class Fun>
+            MassError inline getError(Fun fun) {
+                return getError([this, fun](int pos) {
+                                    double flow = fun(pos);
+                                    return flow < 0 ? flow : 0;
+                                }, // fun1 for getError(fun1, fun2): if flow at pos is negative return it, else return 0
+                                [this, fun](int pos) {
+                                    double flow = fun(pos);
+                                    return flow > 0 ? flow : 0;
+                                }); // fun2 for getError(fun1, fun2): if flow at pos is positive return it, else return 0
+            }
+
+            /**
              * Calculate the mass error
              * @param fun1 Function to get OutFlow
              * @param fun2 Function to get InFlow
@@ -257,7 +274,7 @@ namespace GlobalFlow {
                     in = in + fun2(j);
                 }
                 if (abs(in - out) > 0.00001) {
-                    error = ((100 * (in - out)) / ((in + out) / 2));
+                    error = ((100 * (in - abs(out))) / ((in + abs(out)) / 2));
                 }
                 MassError err(out, in, error);
                 return err;
@@ -268,12 +285,8 @@ namespace GlobalFlow {
              * @return
              */
             MassError getMassError() {
-                return getError([this](int pos) {
-                                    return nodes->at(pos)->getOUT().value();
-                                },
-                                [this](int pos) {
-                                    return nodes->at(pos)->getIN().value();
-                                });
+                return getError([this](int pos) { return nodes->at(pos)->getOUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getIN().value(); } );
             }
 
             /**
@@ -281,12 +294,41 @@ namespace GlobalFlow {
              * @return
              */
             MassError getCurrentMassError() {
-                return getError([this](int pos) {
-                                    return nodes->at(pos)->getCurrentOUT().value();
-                                },
-                                [this](int pos) {
-                                    return nodes->at(pos)->getCurrentIN().value();
-                                });
+                return getError([this](int pos) { return nodes->at(pos)->getCurrentOUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getCurrentIN().value(); } );
+            }
+
+            /**
+             * Get the total vdf mass balance
+             * @return
+             */
+            MassError getVDFMassError() {
+                return getError([this](int pos) { return nodes->at(pos)->getVDF_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getVDF_IN().value(); } );
+            }
+
+            MassError getZoneChangeMassError() {
+                return getError([this](int pos) { return nodes->at(pos)->getZCHG_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getZCHG_IN().value(); } );
+            }
+
+            MassError getInstantaneousMixingMassError(){
+                return getError([this](int pos) { return nodes->at(pos)->getInstantaneousMixing(false).value(); },
+                                [this](int pos) { return nodes->at(pos)->getInstantaneousMixing(true).value(); } );
+            }
+
+            MassError getTipToeTrackingMassError(){
+                return getError([this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(false).value(); },
+                                [this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(true).value(); } );
+            }
+
+            /**
+             * Get the mass balance for the current step
+             * @return
+             */
+            MassError getGNCMassError() {
+                return getError([this](int pos) { return nodes->at(pos)->getGNC_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getGNC_IN().value(); } );
             }
 
             /**
@@ -308,6 +350,7 @@ namespace GlobalFlow {
                 DRAINS,
                 RIVER_MM,
                 LAKES,
+                GLOBAL_LAKES, // Question: GLOBAL_LAKES?
                 WETLANDS,
                 GLOBAL_WETLANDS,
                 RECHARGE,
@@ -318,29 +361,12 @@ namespace GlobalFlow {
             };
 
             /**
-             * Decide if its an In or Outflow
-             * @param fun
-             * @return
-             */
-            template<class Fun>
-            MassError inline getError(Fun fun) {
-                return getError([this, fun](int pos) {
-                                    double flow = fun(pos);
-                                    return flow < 0 ? flow : 0;
-                                },
-                                [this, fun](int pos) {
-                                    double flow = fun(pos);
-                                    return flow > 0 ? flow : 0;
-                                });
-            }
-
-            /**
              * Helper function for printing the mass balance for each flow
              * @param flow
              * @return
              */
-            string getFlowByName(Flows flow) {
-                ostringstream stream;
+            std::string getMassErrorByFlowName(Flows flow) {
+                std::ostringstream stream;
                 MassError tmp(0, 0, 0);
                 switch (flow) {
                     case GENERAL_HEAD_BOUNDARY:
@@ -386,6 +412,12 @@ namespace GlobalFlow {
                                     return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
                                 });
                         break;
+                    case GLOBAL_LAKES:
+                        tmp = getError(
+                                [this](int i) {
+                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                                });
+                        break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
                             return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
@@ -401,7 +433,7 @@ namespace GlobalFlow {
                         break;
                 }
 
-                stream << "IN :" << tmp.IN << "  OUT :" << tmp.OUT;
+                stream << "In: " << tmp.IN << "  Out: " << tmp.OUT;
                 return stream.str();
             }
 
@@ -409,24 +441,58 @@ namespace GlobalFlow {
              * Prints all mass balances
              */
             void printMassBalances(custom_severity_level level) {
+                LOG(level) << "All units in cubic meter per step size";
                 MassError currentErr = getCurrentMassError();
+                LOG(level) << "Step mass error: " << currentErr.ERR <<
+                                "  In: " << currentErr.IN <<
+                                "  Out: " << currentErr.OUT;
                 MassError totalErr = getMassError();
-                LOG(level) << "All units in meter per stepsize";
-                LOG(level) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
-                              << currentErr.OUT;
-                LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "
-                              << totalErr.OUT;
-                LOG(level) << "General Head Boundary: " << getFlowByName(GENERAL_HEAD_BOUNDARY);
-                LOG(level) << "Rivers: " << getFlowByName(RIVERS);
-                //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
-                LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);
-                LOG(level) << "Lakes: " << getFlowByName(LAKES);
-                LOG(level) << "Wetlands: " << getFlowByName(WETLANDS);
-                LOG(level) << "Global wetlands: " << getFlowByName(GLOBAL_WETLANDS);
-                LOG(level) << "Recharge: " << getFlowByName(RECHARGE);
-                //LOG(userinfo) << "Fast Surface Runoff: " << getFlowByName(FASTSURFACE) << "\n";
-                LOG(level) << "Net abstraction from groundwater: " << getFlowByName(NAG);
-                LOG(level) << "Storage (only valid if transient run): " << getFlowByName(STORAGE);
+                LOG(level) << "Total mass error: " << totalErr.ERR <<
+                                "  In: " << totalErr.IN <<
+                                "  Out: " << totalErr.OUT;
+                LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
+                LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
+                //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);
+                LOG(level) << "Rivers MM: " << getMassErrorByFlowName(RIVER_MM);
+                LOG(level) << "Lakes: " << getMassErrorByFlowName(LAKES);
+                LOG(level) << "Global lakes: " << getMassErrorByFlowName(GLOBAL_LAKES);
+                LOG(level) << "Wetlands: " << getMassErrorByFlowName(WETLANDS);
+                LOG(level) << "Global wetlands: " << getMassErrorByFlowName(GLOBAL_WETLANDS);
+                LOG(level) << "Recharge: " << getMassErrorByFlowName(RECHARGE);
+                //LOG(userinfo) << "Fast Surface Runoff: " << getMassErrorByFlowName(FASTSURFACE) << "\n";
+                LOG(level) << "Net abstraction from groundwater: " << getMassErrorByFlowName(NAG);
+                LOG(level) << "Storage (only valid if transient run): " << getMassErrorByFlowName(STORAGE);
+
+                if (op.isDensityVariable()){
+                    MassError vdfErr = getVDFMassError();
+                    LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
+                               "  In: " << vdfErr.IN <<
+                               "  Out: " << vdfErr.OUT;
+
+                    MassError zchgErr = getZoneChangeMassError();
+                    LOG(level) << "Zone change (sum over all zones): " << zchgErr.ERR <<
+                               "  In: " << zchgErr.IN <<
+                               "  Out: " << zchgErr.OUT;
+
+                    MassError imixErr = getInstantaneousMixingMassError();
+                    LOG(level) << "Instantaneous mixing (sum over all zones): " << imixErr.ERR <<
+                               "  In: " << imixErr.IN <<
+                               "  Out: " << imixErr.OUT;
+
+                    MassError tttErr = getTipToeTrackingMassError();
+                    LOG(level) << "Tip toe tracking (sum over all zones): " << tttErr.ERR <<
+                               "  In: " << tttErr.IN <<
+                               "  Out: " << tttErr.OUT;
+
+                }
+
+                if (op.isGridRefined()){
+                    MassError gncErr = getGNCMassError();
+                    LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
+                               "  In: " << gncErr.IN <<
+                               "  Out: " << gncErr.OUT;
+                }
+
             }
 
             DataReader *getDataReader() {
@@ -441,7 +507,7 @@ namespace GlobalFlow {
              * Get the residuals of the current iteration
              * @param path
              */
-            void writeResiduals(string path) {
+            void writeResiduals( std::string path ) {
                 Eigen::Matrix<double, Eigen::Dynamic, 1> vector = eq->getResiduals();
                 std::ofstream ofs;
                 ofs.open(path, std::ofstream::out | std::ofstream::trunc);
@@ -461,12 +527,11 @@ namespace GlobalFlow {
         private:
             NodeVector nodes;
 
-            int initNodes() {
+            void initNodes() {
                 LOG(userinfo) << FMAG(BOLD("Starting G³M"));
-                nodes->reserve(op.getNumberOfNodes() * op.getNumberOfLayers());
+                nodes->reserve(op.getNumberOfNodesPerLayer() * op.getNumberOfLayers());
                 reader->initNodes(nodes);
                 reader->readData(op);
-                return op.getNumberOfNodes() * op.getNumberOfLayers();
             };
 
 

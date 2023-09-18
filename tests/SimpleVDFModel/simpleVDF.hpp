@@ -40,13 +40,16 @@ namespace GlobalFlow {
             setupSimulation();
 
             void
+            writeNodeInfosToCSV();
+
+            void
             simulate();
 
             void
             getResults();
 
             void
-            writeData(std::string);
+            writeData();
 
         private:
             Solver::Equation *_eq;

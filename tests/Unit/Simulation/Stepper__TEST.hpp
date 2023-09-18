@@ -16,19 +16,20 @@ public:
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true));
+                0.2, 0.1, true, true
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, true
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, true
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                0.2, 0.1, true, true
+                ));
 
         nodes->at(0)->setNeighbour(1,RIGHT);
         nodes->at(1)->setNeighbour(0,LEFT);
@@ -76,7 +77,6 @@ TEST_F(StepperFixture,DayLoop){
     ASSERT_EQ(p,2);
     ASSERT_EQ(a,1);
     //FIXME currently not possible to test as stepper holds an equation pointer; intro of abstract EQ would solve this
-    //EXPECT_CALL(equation, updateStepSize(1)).Times(testing::AtLeast(1));
 }
 
 TEST_F(StepperFixture,MonthLoop){

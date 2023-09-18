@@ -50,21 +50,22 @@ namespace GlobalFlow {
          *
          * LAKE, WETLAND
          *  similar to modflow river definition
+
          */
         enum FlowType : int {
             RECHARGE = 1,
-            FAST_SURFACE_RUNOFF,
-            NET_ABSTRACTION,
-            EVAPOTRANSPIRATION,
-            RIVER,
-            RIVER_MM,
-            DRAIN,
-            FLOODPLAIN_DRAIN,
-            WETLAND,
-            GLOBAL_WETLAND,
-            LAKE,
-            GLOBAL_LAKE,
-            GENERAL_HEAD_BOUNDARY
+            FAST_SURFACE_RUNOFF,    // 2
+            NET_ABSTRACTION,        // 3
+            EVAPOTRANSPIRATION,     // 4
+            RIVER,                  // 5
+            RIVER_MM,               // 6
+            DRAIN,                  // 7
+            FLOODPLAIN_DRAIN,       // 8
+            WETLAND,                // 9
+            GLOBAL_WETLAND,         // 10
+            LAKE,                   // 11
+            GLOBAL_LAKE,            // 12
+            GENERAL_HEAD_BOUNDARY   // 13
         };
 
         struct FlowTypeHash {
@@ -81,30 +82,40 @@ namespace GlobalFlow {
          */
         class ExternalFlow {
         public:
+            /**
+             * @brief Constructor for RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+             * @param id
+             * @param type
+             * @param flowElevation
+             * @param cond
+             * @param bottom
+             */
             ExternalFlow(int id,
                          FlowType type,
-                         t_meter flowHead,
+                         t_meter flowElevation,
                          t_s_meter_t cond,
                          t_meter bottom)
-                    : ID(id), type(type), flowHead(flowHead), conductance(cond), bottom(bottom) {}
+                    : ID(id), type(type), flowElevation(flowElevation), conductance(cond), bottom(bottom) {}
 
             /**
-             * Only for RECHARGE
-            FAST_SURFACE_RUNOFF
+             * @brief Constructor for RECHARGE, FAST_SURFACE_RUNOFF and NET_ABSTRACTION
+             * @param id
+             * @param flow
+             * @param type
              */
-            ExternalFlow(int id, t_vol_t recharge, FlowType type)
-                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(recharge) {}
+            ExternalFlow(int id, t_vol_t flow, FlowType type)
+                    : ID(id), type(type), flowElevation(0), conductance(0), bottom(0), special_flow(flow) {}
 
             /**
              * @brief Constructor for Evapotranspiration
              * @param id
-             * @param flowHead
+             * @param flowElevation
              * @param bottom
              * @param evapotrans
              * @return
              */
-            ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
-                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
+            ExternalFlow(int id, t_meter flowElevation, t_meter bottom, t_vol_t evapotrans)
+                    : ID(id), type(EVAPOTRANSPIRATION), flowElevation(0), conductance(0), bottom(0),
                       special_flow(evapotrans) {}
 
             /**
@@ -112,39 +123,38 @@ namespace GlobalFlow {
              * @param head The current hydraulic head
              * @return Bool
              */
-            bool flowIsHeadDependant(t_meter head) const noexcept {
+            bool flowIsHeadDependent(t_meter head) const noexcept {
                 return (head > bottom);
             }
 
             /**
-             * The head dependant part of the external flow equation
+             * The head dependent part of the external flow equation:
+             * This is the total conductance of all head-dependent external source terms in a cell
              * @param head The current hydraulic head
              * @param eq_head The equilibrium head
              * @param recharge The current recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_s_meter_t getP(t_meter head,
                              t_meter eq_head,
                              t_vol_t recharge,
-                             t_dim slope,
                              t_vol_t eqFlow) const noexcept;
 
             /**
-             * The head independant part of the external flow equation
+             * The head independent part of the external flow equation:
+             * This is the total specified external source term
              * @param head
              * @param eq_head
              * @param recharge
-             * @param slope
              * @param eqFlow
              * @return
              */
             t_vol_t getQ(t_meter head,
                          t_meter eq_head,
                          t_vol_t recharge,
-                         t_dim slope,
                          t_vol_t eqFlow) const noexcept;
+
 
             FlowType getType() const noexcept { return type; }
 
@@ -152,8 +162,7 @@ namespace GlobalFlow {
 
             t_vol_t getRecharge() const noexcept { return special_flow; }
 
-
-            t_meter getFlowHead() const noexcept { return flowHead; }
+            t_meter getFlowElevation() const noexcept { return flowElevation; }
 
             t_s_meter_t getDyn(t_vol_t current_recharge,
                                t_meter eq_head,
@@ -194,7 +203,7 @@ namespace GlobalFlow {
         private:
             const int ID;
             const FlowType type;
-            const t_meter flowHead;
+            const t_meter flowElevation;
             const t_s_meter_t conductance; //for special_flow same as q
             const t_vol_t special_flow;
             const t_meter bottom;
@@ -205,19 +214,7 @@ namespace GlobalFlow {
             bool lock_recharge{false};
 
             t_vol_t
-            calculateFloodplaindDrainage(t_meter head) const noexcept;
-
-            /**
-            * Calculate river conductance as in Miguez-Macho 2007
-            * RC = ERC * F
-            * Input: F-data, ERC
-            * Output: RC
-            */
-            t_s_meter_t
-            dynamicRiverConductance(t_meter head,
-                                    t_vol_t current_recharge,
-                                    t_dim slope,
-                                    t_vol_t eq_flow) const noexcept;
+            calculateFloodplainDrainage(t_meter head) const noexcept;
 
             /**
             * Calculate ERC (must be repeated every time step)

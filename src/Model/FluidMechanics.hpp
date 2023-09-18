@@ -24,18 +24,17 @@
 #define GLOBAL_FLOW_FLUID_MECHANICS_HPP
 
 #include "Units.hpp"
-#include <unordered_map>
 #include "../Misc/Helpers.hpp"
 
 namespace GlobalFlow {
     namespace Model {
 
         using FlowInputHor = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, bool>;
-        using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_s_meter, t_meter, t_meter, t_meter, bool>;
+        using FlowInputVert = std::tuple<t_vel, t_vel, t_meter, t_meter, t_meter, t_meter, t_meter, t_meter, t_s_meter, bool>;
 
         /**
          * @class FluidMechanics
-         * Provides helper functions for conductance calulcations
+         * Provides helper functions for conductance calculations
          */
         class FluidMechanics {
         public:
@@ -44,30 +43,21 @@ namespace GlobalFlow {
             /**
              * Used to calculate if a cell is dry
              */
-            t_meter calcDeltaV(t_meter head, t_meter elevation, t_meter depth) noexcept;
+            t_meter calcDeltaV(t_meter head, t_meter elevation, t_meter verticalSize) noexcept;
 
-            t_s_meter_t calculateEFoldingConductance(FlowInputHor flow, t_meter folding_self, t_meter folding_neig);
+            t_s_meter_t calculateEFoldingConductance(FlowInputHor const& flow, t_meter folding_self, t_meter folding_neig);
 
             /**
              * @brief Calculates the horizontal flow between two nodes
-             * @param flow a touple of inputs about the aquifer
+             * @param flow a tuple of inputs about the aquifer
              * @return A weighted conductance value for the flow between two nodes
              * Calculates the harmonic mean conductance between two nodes.
              * $C = 2 \times EdgeLenght_1 \times \frac{ (TR_1 \times TR_2)}{(TR_1 \times EdgeLenght_1 + TR_2 \times EdgeLenght_2)}$
              */
-            t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor flow) noexcept;
+            t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept;
 
             /**
-             * Simple smoother function to buffer iteration steps in NWT approach
-             * @param elevation
-             * @param verticalSize
-             * @param head
-             * @return smoothed head
-             */
-            double smoothFunction__NWT(t_meter elevation, t_meter verticalSize, t_meter head);
-
-            /**
-             * Get the coeffiecients for storage and P components
+             * Get the coefficients for storage and P components
              * @param steadyState
              * @param stepModifier
              * @param storageCapacity
@@ -77,24 +67,12 @@ namespace GlobalFlow {
             t_s_meter_t getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
                                 t_s_meter storageCapacity, t_s_meter_t P) noexcept;
 
-
             /**
              * Calculates the vertical flow between two nodes
-             * @param flow a touple of inputs about the aquifer
+             * @param flow a tuple of inputs about the aquifer
              * @return the vertical conductance
              */
-            t_s_meter_t calculateVerticalConductance(FlowInputVert flow) noexcept;
-
-            /**
-             * Calculate derivates for NWT approach
-             * @param elevation
-             * @param verticalSize
-             * @param head
-             * @return
-             */
-            double getDerivate__NWT(t_meter elevation,
-                                    t_meter verticalSize,
-                                    t_meter head);
+            t_s_meter_t calculateVerticalConductance(FlowInputVert const& flow) noexcept;
 
             /**
              * Criv = Krb/e*L*W

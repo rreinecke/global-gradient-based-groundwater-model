@@ -1,0 +1,18 @@
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "head_refinedCoast",
+        "type": "csv",
+        "field": "Head",
+        "ID": "false",
+        "position": "true",
+        "all_layers": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}

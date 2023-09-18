@@ -1,17 +1,17 @@
-cmake_minimum_required(VERSION 3.15.3)
-if(${CMAKE_VERSION} VERSION_LESS "3.15.3")
-    message(STATUS "You need to upgrade CMake! Minimum required version is 3.15.3.")
+cmake_minimum_required(VERSION 3.25.0)
+if(${CMAKE_VERSION} VERSION_LESS "3.25.0")
+    message(STATUS "You need to upgrade CMake! Minimum required version is 3.25.0.")
 endif()
 
-set(CMAKE_C_COMPILER "clang")
-set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_C_COMPILER "clang-14")
+set(CMAKE_CXX_COMPILER "clang++-14")
 
 # CMAKE flags
-set(CMAKE_MODULE_PATH "${GW_SOURCE_DIR}/cmake")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
 
-project(GW)
+project(3GM)
 
 # Build folder structure
 add_subdirectory(src)
@@ -20,9 +20,8 @@ add_subdirectory(lib)
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 
 ################# Libs ################
-
 # Boost
-find_package(Boost 1.71.0 COMPONENTS system filesystem serialization log REQUIRED)
+find_package(Boost 1.80.0 COMPONENTS system filesystem serialization log REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
@@ -47,30 +46,73 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(GMP DEFAULT_MSG GMP_INCLUDE_DIR GMP_LIBRARIES)
 ################################
 # Simple Demo Model
 ################################
-project(simple)
-
 add_subdirectory(tests/SimpleModel)
 add_executable(simple_model tests/SimpleModel/simple.cpp ${SOURCE} ${HEADERS})
 target_link_libraries(simple_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
-# Simple Demo Model for Variable Density Flow (VDF)
+# Simple Demo Models for refined grids
 ################################
-project(simpleVDF)
+add_subdirectory(tests/SimpleRefinedModel)
+set(simple_refined_src ${SOURCE})
+list(REMOVE_ITEM simple_refined_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+add_executable(simple_refined_model tests/SimpleRefinedModel/simpleRefined.cpp ${simple_refined_src} ${HEADERS})
+target_link_libraries(simple_refined_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
-set(simple_vdf_hrd ${HEADERS})
-set(simple_vdf_src ${SOURCE})
-list(REMOVE_ITEM simple_vdf_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+################################
+# Simple Demo Models for Variable Density Flow (VDF)
+################################
+add_subdirectory(tests/SWI2_ex1)
+set(swi2_ex1_src ${SOURCE})
+list(REMOVE_ITEM swi2_ex1_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM swi2_ex1_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+add_executable(swi2_ex1 tests/SWI2_ex1/swi2_ex1.cpp ${swi2_ex1_src} ${HEADERS})
+target_link_libraries(swi2_ex1 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+add_subdirectory(tests/SWI2_ex2)
+set(swi2_ex2_src ${SOURCE})
+list(REMOVE_ITEM swi2_ex2_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM swi2_ex2_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM swi2_ex2_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+add_executable(swi2_ex2 tests/SWI2_ex2/swi2_ex2.cpp ${swi2_ex2_src} ${HEADERS})
+target_link_libraries(swi2_ex2 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+add_subdirectory(tests/SWI2_ex3)
+set(swi2_ex3_src ${SOURCE})
+list(REMOVE_ITEM swi2_ex3_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM swi2_ex3_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM swi2_ex3_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+list(REMOVE_ITEM swi2_ex3_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
+add_executable(swi2_ex3 tests/SWI2_ex3/swi2_ex3.cpp ${swi2_ex3_src} ${HEADERS})
+target_link_libraries(swi2_ex3 pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 add_subdirectory(tests/SimpleVDFModel)
-add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${simple_vdf_hrd})
+set(simple_vdf_src ${SOURCE})
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
+list(REMOVE_ITEM simple_vdf_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex3/swi2_ex3.cpp)
+add_executable(simple_vdf_model tests/SimpleVDFModel/simpleVDF.cpp ${simple_vdf_src} ${HEADERS})
 target_link_libraries(simple_vdf_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+################################
+# Large scale model (with Variable Density Flow (VDF))
+################################
+add_subdirectory(tests/LargeModel)
+set(large_model_src ${SOURCE})
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex3/swi2_ex3.cpp)
+list(REMOVE_ITEM large_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+add_executable(large_model tests/LargeModel/runner.cpp ${large_model_src} ${HEADERS})
+target_link_libraries(large_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
 # Unit Tests
 ################################
-project(Testing)
-
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest
 # Download and unpack googletest at configure time
 configure_file(CMakeLists_GTest.txt googletest-download/CMakeLists.txt)
@@ -98,8 +140,13 @@ enable_testing()
 
 set(testing_hrd ${HEADERS})
 set(testing_src ${SOURCE})
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
-list(REMOVE_ITEM testing_src ${CMAKE_CURRENT_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex3/swi2_ex3.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/LargeModel/runner.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)
@@ -117,4 +164,3 @@ add_test(AllTests runUnitTests)
 #                DEPENDENCIES runUnitTests
 #                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
 #                NAME coverage
-#)

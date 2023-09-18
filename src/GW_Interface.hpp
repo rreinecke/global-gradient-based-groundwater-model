@@ -29,8 +29,6 @@
 
 namespace GlobalFlow {
 
-    using namespace std;
-
     /**
      * @interface GW_Interface
      * @class GW_Interface
@@ -58,7 +56,7 @@ namespace GlobalFlow {
         /**
          * Write data for specific year or month
          */
-        virtual void writeData(std::string) = 0;
+        virtual void writeData() = 0;
 
         /**
          * Simulate/Run the model

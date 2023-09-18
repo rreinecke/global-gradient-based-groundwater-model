@@ -1,0 +1,18 @@
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "head_large",
+        "type": "csv",
+        "field": "Head",
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}
