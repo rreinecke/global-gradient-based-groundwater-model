@@ -164,4 +164,3 @@ add_test(AllTests runUnitTests)
 #                DEPENDENCIES runUnitTests
 #                EXECUTABLE runUnitTests -j ${PROCESSOR_COUNT}
 #                NAME coverage
-#)
