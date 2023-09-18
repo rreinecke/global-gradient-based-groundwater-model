@@ -67,9 +67,9 @@ namespace GlobalFlow {
 
             //++General configuration++//
             unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
-            long LAT_RANGE{0};
-            long LON_RANGE{0};
-            double RESOLUTION{0.0};
+            long Y_RANGE{0};
+            long X_RANGE{0};
+            double RESOLUTION_IN_DEGREE{0.0};
             double EDGE_LENGTH_LEFT_RIGHT{0.0};
             double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
@@ -216,18 +216,18 @@ namespace GlobalFlow {
             };
 
             long
-            getLatRange() {
-                return LAT_RANGE;
+            getYRange() {
+                return Y_RANGE;
             };
 
             long
-            getLonRange() {
-                return LON_RANGE;
+            getXRange() {
+                return X_RANGE;
             };
 
             double
             getResolution() {
-                return RESOLUTION;
+                return RESOLUTION_IN_DEGREE;
             }
 
             double

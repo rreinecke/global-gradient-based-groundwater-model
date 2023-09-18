@@ -47,27 +47,26 @@ namespace GlobalFlow {
             pt::ptree config = tree.get_child("model_config");
             NODES = config.get<std::string>("nodes");
             NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
-            LAT_RANGE = config.get<long>("lat_range");
-            LON_RANGE = config.get<long>("lon_range");
+            Y_RANGE = config.get<long>("y_range");
+            X_RANGE = config.get<long>("x_range");
             IS_GLOBAL = config.get<bool>("is_global");
-            RESOLUTION = config.get<double>("resolution");
+            RESOLUTION_IN_DEGREE = config.get<double>("resolution_in_degree");
             EDGE_LENGTH_LEFT_RIGHT = config.get<double>("edge_length_left_right");
             EDGE_LENGTH_FRONT_BACK = config.get<double>("edge_length_front_back");
-            THREADS = config.get<int>("threads");
             LAYERS = config.get<int>("layers");
             USE_EFOLDING = config.get<bool>("use_efolding");
+            GRID_REFINED = config.get<bool>("grid_refined");
             CONFINED = getTypeArray<bool>("confinement", config);
             if (LAYERS != CONFINED.size()) {
                 LOG(critical) << "mismatching layers";
                 exit(3);
             }
 
-            CACHE = config.get<bool>("cache");
-            ADAPTIVE_STEP_SIZE = config.get<bool>("adaptive_step_size");
             BOUNDARY_CONDITION = config.get<std::string>("boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
             pt::ptree numerics = tree.get_child("numerics");
+            THREADS = numerics.get<int>("threads");
             SOLVER = numerics.get<std::string>("solver");
             IITER = numerics.get<int>("iterations");
             I_ITTER = numerics.get<int>("inner_itter");
@@ -80,8 +79,6 @@ namespace GlobalFlow {
             MAX_DAMP = numerics.get<double>("max_damp");
 
             pt::ptree input = tree.get_child("input");
-
-//BASE_PATH = input.get<std::string>("base_path");
 
             pt::ptree data_config = input.get_child("data_config");
             k_from_file = data_config.get<bool>("k_from_file");
@@ -105,19 +102,17 @@ namespace GlobalFlow {
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
-            GRID_REFINED = config.get<bool>("grid_refined");
-
-            DENSITY_VARIABLE = config.get<bool>("density_variable");
-            DENSITY_ZONES = getTypeArray<double>("density_zones", config);
-            MAX_TIP_SLOPE = config.get<double>("max_tip_slope");
-            MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
-            MIN_DEPTH_FACTOR = config.get<double>("min_depth_factor");
-            SLOPE_ADJ_FACTOR = config.get<double>("slope_adj_factor");
-            VDF_LOCK = config.get<double>("vdf_lock");
-
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
             ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
 
+            pt::ptree vdf = tree.get_child("vdf_config");
+            DENSITY_VARIABLE = vdf.get<bool>("density_variable");
+            DENSITY_ZONES = getTypeArray<double>("density_zones", vdf);
+            MAX_TIP_SLOPE = vdf.get<double>("max_tip_slope");
+            MAX_TOE_SLOPE = vdf.get<double>("max_toe_slope");
+            MIN_DEPTH_FACTOR = vdf.get<double>("min_depth_factor");
+            SLOPE_ADJ_FACTOR = vdf.get<double>("slope_adj_factor");
+            VDF_LOCK = vdf.get<double>("vdf_lock");
 
             pt::ptree data = input.get_child("data");
 
