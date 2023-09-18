@@ -51,7 +51,7 @@ namespace GlobalFlow {
         /**
          * Do additional work required for a running simulation
          */
-        virtual void setupSimulation() = 0;
+        virtual void setupSimulation(int numberOfGridCells) = 0;
 
         /**
          * Write data for specific year or month
@@ -61,7 +61,7 @@ namespace GlobalFlow {
         /**
          * Simulate/Run the model
          */
-        virtual void simulate() = 0;
+        virtual void simulate(bool *simulationDay) = 0;
 
         void initInterface(CouplingInterface<T> *intf_ptr) {
             interface = intf_ptr;

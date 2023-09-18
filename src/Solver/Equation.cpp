@@ -177,7 +177,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
-    
+
     for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         auto id = index_mapping[j];
         if (id != -1) {

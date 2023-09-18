@@ -192,7 +192,7 @@ namespace GlobalFlow {
                 double in{0};
                 double out{0};
                 for (int j = 0; j < nodes->size(); ++j) {
-                    auto id = std::find(std::begin(ids), std::end(ids), nodes->at(j)->getID());
+                    auto id = std::find(std::begin(ids), std::end(ids), nodes->at(j)->getSpatID());
                     if (id != std::end(ids)) {
                         in += nodes->at(j)->getIN().value();
                         out += nodes->at(j)->getOUT().value();
@@ -207,18 +207,18 @@ namespace GlobalFlow {
             /**
              * Return all external flows separately
              */
-            std::string NodeFlowsByID(unsigned long nodeID) {
+            std::string NodeFlowsByID(unsigned long spatID) {
                 long id{0};
                 for (int j = 0; j < nodes->size(); ++j) {
-                    if (nodes->at(j)->getID() == nodeID) {
+                    if (nodes->at(j)->getSpatID() == spatID) {
                         id = j;
                     }
                 }
                 Model::NodeInterface *nodeInterface = nodes->at(id).get();
                 std::string out("");
                 //Flows Budget for
-                //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Wetland
-                out += to_string(nodeID);
+                //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Global lake, Wetland, Global wetland
+                out += to_string(spatID);
                 out += ",";
                 out += to_string(nodeInterface->getProperties().get<quantity<Model::Meter>,
                         Model::Elevation>().value());
@@ -236,7 +236,11 @@ namespace GlobalFlow {
                 out += ",";
                 out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::LAKE).value());
                 out += ",";
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value());
+                out += ",";
                 out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::WETLAND).value());
+                out += ",";
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value());
                 return out;
             }
 
@@ -350,7 +354,7 @@ namespace GlobalFlow {
                 DRAINS,
                 RIVER_MM,
                 LAKES,
-                GLOBAL_LAKES, // Question: GLOBAL_LAKES?
+                GLOBAL_LAKES,
                 WETLANDS,
                 GLOBAL_WETLANDS,
                 RECHARGE,
@@ -371,71 +375,77 @@ namespace GlobalFlow {
                 switch (flow) {
                     case GENERAL_HEAD_BOUNDARY:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();} catch(...){return 0.0;}
                         });
                         break;
                     case RECHARGE:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();} catch(...){return 0.0;}
                         });
                         break;
                     case FASTSURFACE:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value();} catch(...){return 0.0;}
                         });
                         break;
                     case NAG:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value();} catch(...){return 0.0;}
                         });
                         break;
                     case RIVERS:
-                        tmp = getError(
-                                [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
+                        tmp = getError([this](int i) {
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case DRAINS:
                         tmp = getError(
                                 [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value();
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case RIVER_MM:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();} catch(...){return 0.0;}
                         });
                         break;
                     case LAKES:
                         tmp = getError(
                                 [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case GLOBAL_LAKES:
                         tmp = getError(
                                 [this](int i) {
-                                    return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();} catch(...){return 0.0;}
                                 });
                         break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();} catch(...){return 0.0;}
                         });
                         break;
                     case GLOBAL_WETLANDS:
                         tmp = getError([this](int i) {
-                            return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();} catch(...){return 0.0;}
                         });
                         break;
                     case STORAGE:
-                        tmp = getError([this](int i) { return nodes->at(i)->getTotalStorageFlow().value(); });
+                        tmp = getError([this](int i) {
+                            try{return nodes->at(i)->getTotalStorageFlow().value();} catch(...){return 0.0;}
+                        });
                         break;
                 }
 
                 stream << "In: " << tmp.IN << "  Out: " << tmp.OUT;
                 return stream.str();
             }
+
+
+            class MassErrorTooBig : public std::exception {
+                virtual const char *what() const throw() { return "Step mass error or Total mass error > 1"; }
+            };
 
             /**
              * Prints all mass balances
@@ -452,14 +462,12 @@ namespace GlobalFlow {
                                 "  Out: " << totalErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
-                //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);
                 LOG(level) << "Rivers MM: " << getMassErrorByFlowName(RIVER_MM);
                 LOG(level) << "Lakes: " << getMassErrorByFlowName(LAKES);
                 LOG(level) << "Global lakes: " << getMassErrorByFlowName(GLOBAL_LAKES);
                 LOG(level) << "Wetlands: " << getMassErrorByFlowName(WETLANDS);
                 LOG(level) << "Global wetlands: " << getMassErrorByFlowName(GLOBAL_WETLANDS);
                 LOG(level) << "Recharge: " << getMassErrorByFlowName(RECHARGE);
-                //LOG(userinfo) << "Fast Surface Runoff: " << getMassErrorByFlowName(FASTSURFACE) << "\n";
                 LOG(level) << "Net abstraction from groundwater: " << getMassErrorByFlowName(NAG);
                 LOG(level) << "Storage (only valid if transient run): " << getMassErrorByFlowName(STORAGE);
 
@@ -493,6 +501,10 @@ namespace GlobalFlow {
                                "  Out: " << gncErr.OUT;
                 }
 
+                if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
+                    LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
+                    throw new MassErrorTooBig();
+                }
             }
 
             DataReader *getDataReader() {

@@ -150,6 +150,15 @@ namespace GlobalFlow {
 
             void updateClosingCrit(double crit) { cg.setTolerance(crit); }
 
+            void updateMaxHeadChange(double head){
+                maxHeadChange = head;
+            }
+
+            void updateMaxInnerItter(int itter){
+                inner_iterations = itter;
+                cg.setMaxIterations(itter);
+            }
+
             /**
              * @note resests dampening object and counters
              */
