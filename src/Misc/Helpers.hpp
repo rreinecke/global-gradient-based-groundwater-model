@@ -23,7 +23,7 @@
 #ifndef GLOBAL_FLOW_HELPERS_HPP
 #define GLOBAL_FLOW_HELPERS_HPP
 
-#include <boost/progress.hpp>
+#include <boost/timer/progress_display.hpp>
 
 #include "colors.hpp"
 
@@ -62,11 +62,11 @@ class InfInSolutionException : public std::exception {
 
 inline void NANChecker(const double &value, std::string message) {
     if (std::isnan(value)) {
-	    LOG(GlobalFlow::critical) << "NAN value! :((" << message << "\n";
+	    LOG(GlobalFlow::critical) << "NAN value! :(( " << message << "\n";
         throw new NANInSolutionException();
     }
     if (std::isinf(value)) {
-	    LOG(GlobalFlow::critical) << "INF value! :((" << message << "\n";
+	    LOG(GlobalFlow::critical) << "INF value! :(( " << message << "\n";
         throw new InfInSolutionException();
     }
 }

@@ -223,8 +223,8 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
 
     //possibility to lock conductance equation with former recharge e.g. from steady-state model
     if (lock_recharge) {
-        current_recharge = locked_recharge;
-        return locked_conductance * mult;
+        current_recharge = locked_recharge; //TODO: useless because of return?!
+        return  locked_conductance * mult;
     }
 
     out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;

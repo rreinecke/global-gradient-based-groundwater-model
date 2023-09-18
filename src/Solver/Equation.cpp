@@ -254,6 +254,7 @@ Equation::updateIntermediateHeads() {
 
         if (reduced) {
             nodes->at(k)->setHead((double) changes[id] * si::meter);
+            //LOG(debug) << "changes(" << id << "): " << changes[id] << std::endl;
         } else {
             auto m = index_mapping[id];
             if (m != -1) {
@@ -337,7 +338,7 @@ Equation::solve() {
     bool headConverged{false};
     while (iterations < IITER) {
 
-        LOG(numerics) << "Outer iteration: " << iterations;
+        LOG(numerics) << "Outer iteration: " << iterations << "/" << IITER;
 
         //Solve inner iterations
         if (nwt) {
@@ -404,12 +405,12 @@ Equation::solve() {
          * @brief residual norm convergance
          */
         if (nwt) {
-            LOG(numerics) << "Inner iterations: " << innerItter;
+            LOG(numerics) << "Inner iterations: " << innerItter << "/" << inner_iterations;
             if (bicgstab.info() == Success) {
                 break;
             }
         } else {
-            LOG(numerics) << "Inner iterations: " << innerItter;
+            LOG(numerics) << "Inner iterations: " << innerItter << "/" << inner_iterations;
             if (cg.info() == Success and iterations != 0) {
                 break;
             }

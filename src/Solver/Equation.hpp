@@ -133,7 +133,7 @@ namespace GlobalFlow {
                 maxHeadChange = head;
             }
 
-            void updateMaxItter(int itter){
+            void updateMaxInnerItter(int itter){
                 inner_iterations = itter;
                 cg.setMaxIterations(itter);
             }

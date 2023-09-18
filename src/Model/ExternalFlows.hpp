@@ -167,6 +167,15 @@ namespace GlobalFlow {
 
             t_s_meter_t getConductance() const noexcept { return conductance; }
 
+            t_s_meter_t getInitConductance() const noexcept { return initConductance; }
+
+            double getRiverDepthSteadyState() {return RiverDepthSteadyState; }
+
+            //void setInitConductance(double initCond) { initConductance = initCond * boost::units::quantity<MeterSquaredPerTime>(); }
+            void setInitConductance(double initCond) { initConductance = initCond * (si::square_meter / day); }
+
+            void setRiverDepthSteadyState (double RiverDepth) {RiverDepthSteadyState = RiverDepth;}
+
             int getID() const noexcept { return ID; }
 
             void setMult(double mult) {
@@ -199,7 +208,8 @@ namespace GlobalFlow {
             const t_vol_t special_flow;
             const t_meter bottom;
             t_dim mult{1 * si::si_dimensionless}; //Multiplier only used for SA
-
+            t_s_meter_t initConductance = 0. * (si::square_meter / day);
+            double RiverDepthSteadyState = -99.;
             t_vol_t locked_recharge;
             t_s_meter_t locked_conductance;
             bool lock_recharge{false};

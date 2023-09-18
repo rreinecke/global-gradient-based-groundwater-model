@@ -217,7 +217,7 @@ namespace GlobalFlow {
                 Model::NodeInterface *nodeInterface = nodes->at(id).get();
                 string out("");
                 //Flows Budget for
-                //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Wetland
+                //ID, Elevation, Head, IN, OUT, Recharge, River_MM, Lake, Global lake, Wetland, Global wetland
                 out += to_string(nodeID);
                 out += ",";
                 out += to_string(nodeInterface->getProperties().get<quantity<Model::Meter>,
@@ -236,7 +236,11 @@ namespace GlobalFlow {
                 out += ",";
                 out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::LAKE).value());
                 out += ",";
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value());
+                out += ",";
                 out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::WETLAND).value());
+                out += ",";
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value());
                 return out;
             }
 
@@ -308,6 +312,7 @@ namespace GlobalFlow {
                 DRAINS,
                 RIVER_MM,
                 LAKES,
+                GLOBAL_LAKES,
                 WETLANDS,
                 GLOBAL_WETLANDS,
                 RECHARGE,
@@ -385,6 +390,12 @@ namespace GlobalFlow {
                                     try{return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();} catch(...){return 0.0;}
                                 });
                         break;
+                    case GLOBAL_LAKES:
+                        tmp = getError(
+                                [this](int i) {
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();} catch(...){return 0.0;}
+                                });
+                        break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
                             try{return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();} catch(...){return 0.0;}
@@ -406,6 +417,11 @@ namespace GlobalFlow {
                 return stream.str();
             }
 
+
+            class MassErrorTooBig : public std::exception {
+                virtual const char *what() const throw() { return "Step mass error or Total mass error > 1"; }
+            };
+
             /**
              * Prints all mass balances
              */
@@ -422,12 +438,18 @@ namespace GlobalFlow {
                 //LOG(stateinfo) << "Drains: " << getFlowByName(DRAINS);
                 LOG(level) << "Rivers MM: " << getFlowByName(RIVER_MM);
                 LOG(level) << "Lakes: " << getFlowByName(LAKES);
+                LOG(level) << "Global lakes: " << getFlowByName(GLOBAL_LAKES);
                 LOG(level) << "Wetlands: " << getFlowByName(WETLANDS);
                 LOG(level) << "Global wetlands: " << getFlowByName(GLOBAL_WETLANDS);
                 LOG(level) << "Recharge: " << getFlowByName(RECHARGE);
                 //LOG(userinfo) << "Fast Surface Runoff: " << getFlowByName(FASTSURFACE) << "\n";
                 LOG(level) << "Net abstraction from groundwater: " << getFlowByName(NAG);
                 LOG(level) << "Storage (only valid if transient run): " << getFlowByName(STORAGE);
+                if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
+                    LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
+                    throw new MassErrorTooBig();
+                }
+
             }
 
             DataReader *getDataReader() {

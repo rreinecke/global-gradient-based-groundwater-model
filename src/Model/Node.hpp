@@ -552,7 +552,7 @@ Modify Properties
          * @brief Get hydraulic vertical conductivity
          * @return hydraulic conductivity scaled by anisotropy (scaled by e-folding)
          */
-        t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()) * get<t_dim, StepModifier>(); }
+        t_vel getK_vertical() noexcept { return (getK() / get<t_dim, Anisotropy>()); }
 
         /**
          * @brief Modify hydraulic conductivity (applied to all layers below)
@@ -815,7 +815,7 @@ Modify Properties
             *                                                        VerticalSize>(),
             *                                                        bottom));
             */
-            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GENERAL_HEAD_BOUNDARY
+            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GLOBAL_LAKE, GENERAL_HEAD_BOUNDARY
                 externalFlows.insert(std::make_pair(type,
                                                     ExternalFlow(numOfExternalFlows,
                                                                  type,
@@ -877,14 +877,15 @@ Modify Properties
         void updateUniqueFlow(double amount, FlowType flow = RECHARGE, bool lock = true) {
             if (lock and flow == RECHARGE) {
                 if (hasTypeOfExternalFlow(RIVER_MM)) {
-                    //get current recharge and lock it bevor setting new recharge
+                    //get current recharge and lock it before setting new recharge
                     //in arid regions recharge might be 0
                     t_vol_t recharge{0 * si::cubic_meter /day};
                     if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
-                    getExternalFlowByName(RIVER_MM).setLock();
-                    getExternalFlowByName(RIVER_MM).setLockRecharge(recharge);
                     //also lock conductance value
                     getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
+                    getExternalFlowByName(RIVER_MM).setLockRecharge(recharge); //TODO: never used; in calcERC read but not used
+                    getExternalFlowByName(RIVER_MM).setLock(); //locks conductance to steady state conductance and inhibits updates later
+                    //!comment! if this code is deactivated locked conductance and locked recharge is lost if flow is removed in addExternalFlowFlowHead but not important bc. never used (in calcERC) if conductance should be changed by calcERC
                 }
             }
             if (hasTypeOfExternalFlow(flow)) {
@@ -906,23 +907,65 @@ Modify Properties
             if (hasTypeOfExternalFlow(RIVER_MM)) {
                 getExternalFlowByName(RIVER_MM).setMult(mult);
             }
-            return;
         }
 
         /**
-         * @brief Update wetlands, lakes
-         * @param amount
-         * @param type
+         * @brief Update wetlands, lakes conduct if conduct is set to 0 due to reductionFactor -> reset to initial conduct from steady state to allow GW flow into SWB
+         * @param reductionFactor 0 <= reductionFactor <= 1
+         * @param type type of flow
          */
-        void updateExternalFlowConduct(double amount, FlowType type) {
+        void updateExternalFlowConduct(double reductionFactor, FlowType type) {
             if (hasTypeOfExternalFlow(type)) {
                 t_meter flowHead = getExternalFlowByName(type).getFlowHead();
-                double conduct = getExternalFlowByName(type).getConductance().value() * amount;
                 t_meter bottom = getExternalFlowByName(type).getBottom();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                double conduct = initConduct;
+                if (reductionFactor != 0.)
+                    conduct *= reductionFactor;
+                // else conduct does not change and is initial value
                 removeExternalFlow(type);
                 addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
             }
         }
+
+        /**
+         *@brief saves conductance of steady state solution
+         */
+        void saveNodeSteadyStateConduct() {
+            double conduct;
+            if (hasTypeOfExternalFlow(Model::FlowType::LAKE)) {
+                conduct = getExternalFlowByName(Model::FlowType::LAKE).getConductance().value();
+                getExternalFlowByName(Model::FlowType::LAKE).setInitConductance(conduct);
+            }
+            if (hasTypeOfExternalFlow(Model::FlowType::WETLAND)) {
+                conduct = getExternalFlowByName(Model::FlowType::WETLAND).getConductance().value();
+                getExternalFlowByName(Model::FlowType::WETLAND).setInitConductance(conduct);
+            }
+            if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_LAKE)) {
+                conduct = getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).getConductance().value();
+                getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).setInitConductance(conduct);
+            }
+            if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_WETLAND)) {
+                conduct = getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).getConductance().value();
+                getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).setInitConductance(conduct);
+            }
+        }
+
+        /**
+        *@brief saves river depth (flow head - bottom) of steady state solution
+        */
+        void saveNodeSteadyStateRiverDepth() {
+            double RiverDepth;
+            if (hasTypeOfExternalFlow(Model::FlowType::RIVER_MM)){
+                RiverDepth = getExternalFlowByName(Model::FlowType::RIVER_MM).getFlowHead().value() - getExternalFlowByName(Model::FlowType::RIVER_MM).getBottom().value();
+                if (RiverDepth < 1.)    // else if 0 head could never change
+                    RiverDepth = 1.;
+                getExternalFlowByName(Model::FlowType::RIVER_MM).setRiverDepthSteadyState(RiverDepth);
+            }
+        };
 
         /**
         * @brief Multiplies flow head for Sensitivity An. wetlands, lakes, rivers
@@ -931,16 +974,20 @@ Modify Properties
         */
         void updateExternalFlowFlowHead(double amount, FlowType type) {
             if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount;
+                t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount; //TODO: if amount puts flowhead down head might be under bottom
                 double conduct = getExternalFlowByName(type).getConductance().value();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
                 t_meter bottom = getExternalFlowByName(type).getBottom();
+                double initConduct = getExternalFlowByName(type).getInitConductance().value();
                 removeExternalFlow(type);
                 addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
             }
         }
 
         /**
-        * @brief Sets flowHead An. wetlands, lakes, rivers
+        * @brief Sets flowHead for wetlands, lakes, rivers; only used for global lakes at the moment
         * @param amount
         * @param type
         */
@@ -948,9 +995,15 @@ Modify Properties
             if (hasTypeOfExternalFlow(type)) {
                 t_meter flowHead = amount * si::meter;
                 double conduct = getExternalFlowByName(type).getConductance().value();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
                 t_meter bottom = getExternalFlowByName(type).getBottom();
+                double initConduct = getExternalFlowByName(type).getInitConductance().value();
                 removeExternalFlow(type);
+                if (flowHead.value() < bottom.value())
+                    flowHead = bottom;
                 addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
             }
         }
 
@@ -966,6 +1019,8 @@ Modify Properties
                 t_meter delta{amount * si::meter};
                 t_meter bottom{externalFlow.getBottom()};
                 t_meter flowHead{externalFlow.getFlowHead() + delta};
+                double initConduct = externalFlow.getInitConductance().value();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
                 //The river is dry
                 if(std::isnan(amount)){ flowHead = bottom; }
                 double conduct{externalFlow.getConductance().value()};
@@ -973,11 +1028,15 @@ Modify Properties
                 t_vol_t recharge{externalFlow.getLockRecharge()};
                 t_s_meter_t l_cond{externalFlow.getLockConduct()};
                 removeExternalFlow(type);
+                if (flowHead.value() < bottom.value())
+                    flowHead = bottom;
                 NANChecker(flowHead.value(), "Stage value");
                 NANChecker(l_cond.value(), "Conduct value");
                 NANChecker(bottom.value(), "Bottom value");
 
                 addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
                 if (lock) {
                     getExternalFlowByName(type).setLock();
                     getExternalFlowByName(type).setLockRecharge(recharge);
@@ -987,17 +1046,42 @@ Modify Properties
         }
 
         /**
-         * @brief Update lake bottoms
-         * Used for sensitivity
+         * @brief Multiplies flow bottom for Sensitivity An. wetlands, lakes, rivers
          * @param amount
+         * @param type
          */
-        void updateLakeBottoms(double amount) {
-            if (hasTypeOfExternalFlow(LAKE)) {
-                t_meter flowHead = getExternalFlowByName(LAKE).getFlowHead();
-                double conduct = getExternalFlowByName(LAKE).getConductance().value();
-                t_meter bottom = getExternalFlowByName(LAKE).getBottom() * amount;
-                removeExternalFlow(LAKE);
-                addExternalFlow(LAKE, flowHead, conduct, bottom);
+        void updateExternalFlowBottom(double amount, FlowType type) {
+            if (hasTypeOfExternalFlow(type)) {
+                t_meter flowHead = getExternalFlowByName(type).getFlowHead();
+                double conduct = getExternalFlowByName(type).getConductance().value();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                t_meter bottom = getExternalFlowByName(type).getBottom() * amount; // TODO: if amount puts bottom upwards head might be under bottom
+                double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                removeExternalFlow(type);
+                addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+            }
+        }
+
+        /**
+        * @brief Set bottom for wetlands, lakes, rivers
+        * @param amount
+        * @param type
+        */
+        void setExternalFlowBottom(double amount, FlowType type) {
+            if (hasTypeOfExternalFlow(type)) {
+                t_meter flowHead = getExternalFlowByName(type).getFlowHead();
+                double conduct = getExternalFlowByName(type).getConductance().value();
+                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                t_meter bottom = amount * si::meter;
+                double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                removeExternalFlow(type);
+                if (flowHead.value() < bottom.value())
+                    flowHead = bottom;
+                addExternalFlow(type, flowHead, conduct, bottom);
+                getExternalFlowByName(type).setInitConductance(initConduct);
+                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
             }
         }
 
@@ -1006,6 +1090,12 @@ Modify Properties
          * @return bool
          */
         bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
+
+        /**
+        * @brief Check for type river
+        * @return bool
+        */
+        bool hasRiver_MM() { return hasTypeOfExternalFlow(RIVER_MM); }
 
         /**
          * @brief Check for type GHB
@@ -1051,7 +1141,7 @@ Modify Properties
             t_dim slope = get<t_dim, Slope>();
             t_vol_t eqFlow = getEqFlow();
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
                     }
@@ -1081,7 +1171,7 @@ Modify Properties
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             //Q part is already substracted in RHS
             for (const auto &flow : externalFlows) {
-                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, WETLAND, GLOBAL_WETLAND)) {
+                if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
                         out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
                                flow.second.getBottom();
@@ -1322,7 +1412,6 @@ Modify Properties
 
             return std::make_pair(Vx.value(), Vy.value());
         };
-
 };
 
 /**

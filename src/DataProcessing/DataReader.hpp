@@ -138,8 +138,8 @@ namespace GlobalFlow {
             int globID = 0;
             int spatID = 0;
 
-            while (in.read_row(globID, spatID)) {
-                lookupZeroPointFivetoFiveMinute[spatID].push_back(std::move(globID));
+            while (in.read_row(spatID, globID)) {
+                lookupZeroPointFivetoFiveMinute[globID].push_back(std::move(spatID));
             }
         }
 
