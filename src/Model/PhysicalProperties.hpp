@@ -159,6 +159,7 @@ namespace GlobalFlow {
         struct VDF_IN;
         struct ZCHG_OUT;
         struct ZCHG_IN;
+
         struct GNC_OUT;
         struct GNC_IN;
         struct Head;

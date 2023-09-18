@@ -1000,47 +1000,52 @@ Calculate
                 if (in) { return iMix_in; } else { return iMix_out; }
             }
 
+            t_c_meter getTipToeTrackingZoneChange(bool in) {
+                t_c_meter tttOut = getZoneChange(false) - get<t_c_meter, ZCHG_OUT>();
+                t_c_meter tttIn = getZoneChange(true) - get<t_c_meter, ZCHG_IN>();
+                t_c_meter tttBalance = tttIn + tttOut; // inflow is positive, outflow is negative
+                if (in) {
+                    if (tttBalance.value() > 0) { return tttBalance; }
+                } else {
+                    if (tttBalance.value() < 0) { return tttBalance; }
+                }
+                return 0 * si::cubic_meters;
+            }
+
             /**
              * @brief save variable density flow mass balance in node property (called before and after adjustment)
              * @param
              */
             void saveVDFMassBalance() noexcept {
-                t_c_meter vdfOut = getVDFOUT();;
-                t_c_meter vdfIn = getVDFIN();
+                t_c_meter vdfOut = getVDF_OUT();
+                t_c_meter vdfIn = getVDF_IN();
+
+                // add current zone change before tip toe tracking
+                vdfOut = getZCHG_OUT();
+                vdfIn = getZCHG_IN();
 
                 // add current instantaneous mixing budget
                 vdfOut += getInstantaneousMixing(false);
                 vdfIn += getInstantaneousMixing(true);
 
-                // add current zone change before tip toe tracking
-                vdfOut += get<t_c_meter, ZCHG_OUT>();
-                vdfIn += get<t_c_meter, ZCHG_IN>();
-
-                // add tip and toe tracking zone change
-                t_c_meter deltaZoneChangeIn = getZoneChange(true) - get<t_c_meter, ZCHG_IN>();
-                if (deltaZoneChangeIn.value() < 0) {
-                    vdfOut += deltaZoneChangeIn;
-                } else {
-                    vdfIn +=  deltaZoneChangeIn;
-                }
-                t_c_meter deltaZoneChangeOut = getZoneChange(false) - get<t_c_meter, ZCHG_OUT>();
-                if (deltaZoneChangeOut.value() < 0) {
-                    vdfOut += deltaZoneChangeOut;
-                } else {
-                    vdfIn +=  deltaZoneChangeOut;
-                }
+                vdfOut += getTipToeTrackingZoneChange(false);
+                vdfIn += getTipToeTrackingZoneChange(true);
 
                 set<t_c_meter, VDF_OUT>(vdfOut);
                 set<t_c_meter, VDF_IN>(vdfIn);
             }
 
-            t_c_meter getVDFOUT() { return get<t_c_meter, VDF_OUT>(); }
+            t_c_meter getZCHG_OUT() { return get<t_c_meter, ZCHG_OUT>(); }
 
-            t_c_meter getVDFIN() { return get<t_c_meter, VDF_IN>(); }
+            t_c_meter getZCHG_IN() { return get<t_c_meter, ZCHG_IN>(); }
+
+            t_c_meter getVDF_OUT() { return get<t_c_meter, VDF_OUT>(); }
+
+            t_c_meter getVDF_IN() { return get<t_c_meter, VDF_IN>(); }
 
             void saveGNCMassBalance(){
-                t_c_meter gncOut = getGNCOUT();
-                t_c_meter gncIn = getGNCIN();
+                t_c_meter gncOut = getGNC_OUT();
+                t_c_meter gncIn = getGNC_IN();
 
                 t_c_meter gncFromUnrefinedNodes = getGNCFromUnrefinedNodes().value() * si::cubic_meter;
                 t_c_meter gncToRefinedNode = getGNCToRefinedNode().value() * si::cubic_meter;
@@ -1061,9 +1066,9 @@ Calculate
                 set<t_c_meter, GNC_IN>(gncIn);
             }
 
-            t_c_meter getGNCOUT() { return get<t_c_meter, GNC_OUT>(); }
+            t_c_meter getGNC_OUT() { return get<t_c_meter, GNC_OUT>(); }
 
-            t_c_meter getGNCIN() { return get<t_c_meter, GNC_IN>(); }
+            t_c_meter getGNC_IN() { return get<t_c_meter, GNC_IN>(); }
 
             /**
              * @brief Add a neighbour

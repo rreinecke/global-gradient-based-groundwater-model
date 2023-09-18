@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_gnc.json");
+        op.load("data/config.json");
     }
 
     void Runner::setupSimulation() {

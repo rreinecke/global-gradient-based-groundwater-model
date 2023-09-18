@@ -299,12 +299,27 @@ namespace GlobalFlow {
             }
 
             /**
-             * Get the mass balance for the current step
+             * Get the total vdf mass balance
              * @return
              */
             MassError getVDFMassError() {
-                return getError([this](int pos) { return nodes->at(pos)->getVDFOUT().value(); },
-                                [this](int pos) { return nodes->at(pos)->getVDFIN().value(); } );
+                return getError([this](int pos) { return nodes->at(pos)->getVDF_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getVDF_IN().value(); } );
+            }
+
+            MassError getZoneChangeMassError() {
+                return getError([this](int pos) { return nodes->at(pos)->getZCHG_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getZCHG_IN().value(); } );
+            }
+
+            MassError getInstantaneousMixingMassError(){
+                return getError([this](int pos) { return nodes->at(pos)->getInstantaneousMixing(false).value(); },
+                                [this](int pos) { return nodes->at(pos)->getInstantaneousMixing(true).value(); } );
+            }
+
+            MassError getTipToeTrackingMassError(){
+                return getError([this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(false).value(); },
+                                [this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(true).value(); } );
             }
 
             /**
@@ -312,8 +327,8 @@ namespace GlobalFlow {
              * @return
              */
             MassError getGNCMassError() {
-                return getError([this](int pos) { return nodes->at(pos)->getGNCOUT().value(); },
-                                [this](int pos) { return nodes->at(pos)->getGNCIN().value(); } );
+                return getError([this](int pos) { return nodes->at(pos)->getGNC_OUT().value(); },
+                                [this](int pos) { return nodes->at(pos)->getGNC_IN().value(); } );
             }
 
             /**
@@ -435,14 +450,6 @@ namespace GlobalFlow {
                 LOG(level) << "Total mass error: " << totalErr.ERR <<
                                 "  In: " << totalErr.IN <<
                                 "  Out: " << totalErr.OUT;
-                MassError vdfErr = getVDFMassError();
-                LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
-                                "  In: " << vdfErr.IN <<
-                                "  Out: " << vdfErr.OUT;
-                MassError gncErr = getGNCMassError();
-                LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
-                           "  In: " << gncErr.IN <<
-                           "  Out: " << gncErr.OUT;
                 LOG(level) << "General Head Boundary: " << getMassErrorByFlowName(GENERAL_HEAD_BOUNDARY);
                 LOG(level) << "Rivers: " << getMassErrorByFlowName(RIVERS);
                 //LOG(stateinfo) << "Drains: " << getMassErrorByFlowName(DRAINS);
@@ -455,6 +462,37 @@ namespace GlobalFlow {
                 //LOG(userinfo) << "Fast Surface Runoff: " << getMassErrorByFlowName(FASTSURFACE) << "\n";
                 LOG(level) << "Net abstraction from groundwater: " << getMassErrorByFlowName(NAG);
                 LOG(level) << "Storage (only valid if transient run): " << getMassErrorByFlowName(STORAGE);
+
+                if (op.isDensityVariable()){
+                    MassError vdfErr = getVDFMassError();
+                    LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
+                               "  In: " << vdfErr.IN <<
+                               "  Out: " << vdfErr.OUT;
+
+                    MassError zchgErr = getZoneChangeMassError();
+                    LOG(level) << "Zone change (sum over all zones): " << zchgErr.ERR <<
+                               "  In: " << zchgErr.IN <<
+                               "  Out: " << zchgErr.OUT;
+
+                    MassError imixErr = getInstantaneousMixingMassError();
+                    LOG(level) << "Instantaneous mixing (sum over all zones): " << imixErr.ERR <<
+                               "  In: " << imixErr.IN <<
+                               "  Out: " << imixErr.OUT;
+
+                    MassError tttErr = getTipToeTrackingMassError();
+                    LOG(level) << "Tip toe tracking (sum over all zones): " << tttErr.ERR <<
+                               "  In: " << tttErr.IN <<
+                               "  Out: " << tttErr.OUT;
+
+                }
+
+                if (op.isGridRefined()){
+                    MassError gncErr = getGNCMassError();
+                    LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
+                               "  In: " << gncErr.IN <<
+                               "  Out: " << gncErr.OUT;
+                }
+
             }
 
             DataReader *getDataReader() {
