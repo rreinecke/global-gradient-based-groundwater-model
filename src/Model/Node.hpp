@@ -855,20 +855,20 @@ Calculate
              * @brief Get all current IN flow
              * @return Flow volume
              */
-            t_vol_t getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; });}
+            t_c_meter getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; }) * day;}
 
             /**
              * @brief Get all current OUT flow
              * @return Flow volume
              */
-            t_vol_t getCurrentOUT() noexcept { return -getFlow([](double a) -> bool { return a < 0; }); }
+            t_c_meter getCurrentOUT() noexcept { return -getFlow([](double a) -> bool { return a < 0; }) * day; }
 
             /**
              * @brief Tell cell to save its flow budget
              */
             void saveMassBalance() noexcept {
-                fields.addTo<t_c_meter, OUT>(getCurrentOUT().value() * si::cubic_meter);
-                fields.addTo<t_c_meter, IN>(getCurrentIN().value() * si::cubic_meter);
+                fields.addTo<t_c_meter, OUT>(getCurrentOUT());
+                fields.addTo<t_c_meter, IN>(getCurrentIN());
             }
 
 
@@ -963,21 +963,11 @@ Calculate
             }
 
             /**
-             *
+             * @brief save volumetric density zone change between last and new time step
              */
             void saveZoneChange() noexcept {
-                t_c_meter zoneChange_in;
-                t_c_meter zoneChange_out;
-                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
-                    t_c_meter zoneChange = calculateZoneChange(localZetaID);
-                    if (zoneChange.value() > 0) {
-                        zoneChange_in += zoneChange;
-                    } else {
-                        zoneChange_out += zoneChange;
-                    }
-                }
-                set<t_c_meter, ZCHG_IN>(zoneChange_in);
-                set<t_c_meter, ZCHG_OUT>(zoneChange_out);
+                set<t_c_meter, ZCHG_IN>(getZoneChange(true));
+                set<t_c_meter, ZCHG_OUT>(getZoneChange(false));
             }
 
             t_c_meter getZoneChange(bool in) noexcept {

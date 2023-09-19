@@ -481,12 +481,11 @@ Equation::solve() {
      if(vdf) {
          solve_zetas();
      }
-
-     updateBudget();
      if(gnc) {
          updateGNCBudget();
      }
      updateFinalHeads();
+     updateBudget();
     }
 
 /**

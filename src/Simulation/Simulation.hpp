@@ -277,7 +277,7 @@ namespace GlobalFlow {
                     out = out + fun1(j);
                     in = in + fun2(j);
                 }
-                if (abs(in - out) > 0.00001) {
+                if (abs(in - abs(out)) > 0.00001) {
                     error = ((100 * (in - abs(out))) / ((in + abs(out)) / 2));
                 }
                 MassError err(out, in, error);
@@ -464,45 +464,32 @@ namespace GlobalFlow {
                 LOG(level) << "Storage (only valid if transient run): " << getMassErrorByFlowName(STORAGE);
                 MassError currentErr = getCurrentMassError();
                 LOG(level) << "Step mass error: " << currentErr.ERR <<
-                           "  In: " << currentErr.IN <<
-                           "  Out: " << currentErr.OUT;
+                           "  In: " << currentErr.IN << "  Out: " << currentErr.OUT;
                 MassError totalErr = getMassError();
                 LOG(level) << "Total mass error: " << totalErr.ERR <<
-                           "  In: " << totalErr.IN <<
-                           "  Out: " << totalErr.OUT;
+                           "  In: " << totalErr.IN << "  Out: " << totalErr.OUT;
                 if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
                     LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
                     throw new MassErrorTooBig();
                 }
-
                 if (op.isDensityVariable()){
                     MassError vdfErr = getVDFMassError();
                     LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
-                               "  In: " << vdfErr.IN <<
-                               "  Out: " << vdfErr.OUT;
-
+                               "  In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
                     MassError zchgErr = getZoneChangeMassError();
                     LOG(level) << "Zone change (sum over all zones): " << zchgErr.ERR <<
-                               "  In: " << zchgErr.IN <<
-                               "  Out: " << zchgErr.OUT;
-
+                               "  In: " << zchgErr.IN << "  Out: " << zchgErr.OUT;
                     MassError imixErr = getInstantaneousMixingMassError();
                     LOG(level) << "Instantaneous mixing (sum over all zones): " << imixErr.ERR <<
-                               "  In: " << imixErr.IN <<
-                               "  Out: " << imixErr.OUT;
-
+                               "  In: " << imixErr.IN << "  Out: " << imixErr.OUT;
                     MassError tttErr = getTipToeTrackingMassError();
                     LOG(level) << "Tip toe tracking (sum over all zones): " << tttErr.ERR <<
-                               "  In: " << tttErr.IN <<
-                               "  Out: " << tttErr.OUT;
-
+                               "  In: " << tttErr.IN << "  Out: " << tttErr.OUT;
                 }
-
                 if (op.isGridRefined()){
                     MassError gncErr = getGNCMassError();
                     LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
-                               "  In: " << gncErr.IN <<
-                               "  Out: " << gncErr.OUT;
+                               "  In: " << gncErr.IN << "  Out: " << gncErr.OUT;
                 }
             }
 
