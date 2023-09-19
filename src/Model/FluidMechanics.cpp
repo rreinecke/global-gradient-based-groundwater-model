@@ -196,9 +196,9 @@ namespace GlobalFlow {
                 // LOG(numerics) << "HCOF for steady state sim. (= P) (in getHCOF): " << P.value() << std::endl;
                 return P;
             quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
-            //LOG(userinfo) << "P = " << P.value() << std::endl;
-            //LOG(userinfo) << "storageCapacity = " << storageCapacity.value() << std::endl;
-            //LOG(userinfo) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
+            //LOG(debug) << "P = " << P.value() << std::endl;
+            //LOG(debug) << "storageCapacity = " << storageCapacity.value() << std::endl;
+            //LOG(debug) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
             NANChecker(out.value(), "HCOF");
             return out;
         }

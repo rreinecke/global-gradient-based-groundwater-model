@@ -52,7 +52,7 @@ namespace GlobalFlow {
         std::string basePath{"data"};
         fs::path data_dir{basePath};
         /** @var lookupSpatIDtoNodeIDs <SpatID, Layer, RefID, NodeID>*/
-        std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> lookupSpatIDtoNodeIDs;
+        std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> lookupSpatIDtoNodeIDs;
         /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
         std::unordered_map<large_num, std::vector<large_num>> lookupArcIDtoSpatIDs;
     public:
@@ -113,9 +113,9 @@ namespace GlobalFlow {
             in.read_header(io::ignore_no_column, "spatID", "data");
             large_num spatID{0};
             int layer{0};
-            int refID{0};
+            large_num refID{0};
             double data = 0;
-            std::unordered_map<int,large_num> nodeIDs;
+            std::unordered_map<large_num,large_num> nodeIDs;
             while (in.read_row(spatID, data)) {
                 try {
                     nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
@@ -161,7 +161,7 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        void addMappingSpatIDtoNodeIDs(large_num spatID, int layer, int refID, large_num nodeID) {
+        void addMappingSpatIDtoNodeIDs(large_num spatID, int layer, large_num refID, large_num nodeID) {
             lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID;
         };
 
@@ -169,7 +169,7 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>>&
+        const std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>>&
         getMappingSpatIDtoNodeIDs() {
             return lookupSpatIDtoNodeIDs;
         };
@@ -257,7 +257,7 @@ namespace GlobalFlow {
             double area{0};
             large_num spatID{0};
             large_num nodeID{0};
-            int refID{0};
+            large_num refID{0};
 
             lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
             std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
@@ -347,7 +347,7 @@ namespace GlobalFlow {
             double lon{0};
             double lat{0};
             double area{0};
-            int refID{0};
+            large_num refID{0};
             large_num nodeID{0};
             large_num spatID{0};
 
@@ -406,9 +406,9 @@ namespace GlobalFlow {
             large_num spatID{0};
             double elevation{0};
             double conduct{0};
-            std::unordered_map<int,large_num> nodeIDs;
+            std::unordered_map<large_num, large_num> nodeIDs;
             int layer{0};
-            int refID{0};
+            large_num refID{0};
 
             while (in.read_row(spatID, elevation, conduct)) {
                 try {
@@ -475,7 +475,7 @@ namespace GlobalFlow {
             double head{0};
             double conduct{0};
             double bottom{0};
-            std::unordered_map<int, large_num> nodeIDs;
+            std::unordered_map<large_num, large_num> nodeIDs;
             int layer{0};
 
             while (in.read_row(spatID, head, bottom, conduct)) {
@@ -574,10 +574,10 @@ namespace GlobalFlow {
 
             int arcID = -1;
             std::vector<large_num> spatIDs;
-            std::unordered_map<int, large_num> nodeIDs;
+            std::unordered_map<large_num, large_num> nodeIDs;
             double recharge = 0;
             int layer{0};
-            int refID{0};
+            large_num refID{0};
 
             while (in.read_row(arcID, recharge)) {
                 //lookup nodes which get the special_flow
@@ -624,8 +624,8 @@ namespace GlobalFlow {
                 }
                 spatIDs.clear();
             }
-            //LOG(userinfo) << "missing mapping of arcID to spatID(s): " << missingMapping;
-            //LOG(userinfo) << "recharge added to " << rechargeAdded << " nodes";
+            //LOG(debug) << "missing mapping of arcID to spatID(s): " << missingMapping;
+            //LOG(debug) << "recharge added to " << rechargeAdded << " nodes";
         };
 
         /**
@@ -655,9 +655,9 @@ namespace GlobalFlow {
             double Q_bankfull{0};
             double width{0};
             large_num spatID{0};
-            std::unordered_map<int, large_num> nodeIDs;
+            std::unordered_map<large_num, large_num> nodeIDs;
             int layer{0};
-            int refID{0};
+            large_num refID{0};
 
             std::unordered_map<large_num, std::array<double, 3>> out;
 
@@ -688,9 +688,9 @@ namespace GlobalFlow {
             in.read_header(io::ignore_no_column, "spatID", "data");
             large_num spatID{0};
             double riverElevation{0};
-            std::unordered_map<int, large_num> nodeIDs;
+            std::unordered_map<large_num, large_num> nodeIDs;
             int layer{0};
-            int refID{0};
+            large_num refID{0};
 
             while (in.read_row(spatID, riverElevation)) {
                 try {
@@ -750,9 +750,9 @@ namespace GlobalFlow {
 
                 double percentage{0};
                 large_num spatID{0};
-                std::unordered_map<int, large_num> nodeIDs;
+                std::unordered_map<large_num, large_num> nodeIDs;
                 int layer{0};
-                int refID{0};
+                large_num refID{0};
 
                 while (in.read_row(spatID, percentage)) {
                     if (percentage == 0) {
@@ -868,9 +868,9 @@ namespace GlobalFlow {
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
                 int localZetaID{0};
-                int refID{0};
+                large_num refID{0};
                 large_num spatID{0};
-                std::unordered_map<int, large_num> nodeIDs;
+                std::unordered_map<large_num, large_num> nodeIDs;
                 double zeta{0};
 
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
@@ -914,10 +914,10 @@ namespace GlobalFlow {
             large_num spatID{0};
             double zoneOfSinks{0};
             double zoneOfSources{0};
-            std::unordered_map<int, std::unordered_map<int, large_num>> mapAtSpatID;
+            std::unordered_map<int, std::unordered_map<large_num, large_num>> mapAtSpatID;
 
             int layer{0};
-            int refID{0};
+            large_num refID{0};
             while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
                 try {
                     mapAtSpatID = lookupSpatIDtoNodeIDs.at(spatID);

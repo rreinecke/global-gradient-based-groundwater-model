@@ -133,7 +133,6 @@ Equation::updateMatrix() {
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
-        //LOG(userinfo) << "node: " << j;
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
         addToA(nodes->at(id));
@@ -177,7 +176,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
-    
+
     for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         auto id = index_mapping[j];
         if (id != -1) {
@@ -482,12 +481,11 @@ Equation::solve() {
      if(vdf) {
          solve_zetas();
      }
-
-     updateBudget();
      if(gnc) {
          updateGNCBudget();
      }
      updateFinalHeads();
+     updateBudget();
     }
 
 /**

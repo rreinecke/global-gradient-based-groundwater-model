@@ -50,7 +50,8 @@ namespace GlobalFlow {
          */
         class Iterator {
         public:
-            Iterator(const AbstractStepper *stepper, TimeFrame time, int steps, double pos, bool dynStep = false)
+            //Iterator(const AbstractStepper *stepper, TimeFrame time, int steps, double pos, bool dynStep = false)
+            Iterator(const AbstractStepper *stepper, int time, int steps, double pos, bool dynStep = false)
                     : _pos(pos), _stepper(stepper), _time(time), _dynStep(dynStep), _totalSteps(steps) {
                 assert( ((dynStep) ? steps>1 : true) && "Dynamic steps not valid for 1 step");
                 if(_dynStep){calcInit();}
@@ -106,7 +107,8 @@ namespace GlobalFlow {
             const bool _dynStep{false};
             const int _totalSteps;
             const AbstractStepper *_stepper;
-            const TimeFrame _time;
+            //const TimeFrame _time;
+            const int _time;
         };
 
         /**
@@ -114,8 +116,8 @@ namespace GlobalFlow {
          */
         class Stepper : public AbstractStepper {
         public:
-
-            Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
+            //Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
+            Stepper(Solver::Equation *eq, const int time, const size_t steps, bool dynStep = false)
                     : _equation(eq), _timeFrame(time), _steps(steps), _dyn(dynStep) {
                 _equation->updateStepModifier(_timeFrame);
             }
@@ -135,14 +137,15 @@ namespace GlobalFlow {
                 return Iterator(this, _timeFrame, this->_steps, this->_steps, _dyn);
             }
 
-            const TimeFrame
-            getStepSize() {
+            //const TimeFrame getStepSize() {
+            const int getStepSize() {
                 return _timeFrame;
             };
 
         private:
             Solver::Equation *_equation;
-            const TimeFrame _timeFrame;
+            //const TimeFrame _timeFrame;
+            const int _timeFrame;
             const size_t _steps;
             const bool _dyn;
         };

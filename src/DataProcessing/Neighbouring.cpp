@@ -92,7 +92,7 @@ void addBoundary(NodeVector const& nodes,
  * @param boundaryCondition
  */
 void buildBySpatID(NodeVector nodes,
-                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
+                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
                    double resolution,
                    int lonRange, int latRange, bool isGlobal,
                    int layers, large_num numberOfNodesPerLayer,
@@ -100,10 +100,10 @@ void buildBySpatID(NodeVector nodes,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
     auto lu = setNeighbourPositions();
 
-    std::unordered_map<int, large_num> nodeIDs_neig;
+    std::unordered_map<large_num, large_num> nodeIDs_neig;
     large_num spatID;
-    int spatID_neig;
-    int refID;
+    large_num spatID_neig;
+    large_num refID;
     large_num nodeID;
 
     for (large_num nodeIDTopLayer = 0; nodeIDTopLayer < numberOfNodesPerLayer; ++nodeIDTopLayer) {
@@ -132,8 +132,8 @@ void buildBySpatID(NodeVector nodes,
 
 
 void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
-                      int lonRange, int latRange, bool isGlobal, int refID, large_num nodeID, int layer,
-                      std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<int, large_num>>> spatIDtoNodeIDs,
+                      int lonRange, int latRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
+                      std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
                       double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
 
     auto neighbourPositions = setNeighbourPositions();
@@ -149,7 +149,7 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double reso
                                                (int ref_id, Model::NeighbourPosition neighbourPosition) {
         int spatID_neig = getNeighbourSpatID((int) spatID, j, resolution, lonRange, latRange, isGlobal);
         if (spatIDtoNodeIDs.contains(spatID_neig)) {
-            std::unordered_map<int, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); // layer = 0
+            std::unordered_map<large_num, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); // layer = 0
             if (nodeIDs_neig.size() == 1) {
                 nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition); // refID = 0
             } else {
@@ -331,7 +331,7 @@ std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions() {
                     specificStorage = nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>,
                                     Model::SpecificStorage>().value();
                     useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
-                    refID = nodes->at(i)->getProperties().get<int, Model::RefID>();
+                    refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
                     densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
                     delnus = nodes->at(i)->getProperties().
                             get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();

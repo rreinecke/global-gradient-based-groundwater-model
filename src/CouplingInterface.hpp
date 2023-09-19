@@ -58,6 +58,8 @@ namespace GlobalFlow {
 
         virtual void writeRiver(Container data, short month, int numberOfGridCells) {}
 
+        virtual void writeGwFlow(Container data, int daysNotSimulated, short month, int numberOfGridCells) {}
+
         virtual void writeGlobalWetlands(Container data, short month, int numberOfGridCells) {}
 
         virtual void writeLocalWetlands(Container data, short month, int numberOfGridCells) {}
@@ -68,7 +70,25 @@ namespace GlobalFlow {
 
         virtual void getStorageData(Container data, short month, int numberOfGridCells) {}
 
-        virtual void writeStorage(Container data, short month, int numberOfGridCells) {}
+        virtual void writeGwStorage(Container data, short month, int numberOfGridCells) {}
+
+        virtual void writeFlowsIntoGW(Container gwr_loclak, Container gwr_locwet, Container gwr_glolac, Container gwr_res, Container gwr_glowet, int daysNotSimulated, short month, int numberOfGridCells){}
+
+        virtual void deleteSWB(int cell, int numberOfGridCells, std::array<bool, 3> SWBType){}
+
+        virtual void deleteGloLake(int cell, int numberOfGridCells){}
+
+        virtual void activateDeactivateGloLakes(int cell, int numberOfGridCells, bool activate){}
+
+        virtual void updateSwbConduct(int cell, int numberOfGridCells, std::array<double, 4> changeSwb){}
+
+        virtual void saveSteadyStateConduct(int cell){}
+
+        virtual void saveSteadyStateRiverDepth(int cell){}
+
+        virtual void NoFiveMinuteCells(int cell, int numberOfGridCells, int *temp){}
+
+        virtual void initMapping(int numberOfGridCells){}
 
     protected:
         NodeVector nodes;
