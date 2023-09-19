@@ -159,7 +159,6 @@ namespace GlobalFlow {
         struct VDF_IN;
         struct ZCHG_OUT;
         struct ZCHG_IN;
-
         struct GNC_OUT;
         struct GNC_IN;
         struct Head;
@@ -193,58 +192,58 @@ namespace GlobalFlow {
  * Definition of type and unit for each field
  */
         using PhysicalProperties = PropertyRepository<
-                PhysicalProperty<large_num, ID>,
-                PhysicalProperty<large_num, SpatID>,
-                PhysicalProperty<double, Lat>, //TODO use boost unit (maybe degree? or arcmin, arcsec)
-                PhysicalProperty<double, Lon>,
-                PhysicalProperty<int, Layer>,
-                PhysicalProperty<t_dim, StepModifier>,
-                PhysicalProperty<t_s_meter, Area>,
-                PhysicalProperty<t_meter, VerticalSize>,
-                PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
-                PhysicalProperty<t_meter, TopElevation>, // elevation of TOP layer
-                PhysicalProperty<t_meter, EFolding>,
-                PhysicalProperty<bool, UseEfolding>,
-                PhysicalProperty<bool, Confinement>,
-                PhysicalProperty<t_vel, K>,
-                PhysicalProperty<t_dim, Anisotropy>,
-                PhysicalProperty<quantity < d_time>, StepSize>,
-        PhysicalProperty<t_c_meter, OUT>,
-        PhysicalProperty<t_c_meter, IN>,
-        PhysicalProperty<t_c_meter, VDF_OUT>,
-        PhysicalProperty<t_c_meter, VDF_IN>,
-        PhysicalProperty<t_c_meter, ZCHG_OUT>,
-        PhysicalProperty<t_c_meter, ZCHG_IN>,
-        PhysicalProperty<t_c_meter, GNC_OUT>,
-        PhysicalProperty<t_c_meter, GNC_IN>,
-        PhysicalProperty<t_meter, Head>,
-        PhysicalProperty<t_meter, EQHead>,
-        PhysicalProperty<t_meter, HeadChange>,
-        PhysicalProperty<t_meter, Head_TZero>,
-        PhysicalProperty<t_meter, HeadChange_TZero>,
-        PhysicalProperty<t_dim, SpecificYield>,
-        PhysicalProperty<quantity < perUnit>, SpecificStorage>,
-        PhysicalProperty<t_meter, EdgeLengthLeftRight>,
-        PhysicalProperty<t_meter, EdgeLengthFrontBack>,
-        PhysicalProperty<t_s_meter, SurfaceLeftRight>,
-        PhysicalProperty<t_s_meter, SurfaceFrontBack>,
-        PhysicalProperty<t_c_meter, VolumeOfCell>,
-        PhysicalProperty<t_dim, EffectivePorosity>,
-        PhysicalProperty<int, RefinementLevel>,
-        PhysicalProperty<int, RefID>,
-        PhysicalProperty<bool, DensityVariable>,
-        PhysicalProperty<std::vector<t_meter>, Zetas>,
-        PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
-        PhysicalProperty<std::vector<t_meter>, ZetasChange>,
-        PhysicalProperty<std::vector<std::string>, ZetasPosInNode>,
-        PhysicalProperty<std::vector<t_dim>, Delnus>,
-        PhysicalProperty<std::vector<t_dim>, NusInZones>,
-        PhysicalProperty<t_dim, MaxTipSlope>,
-        PhysicalProperty<t_dim, MaxToeSlope>,
-        PhysicalProperty<t_dim, MinDepthFactor>,
-        PhysicalProperty<t_dim, SlopeAdjFactor>,
-        PhysicalProperty<t_meter, VDFLock>,
-        PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
+            PhysicalProperty<large_num, ID>,
+            PhysicalProperty<large_num, SpatID>,
+            PhysicalProperty<double, Lat>, //TODO use boost unit (maybe degree? or arcmin, arcsec)
+            PhysicalProperty<double, Lon>,
+            PhysicalProperty<int, Layer>,
+            PhysicalProperty<t_dim, StepModifier>,
+            PhysicalProperty<t_s_meter, Area>,
+            PhysicalProperty<t_meter, VerticalSize>,
+            PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
+            PhysicalProperty<t_meter, TopElevation>, // elevation of TOP layer
+            PhysicalProperty<t_meter, EFolding>,
+            PhysicalProperty<bool, UseEfolding>,
+            PhysicalProperty<bool, Confinement>,
+            PhysicalProperty<t_vel, K>,
+            PhysicalProperty<t_dim, Anisotropy>,
+            PhysicalProperty<quantity < d_time>, StepSize>,
+            PhysicalProperty<t_c_meter, OUT>,
+            PhysicalProperty<t_c_meter, IN>,
+            PhysicalProperty<t_c_meter, VDF_OUT>,
+            PhysicalProperty<t_c_meter, VDF_IN>,
+            PhysicalProperty<t_c_meter, ZCHG_OUT>,
+            PhysicalProperty<t_c_meter, ZCHG_IN>,
+            PhysicalProperty<t_c_meter, GNC_OUT>,
+            PhysicalProperty<t_c_meter, GNC_IN>,
+            PhysicalProperty<t_meter, Head>,
+            PhysicalProperty<t_meter, EQHead>,
+            PhysicalProperty<t_meter, HeadChange>,
+            PhysicalProperty<t_meter, Head_TZero>,
+            PhysicalProperty<t_meter, HeadChange_TZero>,
+            PhysicalProperty<t_dim, SpecificYield>,
+            PhysicalProperty<quantity < perUnit>, SpecificStorage>,
+            PhysicalProperty<t_meter, EdgeLengthLeftRight>,
+            PhysicalProperty<t_meter, EdgeLengthFrontBack>,
+            PhysicalProperty<t_s_meter, SurfaceLeftRight>,
+            PhysicalProperty<t_s_meter, SurfaceFrontBack>,
+            PhysicalProperty<t_c_meter, VolumeOfCell>,
+            PhysicalProperty<t_dim, EffectivePorosity>,
+            PhysicalProperty<int, RefinementLevel>,
+            PhysicalProperty<large_num, RefID>,
+            PhysicalProperty<bool, DensityVariable>,
+            PhysicalProperty<std::vector<t_meter>, Zetas>,
+            PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
+            PhysicalProperty<std::vector<t_meter>, ZetasChange>,
+            PhysicalProperty<std::vector<std::string>, ZetasPosInNode>,
+            PhysicalProperty<std::vector<t_dim>, Delnus>,
+            PhysicalProperty<std::vector<t_dim>, NusInZones>,
+            PhysicalProperty<t_dim, MaxTipSlope>,
+            PhysicalProperty<t_dim, MaxToeSlope>,
+            PhysicalProperty<t_dim, MinDepthFactor>,
+            PhysicalProperty<t_dim, SlopeAdjFactor>,
+            PhysicalProperty<t_meter, VDFLock>,
+            PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
         >;
     }
 }//ns

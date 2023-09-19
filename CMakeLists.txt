@@ -3,8 +3,8 @@ if(${CMAKE_VERSION} VERSION_LESS "3.25.0")
     message(STATUS "You need to upgrade CMake! Minimum required version is 3.25.0.")
 endif()
 
-set(CMAKE_C_COMPILER "clang-14")
-set(CMAKE_CXX_COMPILER "clang++-14")
+set(CMAKE_C_COMPILER "clang-16")
+set(CMAKE_CXX_COMPILER "clang++-16")
 
 # CMAKE flags
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")

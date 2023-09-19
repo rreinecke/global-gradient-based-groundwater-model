@@ -263,7 +263,7 @@ namespace GlobalFlow {
                 stream << "Node properties:"
                 << "\nID [large_num]: "<< pNode->get<large_num, ID>()
                 << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
-                << "\nLat [double]: " << pNode->get<double, Lat>()
+                << "\nRefID [int]: " << pNode->get<large_num, RefID>()<< "\nLat [double]: " << pNode->get<double, Lat>()
                 << "\nLon [double]: " << pNode->get<double, Lon>()
                 << "\nLayer [int]: " << pNode->get<int, Layer>()
                 << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
@@ -368,7 +368,7 @@ namespace GlobalFlow {
                           double specificStorage,
                           bool useEfolding,
                           bool confined,
-                          int refID,
+                          large_num refID,
                           bool densityVariable,
                           std::vector<t_dim> delnus,
                           std::vector<t_dim> nusInZones,
@@ -639,7 +639,7 @@ Calculate
 
             double getLon() {return get<double, Lon>();}
 
-            int getRefID() {return get<int, RefID>(); }
+            large_num getRefID() {return get<large_num, RefID>(); }
 
             t_s_meter getArea(){return get<t_s_meter, Area>();}
 
@@ -1082,7 +1082,7 @@ Calculate
              * @param nodeIDs The internal IDs and position in vector
              * @param neighbour The position relative to the cell
              */
-            void setNeighbours(std::unordered_map<int, large_num> nodeIDs, NeighbourPosition neighbourPosition) {
+            void setNeighbours(std::unordered_map<large_num, large_num> nodeIDs, NeighbourPosition neighbourPosition) {
                 /*
                  * RefIDs:
                  *                  (this)
@@ -1103,30 +1103,30 @@ Calculate
                  } else {
                      for (auto nodeID: nodeIDs) {
                          if (neighbourPosition == Model::FRONT) {
-                             if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                             if (nodes->at(nodeID.second)->get<large_num, RefID>() == 3) {
                                  neighbours[Model::FRONTLEFT] = nodeID.second;
-                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                             } else if (nodes->at(nodeID.second)->get<large_num, RefID>() == 4) {
                                  neighbours[Model::FRONTRIGHT] = nodeID.second;
                              }
                          }
                          if (neighbourPosition == Model::BACK) {
-                             if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                             if (nodes->at(nodeID.second)->get<large_num, RefID>() == 1) {
                                  neighbours[Model::BACKLEFT] = nodeID.second;
-                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                             } else if (nodes->at(nodeID.second)->get<large_num, RefID>() == 2) {
                                  neighbours[Model::BACKRIGHT] = nodeID.second;
                              }
                          }
                          if (neighbourPosition == Model::LEFT) {
-                             if (nodes->at(nodeID.second)->get<int, RefID>() == 2) {
+                             if (nodes->at(nodeID.second)->get<large_num, RefID>() == 2) {
                                  neighbours[Model::LEFTFRONT] = nodeID.second;
-                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 4) {
+                             } else if (nodes->at(nodeID.second)->get<large_num, RefID>() == 4) {
                                  neighbours[Model::LEFTBACK] = nodeID.second;
                              }
                          }
                          if (neighbourPosition == Model::RIGHT) {
-                             if (nodes->at(nodeID.second)->get<int, RefID>() == 1) {
+                             if (nodes->at(nodeID.second)->get<large_num, RefID>() == 1) {
                                  neighbours[Model::RIGHTFRONT] = nodeID.second;
-                             } else if (nodes->at(nodeID.second)->get<int, RefID>() == 3) {
+                             } else if (nodes->at(nodeID.second)->get<large_num, RefID>() == 3) {
                                  neighbours[Model::RIGHTBACK] = nodeID.second;
                              }
                          }
@@ -1252,7 +1252,7 @@ Calculate
             t_vol_t getGNCFromUnrefinedNodes(){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
-                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
+                if (get<large_num, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
 
                 std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
                         getPossibleNeighbours_horizontal_refined();
@@ -1270,7 +1270,7 @@ Calculate
             t_vol_t getGNCToRefinedNode(){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
-                if (get<int, RefID>() == 0) { return out;}
+                if (get<large_num, RefID>() == 0) { return out;}
 
                 // get neighbours at left, right, front or back
                 std::forward_list<NeighbourPosition> neighbours_LRFB = getPossibleNeighbours_LRFB();
@@ -1279,9 +1279,9 @@ Calculate
                     auto neig = neighbours.find(neigPos);
                     if (neig != neighbours.end()) {
                         // if neighbour is unrefined
-                        if (at(neig)->get<int, RefID>() == 0) {
+                        if (at(neig)->get<large_num, RefID>() == 0) {
                             // get the refined neighbour position this node has relative to that unrefined
-                            NeighbourPosition thisNode = getRefinedNeighbourPositionToUnrefinedNeighbour(get<int, RefID>(), neigPos);
+                            NeighbourPosition thisNode = getRefinedNeighbourPositionToUnrefinedNeighbour(get<large_num, RefID>(), neigPos);
 
                             out += at(neig)->calculateGhostNodeCorrection({thisNode});
                         }
@@ -1292,7 +1292,7 @@ Calculate
             }
 
             static NeighbourPosition
-            getRefinedNeighbourPositionToUnrefinedNeighbour(int refID, NeighbourPosition neigPos){
+            getRefinedNeighbourPositionToUnrefinedNeighbour(large_num refID, NeighbourPosition neigPos){
                 if (refID == 1){
                     if (neigPos == NeighbourPosition::FRONT) { return NeighbourPosition::BACKLEFT;}
                     if (neigPos == NeighbourPosition::LEFT) { return NeighbourPosition::RIGHTFRONT;}
@@ -1313,7 +1313,7 @@ Calculate
 
             t_vol_t getGhostNodeCorrectionFromNeighbours() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                if (get<int, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
+                if (get<large_num, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
 
                 std::forward_list<NeighbourPosition> possibleUnrefinedNeighbours = getPossibleNeighbours_LRFB();
 
@@ -2047,7 +2047,7 @@ Calculate
                  */
                 // todo: compute BUFF with SSWI2_BDCH for constant head cells
                 t_vol_t sources = 0.0 * (si::cubic_meter / day);
-                //LOG(userinfo) << "zoneToUse: " << zoneToUse << std::endl;
+                //LOG(debug) << "zoneToUse: " << zoneToUse << std::endl;
 
                 if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     // if the new groundwater head is above or equal to the node bottom
@@ -2062,9 +2062,9 @@ Calculate
                                                              getP());
                         // calculate the boundary flux
                         sources = RHSConstantDensity - hcof * get<t_meter, Head>(); // see line 3535-3536
-                        //LOG(userinfo) << "RHSConstantDensity: " << RHSConstantDensity.value() << std::endl;
-                        //LOG(userinfo) << "hcof: " << hcof.value() << std::endl;
-                        //LOG(userinfo) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
+                        //LOG(debug) << "RHSConstantDensity: " << RHSConstantDensity.value() << std::endl;
+                        //LOG(debug) << "hcof: " << hcof.value() << std::endl;
+                        //LOG(debug) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
 
                     }
 
@@ -2114,7 +2114,7 @@ Calculate
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                             out += head_part;
-                            //LOG(userinfo) << "head_part: " << head_part.value() << std::endl;
+                            //LOG(debug) << "head_part: " << head_part.value() << std::endl;
 
                             t_s_meter_t zoneCondCumDelnus;
                             for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
@@ -2129,7 +2129,7 @@ Calculate
                                 t_vol_t delnus_part = -delnus[zetaID] * zoneCondCumDelnus *
                                                       (at(got)->getZeta(zetaID) - getZeta(zetaID));
                                 out += delnus_part;
-                                //LOG(userinfo) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
+                                //LOG(debug) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
                             }
                         }
                     }
@@ -2153,7 +2153,7 @@ Calculate
                 // %%head part %% for left/back neighbour
                 t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
                 out += head_part;
-                //LOG(userinfo) << "head_part (tip/toe): " << head_part.value() << std::endl;
+                //LOG(debug) << "head_part (tip/toe): " << head_part.value() << std::endl;
 
                 // %%delnus part %% for left/back neighbour
                 t_s_meter_t zoneCondCumZeta;
@@ -2166,7 +2166,7 @@ Calculate
                     t_vol_t delnus_part = delnus[zetaID] * zoneCondCumZeta *
                                           (at(got)->getZeta(zetaID) - getZeta(zetaID));
                     out += delnus_part;
-                    //LOG(userinfo) << "delnus_part: " << delnus_part.value() << std::endl;
+                    //LOG(debug) << "delnus_part: " << delnus_part.value() << std::endl;
                 }
                 return out;
             }
@@ -2251,13 +2251,13 @@ Calculate
 
                 // calculate the density zone conductances
                 for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++) {
-                    //LOG(userinfo) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
+                    //LOG(debug) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
                     zoneConductance = 0 * si::square_meter / day;
                     if (sumOfZoneThicknesses != (0 * si::meter)) { // adapted from SWI2 code line 1159
                         conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                        //LOG(userinfo) << "conductance:" << conductance.value();
+                        //LOG(debug) << "conductance:" << conductance.value();
                         zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
-                        //LOG(userinfo) << "zoneConductance[" << localZetaID << "] :" << zoneConductance.value();
+                        //LOG(debug) << "zoneConductance[" << localZetaID << "] :" << zoneConductance.value();
                     }
                     /* if nodes can be inactive:
                     else {
@@ -2357,7 +2357,7 @@ Calculate
                           (at(got)->getNusBot() + getNusTop()));
                     // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP,
                     // in MODFLOW code there is a + in the calculation of QLEXTRA
-                    //LOG(userinfo) << "headdiff: " << headdiff.value() << std::endl;
+                    //LOG(debug) << "headdiff: " << headdiff.value() << std::endl;
                 }
                 return out;
             }
@@ -2393,7 +2393,7 @@ Calculate
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) - fluxFromTopNode;
-                    //LOG(userinfo) << "getFluxTop: " << out.value();
+                    //LOG(debug) << "getFluxTop: " << out.value();
                 }
                 return out;
             }
@@ -2410,7 +2410,7 @@ Calculate
                     t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) + fluxFromDownNode;
-                    //LOG(userinfo) << "getFluxDown: " << out.value();
+                    //LOG(debug) << "getFluxDown: " << out.value();
                 }
                 return out;
             }
@@ -2531,7 +2531,7 @@ Calculate
                                 } else if (at(got)->isZetaAtTop(localZetaID)) {
                                     maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
                                 }
-                                //LOG(userinfo) << "maxDelta: " << maxDelta.value() << std::endl;
+                                //LOG(debug) << "maxDelta: " << maxDelta.value() << std::endl;
 
 
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
@@ -2548,24 +2548,24 @@ Calculate
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     //%% Toe tracking %%
                                     t_meter zetaDif = getZeta(localZetaID) - at(got)->getZetas().back();
-                                    //LOG(userinfo) << "zetaDif (toe): " << zetaDif.value() << std::endl;
+                                    //LOG(debug) << "zetaDif (toe): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         setZeta(localZetaID, getZeta(localZetaID) - delta_self);
-                                        //LOG(userinfo) << "delta_self (toe): " << delta_self.value() << std::endl;
+                                        //LOG(debug) << "delta_self (toe): " << delta_self.value() << std::endl;
                                         t_meter zeta_back_neig = at(got)->getZetas().back();
                                         at(got)->setZeta(localZetaID, zeta_back_neig + delta_neig);
-                                        //LOG(userinfo) << "delta_neig (toe): " << delta_neig.value() << std::endl;
+                                        //LOG(debug) << "delta_neig (toe): " << delta_neig.value() << std::endl;
                                     }
                                 } else if (at(got)->isZetaAtTop(localZetaID)) {
                                     //%% Tip tracking %%
                                     t_meter zetaDif = at(got)->getZetas().front() - getZeta(localZetaID);
-                                    //LOG(userinfo) << "zetaDif (tip): " << zetaDif.value() << std::endl;
+                                    //LOG(debug) << "zetaDif (tip): " << zetaDif.value() << std::endl;
                                     if (zetaDif > maxDelta) {
                                         setZeta(localZetaID, getZeta(localZetaID) + delta_self);
-                                        //LOG(userinfo) << "zetaChange_self (tip): " << delta_self.value() << std::endl;
+                                        //LOG(debug) << "zetaChange_self (tip): " << delta_self.value() << std::endl;
                                         t_meter zeta_front_neig = at(got)->getZetas().front();
                                         at(got)->setZeta(localZetaID, zeta_front_neig - delta_neig);
-                                        //LOG(userinfo) << "zetaChange_neig (tip): " << delta_neig.value() << std::endl;
+                                        //LOG(debug) << "zetaChange_neig (tip): " << delta_neig.value() << std::endl;
                                     }
                                 }
 
@@ -2580,7 +2580,7 @@ Calculate
                                                 t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
                                                 at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
                                                 setZeta(localZetaID, getZetas().back());
-                                                //LOG(userinfo) << "delta_opp (toe): " << delta_opp.value() << std::endl;
+                                                //LOG(debug) << "delta_opp (toe): " << delta_opp.value() << std::endl;
                                         }
                                     }
                                 }
@@ -2970,7 +2970,7 @@ Calculate
                 if (steadyState) {
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
-                //LOG(userinfo) << "storageFlow: " << storageFlow.value() << std::endl;
+                //LOG(debug) << "storageFlow: " << storageFlow.value() << std::endl;
                 bool useGhostNodeCorrection = true; // todo move to config
                 t_vol_t gncFromUnrefined {0 * (si::cubic_meter / day)};
                 t_vol_t gncToRefined {0 * (si::cubic_meter / day)};
@@ -3004,7 +3004,7 @@ Calculate
 
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
-                //LOG(userinfo) << "getRHS: " << out.value() << std::endl;
+                //LOG(debug) << "getRHS: " << out.value() << std::endl;
 
                 NANChecker(out.value(), "RHS");
                 return out;
@@ -3020,13 +3020,13 @@ Calculate
                 if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
                     porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
                 }
-                //LOG(userinfo) << "porosityTerm: " << porosityTerm.value() << std::endl;
+                //LOG(debug) << "porosityTerm: " << porosityTerm.value() << std::endl;
                 t_vol_t sources = getSources(localZetaID); // in SWI2 code: part of BRHS; in SWI2 doc: G or known source term below zeta
-                //LOG(userinfo) << "sources: " << sources.value() << std::endl;
+                //LOG(debug) << "sources: " << sources.value() << std::endl;
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                //LOG(userinfo) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
+                //LOG(debug) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
-                //LOG(userinfo) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
+                //LOG(debug) << "pseudoSourceBelowZeta: " << pseudoSourceBelowZeta.value() << std::endl;
                 t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
                 //if (out.value() == 0) {
                 //    LOG(debug) << "getRHS(localZetaID) is 0 at " << get<large_num,ID>();
@@ -3142,7 +3142,7 @@ Calculate
                          double specificStorage,
                          bool useEfolding,
                          bool confined,
-                         int refID,
+                         large_num refID,
                          bool densityVariable,
                          std::vector<t_dim> delnus,
                          std::vector<t_dim> nusInZones,

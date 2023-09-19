@@ -126,7 +126,7 @@ class SimpleDataReader : public DataReader {
             double lon{0};
             double lat{0};
             double area{0};
-            int refID{0};
+            large_num refID{0};
             large_num nodeID{0};
             large_num spatID{0};
 
@@ -180,7 +180,7 @@ class SimpleDataReader : public DataReader {
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");
             large_num spatID{0};
             double data{0};
-            int refID{0};
+            large_num refID{0};
             int layer{0};
             large_num nodeID;
 
@@ -201,7 +201,7 @@ class SimpleDataReader : public DataReader {
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");
             large_num spatID{0};
             double data{0};
-            int refID{0};
+            large_num refID{0};
             int layer{0};
             large_num nodeID;
 
@@ -226,7 +226,7 @@ class SimpleDataReader : public DataReader {
             double bottom{0};
             large_num nodeID;
             int layer{0};
-            int refID{0};
+            large_num refID{0};
 
             while (in.read_row(spatID, head, bottom, conduct, refID)) {
                 try {
@@ -249,7 +249,7 @@ class SimpleDataReader : public DataReader {
             large_num spatID{0};
             int layer{0};
             double recharge{0};
-            int refID{0};
+            large_num refID{0};
             large_num nodeID;
 
             while (in.read_row(spatID, layer,recharge, refID)) {
@@ -272,7 +272,7 @@ class SimpleDataReader : public DataReader {
         in.read_header(io::ignore_no_column, "spatID", "data", "refID");
         large_num spatID{0};
         double data{0};
-        int refID{0};
+        large_num refID{0};
         large_num nodeID;
 
         while (in.read_row(spatID, data, refID)) {
@@ -294,7 +294,7 @@ class SimpleDataReader : public DataReader {
         double head{0};
         double conduct{0};
         large_num nodeID;
-        int refID{0};
+        large_num refID{0};
 
         while (in.read_row(spatID, head, conduct, refID)) {
             try {
