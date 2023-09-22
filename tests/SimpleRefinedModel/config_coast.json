@@ -1,21 +1,25 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_refinedCoast.csv",
+      "nodes": "grid_coast_simpleRefined.csv",
       "number_of_nodes_per_layer": 130,
-      "lon_range": 20,
-      "lat_range": 20,
+      "x_range": 10,
+      "y_range": 10,
       "is_global": "false",
-      "resolution": 2,
+      "resolution_in_degree": 1,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
-      "threads": 1,
-      "layers": 1,
+      "layers": 2,
       "use_efolding": "false",
       "confinement": [
+        "true",
         "true"
       ],
       "grid_refined": "true",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
       "density_variable": "false",
       "density_zones": [
         1000
@@ -24,13 +28,10 @@
       "max_toe_slope": 0.0,
       "min_depth_factor": 0.0,
       "slope_adj_factor": 0.0,
-      "vdf_lock": 0.0,
-      "cache": "false",
-      "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
-      "sensitivity": "false"
+      "vdf_lock": 0.0
     },
     "numerics": {
+	  "threads": 1,
       "solver": "PCG",
       "iterations": 100,
       "inner_itter": 30,
@@ -61,13 +62,16 @@
       "effective_porosity": 0.2,
       "initial_head": 100,
       "K": [
+        0.008,
         0.008
       ],
       "ghb_K": 800,
       "aquifer_thickness": [
+        10,
         10
       ],
       "anisotropy": [
+        10,
         10
       ],
       "specific_yield": 0.15,
@@ -78,12 +82,12 @@
       ]
     },
     "data": {
-      "recharge": "recharge_refinedCoast.csv",
-      "elevation": "elevation_refinedCoast.csv",
-      "ghb_conductance": "ghb_conductance_refinedCoast.csv",
-      "lithology": "lithology_refinedCoast.csv",
-      "river_conductance": "rivers_refinedCoast.csv",
-      "initial_head": "heads_refinedCoast.csv"
+      "recharge": "recharge_coast_simpleRefined.csv",
+      "elevation": "elevation_coast_simpleRefined.csv",
+      "lithology": "lithology_coast_simpleRefined.csv",
+      "river_conductance": "rivers_coast_simpleRefined.csv",
+      "ghb_conductance": "ghb_coast_simpleRefined.csv",
+      "initial_head": "heads_coast_simpleRefined.csv"
     }
   }
   }

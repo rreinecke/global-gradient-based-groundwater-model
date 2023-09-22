@@ -77,6 +77,11 @@ class SimpleDataReader : public DataReader {
 
             LOG(userinfo) << "Defining rivers";
             readRiverConductance(buildDir(op.getKRiver()));
+
+            if(op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading the boundary condition";
+                readHeadBoundary(buildDir(op.getKGHBDir()));
+            }
         }
 
     private:

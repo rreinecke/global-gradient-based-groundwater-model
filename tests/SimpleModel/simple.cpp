@@ -60,20 +60,11 @@ void StandaloneRunner::simulate() {
         stepNumber++;
     }
 
-    //Changing stresses
-    std::vector<int> ids = {90,
-                            91,
-                            92,
-                            93,
-                            94,
-                            95,
-                            96,
-                            97,
-                            98,
-                            99};
+    //Changing recharge
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        if(std::find(ids.begin(), ids.end(), j) != ids.end())
+        if (sim.getNodes()->at(j)->hasTypeOfExternalFlow(Model::RECHARGE)){
             sim.getNodes()->at(j)->updateUniqueFlow(0.5, Model::RECHARGE, false);
+        }
     }
   
     LOG(userinfo) << "Running transient steps with changed stresses";

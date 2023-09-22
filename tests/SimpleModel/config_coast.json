@@ -46,7 +46,7 @@
     "input": {
       "data_config": {
         "k_from_file": "true",
-        "k_ghb_from_file": "false",
+        "k_ghb_from_file": "true",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
         "k_river_from_file": "true",
@@ -86,6 +86,7 @@
         "elevation": "elevation_simple.csv",
         "lithology": "lithology_simple.csv",
         "river_conductance": "rivers_simple.csv",
+        "ghb_conductance": "ghb_coast_simple.csv",
         "initial_head": "heads_simple.csv"
       }
     }
