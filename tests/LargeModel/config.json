@@ -34,11 +34,11 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 1,
+      "threads": 20,
       "solver": "PCG",
       "iterations": 10,
       "inner_itter": 10,
-      "closing_crit_head": 1e-50,
+      "closing_crit_head": 1e-150,
       "closing_crit_zeta": 1e-8,
       "head_change": 0.1,
       "zeta_change": 0.1,

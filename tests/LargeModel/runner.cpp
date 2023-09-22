@@ -38,14 +38,14 @@ namespace GlobalFlow {
                           sim.getNodes()->at(j)->getLon() << "," <<
                           sim.getNodes()->at(j)->getLat() << "," <<
                           sim.getNodes()->at(j)->getHead().value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(0).value() << "," <<
-                          sim.getNodes()->at(j)->isZetaActive(1) << "," <<
-                          sim.getNodes()->at(j)->getZeta(1).value() << "," <<
-                          sim.getNodes()->at(j)->isZetaActive(2) << "," <<
-                          sim.getNodes()->at(j)->getZeta(2).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(3).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(4).value() << "," <<
-                          sim.getNodes()->at(j)->getZeta(5).value() <<
+                          //sim.getNodes()->at(j)->getZeta(0).value() << "," <<
+                          //sim.getNodes()->at(j)->isZetaActive(1) << "," <<
+                          //sim.getNodes()->at(j)->getZeta(1).value() << "," <<
+                          //sim.getNodes()->at(j)->isZetaActive(2) << "," <<
+                          //sim.getNodes()->at(j)->getZeta(2).value() << "," <<
+                          //sim.getNodes()->at(j)->getZeta(3).value() << "," <<
+                          //sim.getNodes()->at(j)->getZeta(4).value() << "," <<
+                          //sim.getNodes()->at(j)->getZeta(5).value() <<
                           std::endl;
             }
 
@@ -64,7 +64,7 @@ namespace GlobalFlow {
         // For node infos:
         std::ofstream myfile;
         myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,lon,lat,hasGHB,effPor,elevation,initial_head,zeta0,zeta1,zeta2,zeta3,zeta4,zeta5" << std::endl;
+        myfile << "nodeID,lon,lat,hasGHB,effPor,elevation,initial_head" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             std::string neighboursStr;
@@ -92,13 +92,7 @@ namespace GlobalFlow {
                    //sim.getNodes()->at(j)->getExternalFlowBottom(Model::RIVER_MM).value() << "," <<
                    //sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM).value() << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
-                   sim.getNodes()->at(j)->getHead().value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(0).value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(1).value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(2).value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(3).value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(4).value() << "," <<
-                   sim.getNodes()->at(j)->getZeta(5).value() <<
+                   sim.getNodes()->at(j)->getHead().value() <<
                    std::endl;
         }
         myfile.close();

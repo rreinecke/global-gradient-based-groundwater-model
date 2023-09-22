@@ -5,17 +5,20 @@
       "number_of_nodes_per_layer": 50,
       "lon_range": 1,
       "lat_range": 50,
-      "is_global": false,
+      "is_global": "false",
       "resolution": 1,
       "edge_length_left_right": 1,
       "edge_length_front_back": 5,
-      "threads": 20,
       "layers": 1,
-      "use_efolding": false,
+      "use_efolding": "false",
       "confinement": [
         "true"
       ],
       "grid_refined": "false",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
       "density_variable": "true",
       "density_zones": [
         1000.0,
@@ -25,13 +28,10 @@
       "max_toe_slope": 0.2,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
-      "vdf_lock": 0.001,
-      "cache": "false",
-      "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
-      "sensitivity": "false"
+      "vdf_lock": 0.001
     },
     "numerics": {
+      "threads": 20,
       "solver": "PCG",
       "iterations": 5000,
       "inner_itter": 30,

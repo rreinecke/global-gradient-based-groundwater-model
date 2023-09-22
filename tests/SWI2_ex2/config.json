@@ -3,20 +3,22 @@
     "model_config": {
       "nodes": "grid_swi2_ex2.csv",
       "number_of_nodes_per_layer": 60,
-      "lon_range": 1,
-      "lat_range": 60,
-      "is_global": false,
-      "resolution": 1,
-      "number_of_cols": 1,
+      "x_range": 1,
+      "y_range": 60,
+      "is_global": "false",
+      "resolution_in_degree": 1,
       "edge_length_left_right": 1,
       "edge_length_front_back": 5,
-      "threads": 20,
       "layers": 1,
-      "use_efolding": false,
+      "use_efolding": "false",
       "confinement": [
         "true"
       ],
       "grid_refined": "false",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
       "density_variable": "true",
       "density_zones": [
         1000,
@@ -27,20 +29,17 @@
       "max_toe_slope": 0.2,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
-      "vdf_lock": 0.001,
-      "cache": "false",
-      "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
-      "sensitivity": "false"
+      "vdf_lock": 0.001
     },
     "numerics": {
+      "threads": 20,
       "solver": "PCG",
-      "iterations": 5000,
-      "inner_itter": 30,
-      "closing_crit_head": 1E-80,
+      "iterations": 30,
+      "inner_itter": 60,
+      "closing_crit_head": 1E-20,
       "closing_crit_zeta": 1E-8,
-      "head_change": 1,
-      "zeta_change": 0.001,
+      "head_change": 0.1,
+      "zeta_change": 0.1,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

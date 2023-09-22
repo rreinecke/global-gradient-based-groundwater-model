@@ -192,15 +192,16 @@ namespace GlobalFlow {
         quantity<MeterSquaredPerTime> FluidMechanics::getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
                                                               t_s_meter storageCapacity,
                                                               quantity<MeterSquaredPerTime> P) noexcept {
-            if (steadyState)
-                // LOG(numerics) << "HCOF for steady state sim. (= P) (in getHCOF): " << P.value() << std::endl;
+            if (steadyState) {
+                // LOG(debug) << "HCOF for steady state sim. (= P) (in getHCOF): " << P.value() << std::endl;
                 return P;
-            quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
-            //LOG(debug) << "P = " << P.value() << std::endl;
-            //LOG(debug) << "storageCapacity = " << storageCapacity.value() << std::endl;
-            //LOG(debug) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
-            NANChecker(out.value(), "HCOF");
-            return out;
+            } else {
+                quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
+                //LOG(debug) << "P = " << P.value() << std::endl;
+                //LOG(debug) << "storageCapacity = " << storageCapacity.value() << std::endl;
+                //LOG(debug) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
+                NANChecker(out.value(), "HCOF");
+                return out;}
         }
     }
 }//ns

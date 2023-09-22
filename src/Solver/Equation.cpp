@@ -390,19 +390,14 @@ Equation::solve() {
 
     while (iterations < IITER) {
         LOG(numerics) << "Outer iteration: " << iterations;
-        //LOG(debug) << "x (before outer iteration " << iterations << "):\n" << x << std::endl;
-
         //Solve inner iterations
         x = cg.solveWithGuess(b, x);
-        //LOG(debug) << "b (Outer iteration " << iterations << "):\n" << b << std::endl;
-        //LOG(debug) << "x (Outer iteration " << iterations << "):\n" << x << std::endl;
-
         updateIntermediateHeads();
 
         int innerItter{0};
         innerItter = cg.iterations();
         if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergence criterion to small - no iterations";
+            LOG(numerics) << "convergence criterion to small - solution found without iterations";
             break;
         }
 
@@ -493,6 +488,7 @@ Equation::solve() {
  */
 void
 Equation::solve_zetas(){
+    updateZetas_TZero();
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
@@ -636,8 +632,6 @@ Equation::solve_zetas(){
     adjustZetaHeights();
 
     updateVDFBudget();
-
-    updateZetas_TZero();
 }
 
 

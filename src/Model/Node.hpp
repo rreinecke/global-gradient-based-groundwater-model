@@ -991,15 +991,17 @@ Calculate
             }
 
             t_c_meter getTipToeTrackingZoneChange(bool in) {
+                t_c_meter result = 0 * si::cubic_meters;
                 t_c_meter tttOut = getZoneChange(false) - get<t_c_meter, ZCHG_OUT>();
                 t_c_meter tttIn = getZoneChange(true) - get<t_c_meter, ZCHG_IN>();
-                t_c_meter tttBalance = tttIn + tttOut; // inflow is positive, outflow is negative
                 if (in) {
-                    if (tttBalance.value() > 0) { return tttBalance; }
+                    if (tttOut.value() > 0) { result += tttOut; }
+                    if (tttIn.value() > 0) { result += tttIn; }
                 } else {
-                    if (tttBalance.value() < 0) { return tttBalance; }
+                    if (tttOut.value() < 0) { result += tttOut; }
+                    if (tttIn.value() < 0) { result += tttIn; }
                 }
-                return 0 * si::cubic_meters;
+                return result;
             }
 
             /**
@@ -1011,8 +1013,8 @@ Calculate
                 t_c_meter vdfIn = getVDF_IN();
 
                 // add current zone change before tip toe tracking
-                vdfOut = getZCHG_OUT();
-                vdfIn = getZCHG_IN();
+                vdfOut += getZCHG_OUT();
+                vdfIn += getZCHG_IN();
 
                 // add current instantaneous mixing budget
                 vdfOut += getInstantaneousMixing(false);
@@ -2484,7 +2486,7 @@ Calculate
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getEffectivePorosity()); //  * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getEffectivePorosity()); // * get<t_dim, StepModifier>()
                                     //LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);

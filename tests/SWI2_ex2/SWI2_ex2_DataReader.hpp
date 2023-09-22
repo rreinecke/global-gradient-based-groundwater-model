@@ -22,12 +22,12 @@ namespace GlobalFlow {
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
 
-                LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeIDs(),
                                               op.getResolution(),
-                                              op.getLonRange(),
-                                              op.getLatRange(),
+                                              op.getXRange(),
+                                              op.getYRange(),
                                               op.isGlobal(),
                                               op.getNumberOfLayers(),
                                               op.getNumberOfNodesPerLayer(),
