@@ -1936,7 +1936,7 @@ Calculate
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (getEffectivePorosity() * get<t_s_meter, Area>()) /
-                                  (day); // * get<t_dim, StepModifier>()
+                                  (day * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -2478,7 +2478,7 @@ Calculate
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop.value() > 0 and at(top)->getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top) * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
@@ -2486,7 +2486,7 @@ Calculate
                                 // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getEffectivePorosity()); // * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getEffectivePorosity() * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
                                     //LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);
