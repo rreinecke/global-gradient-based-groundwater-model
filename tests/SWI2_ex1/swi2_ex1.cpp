@@ -49,7 +49,7 @@ void StandaloneRunner::simulate() {
         LOG(userinfo) << "Running steady state step " << stepNumber;
 
         if (stepNumber == 1) {
-            //step.first->toggleSteadyState();
+            step.first->toggleSteadyState();
         }
         step.first->solve();
         sim.printMassBalances(debug);

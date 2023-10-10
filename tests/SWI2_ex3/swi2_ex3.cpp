@@ -46,15 +46,15 @@ void StandaloneRunner::writeNodeInfosToCSV(){
 
 void StandaloneRunner::simulate() {
     LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 5);
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     int stepNumber{1};
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState(); // turn steady state on
+        //step.first->toggleSteadyState(); // turn steady state on
         step.first->solve(); // solve equations
         sim.printMassBalances(debug);
-        step.first->toggleSteadyState(); // turn steady state off
+        //step.first->toggleSteadyState(); // turn steady state off
         ++stepNumber;
     }
 
@@ -69,13 +69,13 @@ void StandaloneRunner::simulate() {
     }
 
     LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 5);
+    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState();
+        //step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
-        step.first->toggleSteadyState();
+        //step.first->toggleSteadyState();
         ++stepNumber;
     }
 

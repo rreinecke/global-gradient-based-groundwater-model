@@ -53,7 +53,7 @@
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
-        "initial_zetas_as_array": "true",
+        "initial_zetas_as_array": "false",
         "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
