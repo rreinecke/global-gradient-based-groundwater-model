@@ -850,31 +850,82 @@ namespace GlobalFlow {
             }
         };
 
-        void readInitialZetas(large_num numberOfNodesPerLayer, int numberOfLayers, const std::string& path,
-                              std::vector<std::string> files) {
+        void initializeZetas(large_num numberOfNodes){
             double topOfNode;
             double bottomOfNode;
 
             // add zeta surfaces to top and bottom of each node
-            large_num numberOfNodes = numberOfNodesPerLayer * numberOfLayers;
-            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter){
+            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
                 topOfNode = nodes->at(nodeIter)->getElevation().value();
                 bottomOfNode = nodes->at(nodeIter)->getBottom().value();
 
                 nodes->at(nodeIter)->addZeta(0, topOfNode * Model::si::meter);
                 nodes->at(nodeIter)->addZeta(1, bottomOfNode * Model::si::meter);
             }
+        }
+
+        /**
+         * @brief Compute initial density surfaces using Ghyben-Herzberg relation for interface
+         * @param numberOfLayers Number of layers in model
+         * @param numberOfNodesPerLayer Number of nodes per layer
+         * @param maxDistance Maximum distance from the Ghyben-Herzberg line
+         * @param densityZones Density in density zones (from fresh to saline)
+         * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
+         */
+        void setInitialZetas(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
+                             std::vector<double> densityZones) {
+            double initial_head{};
+            double zetaGhybenHerzberg{};
+            double minDensity = densityZones.front();
+            double maxDensity = densityZones.back();
+            double meanDensity = (maxDensity + minDensity) * 0.5;
+            double maxDifDensity = (maxDensity - minDensity) * 0.5; // calculate maximum difference from mean to min/max
+            double zeta{};
+            std::vector<double> zetaDeltas;
+
+            large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
+            initializeZetas(numberOfNodes); // initialize zeta surface at top and bottom
+
+            for (int localZetaID = 0; localZetaID < densityZones.size(); ++localZetaID) {
+                zetaDeltas.push_back( ((meanDensity - densityZones[localZetaID]) / maxDifDensity) * maxDistance );
+                //LOG(debug) << "zetaDeltas[localZetaID = " << localZetaID << "]: " << zetaDeltas[localZetaID];
+            }
+            // loop through nodes
+            for (large_num nodeID = 0; nodeID < numberOfNodes; ++nodeID) {
+                initial_head = nodes->at(nodeID)->getHead().value();
+                // use Ghyben-Herzberg relation to derive zeta surface elevation
+                zetaGhybenHerzberg = - (minDensity / (maxDensity - minDensity)) * initial_head;
+                //LOG(debug) << "zetaGhybenHerzberg: " << zetaGhybenHerzberg << ", head: " << initial_head;
+
+                for (int localZetaID = 1; localZetaID < densityZones.size() - 1; ++localZetaID){
+                    zeta = zetaGhybenHerzberg + zetaDeltas[localZetaID];
+                    //LOG(debug) << "zeta[localZetaID = " << localZetaID << "]: " << zeta;
+                    nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
+                }
+            }
+        }
+
+        /**
+         * @brief Read initial data for density surface height ("zeta") from files
+         * @param numberOfLayers Number of layers in model
+         * @param path Path to files
+         * @param files Vector of file names
+         */
+        void readInitialZetas(int numberOfLayers, large_num numberOfNodesPerLayer,
+                              const std::string& path, std::vector<std::string> files) {
+
+            large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
+            initializeZetas(numberOfNodes); // initialize zeta surface at top and bottom
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
                 int localZetaID{0};
-                large_num refID{0};
                 large_num spatID{0};
                 std::unordered_map<large_num, large_num> nodeIDs;
                 double zeta{0};
 
+                // loop through layers
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
-
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(path);
                     inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
 

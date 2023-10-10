@@ -122,8 +122,8 @@ namespace GlobalFlow {
             }
             EFOLDING = getOptional("e-folding", data);
 
-            bool initialZetasAsArray = data_config.get<bool>("initial_zetas_as_array");
-            if (initialZetasAsArray){
+            INITIAL_ZETAS_AS_ARRAY = data_config.get<bool>("initial_zetas_as_array");
+            if (INITIAL_ZETAS_AS_ARRAY){
                 INITIAL_ZETAS_a = getArray("Zetas", data.get_child("zetas"));
             }
             INITIAL_ZETAS = getOptional("zetas", data);

@@ -107,11 +107,11 @@ namespace GlobalFlow {
             double VDF_LOCK{0.001};
             std::vector<int> ZONES_SOURCES_SINKS{0};
 
-            std::string BASE_PATH{"data"};
             bool k_from_file{false};
             bool k_ghb_from_file{false};
             bool specificstorage_from_file{false};
             bool specificyield_from_file{false};
+            bool INITIAL_ZETAS_AS_ARRAY{false};
             bool k_river_from_file{false};
             bool aquifer_depth_from_file{false};
             bool eq_wtd_from_file{false};
@@ -189,6 +189,8 @@ namespace GlobalFlow {
             bool isEffectivePorosityFromFile() { return effective_porosity_from_file;}
 
             bool isZonesSourcesSinksFromFile() { return zones_sources_sinks_from_file;}
+
+            bool isInitialZetasAsArray(){ return INITIAL_ZETAS_AS_ARRAY; }
 
             std::string getKDir() { return K_DIR; }
 
@@ -303,10 +305,6 @@ namespace GlobalFlow {
             getSolverName() {
                 return SOLVER;
             }
-
-            //std::string getBasePath() {
-            //    return BASE_PATH;
-            //}
 
             std::string
             getNodesDir() {

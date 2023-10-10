@@ -1485,7 +1485,7 @@ Calculate
                 // set zetas and zetasChange vectors, if zetas vector is sorted
                 for (int zetaID = 0; zetaID < zetas.size() - 1; ++zetaID) {
                     if (zetas[zetaID] < zetas[zetaID+1]) {
-                        LOG(userinfo) << "zeta at ID:" << zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
+                        LOG(userinfo) << "At nodeID " << getID() << ": zeta at ID= " << zetaID << ":" << zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
                         throw "Vector of zetas needs to be sorted!";
                     }
                 }
