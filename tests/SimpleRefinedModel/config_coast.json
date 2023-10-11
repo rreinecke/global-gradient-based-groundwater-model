@@ -2,9 +2,9 @@
   "config": {
     "model_config": {
       "nodes": "grid_coast_simpleRefined.csv",
-      "number_of_nodes_per_layer": 130,
+      "number_of_nodes_per_layer": 125,
       "x_range": 10,
-      "y_range": 10,
+      "y_range": 4,
       "is_global": "false",
       "resolution_in_degree": 1,
       "edge_length_left_right": 0,

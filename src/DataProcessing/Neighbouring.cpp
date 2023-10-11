@@ -143,7 +143,7 @@ defineMapOutside(large_num refinedInto) {
         mapOutside = { { Model::FRONT, { {1, 3}, {2, 4} } },
                        { Model::BACK,  { {3, 1}, {4, 2} } },
                        { Model::RIGHT, { {2, 1}, {4, 3} } },
-                       { Model::LEFT,  { {1, 2}, {3, 4} } } }; // mapping of neighbour position to refIDs
+                       { Model::LEFT,  { {1, 2}, {3, 4} } } };
     } else if (refinedInto == 9) {
         /*
          *                   7  8  9  FRONT (neig)
@@ -161,7 +161,26 @@ defineMapOutside(large_num refinedInto) {
         mapOutside = { { Model::FRONT, { {1, 7}, {2, 8}, {3, 9}} },
                        { Model::BACK,  { {7, 1}, {8, 2}, {9, 3} } },
                        { Model::RIGHT, { {3, 1}, {6, 4}, {9, 7}} },
-                       { Model::LEFT,  { {1, 3}, {4, 6}, {7, 9}} } }; // mapping of neighbour position to refIDs
+                       { Model::LEFT,  { {1, 3}, {4, 6}, {7, 9}} } };
+    } else if (refinedInto == 16) {
+        /*
+         *                   13 14 15 16 FRONT (neig)
+         *                   /\ /\ /\ /\
+         *                   || || || ||
+         *              4 <=  1  2  3  4 =>  1
+         * LEFT (neig)  8 <=  5  6  7  8 =>  5  RIGHT (neig)
+         *                     (this)
+         *             12 <=  9 10 11 12 =>  9
+         *             16 <= 13 14 15 16 => 13
+         *                   || || || ||
+         *                   \/ \/ \/ \/
+         *                    1  2  3  4 BACK (neig)
+         *
+         */
+        mapOutside = { { Model::FRONT, { {1, 13}, {2, 14}, {3, 15}, {4, 16}  } },
+                       { Model::BACK,  { {13, 1}, {14, 2}, {15, 3}, {16, 4}  } },
+                       { Model::RIGHT, { {4, 1},  {8, 5},  {12, 9}, {16, 13} } },
+                       { Model::LEFT,  { {1, 4},  {5, 8},  {9, 12}, {13, 16} } } };
     }
     return mapOutside;
 }
@@ -177,11 +196,9 @@ defineMapInside(large_num refinedInto) {
     std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>> mapInside;
     if (refinedInto == 4) {
         /*
-         *   1 <=> 2
-         *  /\    /\
-         *  ||    ||
-         *  \/    \/
-         *   3 <=> 4
+         *   1 - 2
+         *   |   |
+         *   3 - 4
          */
         mapInside = { {Model::FRONT, { {3, 1}, {4, 2} } },
                       {Model::BACK,  { {1, 3}, {2, 4} } },
@@ -189,20 +206,34 @@ defineMapInside(large_num refinedInto) {
                       {Model::LEFT,  { {2, 1}, {4, 3} } } };
     } else if (refinedInto == 9) {
         /*
-         *   1 <=> 2 <=> 3
-         *  /\    /\    /\
-         *  ||    ||    ||
-         *  \/    \/    \/
-         *   4 <=> 5 <=> 6
-         *  /\    /\    /\
-         *  ||    ||    ||
-         *  \/    \/    \/
-         *   7 <=> 8 <=> 9
+         *   1 - 2 - 3
+         *   |   |   |
+         *   4 - 5 - 6
+         *   |   |   |
+         *   7 - 8 - 9
          */
         mapInside = { {Model::FRONT, { {4, 1}, {5, 2}, {6, 3}, {7, 4}, {8, 5}, {9, 6} } },
                       {Model::BACK,  { {1, 4}, {2, 5}, {3, 6}, {4, 7}, {5, 8}, {6, 9} } },
                       {Model::RIGHT, { {1, 2}, {2, 3}, {4, 5}, {5, 6}, {7, 8}, {8, 9} } },
                       {Model::LEFT,  { {2, 1}, {3, 2}, {5, 4}, {6, 5}, {8, 7}, {9, 8} } } };
+    } else if (refinedInto == 16) {
+        /*
+         *   1 -  2 -  3 -  4
+         *   |    |    |    |
+         *   5 -  6 -  7 -  8
+         *   |    |    |    |
+         *   9 - 10 - 11 - 12
+         *   |    |    |    |
+         *  13 - 14 - 15 - 16
+         */
+        mapInside = { {Model::FRONT, { {5, 1},  {6, 2},   {7, 3},   {8, 4},   {9, 5},   {10, 6},
+                                       {11, 7}, {12, 8},  {13, 9},  {14, 10}, {15, 11}, {16, 12}} },
+                      {Model::BACK,  { {1, 5},  {2, 6},   {3, 7},   {4, 8},   {5, 9},   {6, 10},
+                                       {7, 11}, {8, 12},  {9, 13},  {10, 14}, {11, 15}, {12, 16}} },
+                      {Model::RIGHT, { {1, 2},  {2, 3},   {3, 4},   {5, 6},   {6, 7},   {7, 8},
+                                       {9, 10}, {10, 11}, {11, 12}, {13, 14}, {14, 15}, {15, 16} } },
+                      {Model::LEFT,  { {2, 1},  {3, 2},   {4, 3},   {6, 5},   {7, 6},   {8, 7},
+                                       {10, 9}, {11, 10}, {12, 11}, {14, 13}, {15, 14}, {16, 15}} } };
     }
     return mapInside;
 }

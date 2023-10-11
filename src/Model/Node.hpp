@@ -44,39 +44,64 @@ namespace GlobalFlow {
  * LEFT * RIGHT
  *     DOWN
  *
- *
  * Top view:
  *     FRONT
  * LEFT * RIGHT
  *     BACK
  *
- *  Top view with refinement:
+ *  Top view with refinement into 4:
  *          FRONTLEFT FRONTRIGHT
  * LEFTFRONT      ******        RIGHTFRONT
  *                *node*
  * LEFTBACK       ******        RIGHTBACK
  *          BACKLEFT  BACKRIGHT
  *
+ *  Top view with refinement into 9:
+ *          FRONTLEFT FRONTFRONT FRONTRIGHT
+ * LEFTFRONT           ******              RIGHTFRONT
+ * LEFTLEFT            *node*              RIGHTRIGHT
+ * LEFTBACK            ******              RIGHTBACK
+ *          BACKLEFT  BACKBACK  BACKRIGHT
+ *
+ *  Top view with refinement into 16:
+ *              FRONTLEFT FRONTFRONTLEFT FRONTFRONTRIGHT FRONTRIGHT
+ * LEFTFRONT                        ******                          RIGHTFRONT
+ * LEFTLEFTFRONT                    *node*                          RIGHTRIGHTFRONT
+ * LEFTLEFTBACK                     ******                          RIGHTRIGHTBACK
+ * LEFTBACK                         ******                          RIGHTBACK
+ *              BACKLEFT  BACKBACKLEFT   BACKBACKRIGHT  BACKRIGHT
+ *
  */
         enum NeighbourPosition {
             TOP = 1,
-            DOWN,       // 2
-            RIGHT,      // 3
-            LEFT,       // 4
-            FRONT,      // 5
-            BACK,       // 6
-            RIGHTFRONT, // 7
-            RIGHTBACK,  // 8
-            LEFTFRONT,  // 9
-            LEFTBACK,   // 10
-            FRONTLEFT,  // 11
-            FRONTRIGHT, // 12
-            BACKLEFT,   // 13
-            BACKRIGHT,  // 14
-            RIGHTRIGHT, // 15
-            LEFTLEFT,   // 16
-            FRONTFRONT, // 17
-            BACKBACK    // 18
+            DOWN,               // 2
+            RIGHT,              // 3
+            LEFT,               // 4
+            FRONT,              // 5
+            BACK,               // 6
+            // for refined nodes:
+            RIGHTFRONT,         // 7
+            RIGHTBACK,          // 8
+            LEFTFRONT,          // 9
+            LEFTBACK,           // 10
+            FRONTLEFT,          // 11
+            FRONTRIGHT,         // 12
+            BACKLEFT,           // 13
+            BACKRIGHT,          // 14
+            // for nodes refined into 9:
+            RIGHTRIGHT,         // 15
+            LEFTLEFT,           // 16
+            FRONTFRONT,         // 17
+            BACKBACK,           // 18
+            // for nodes refined into 16:
+            RIGHTRIGHTFRONT,    // 19
+            RIGHTRIGHTBACK,     // 20
+            LEFTLEFTFRONT,      // 21
+            LEFTLEFTBACK,       // 22
+            FRONTFRONTLEFT,     // 23
+            FRONTFRONTRIGHT,    // 24
+            BACKBACKLEFT,       // 25
+            BACKBACKRIGHT       // 26
         };
     }
 }
@@ -1360,6 +1385,28 @@ Calculate
                             {8, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONT} } },
                             {9, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
                                   {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
+                } else if (refinedInto == 16) {
+                    mapRefIdToNeigToRefNeig = {
+                            {1, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKLEFT},
+                                  {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTFRONT} } },
+                            {2, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKLEFT} } },
+                            {3, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKRIGHT} } },
+                            {4, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKRIGHT},
+                                  {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT}} },
+                            {5, { {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTRIGHTFRONT} } },
+                            {6, { {} } }, // has only refined neighbours
+                            {7, { {} } }, // has only refined neighbours
+                            {8, { {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTLEFTFRONT} } },
+                            {9, { {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTRIGHTBACK} } },
+                            {10, { {} } }, // has only refined neighbours
+                            {11, { {} } }, // has only refined neighbours
+                            {12, { {NeighbourPosition::RIGHT, NeighbourPosition::LEFTLEFTBACK} } },
+                            {13, { {NeighbourPosition::BACK, NeighbourPosition::FRONTLEFT},
+                                   {NeighbourPosition::LEFT, NeighbourPosition::RIGHTBACK}} },
+                            {14, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTLEFT} } },
+                            {15, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTRIGHT} } },
+                            {16, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
+                                   {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } }};
                 }
                 return mapRefIdToNeigToRefNeig.at(refID).at(neigPos);
             }
@@ -1367,10 +1414,13 @@ Calculate
             t_vol_t calculateGhostNodeCorrection(const std::forward_list<NeighbourPosition>& possibleRefNeigPos){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 t_meter head = getHead();
+                t_dim multiplierContributor{};
+                t_dim multiplierNodeInner{};
+                t_dim multiplierNodeOuter{};
+
                 large_num refinedInto = getRefinedInto();
                 if (refinedInto == 0) { return out; }
-                t_dim multiplierContributor = (2 / refinedInto) * si::si_dimensionless;
-                t_dim multiplierNode = (1 / refinedInto) * si::si_dimensionless;
+
 
                 for (const auto &position: possibleRefNeigPos) {
                     auto refinedNeig = neighbours.find(position);
@@ -1388,6 +1438,23 @@ Calculate
                             continue; // todo implement impact of GHB here
                         }
 
+                        if (refinedInto == 4 or refinedInto == 9){
+                            multiplierContributor = (2 / refinedInto) * si::si_dimensionless;
+                            multiplierNodeOuter = (1 / refinedInto) * si::si_dimensionless;
+                            multiplierNodeInner = (1 / refinedInto) * si::si_dimensionless;
+                        } else if (refinedInto == 16) {
+                            if (refinedNeig->first > 18) {
+                                multiplierContributor = (4 / refinedInto) * si::si_dimensionless;
+                                multiplierNodeOuter = (3 / refinedInto) * si::si_dimensionless;
+                                multiplierNodeInner = (1 / refinedInto) * si::si_dimensionless;
+                            } else {
+                                multiplierContributor = (4 / refinedInto) * si::si_dimensionless;
+                                multiplierNodeOuter = (1 / refinedInto) * si::si_dimensionless;
+                                multiplierNodeInner = (3 / refinedInto) * si::si_dimensionless;
+                            }
+                        }
+
+
                         t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
                         t_s_meter_t transmissivity_neig =
                                 getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
@@ -1401,13 +1468,13 @@ Calculate
                             contributorConductance = nodeWidth *
                                     ((transmissivity_self * transmissivity_neig)
                                      / (transmissivity_self * at(contributor)->getNodeLength(contributor) * multiplierContributor +
-                                        transmissivity_neig * getNodeLength(contributor) * multiplierNode));
+                                        transmissivity_neig * getNodeLength(contributor) * multiplierNodeOuter));
                         }
 
                         // conductance from this node's center to ghost node inside this node
                         // (if refined into four, distance is a quarter of this node's length (multiplierNode below))
                         nodeConductance = getNodeWidth(contributor) *
-                                          (transmissivity_self / (getNodeLength(contributor) * multiplierNode));
+                                          (transmissivity_self / (getNodeLength(contributor) * multiplierNodeInner));
 
                         // the alpha coefficient is used to weigh influence on ghost node height difference
                         t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
@@ -1428,14 +1495,22 @@ Calculate
             getPotentialContributor(map_itter refinedNeig){ // todo what if contributor(s) are refined?
                 std::unordered_map<NeighbourPosition, NeighbourPosition>
                 mapPotentialContributor = {
-                        {NeighbourPosition::FRONTLEFT,  NeighbourPosition::LEFT},
-                        {NeighbourPosition::BACKLEFT,   NeighbourPosition::LEFT},
-                        {NeighbourPosition::FRONTRIGHT, NeighbourPosition::RIGHT},
-                        {NeighbourPosition::BACKRIGHT,  NeighbourPosition::RIGHT},
-                        {NeighbourPosition::LEFTFRONT,  NeighbourPosition::FRONT},
-                        {NeighbourPosition::RIGHTFRONT, NeighbourPosition::FRONT},
-                        {NeighbourPosition::LEFTBACK,   NeighbourPosition::BACK},
-                        {NeighbourPosition::RIGHTBACK,  NeighbourPosition::BACK},
+                        {NeighbourPosition::FRONTLEFT,       NeighbourPosition::LEFT},
+                        {NeighbourPosition::BACKLEFT,        NeighbourPosition::LEFT},
+                        {NeighbourPosition::FRONTFRONTLEFT,  NeighbourPosition::LEFT},
+                        {NeighbourPosition::BACKBACKLEFT,    NeighbourPosition::LEFT},
+                        {NeighbourPosition::FRONTRIGHT,      NeighbourPosition::RIGHT},
+                        {NeighbourPosition::BACKRIGHT,       NeighbourPosition::RIGHT},
+                        {NeighbourPosition::FRONTFRONTRIGHT, NeighbourPosition::RIGHT},
+                        {NeighbourPosition::BACKBACKRIGHT,   NeighbourPosition::RIGHT},
+                        {NeighbourPosition::LEFTFRONT,       NeighbourPosition::FRONT},
+                        {NeighbourPosition::RIGHTFRONT,      NeighbourPosition::FRONT},
+                        {NeighbourPosition::LEFTLEFTFRONT,   NeighbourPosition::FRONT},
+                        {NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::FRONT},
+                        {NeighbourPosition::LEFTBACK,        NeighbourPosition::BACK},
+                        {NeighbourPosition::RIGHTBACK,       NeighbourPosition::BACK},
+                        {NeighbourPosition::LEFTLEFTBACK,    NeighbourPosition::BACK},
+                        {NeighbourPosition::RIGHTRIGHTBACK,  NeighbourPosition::BACK},
                 };
                 return mapPotentialContributor.at(refinedNeig->first);
             }
@@ -1448,9 +1523,13 @@ Calculate
             std::forward_list<NeighbourPosition>
             getPossibleNeighbours_horizontal_refined() {
                 return {NeighbourPosition::FRONTLEFT,  NeighbourPosition::FRONTFRONT, NeighbourPosition::FRONTRIGHT,
+                        NeighbourPosition::FRONTFRONTLEFT,  NeighbourPosition::FRONTFRONTRIGHT,
                         NeighbourPosition::BACKLEFT,   NeighbourPosition::BACKBACK,  NeighbourPosition::BACKRIGHT,
+                        NeighbourPosition::BACKBACKLEFT,   NeighbourPosition::BACKBACKRIGHT,
                         NeighbourPosition::LEFTFRONT,  NeighbourPosition::LEFTLEFT,  NeighbourPosition::LEFTBACK,
-                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTRIGHT, NeighbourPosition::RIGHTBACK};
+                        NeighbourPosition::LEFTLEFTFRONT,  NeighbourPosition::LEFTLEFTBACK,  NeighbourPosition::LEFTBACK,
+                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTRIGHT, NeighbourPosition::RIGHTBACK,
+                        NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK};
             }
 
             static std::forward_list<NeighbourPosition>
