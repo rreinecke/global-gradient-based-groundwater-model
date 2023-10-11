@@ -72,7 +72,11 @@ namespace GlobalFlow {
             FRONTLEFT,  // 11
             FRONTRIGHT, // 12
             BACKLEFT,   // 13
-            BACKRIGHT   // 14
+            BACKRIGHT,  // 14
+            RIGHTRIGHT, // 15
+            LEFTLEFT,   // 16
+            FRONTFRONT, // 17
+            BACKBACK    // 18
         };
     }
 }
@@ -1281,7 +1285,7 @@ Calculate
             t_vol_t getGNCFromUnrefinedNodes(){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
-                if (get<large_num, RefID>() > 0) { return out;} // todo change if refinement gets additional levels
+                if (getRefinedInto() > 0) { return out;}
 
                 std::forward_list<NeighbourPosition> possibleRefinedNeighbours =
                         getPossibleNeighbours_horizontal_refined();
@@ -1298,7 +1302,7 @@ Calculate
              */
             t_vol_t getGNCToRefinedNode(){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-
+                large_num refinedInto = getRefinedInto();
                 if (get<large_num, RefID>() == 0) { return out;}
 
                 // get neighbours at left, right, front or back
@@ -1310,7 +1314,8 @@ Calculate
                         // if neighbour is unrefined
                         if (at(neig)->get<large_num, RefID>() == 0) {
                             // get the refined neighbour position this node has relative to that unrefined neighbour
-                            NeighbourPosition thisNode = getRefNeigPosToUnrefNeig(get<large_num, RefID>(), neigPos);
+                            NeighbourPosition thisNode = getRefNeigPosToUnrefNeig(get<large_num, RefID>(), neigPos,
+                                                                                  refinedInto);
 
                             out += at(neig)->calculateGhostNodeCorrection({thisNode});
                         }
@@ -1320,17 +1325,17 @@ Calculate
             }
 
             /**
-             * @brief Get the refined neighbour position for an unrefined node
-             * @param refID
-             * @param neigPos
+             * @brief Get the refined neighbour position this node has relative to that unrefined neighbour
+             * @param refID refinement Identifier
+             * @param neigPos neighbour position
+             * @param refinedInto number of nodes the original cell is split into
              * @return
              */
-            NeighbourPosition getRefNeigPosToUnrefNeig(large_num refID, NeighbourPosition neigPos){
-                auto refinedInto = getRefinedInto();
+            NeighbourPosition getRefNeigPosToUnrefNeig(large_num refID, NeighbourPosition neigPos,
+                                                       large_num refinedInto){
                 std::unordered_map<large_num, std::unordered_map<NeighbourPosition, NeighbourPosition>>
                 mapRefIdToNeigToRefNeig;
-                LOG(debug) << "refinedInto: " << refinedInto;
-                if (refinedInto == 4){
+                if (refinedInto == 4) {
                     mapRefIdToNeigToRefNeig = {
                             {1, { {NeighbourPosition::FRONT, NeighbourPosition::BACKLEFT},
                                   {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
@@ -1340,28 +1345,32 @@ Calculate
                                   {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
                             {4, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
                                   {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
+                } else if (refinedInto == 9) {
+                    mapRefIdToNeigToRefNeig = {
+                            {1, { {NeighbourPosition::FRONT, NeighbourPosition::BACKLEFT},
+                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
+                            {2, { {NeighbourPosition::FRONT, NeighbourPosition::BACKBACK} } },
+                            {3, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKRIGHT},
+                                  {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT} } },
+                            {4, { {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTRIGHT} } },
+                            {5, { {} } }, // has only refined neighbours
+                            {6, { {NeighbourPosition::RIGHT, NeighbourPosition::LEFTLEFT} } },
+                            {7, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTLEFT},
+                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
+                            {8, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONT} } },
+                            {9, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
+                                  {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
                 }
-                /*if (refID == 1){
-                    if (neigPos == NeighbourPosition::FRONT) { return NeighbourPosition::BACKLEFT;}
-                    if (neigPos == NeighbourPosition::LEFT) { return NeighbourPosition::RIGHTFRONT;}
-                } else if (refID == 2){
-                    if (neigPos == NeighbourPosition::FRONT) { return NeighbourPosition::BACKRIGHT;}
-                    if (neigPos == NeighbourPosition::RIGHT) { return NeighbourPosition::LEFTFRONT;}
-                } else if (refID == 3){
-                    if (neigPos == NeighbourPosition::BACK) { return NeighbourPosition::FRONTLEFT;}
-                    if (neigPos == NeighbourPosition::LEFT) { return NeighbourPosition::RIGHTBACK;}
-                } else if (refID == 4){
-                    if (neigPos == NeighbourPosition::BACK) { return NeighbourPosition::FRONTRIGHT;}
-                    if (neigPos == NeighbourPosition::RIGHT) { return NeighbourPosition::LEFTBACK;}
-                } else {
-                    throw "invalid refID";
-                }*/
                 return mapRefIdToNeigToRefNeig.at(refID).at(neigPos);
             }
 
             t_vol_t calculateGhostNodeCorrection(const std::forward_list<NeighbourPosition>& possibleRefNeigPos){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 t_meter head = getHead();
+                large_num refinedInto = getRefinedInto();
+                if (refinedInto == 0) { return out; }
+                t_dim multiplierContributor = (2 / refinedInto) * si::si_dimensionless;
+                t_dim multiplierNode = (1 / refinedInto) * si::si_dimensionless;
 
                 for (const auto &position: possibleRefNeigPos) {
                     auto refinedNeig = neighbours.find(position);
@@ -1376,7 +1385,7 @@ Calculate
 
                         auto contributor = neighbours.find(getPotentialContributor(refinedNeig)); // contributor is named "j" in USG documentation
                         if (contributor == neighbours.end()) { // at model boundary: no contributor
-                            continue;
+                            continue; // todo implement impact of GHB here
                         }
 
                         t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
@@ -1388,17 +1397,17 @@ Calculate
                             t_meter nodeWidth = std::min(getNodeWidth(contributor),
                                                          at(contributor)->getNodeWidth(contributor));
                             // conductance from contributor node to ghost node
-                            // (includes half of contributor node (0.5 below) and quarter of this node (0.25 below))
+                            // if refined into four, contributor multiplier is 0.5, multiplier for this node is 0.25
                             contributorConductance = nodeWidth *
                                     ((transmissivity_self * transmissivity_neig)
-                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) * 0.5 +
-                                        transmissivity_neig * getNodeLength(contributor) * 0.25));
+                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) * multiplierContributor +
+                                        transmissivity_neig * getNodeLength(contributor) * multiplierNode));
                         }
 
                         // conductance from this node's center to ghost node inside this node
-                        // (distance is a quarter of this node's length (0.25 below))
+                        // (if refined into four, distance is a quarter of this node's length (multiplierNode below))
                         nodeConductance = getNodeWidth(contributor) *
-                                          (transmissivity_self / (getNodeLength(contributor) * 0.25));
+                                          (transmissivity_self / (getNodeLength(contributor) * multiplierNode));
 
                         // the alpha coefficient is used to weigh influence on ghost node height difference
                         t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
@@ -1417,24 +1426,18 @@ Calculate
 
             static NeighbourPosition
             getPotentialContributor(map_itter refinedNeig){ // todo what if contributor(s) are refined?
-                if (refinedNeig->first == NeighbourPosition::FRONTLEFT or
-                        refinedNeig->first == NeighbourPosition::BACKLEFT) {
-                    return NeighbourPosition::LEFT;
-                }
-                else if (refinedNeig->first == NeighbourPosition::FRONTRIGHT or
-                        refinedNeig->first == NeighbourPosition::BACKRIGHT) {
-                    return NeighbourPosition::RIGHT;
-                }
-                else if (refinedNeig->first == NeighbourPosition::LEFTFRONT or
-                        refinedNeig->first == NeighbourPosition::RIGHTFRONT) {
-                    return NeighbourPosition::FRONT;
-                }
-                else if (refinedNeig->first == NeighbourPosition::LEFTBACK or
-                        refinedNeig->first == NeighbourPosition::RIGHTBACK) {
-                    return NeighbourPosition::BACK;
-                } else {
-                    throw "No contributor found for ghost node correction";
-                }
+                std::unordered_map<NeighbourPosition, NeighbourPosition>
+                mapPotentialContributor = {
+                        {NeighbourPosition::FRONTLEFT,  NeighbourPosition::LEFT},
+                        {NeighbourPosition::BACKLEFT,   NeighbourPosition::LEFT},
+                        {NeighbourPosition::FRONTRIGHT, NeighbourPosition::RIGHT},
+                        {NeighbourPosition::BACKRIGHT,  NeighbourPosition::RIGHT},
+                        {NeighbourPosition::LEFTFRONT,  NeighbourPosition::FRONT},
+                        {NeighbourPosition::RIGHTFRONT, NeighbourPosition::FRONT},
+                        {NeighbourPosition::LEFTBACK,   NeighbourPosition::BACK},
+                        {NeighbourPosition::RIGHTBACK,  NeighbourPosition::BACK},
+                };
+                return mapPotentialContributor.at(refinedNeig->first);
             }
 
             static std::forward_list<NeighbourPosition>
@@ -1442,12 +1445,12 @@ Calculate
                 return {NeighbourPosition::TOP, NeighbourPosition::DOWN};
             }
 
-            static std::forward_list<NeighbourPosition>
+            std::forward_list<NeighbourPosition>
             getPossibleNeighbours_horizontal_refined() {
-                return {NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT, // for refined nodes
-                        NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
-                        NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
-                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK};
+                return {NeighbourPosition::FRONTLEFT,  NeighbourPosition::FRONTFRONT, NeighbourPosition::FRONTRIGHT,
+                        NeighbourPosition::BACKLEFT,   NeighbourPosition::BACKBACK,  NeighbourPosition::BACKRIGHT,
+                        NeighbourPosition::LEFTFRONT,  NeighbourPosition::LEFTLEFT,  NeighbourPosition::LEFTBACK,
+                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTRIGHT, NeighbourPosition::RIGHTBACK};
             }
 
             static std::forward_list<NeighbourPosition>
@@ -1456,14 +1459,14 @@ Calculate
                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
             }
 
-            static std::forward_list<NeighbourPosition>
+            std::forward_list<NeighbourPosition>
             getPossibleNeighbours_horizontal(){
                 std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_LRFB();
                 possiblePositions.merge(getPossibleNeighbours_horizontal_refined());
                 return possiblePositions;
             }
 
-            static std::forward_list<NeighbourPosition>
+            std::forward_list<NeighbourPosition>
             getPossibleNeighbours(){
                 std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_vertical();
                 possiblePositions.merge(getPossibleNeighbours_horizontal());
@@ -2984,6 +2987,8 @@ Calculate
                 if(useGhostNodeCorrection) {
                     gncFromUnrefined = getGNCFromUnrefinedNodes();
                     gncToRefined = getGNCToRefinedNode();
+                    LOG(debug) << "gncFromUnrefined: " << gncFromUnrefined.value() << std::endl;
+                    LOG(debug) << "gncToRefined: " << gncToRefined.value() << std::endl;
                 }
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + gncFromUnrefined +

@@ -65,11 +65,11 @@ void buildBySpatID(NodeVector nodes,
     for (large_num nodeIDTopLayer = 0; nodeIDTopLayer < numberOfNodesPerLayer; ++nodeIDTopLayer) {
         spatID = nodes->at(nodeIDTopLayer)->getSpatID();
         refID = nodes->at(nodeIDTopLayer)->getRefID();
-
-        large_num refinedInto = spatIDtoNodeIDs.at(spatID).at(0).size(); // layer = 0
-        nodes->at(nodeIDTopLayer)->getProperties().set<large_num, Model::RefinedInto>(refinedInto);
         for (int layer = 0; layer < layers; ++layer) {
             nodeID = nodeIDTopLayer + (numberOfNodesPerLayer * layer);
+            large_num refinedInto = spatIDtoNodeIDs.at(spatID).at(layer).size();
+            nodes->at(nodeID)->getProperties().set<large_num, Model::RefinedInto>(refinedInto);
+            //LOG(debug) << "nodeID:" << nodeID << ", refinedInto: " << refinedInto;
             for (int neigPosID = 0; neigPosID < neigPositions.size(); ++neigPosID) {
                 neigPos = neigPositions[neigPosID];
                 if (refID == 0) { // #### set neighbour(s) of unrefined node
@@ -334,7 +334,6 @@ void buildBottomLayers(NodeVector nodes,
     double specificStorage;
     bool useEfolding;
     large_num refID;
-    large_num refinedInto;
     bool densityVariable;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
@@ -368,7 +367,6 @@ void buildBottomLayers(NodeVector nodes,
                             Model::SpecificStorage>().value();
             useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
             refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
-            refinedInto = nodes->at(i)->getProperties().get<large_num, Model::RefinedInto>();
             densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
             delnus = nodes->at(i)->getProperties().
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
@@ -421,7 +419,6 @@ void buildBottomLayers(NodeVector nodes,
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()
                         - (aquiferDepth * Model::si::meter));
-                nodes->at(id)->getProperties().set<large_num, Model::RefinedInto>(refinedInto);
             }
             //2) Neighbouring for top and bottom
             nodes->at(id)->setNeighbour(i + (layer * nodesPerLayer), Model::TOP);
