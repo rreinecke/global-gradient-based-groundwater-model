@@ -9,7 +9,7 @@ void StandaloneRunner::loadSettings() {
 }
 
 void StandaloneRunner::setupSimulation() {
-    reader = new DataProcessing::SimpleDataReader();
+    reader = new DataProcessing::SimpleRefinedDataReader();
     sim = Simulation::Simulation(op, reader);
     _eq = sim.getEquation();
 }

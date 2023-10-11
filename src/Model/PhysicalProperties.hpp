@@ -180,6 +180,7 @@ namespace GlobalFlow {
         struct NusInZones;
         struct RefinementLevel;
         struct RefID;
+        struct RefinedInto;
         struct DensityVariable;
         struct MaxTipSlope;
         struct MaxToeSlope;
@@ -231,6 +232,7 @@ namespace GlobalFlow {
             PhysicalProperty<t_dim, EffectivePorosity>,
             PhysicalProperty<int, RefinementLevel>,
             PhysicalProperty<large_num, RefID>,
+            PhysicalProperty<large_num, RefinedInto>,
             PhysicalProperty<bool, DensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,

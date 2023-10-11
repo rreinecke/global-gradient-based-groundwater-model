@@ -7,9 +7,9 @@ namespace GlobalFlow {
 namespace DataProcessing {
 
 
-class SimpleDataReader : public DataReader {
+class SimpleRefinedDataReader : public DataReader {
     public:
-        SimpleDataReader() = default;
+    SimpleRefinedDataReader() = default;
 
         void readData(Simulation::Options op) override {
             LOG(userinfo) << "Building the initial model layer";

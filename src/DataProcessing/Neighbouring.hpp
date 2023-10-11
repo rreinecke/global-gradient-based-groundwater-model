@@ -51,24 +51,35 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, large_num nodesPerLayer, in
 void buildBySpatID(NodeVector nodes,
                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
                    double resolution,
-                   int lonRange, int latRange, bool isGlobal,
+                   large_num xRange, large_num yRange, bool isGlobal,
                    int layers, large_num numberOfNodesPerLayer,
                    double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition);
 
-std::unordered_map<int, Model::NeighbourPosition> setNeighbourPositions();
-
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-int getNeighbourSpatID(int spatID, int j, double res, int lonRange, int latRange, bool isGlobal);
+int getNeighbourSpatID(int spatID, Model::NeighbourPosition neigPos, double res, large_num xRange, large_num yRange,
+                       bool isGlobal);
 
 void addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
                  large_num nodeID, int layer, bool isGlobal);
 
-void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, int j, double resolution,
-                      int lonRange, int latRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
-                      std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                      double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition);
+void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+                          large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
+                          std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                          double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition);
+
+std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
+defineMapOutside(large_num refinedInto);
+
+std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
+defineMapInside(large_num refinedInto);
+
+void setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+                                    large_num xRange, large_num yRange, bool isGlobal, large_num nodeID, int layer,
+                                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                                    double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
+                                    large_num ref_id_neig, Model::NeighbourPosition neighbourPosition);
 
     /**
 * Builds a map of neighbouring nodes based on x and y coordinates

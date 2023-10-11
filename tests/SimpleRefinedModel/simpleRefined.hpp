@@ -55,7 +55,7 @@ namespace GlobalFlow {
         Solver::Equation *_eq;
         Simulation::Options op;
         Simulation::Simulation sim;
-        DataProcessing::SimpleDataReader *reader;
+        DataProcessing::SimpleRefinedDataReader *reader;
     };
 
 }//ns
