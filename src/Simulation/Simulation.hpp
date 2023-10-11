@@ -260,8 +260,8 @@ namespace GlobalFlow {
                     out = out + fun1(j);
                     in = in + fun2(j);
                 }
-                if (abs(in - out) > 0.00001) {
-                    error = ((100 * (in - out)) / ((in + out) / 2));
+                if (abs(in - abs(out)) > 0.00001) {
+                    error = ((100 * (in - abs(out))) / ((in + abs(out)) / 2));
                 }
                 MassError err(out, in, error);
                 return err;

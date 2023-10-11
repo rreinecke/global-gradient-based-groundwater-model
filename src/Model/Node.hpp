@@ -1030,6 +1030,10 @@ Modify Properties
                 removeExternalFlow(type);
                 if (flowHead.value() < bottom.value())
                     flowHead = bottom;
+                // for river: head cannot be above the bankfull flow height of the river which is bottom + depth
+                if ((type == Model::RIVER_MM) and (flowHead.value() > (bottom.value() + RiverDepth)))
+                    flowHead = bottom + (RiverDepth * si::meter);
+
                 NANChecker(flowHead.value(), "Stage value");
                 NANChecker(l_cond.value(), "Conduct value");
                 NANChecker(bottom.value(), "Bottom value");
