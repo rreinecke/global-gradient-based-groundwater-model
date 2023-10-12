@@ -3,19 +3,22 @@
     "model_config": {
       "nodes": "grid_nz_refined.csv",
       "number_of_nodes_per_layer": 6322,
-      "lon_range": 360,
-      "lat_range": 180,
+      "x_range": 360,
+      "y_range": 180,
       "is_global": "true",
-      "resolution": 0.08333,
+      "resolution_in_degree": 0.08333,
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
-      "threads": 50,
       "layers": 1,
       "use_efolding": "false",
       "confinement": [
         "true"
       ],
       "grid_refined": "true",
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
       "density_variable": "true",
       "density_zones": [
         1000,
@@ -28,17 +31,14 @@
       "max_toe_slope": 0.2,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
-      "vdf_lock": 0.001,
-      "cache": "false",
-      "adaptive_step_size": "false",
-      "boundary_condition": "GeneralHeadBoundary",
-      "sensitivity": "false"
+      "vdf_lock": 0.001
     },
     "numerics": {
+      "threads": 50,
       "solver": "PCG",
       "iterations": 10,
       "inner_itter": 10,
-      "closing_crit_head": 1e-50,
+      "closing_crit_head": 1e-150,
       "closing_crit_zeta": 1e-8,
       "head_change": 0.1,
       "zeta_change": 0.1,
@@ -53,7 +53,7 @@
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
-        "initial_zetas_as_array": "true",
+        "initial_zetas_as_array": "false",
         "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",

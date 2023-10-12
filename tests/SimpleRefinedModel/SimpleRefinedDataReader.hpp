@@ -75,8 +75,10 @@ class SimpleRefinedDataReader : public DataReader {
             LOG(userinfo) << "Initializing head";
             readInitialHeads((buildDir(op.getInitialHeadsDir())));
 
-            LOG(userinfo) << "Defining rivers";
-            readRiverConductance(buildDir(op.getKRiver()));
+            if(op.isKRiverFromFile()) {
+                LOG(userinfo) << "Defining rivers";
+                readRiverConductance(buildDir(op.getKRiver()));
+            }
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition";

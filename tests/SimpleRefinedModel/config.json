@@ -2,7 +2,7 @@
   "config": {
     "model_config": {
       "nodes": "grid_simpleRefined.csv",
-      "number_of_nodes_per_layer": 127,
+      "number_of_nodes_per_layer": 124,
       "x_range": 10,
       "y_range": 10,
       "is_global": "false",

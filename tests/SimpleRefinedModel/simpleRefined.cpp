@@ -5,7 +5,7 @@ namespace GlobalFlow {
 
 void StandaloneRunner::loadSettings() {
     op = Simulation::Options();
-    op.load("data/config_coast_simpleRefined.json");
+    op.load("data/config_simpleRefined.json");
 }
 
 void StandaloneRunner::setupSimulation() {

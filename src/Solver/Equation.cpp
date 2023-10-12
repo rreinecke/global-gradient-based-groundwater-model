@@ -138,6 +138,7 @@ Equation::updateMatrix() {
         addToA(nodes->at(id));
         //---------------------Right
         b(id) = nodes->at(id)->getRHS().value();
+
         NANChecker(b[id], "Right hand side");
     }
 
