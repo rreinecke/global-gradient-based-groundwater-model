@@ -37,7 +37,7 @@
       "inner_itter": 30,
       "closing_crit_head": 1e-90,
       "closing_crit_zeta": 0,
-      "head_change": 0.000001,
+      "head_change": 0.01,
       "zeta_change": 0,
       "damping": "false",
       "min_damp": 0.01,
@@ -49,7 +49,7 @@
       "k_ghb_from_file": "true",
       "specific_storage_from_file": "false",
       "specific_yield_from_file": "false",
-      "k_river_from_file": "true",
+      "k_river_from_file": "false",
       "aquifer_depth_from_file": "false",
       "initial_head_from_file": "false",
       "initial_zetas_as_array": "false",
@@ -62,8 +62,8 @@
       "effective_porosity": 0.2,
       "initial_head": 100,
       "K": [
-        0.008,
-        0.008
+        0.8,
+        0.8
       ],
       "ghb_K": 800,
       "aquifer_thickness": [
