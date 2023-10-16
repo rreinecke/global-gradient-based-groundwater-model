@@ -1,17 +1,18 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_nz.csv",
-      "number_of_nodes_per_layer": 4603,
+      "nodes": "grid_na.csv",
+      "number_of_nodes_per_layer": 396787,
       "x_range": 360,
       "y_range": 180,
       "is_global": "true",
       "resolution_in_degree": 0.08333,
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
-      "layers": 1,
-      "use_efolding": "false",
+      "layers": 2,
+      "use_efolding": "true",
       "confinement": [
+        "true",
         "true"
       ],
       "grid_refined": "false",
@@ -19,12 +20,10 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "true",
+      "density_variable": "false",
       "density_zones": [
         1000,
-        1005,
-        1010,
-        1015,
+        1012.5,
         1025
       ],
       "max_tip_slope": 0.2,
@@ -36,12 +35,12 @@
     "numerics": {
       "threads": 20,
       "solver": "PCG",
-      "iterations": 10,
+      "iterations": 20,
       "inner_itter": 10,
       "closing_crit_head": 1e-150,
       "closing_crit_zeta": 1e-8,
       "head_change": 0.1,
-      "zeta_change": 0.1,
+      "zeta_change": 0.01,
       "damping": "false",
       "min_damp": 0.3,
       "max_damp": 0.95
@@ -65,13 +64,16 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
+          0.027,
           0.027
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
+          100,
           100
         ],
         "anisotropy": [
+          10,
           10
         ],
         "specific_yield": 0.15,

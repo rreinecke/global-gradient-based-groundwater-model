@@ -129,10 +129,12 @@ class GlobalDataReader : public DataReader {
                                   [](const double &recharge, const double &area) {
                                       return (((recharge / 1000) * area) / 365);});
 
-            LOG(userinfo) << "Reading rivers";
+
             if (op.isKRiverFromFile()) {
+                LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
+                LOG(userinfo) << "Reading river properties (elevation, length, width, depth), calculating conductance";
                 readBlueCells(buildDir(op.getRiverElevation()),
                               calculateRiverStage(buildDir(op.getRiverExtent())));
             }
@@ -151,7 +153,8 @@ class GlobalDataReader : public DataReader {
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 } else {
                     LOG(userinfo) << "    using Ghyben-Herzberg";
-                    setInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, op.getDensityZones());
+                    setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10,
+                                           op.getDensityZones());
                 }
 
                 if (op.isEffectivePorosityFromFile()) {

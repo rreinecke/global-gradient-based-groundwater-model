@@ -1445,108 +1445,121 @@ Calculate
                 t_dim multiplierContributor{};
                 t_dim multiplierNodeInner{};
                 t_dim multiplierNodeOuter{};
+                t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
+                t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
+                std::forward_list<NeighbourPosition> potentialContributors;
+
                 int neigRefInto{};
                 for (const auto &position: possibleRefNeigPos) {
                     auto refinedNeig = neighbours.find(position);
                     if (refinedNeig != neighbours.end()) {
-                        // todo: if contributor is refined: loop starts here
-                        auto contributor = neighbours.find(getPotentialContributor(refinedNeig)); // contributor is named "j" in USG documentation
-                        if (contributor == neighbours.end()) { // at model boundary: no contributor
-                            continue; // todo implement impact of GHB (not required if all nodes at coast/GHB are refined)
-                        }
+                        t_s_meter_t contributorConductances = 0.0 * (si::square_meter / day);
+                        potentialContributors = getPotentialContributors(position);
+                        for (const auto &potContrPos: potentialContributors) {
+                            auto contributor = neighbours.find(potContrPos); // contributor is named "j" in USG doc
+                            if (contributor == neighbours.end()) { // at model boundary: no contributor
+                                continue; // todo implement impact of GHB (not required if all nodes at coast/GHB are refined)
+                            }
 
-                        neigRefInto = (int) at(refinedNeig)->getRefinedInto();
+                            neigRefInto = (int) at(refinedNeig)->getRefinedInto();
+                            multiplierContributor = ( 1 / (2 * sqrt(neigRefInto) )) * si::si_dimensionless;
+                            if (neigRefInto == 4) {
+                                multiplierNodeInner = (1.0 / 4.0) * si::si_dimensionless;
+                                multiplierNodeOuter = (1.0 / 4.0) * si::si_dimensionless;
+                            } else if (neigRefInto == 9) {
+                                multiplierNodeInner = (2.0 / 6.0) * si::si_dimensionless;
+                                multiplierNodeOuter = (1.0 / 6.0) * si::si_dimensionless;
+                            } else if (neigRefInto == 16) {
+                                if (refinedNeig->first > 18) {
+                                    multiplierNodeInner = (1.0 / 8.0) * si::si_dimensionless;
+                                    multiplierNodeOuter = (3.0 / 8.0) * si::si_dimensionless;
+                                } else {
+                                    multiplierNodeInner = (3.0 / 8.0) * si::si_dimensionless;
+                                    multiplierNodeOuter = (1.0 / 8.0) * si::si_dimensionless;
+                                }
+                            }
 
-                        multiplierContributor = 0.5 * si::si_dimensionless; // if contributor refined: 1 / (2*sqrt(refinedInto))
+                            t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
+                            t_s_meter_t transmissivity_neig =
+                                    getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
 
-                        t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
-                        t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
-
-                        // conductance to the refined neighbour node
-                        t_s_meter_t conductance =
-                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
-
-                        if (neigRefInto == 4) {
-                            multiplierNodeInner = (1.0 / 4.0) * si::si_dimensionless;
-                            multiplierNodeOuter = (1.0 / 4.0) * si::si_dimensionless;
-                        } else if (neigRefInto == 9) {
-                            multiplierNodeInner = (2.0 / 6.0) * si::si_dimensionless;
-                            multiplierNodeOuter = (1.0 / 6.0) * si::si_dimensionless;
-                        } else if (neigRefInto == 16) {
-                            if (refinedNeig->first > 18) {
-                                multiplierNodeInner = (1.0 / 8.0) * si::si_dimensionless;
-                                multiplierNodeOuter = (3.0 / 8.0) * si::si_dimensionless;
-                            } else {
-                                multiplierNodeInner = (3.0 / 8.0) * si::si_dimensionless;
-                                multiplierNodeOuter = (1.0 / 8.0) * si::si_dimensionless;
+                            if (transmissivity_neig != 0 * si::square_meter / day and
+                                transmissivity_self != 0 * si::square_meter / day) {
+                                t_meter nodeWidth = std::min(getNodeWidth(contributor),
+                                                             at(contributor)->getNodeWidth(contributor));
+                                // conductance from contributor node to ghost node
+                                // if refined into four, contributor multiplier is 0.5, multiplier for this node is 0.25
+                                contributorConductance = nodeWidth *
+                                                         ((transmissivity_self * transmissivity_neig)
+                                                          / (transmissivity_self *
+                                                             at(contributor)->getNodeLength(contributor) *
+                                                             multiplierContributor +
+                                                             transmissivity_neig * getNodeLength(contributor) *
+                                                             multiplierNodeOuter));
+                                contributorConductances += contributorConductance;
                             }
                         }
-
-                        t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
-                        t_s_meter_t transmissivity_neig =
-                                getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
-
-                        if (transmissivity_neig != 0 * si::square_meter / day and
-                            transmissivity_self != 0 * si::square_meter / day) {
-                            t_meter nodeWidth = std::min(getNodeWidth(contributor),
-                                                         at(contributor)->getNodeWidth(contributor));
-                            // conductance from contributor node to ghost node
-                            // if refined into four, contributor multiplier is 0.5, multiplier for this node is 0.25
-                            contributorConductance = nodeWidth *
-                                    ((transmissivity_self * transmissivity_neig)
-                                     / (transmissivity_self * at(contributor)->getNodeLength(contributor) * multiplierContributor +
-                                        transmissivity_neig * getNodeLength(contributor) * multiplierNodeOuter));
-                        }
-
                         // conductance from this node's center to ghost node inside this node
                         // (if refined into four, distance is a quarter of this node's length (multiplierNode below))
                         nodeConductance = getNodeWidth(contributor) *
                                           (transmissivity_self / (getNodeLength(contributor) * multiplierNodeInner));
 
                         // the alpha coefficient is used to weigh influence on ghost node height difference
-                        t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
+                        t_dim alpha = contributorConductances / (contributorConductances + nodeConductance);
                         //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
+
+                        // conductance to the refined neighbour node
+                        t_s_meter_t conductance =
+                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
 
                         // calculate ghost node correction
                         gnc = conductance * (alpha * (getHead() - at(contributor)->getHead()));
                         out += gnc;
-                        if (getID() == 46UL){
-                            LOG(debug) << "GNC for nodeID "     << get<large_num, ID>() <<
-                                          " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
-                                          " with contributor "  << getAt<large_num, ID>(contributor) <<
-                                          " = "                 << gnc.value();
-                        }
+                        LOG(debug) << "GNC for nodeID "     << get<large_num, ID>() <<
+                                      " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
+                                      " with contributor "  << getAt<large_num, ID>(contributor) <<
+                                      " = "                 << gnc.value();
+
                     }
                 }
                 return out;
             }
 
-            static NeighbourPosition
-            getPotentialContributor(map_itter refinedNeig){ // todo what if contributor(s) are refined?
-                std::unordered_map<NeighbourPosition, NeighbourPosition>
-                mapPotentialContributor = {
-                        {NeighbourPosition::FRONTLEFT,       NeighbourPosition::LEFT},
-                        {NeighbourPosition::BACKLEFT,        NeighbourPosition::LEFT},
-                        {NeighbourPosition::FRONTFRONTLEFT,  NeighbourPosition::LEFT},
-                        {NeighbourPosition::BACKBACKLEFT,    NeighbourPosition::LEFT},
-                        {NeighbourPosition::LEFTLEFT,        NeighbourPosition::LEFT}, // -> no contributor
-                        {NeighbourPosition::FRONTRIGHT,      NeighbourPosition::RIGHT},
-                        {NeighbourPosition::BACKRIGHT,       NeighbourPosition::RIGHT},
-                        {NeighbourPosition::FRONTFRONTRIGHT, NeighbourPosition::RIGHT},
-                        {NeighbourPosition::BACKBACKRIGHT,   NeighbourPosition::RIGHT},
-                        {NeighbourPosition::RIGHTRIGHT,      NeighbourPosition::RIGHT}, // -> no contributor
-                        {NeighbourPosition::LEFTFRONT,       NeighbourPosition::FRONT},
-                        {NeighbourPosition::RIGHTFRONT,      NeighbourPosition::FRONT},
-                        {NeighbourPosition::LEFTLEFTFRONT,   NeighbourPosition::FRONT},
-                        {NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::FRONT},
-                        {NeighbourPosition::FRONTFRONT,      NeighbourPosition::FRONT}, // -> no contributor
-                        {NeighbourPosition::LEFTBACK,        NeighbourPosition::BACK},
-                        {NeighbourPosition::RIGHTBACK,       NeighbourPosition::BACK},
-                        {NeighbourPosition::LEFTLEFTBACK,    NeighbourPosition::BACK},
-                        {NeighbourPosition::RIGHTRIGHTBACK,  NeighbourPosition::BACK},
-                        {NeighbourPosition::BACKBACK,        NeighbourPosition::BACK}, // -> no contributor
-                };
-                return mapPotentialContributor.at(refinedNeig->first);
+            static std::forward_list<NeighbourPosition>
+            getPotentialContributors(NeighbourPosition refinedNeigPos){
+                if (refinedNeigPos == NeighbourPosition::FRONTLEFT or
+                    refinedNeigPos == NeighbourPosition::BACKLEFT or
+                    refinedNeigPos == NeighbourPosition::FRONTFRONTLEFT or
+                    refinedNeigPos == NeighbourPosition::BACKBACKLEFT or
+                    refinedNeigPos == NeighbourPosition::LEFTLEFT) {
+                    return {NeighbourPosition::LEFT, NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
+                            NeighbourPosition::LEFTLEFTFRONT, NeighbourPosition::LEFTLEFTBACK,
+                            NeighbourPosition::LEFTLEFT};
+                } else if (refinedNeigPos == NeighbourPosition::FRONTRIGHT or
+                           refinedNeigPos == NeighbourPosition::BACKRIGHT or
+                           refinedNeigPos == NeighbourPosition::FRONTFRONTRIGHT or
+                           refinedNeigPos == NeighbourPosition::BACKBACKRIGHT or
+                           refinedNeigPos == NeighbourPosition::RIGHTRIGHT) {
+                    return {NeighbourPosition::RIGHT, NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK,
+                            NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK,
+                            NeighbourPosition::RIGHTRIGHT};
+                } else if (refinedNeigPos == NeighbourPosition::LEFTFRONT or
+                        refinedNeigPos == NeighbourPosition::RIGHTFRONT or
+                        refinedNeigPos == NeighbourPosition::LEFTLEFTFRONT or
+                        refinedNeigPos == NeighbourPosition::RIGHTRIGHTFRONT or
+                        refinedNeigPos == NeighbourPosition::FRONTFRONT) {
+                    return {NeighbourPosition::FRONT, NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT,
+                            NeighbourPosition::FRONTFRONTRIGHT, NeighbourPosition::FRONTFRONTLEFT,
+                            NeighbourPosition::FRONTFRONT};
+                } else if (refinedNeigPos == NeighbourPosition::LEFTBACK or
+                           refinedNeigPos == NeighbourPosition::RIGHTBACK or
+                           refinedNeigPos == NeighbourPosition::LEFTLEFTBACK or
+                           refinedNeigPos == NeighbourPosition::RIGHTRIGHTBACK or
+                           refinedNeigPos == NeighbourPosition::BACKBACK) {
+                    return {NeighbourPosition::BACK, NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
+                            NeighbourPosition::BACKBACKLEFT, NeighbourPosition::BACKBACKRIGHT,
+                            NeighbourPosition::BACKBACK};
+                }
             }
 
             static std::forward_list<NeighbourPosition>
@@ -1612,14 +1625,16 @@ Calculate
                     zetasChange.insert(zetasChange.begin() + localZetaID, 0 * si::meter);
                 }
 
-                // set zetas and zetasChange vectors, if zetas vector is sorted
+                // check if zetas vector is sorted
                 for (int zetaID = 0; zetaID < zetas.size() - 1; ++zetaID) {
                     if (zetas[zetaID] < zetas[zetaID+1]) {
-                        LOG(userinfo) << "At nodeID " << getID() << ": zeta at ID= " << zetaID << ":" << zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
+                        LOG(userinfo) << "At nodeID " << getID() << ": zeta at ID= " << zetaID << ":" <<
+                        zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
                         throw "Vector of zetas needs to be sorted!";
                     }
                 }
-                set<std::vector<t_meter>,Zetas>(zetas);
+
+                setZetas(zetas);
                 set<std::vector<t_meter>,ZetasChange>(zetas);
                 //LOG(debug) << "nodeID: " << getID() << ", localZetaID: " << localZetaID << ", zeta: " << zeta.value() << ", getZeta: " << getZeta(localZetaID).value();
             }
@@ -1643,7 +1658,7 @@ Calculate
                         zetas[localZetaID] = zeta;
                     }
                 }
-                set<std::vector<t_meter>, Zetas>(zetas); // Question: how to improve this? - maybe change to unordered map: https://embeddedartistry.com/blog/2017/08/02/an-overview-of-c-stl-containers/
+                setZetas(zetas);
                 //LOG(debug) << "nodeID: " << getID() << ", setZeta[" << localZetaID << "] = " << getZeta(localZetaID).value();
             }
 
@@ -1686,7 +1701,9 @@ Calculate
             t_meter getZeta(int localZetaID) {
 
                 if (localZetaID < get<std::vector<t_meter>, Zetas>().size()){
-                    return get<std::vector<t_meter>, Zetas>()[localZetaID];
+                    auto zetas = getZetas();
+                    auto zeta = zetas[localZetaID];
+                    return zeta;
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
                     ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
@@ -3113,7 +3130,7 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(debug) << "storageFlow: " << storageFlow.value() << std::endl;
-                bool useGhostNodeCorrection = true; // todo move to config
+                bool useGhostNodeCorrection = false; // todo move to config
                 t_vol_t gncFromNodes {0 * (si::cubic_meter / day)};
                 t_vol_t gncToRefined {0 * (si::cubic_meter / day)};
 

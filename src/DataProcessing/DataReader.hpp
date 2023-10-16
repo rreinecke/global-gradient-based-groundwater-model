@@ -433,7 +433,7 @@ namespace GlobalFlow {
             Model::quantity<Model::Meter> zeta;
             for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
                 if (nodes->at(nodeID)->hasGHB()){
-                    for (int zetaID = 0; zetaID <= numZones; ++zetaID){
+                    /*for (int zetaID = 0; zetaID <= numZones; ++zetaID){
                         double elevation = nodes->at(nodeID)->getElevation().value();
 
                         if (zetaID == numZones){
@@ -444,7 +444,7 @@ namespace GlobalFlow {
                             zeta = elevation * Model::si::meter;
                         }
                         nodes->at(nodeID)->setZeta(zetaID, zeta);
-                    }
+                    }*/
                     nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZones-1, numZones);
                 } else {
                     nodes->at(nodeID)->setZoneOfSinksAndSources(0, 0, numZones);
@@ -872,7 +872,7 @@ namespace GlobalFlow {
          * @param densityZones Density in density zones (from fresh to saline)
          * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
          */
-        void setInitialZetas(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
+        void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
                              std::vector<double> densityZones) {
             double initial_head{};
             double zetaGhybenHerzberg{};
