@@ -59,6 +59,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              bool useEfolding,
                              bool confined,
                              large_num refID,
+                             bool hasRefinedNeighbour,
                              bool densityVariable,
                              std::vector<quantity<Dimensionless>> delnus,
                              std::vector<quantity<Dimensionless>> nusInZones,
@@ -91,6 +92,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<large_num, RefID> (refID);
+    fields.set<bool, HasRefinedNeighbour> (hasRefinedNeighbour);
     fields.set<bool, DensityVariable> (densityVariable);
     fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<std::vector<quantity<Dimensionless>>, NusInZones> (nusInZones);

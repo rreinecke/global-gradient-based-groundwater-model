@@ -365,6 +365,7 @@ void buildBottomLayers(NodeVector nodes,
     double specificStorage;
     bool useEfolding;
     large_num refID;
+    bool hasRefinedNeighbour;
     bool densityVariable;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
@@ -398,6 +399,7 @@ void buildBottomLayers(NodeVector nodes,
                             Model::SpecificStorage>().value();
             useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
             refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
+            hasRefinedNeighbour = nodes->at(i)->getProperties().get<bool, Model::HasRefinedNeighbour>();
             densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
             delnus = nodes->at(i)->getProperties().
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
@@ -437,6 +439,7 @@ void buildBottomLayers(NodeVector nodes,
                                                             useEfolding,
                                                             confined[layer + 1],
                                                             refID,
+                                                            hasRefinedNeighbour,
                                                             densityVariable,
                                                             delnus,
                                                             nusInZones,

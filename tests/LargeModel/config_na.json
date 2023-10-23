@@ -10,7 +10,7 @@
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
       "layers": 2,
-      "use_efolding": "true",
+      "use_efolding": "false",
       "confinement": [
         "true",
         "true"
@@ -33,13 +33,13 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 20,
+      "threads": 50,
       "solver": "PCG",
-      "iterations": 20,
+      "iterations": 100,
       "inner_itter": 10,
-      "closing_crit_head": 1e-150,
+      "closing_crit_head": 1e-185,
       "closing_crit_zeta": 1e-8,
-      "head_change": 0.1,
+      "head_change": 1,
       "zeta_change": 0.01,
       "damping": "false",
       "min_damp": 0.3,

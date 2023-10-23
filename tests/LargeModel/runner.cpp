@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_na.json");
+        op.load("data/config_nz.json");
     }
 
     void Runner::setupSimulation() {
@@ -16,8 +16,16 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 100);
-        //LOG(debug) << "NodeID 1: " << << "," << sim.getNodes()->at(1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+        for (Simulation::step step : stepper) {
+            LOG(userinfo) << "Running a steady state step";
+            step.first->toggleSteadyState();
+            step.first->solve();
+            sim.printMassBalances(debug);
+            step.first->toggleSteadyState();
+        }
+
+        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::MONTH, 100);
 
         // for saving zetas in a csv
         std::ofstream myfile;
@@ -25,8 +33,7 @@ namespace GlobalFlow {
         myfile << "timestep,nodeID,lon,lat,head,zeta0,zeta1Active,zeta1,zeta2active,zeta2,zeta3,zeta4" << std::endl;
 
         int stepNumber{1};
-        for (Simulation::step step : stepper) {
-            step.first->toggleSteadyState();
+        for (Simulation::step step : transientStepper) {
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iterations"; // and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
@@ -47,8 +54,6 @@ namespace GlobalFlow {
                        //<< "," << sim.getNodes()->at(j)->getZeta(4).value()
                        << std::endl;
             }
-
-            step.first->toggleSteadyState();
             ++stepNumber;
         }
         sim.save();
@@ -63,7 +68,7 @@ namespace GlobalFlow {
         // For node infos:
         std::ofstream myfile;
         myfile.open ("node_attributes_large.csv");
-        myfile << "nodeID,spatID,hasGHB,riverCond,riverBottom,riverElevation,elevation,initial_head" << std::endl; // zeta0,zeta1Active,zeta1,zeta2active,zeta2
+        myfile << "nodeID,spatID,numNeig,neig,hasGHB,riverCond,riverBottom,riverElevation,elevation,initial_head" << std::endl; // zeta0,zeta1Active,zeta1,zeta2active,zeta2
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             std::string neighboursStr;
@@ -75,8 +80,8 @@ namespace GlobalFlow {
                    //<< "," << sim.getNodes()->at(j)->getLon()
                    //<< "," << sim.getNodes()->at(j)->getLat()
                    //<< "," << sim.getNodes()->at(j)->getArea().value()
-                   //<< "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
-                   //neighboursStr
+                   << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
+                   << "," << neighboursStr
                    //<< "," << sim.getNodes()->at(j)->getK().value()
                    << "," << sim.getNodes()->at(j)->hasGHB()
                    //<< "," << sim.getNodes()->at(j)->getEffectivePorosity()

@@ -130,7 +130,7 @@ class GlobalDataReader : public DataReader {
                                       return (((recharge / 1000) * area) / 365);});
 
 
-            if (op.isKRiverFromFile()) {
+            /*if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
@@ -143,7 +143,7 @@ class GlobalDataReader : public DataReader {
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                  buildDir(op.getGlobalWetlands()),
                                  buildDir(op.getLocalLakes()),
-                                 buildDir(op.getLocalWetlands()));
+                                 buildDir(op.getLocalWetlands()));*/
 
             if (op.isDensityVariable()) {
                 LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size() << " active zeta surfaces"; // requires elevation to be set

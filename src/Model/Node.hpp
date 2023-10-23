@@ -149,25 +149,25 @@ namespace GlobalFlow {
             virtual bool
             __isStaticNode() = 0;
 
-        /**
-         * @brief Calculates e-folding depth from input data.
-         * @param z The vertical size of the computing cell.
-         * @return A dimensionless factor that can be used to modify
-         * hydraulic conductance depending on depth.
-         *
-         * E-Folding function as defined by Ying Fan et al. e^(-(Depth - Factor)).
-         */
-        t_dim efoldingFromData(t_meter z) {
-            t_meter folding = get<t_meter, EFolding>();
-            if (folding == 0.0 * si::meter)
-                return 1 * si::si_dimensionless;
-            //Alter if a different size should be used and not full vertical size
-            //z = (z / (2 * si::si_dimensionless));
-            t_dim out = exp(-z / folding);
-            if (out == 0 * si::si_dimensionless)
-                return 1e-7 * si::si_dimensionless;
-            return out;
-        }
+            /**
+             * @brief Calculates e-folding depth from input data.
+             * @param z The vertical size of the computing cell.
+             * @return A dimensionless factor that can be used to modify
+             * hydraulic conductance depending on depth.
+             *
+             * E-Folding function as defined by Ying Fan et al. e^(-(Depth - Factor)).
+             */
+            t_dim efoldingFromData(t_meter z) {
+                t_meter folding = get<t_meter, EFolding>();
+                if (folding == 0.0 * si::meter)
+                    return 1 * si::si_dimensionless;
+                //Alter if a different size should be used and not full vertical size
+                //z = (z / (2 * si::si_dimensionless));
+                t_dim out = exp(-z / folding);
+                if (out == 0 * si::si_dimensionless)
+                    return 1e-7 * si::si_dimensionless;
+                return out;
+            }
 
             /**
              * @brief Apply function to all layers of the model.
@@ -290,61 +290,61 @@ namespace GlobalFlow {
              */
             friend std::ostream & operator<< (std::ostream & stream, const p_node & pNode) {
                 stream << "Node properties:"
-                << "\nID [large_num]: "<< pNode->get<large_num, ID>()
-                << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
-                << "\nRefID [int]: " << pNode->get<large_num, RefID>()<< "\nLat [double]: " << pNode->get<double, Lat>()
-                << "\nLon [double]: " << pNode->get<double, Lon>()
-                << "\nLayer [int]: " << pNode->get<int, Layer>()
-                << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
-                << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
-                << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
-                << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
-                << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
-                << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
-                << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
-                << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
-                << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
-                << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
-                << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
-                << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
-                << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
-                << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
-                << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
-                << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
-                << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
-                << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
-                << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
-                << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
-                << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
-                << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
-                << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
-                << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
-                << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
+                       << "\nID [large_num]: "<< pNode->get<large_num, ID>()
+                       << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
+                       << "\nRefID [int]: " << pNode->get<large_num, RefID>()<< "\nLat [double]: " << pNode->get<double, Lat>()
+                       << "\nLon [double]: " << pNode->get<double, Lon>()
+                       << "\nLayer [int]: " << pNode->get<int, Layer>()
+                       << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
+                       << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
+                       << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
+                       << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
+                       << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
+                       << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
+                       << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
+                       << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
+                       << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
+                       << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
+                       << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
+                       << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
+                       << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
+                       << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
+                       << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
+                        << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
+                        << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
+                        << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
+                        << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
+                        << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
+                        << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
+                        << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
+                        << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
+                        << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
+                        << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
 
                 std::unordered_map<NeighbourPosition, large_num> neighbourList = pNode->getListOfNeighbours();
                 if(neighbourList.find(DOWN) != neighbourList.end()) {
                     stream << "\nDOWN neighbour lat [double]: " << pNode->getNeighbour(DOWN)->get<double, Lat>()
-                         << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
+                           << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
                 }
                 if(neighbourList.find(TOP) != neighbourList.end()) {
                     stream << "\nTOP neighbour lat [double]: " << pNode->getNeighbour(TOP)->get<double, Lat>()
-                        << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
+                           << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
                 }
                 if(neighbourList.find(LEFT) != neighbourList.end()) {
                     stream << "\nLEFT neighbour lat [double]: " << pNode->getNeighbour(LEFT)->get<double, Lat>()
-                         << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
+                           << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
                 }
                 if(neighbourList.find(RIGHT) != neighbourList.end()) {
                     stream << "\nRIGHT neighbour lat [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lat>()
-                          << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
+                           << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
                 }
                 if(neighbourList.find(FRONT) != neighbourList.end()) {
                     stream << "\nFRONT neighbour lat [double]: " << pNode->getNeighbour(FRONT)->get<double, Lat>()
-                        << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
+                           << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
                 }
                 if(neighbourList.find(BACK) != neighbourList.end()) {
                     stream << "\nBACK neighbour lat [double]: " << pNode->getNeighbour(BACK)->get<double, Lat>()
-                         << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
+                           << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
                 }
 
                 if (pNode->hasGHB()) {
@@ -398,6 +398,7 @@ namespace GlobalFlow {
                           bool useEfolding,
                           bool confined,
                           large_num refID,
+                          bool hasRefinedNeighbour,
                           bool densityVariable,
                           std::vector<t_dim> delnus,
                           std::vector<t_dim> nusInZones,
@@ -595,7 +596,7 @@ Calculate
                         if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
                             conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
                         } else {
-                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
                         }
 
                         t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
@@ -812,41 +813,41 @@ Calculate
                 return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / (day * get<t_dim, StepModifier>());
             }
 
-        /**
-         * @brief Get flow budget of a specific external flows
-         * @param &flow A external flow
-         * @return Flow volume
-         * Note: Water entering storage is treated as an outflow (-), that is a loss of water from the flow system
-         * while water released from storage is treated as inflow (+), that is a source of water to the flow system
-         */
-        t_vol_t calculateExternalFlowVolume(const ExternalFlow &flow) {
-            if (is(flow.getType()).in(RECHARGE, NET_ABSTRACTION)) {
-                return flow.getRecharge() * get<t_dim, StepModifier>();
-            }
-            t_vol_t ex;
-            t_meter eq_head = get<t_meter, EQHead>();
-            t_meter head = get<t_meter, Head>();
-            t_vol_t recharge = 0 * si::cubic_meter / day;
-            try {
-                recharge = getExternalFlowByName(RECHARGE).getRecharge();
-            } catch (const std::out_of_range &e) {
-                //ignore me there is no special_flow in this cell
-            }
-            t_vol_t eqFlow = getEqFlow();
-            if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
-                if (flow.flowIsHeadDependent(head)) {
+            /**
+             * @brief Get flow budget of a specific external flows
+             * @param &flow A external flow
+             * @return Flow volume
+             * Note: Water entering storage is treated as an outflow (-), that is a loss of water from the flow system
+             * while water released from storage is treated as inflow (+), that is a source of water to the flow system
+             */
+            t_vol_t calculateExternalFlowVolume(const ExternalFlow &flow) {
+                if (is(flow.getType()).in(RECHARGE, NET_ABSTRACTION)) {
+                    return flow.getRecharge() * get<t_dim, StepModifier>();
+                }
+                t_vol_t ex;
+                t_meter eq_head = get<t_meter, EQHead>();
+                t_meter head = get<t_meter, Head>();
+                t_vol_t recharge = 0 * si::cubic_meter / day;
+                try {
+                    recharge = getExternalFlowByName(RECHARGE).getRecharge();
+                } catch (const std::out_of_range &e) {
+                    //ignore me there is no special_flow in this cell
+                }
+                t_vol_t eqFlow = getEqFlow();
+                if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                    if (flow.flowIsHeadDependent(head)) {
+                        ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
+                    } else { // flow is not head dependent when the head is below the bottom of the simulated cell
+                        ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
+                    }
+                } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
-                         flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
-                } else { // flow is not head dependent when the head is below the bottom of the simulated cell
-                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
                           flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                 }
-            } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
-                ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
-                      flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
+                return ex;
             }
-            return ex;
-        }
 
             /**
              * @brief Calculate dewatered flow
@@ -859,30 +860,30 @@ Calculate
                 auto hasUp = neighbours.find(TOP);
                 t_vol_t out = 0 * si::cubic_meter / day;
 
-            if (hasDown != neighbours.end()) {
-                t_meter elev = getAt<t_meter, Elevation>(hasDown);
-                t_meter head_n = getAt<t_meter, Head>(hasDown);
-                //Check if a dewatered condition is present
-                if (head_n < elev and get<t_meter, Head>() > elev) {
-                    t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
-                    out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
+                if (hasDown != neighbours.end()) {
+                    t_meter elev = getAt<t_meter, Elevation>(hasDown);
+                    t_meter head_n = getAt<t_meter, Head>(hasDown);
+                    //Check if a dewatered condition is present
+                    if (head_n < elev and get<t_meter, Head>() > elev) {
+                        t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
+                        out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
+                    }
                 }
-            }
 
-            if (hasUp != neighbours.end()) {
-                t_meter elev = getAt<t_meter, Elevation>(hasUp);
-                t_meter head_n = getAt<t_meter, Head>(hasUp);
-                //Check if a dewatered condition is present
-                if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
-                    t_s_meter_t conductance_above =
-                            mechanics.calculateVerticalConductance(createDataTuple(hasUp));
-                    out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
-                           get<t_dim, StepModifier>();
+                if (hasUp != neighbours.end()) {
+                    t_meter elev = getAt<t_meter, Elevation>(hasUp);
+                    t_meter head_n = getAt<t_meter, Head>(hasUp);
+                    //Check if a dewatered condition is present
+                    if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
+                        t_s_meter_t conductance_above =
+                                mechanics.calculateVerticalConductance(createDataTuple(hasUp));
+                        out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
+                               get<t_dim, StepModifier>();
+                    }
                 }
+                NANChecker(out.value(), "Dewatered flow");
+                return out;
             }
-            NANChecker(out.value(), "Dewatered flow");
-            return out;
-        }
 
             /**
              * @brief Get all current IN flow
@@ -1107,37 +1108,40 @@ Calculate
              * @param nodeIDs The neighbouring nodeIDs
              * @param neighbour The neighbour position relative to the cell
              */
-            void setNeighbours(std::unordered_map<large_num, large_num> nodeIDs, NeighbourPosition neighbourPosition) {
-                 if (nodeIDs.empty()) { // do nothing
-                     return;
-                 } else if (nodeIDs.size() == 1) { // if only one node at this spatID
-                     neighbours[neighbourPosition] = nodeIDs.at(0);
-                 } else { // if more than one node at this spatID
-                     std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
-                     mapToNeig;
+            void setNeighbours(std::unordered_map<large_num, large_num> nodeIDs_neig,
+                               NeighbourPosition neighbourPosition) {
+                if (nodeIDs_neig.empty()) { // do nothing
+                    return;
+                } else if (nodeIDs_neig.size() == 1) { // if only one node at this spatID
+                    neighbours[neighbourPosition] = nodeIDs_neig.at(0);
+                } else { // if more than one node at this spatID
+                    std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
+                            mapToNeig;
 
-                     if (nodeIDs.size() == 4){
-                         mapToNeig = getMapNeighboursRefinedToFour(neighbourPosition);
-                     } else if (nodeIDs.size() == 9){
-                         mapToNeig = getMapNeighboursRefinedToNine(neighbourPosition);
-                     } else if (nodeIDs.size() == 16){
-                         mapToNeig = getMapNeighboursRefinedToSixteen(neighbourPosition);
-                     }else {
-                         return;
-                     }
+                    if (nodeIDs_neig.size() == 4){
+                        mapToNeig = getMapNeighboursRefinedToFour(neighbourPosition);
+                    } else if (nodeIDs_neig.size() == 9){
+                        mapToNeig = getMapNeighboursRefinedToNine(neighbourPosition);
+                    } else if (nodeIDs_neig.size() == 16){
+                        mapToNeig = getMapNeighboursRefinedToSixteen(neighbourPosition);
+                    }else {
+                        return;
+                    }
 
-                     // loop over nodes at current spatID
-                     for (auto nodeID: nodeIDs) {
-                         //LOG(debug) << "setting neighbours for nodeID " << nodeID.second;
-                         auto refID = nodes->at(nodeID.second)->get<large_num, RefID>();
-                         try{
-                             auto refNeigPos = mapToNeig.at(neighbourPosition).at(refID);
-                             neighbours[refNeigPos] = nodeID.second;
-                         } catch (const std::out_of_range &ex) {
-                             continue;
-                         }
-                     }
-                 }
+                    // loop over neigbour nodes at one spatID
+                    for (auto nodeID_neig: nodeIDs_neig) {
+                        //LOG(debug) << "setting neighbours for nodeID " << nodeID.second;
+                        auto refID = nodes->at(nodeID_neig.second)->get<large_num, RefID>();
+                        try{
+                            auto refNeigPos = mapToNeig.at(neighbourPosition).at(refID);
+                            neighbours[refNeigPos] = nodeID_neig.second;
+                        } catch (const std::out_of_range &ex) {
+                            continue;
+                        }
+                    }
+
+                    set<bool, HasRefinedNeighbour>(true);
+                }
             }
 
             std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
@@ -1159,10 +1163,10 @@ Calculate
 
                 // define a map that maps neighbour position to refID to refined neighbour position
                 std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
-                mapNeigPosToRefIdToRefNeigPos = { { Model::FRONT, { {3, Model::FRONTLEFT},  {4, Model::FRONTRIGHT} } },
-                                                  { Model::BACK,  { {1, Model::BACKLEFT},   {2, Model::BACKRIGHT}  } },
-                                                  { Model::RIGHT, { {1, Model::RIGHTFRONT}, {3, Model::RIGHTBACK}  } },
-                                                  { Model::LEFT,  { {2, Model::LEFTFRONT},  {4, Model::LEFTBACK}   } } };
+                        mapNeigPosToRefIdToRefNeigPos = { { Model::FRONT, { {3, Model::FRONTLEFT},  {4, Model::FRONTRIGHT} } },
+                                                          { Model::BACK,  { {1, Model::BACKLEFT},   {2, Model::BACKRIGHT}  } },
+                                                          { Model::RIGHT, { {1, Model::RIGHTFRONT}, {3, Model::RIGHTBACK}  } },
+                                                          { Model::LEFT,  { {2, Model::LEFTFRONT},  {4, Model::LEFTBACK}   } } };
                 return mapNeigPosToRefIdToRefNeigPos;
             }
 
@@ -1186,7 +1190,7 @@ Calculate
 
                 // define a map that maps neighbour position to refID to refined neighbour position
                 std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
-                mapNeigPosToRefIdToRefNeigPos = {
+                        mapNeigPosToRefIdToRefNeigPos = {
                         { Model::FRONT, { {7, Model::FRONTLEFT},  {8, Model::FRONTFRONT}, {9, Model::FRONTRIGHT} } },
                         { Model::BACK,  { {1, Model::BACKLEFT},   {2, Model::BACKBACK},  {3, Model::BACKRIGHT}  } },
                         { Model::RIGHT, { {1, Model::RIGHTFRONT}, {4, Model::RIGHTRIGHT}, {7, Model::RIGHTBACK}  } },
@@ -1217,13 +1221,13 @@ Calculate
                 std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, Model::NeighbourPosition>>
                         mapNeigPosToRefIdToRefNeigPos = {
                         { Model::FRONT, { {13, Model::FRONTLEFT},       {14, Model::FRONTFRONTLEFT},
-                                          {15, Model::FRONTFRONTRIGHT}, {16, Model::FRONTRIGHT} } },
+                                                {15, Model::FRONTFRONTRIGHT}, {16, Model::FRONTRIGHT} } },
                         { Model::BACK,  { {1, Model::BACKLEFT},         {2, Model::BACKBACKLEFT},
-                                          {3, Model::BACKBACKRIGHT},    {4, Model::BACKRIGHT}  } },
+                                                {3, Model::BACKBACKRIGHT},    {4, Model::BACKRIGHT}  } },
                         { Model::RIGHT, { {1, Model::RIGHTFRONT},       {5, Model::RIGHTRIGHTFRONT},
-                                          {9, Model::RIGHTRIGHTBACK},   {13, Model::RIGHTBACK}  } },
+                                                {9, Model::RIGHTRIGHTBACK},   {13, Model::RIGHTBACK}  } },
                         { Model::LEFT,  { {4, Model::LEFTFRONT},        {8, Model::LEFTLEFTFRONT},
-                                          {12, Model::LEFTLEFTBACK},    {16, Model::LEFTBACK}   } } };
+                                                {12, Model::LEFTLEFTBACK},    {16, Model::LEFTBACK}   } } };
                 return mapNeigPosToRefIdToRefNeigPos;
             }
 
@@ -1265,32 +1269,32 @@ Calculate
                     //currently it is assumed that only one external flow of one type is what we want
                     // FIXME if not we have to replace the enum with something different
                     removeExternalFlow(type);
-            }   
-	       
-	        if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
-                                                                 type)));
-            } else if (type == EVAPOTRANSPIRATION) {
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows, flowHead, bottom,
-                                                                 cond * (si::cubic_meter / day))));
-            /** TODO Implementation of FLOODPLAIN_DRAIN
-            *} else if (type == FLOODPLAIN_DRAIN) {
-            *    externalFlows.insert(std::make_pair(type,
-            *                                        ExternalFlow(numOfExternalFlows, type,
-            *                                                        get<t_meter, Elevation>(),
-            *                                                        get<t_vel, K>() * get<t_meter,
-            *                                                        VerticalSize>(),
-            *                                                        bottom));
-            */
-            } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GLOBAL_LAKE, GENERAL_HEAD_BOUNDARY
-                externalFlows.insert(std::make_pair(type,
-                                                    ExternalFlow(numOfExternalFlows,
-                                                                 type,
-                                                                 flowHead,
-                                                                 cond * (si::square_meter / day),
-                                                                 bottom)));
+                }
+
+                if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
+                    externalFlows.insert(std::make_pair(type,
+                                                        ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
+                                                                     type)));
+                } else if (type == EVAPOTRANSPIRATION) {
+                    externalFlows.insert(std::make_pair(type,
+                                                        ExternalFlow(numOfExternalFlows, flowHead, bottom,
+                                                                     cond * (si::cubic_meter / day))));
+                    /** TODO Implementation of FLOODPLAIN_DRAIN
+                    *} else if (type == FLOODPLAIN_DRAIN) {
+                    *    externalFlows.insert(std::make_pair(type,
+                    *                                        ExternalFlow(numOfExternalFlows, type,
+                    *                                                        get<t_meter, Elevation>(),
+                    *                                                        get<t_vel, K>() * get<t_meter,
+                    *                                                        VerticalSize>(),
+                    *                                                        bottom));
+                    */
+                } else { // RIVER, RIVER_MM, DRAIN, WETLAND, GLOBAL_WETLAND, LAKE, GLOBAL_LAKE, GENERAL_HEAD_BOUNDARY
+                    externalFlows.insert(std::make_pair(type,
+                                                        ExternalFlow(numOfExternalFlows,
+                                                                     type,
+                                                                     flowHead,
+                                                                     cond * (si::square_meter / day),
+                                                                     bottom)));
                 }
                 numOfExternalFlows++;
                 if(numOfExternalFlows != externalFlows.size()){
@@ -1366,7 +1370,7 @@ Calculate
                         if (at(neig)->getRefinedInto() == 1) { // if neig is not refined
                             // get the refined neighbour position this node has relative to that unrefined neighbour
                             NeighbourPosition refNeigPos = getRefNeigPosToUnrefNeig(get<large_num, RefID>(), neigPos,
-                                                                                  getRefinedInto());
+                                                                                    getRefinedInto());
                             //LOG(debug) << "getGNCToRefinedNode, nodeID: " << getID() << ", neig nodeID: " << at(neig)->getID();
 
                             out += at(neig)->calculateGhostNodeCorrection({refNeigPos});
@@ -1386,40 +1390,40 @@ Calculate
             NeighbourPosition getRefNeigPosToUnrefNeig(large_num refID, NeighbourPosition neigPos,
                                                        large_num refinedInto){
                 std::unordered_map<large_num, std::unordered_map<NeighbourPosition, NeighbourPosition>>
-                mapRefIdToNeigToRefNeig;
+                        mapRefIdToNeigToRefNeig;
                 if (refinedInto == 4) {
                     mapRefIdToNeigToRefNeig = {
                             {1, { {NeighbourPosition::FRONT, NeighbourPosition::BACKLEFT},
-                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
+                                        {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
                             {2, { {NeighbourPosition::FRONT, NeighbourPosition::BACKRIGHT},
-                                  {NeighbourPosition::RIGHT, NeighbourPosition::LEFTFRONT} } },
+                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTFRONT} } },
                             {3, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTLEFT},
-                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
+                                        {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
                             {4, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
-                                  {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
+                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
                 } else if (refinedInto == 9) {
                     mapRefIdToNeigToRefNeig = {
                             {1, { {NeighbourPosition::FRONT, NeighbourPosition::BACKLEFT},
-                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
+                                        {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTFRONT} } },
                             {2, { {NeighbourPosition::FRONT, NeighbourPosition::BACKBACK} } },
                             {3, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKRIGHT},
-                                  {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT} } },
+                                        {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT} } },
                             {4, { {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTRIGHT} } },
                             {5, { {} } }, // has only refined neighbours
                             {6, { {NeighbourPosition::RIGHT, NeighbourPosition::LEFTLEFT} } },
                             {7, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTLEFT},
-                                  {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
+                                        {NeighbourPosition::LEFT,  NeighbourPosition::RIGHTBACK} } },
                             {8, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONT} } },
                             {9, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
-                                  {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
+                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
                 } else if (refinedInto == 16) {
                     mapRefIdToNeigToRefNeig = {
                             {1, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKLEFT},
-                                  {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTFRONT} } },
+                                        {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTFRONT} } },
                             {2, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKLEFT} } },
                             {3, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKRIGHT} } },
                             {4, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKRIGHT},
-                                  {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT}} },
+                                        {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT}} },
                             {5, { {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTRIGHTFRONT} } },
                             {6, { {} } }, // has only refined neighbours
                             {7, { {} } }, // has only refined neighbours
@@ -1429,11 +1433,11 @@ Calculate
                             {11, { {} } }, // has only refined neighbours
                             {12, { {NeighbourPosition::RIGHT, NeighbourPosition::LEFTLEFTBACK} } },
                             {13, { {NeighbourPosition::BACK, NeighbourPosition::FRONTLEFT},
-                                   {NeighbourPosition::LEFT, NeighbourPosition::RIGHTBACK}} },
+                                        {NeighbourPosition::LEFT, NeighbourPosition::RIGHTBACK}} },
                             {14, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTLEFT} } },
                             {15, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTRIGHT} } },
                             {16, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
-                                   {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } }};
+                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } }};
                 }
                 return mapRefIdToNeigToRefNeig.at(refID).at(neigPos);
             }
@@ -1445,15 +1449,16 @@ Calculate
                 t_dim multiplierContributor{};
                 t_dim multiplierNodeInner{};
                 t_dim multiplierNodeOuter{};
+                t_s_meter_t transmissivitySelf = get<t_meter, VerticalSize>() * getK();
                 t_s_meter_t contributorConductance = 0.0 * (si::square_meter / day);
                 t_s_meter_t nodeConductance = 0.0 * (si::square_meter / day);
                 std::forward_list<NeighbourPosition> potentialContributors;
 
                 int neigRefInto{};
+                int contrRefInto{};
                 for (const auto &position: possibleRefNeigPos) {
                     auto refinedNeig = neighbours.find(position);
                     if (refinedNeig != neighbours.end()) {
-                        t_s_meter_t contributorConductances = 0.0 * (si::square_meter / day);
                         potentialContributors = getPotentialContributors(position);
                         for (const auto &potContrPos: potentialContributors) {
                             auto contributor = neighbours.find(potContrPos); // contributor is named "j" in USG doc
@@ -1461,8 +1466,10 @@ Calculate
                                 continue; // todo implement impact of GHB (not required if all nodes at coast/GHB are refined)
                             }
 
+                            contrRefInto = (int) at(contributor)->getRefinedInto();
+                            multiplierContributor = ( 1.0 / (2.0 * sqrt(contrRefInto) )) * si::si_dimensionless;
+
                             neigRefInto = (int) at(refinedNeig)->getRefinedInto();
-                            multiplierContributor = ( 1 / (2 * sqrt(neigRefInto) )) * si::si_dimensionless;
                             if (neigRefInto == 4) {
                                 multiplierNodeInner = (1.0 / 4.0) * si::si_dimensionless;
                                 multiplierNodeOuter = (1.0 / 4.0) * si::si_dimensionless;
@@ -1479,47 +1486,44 @@ Calculate
                                 }
                             }
 
-                            t_s_meter_t transmissivity_self = get<t_meter, VerticalSize>() * getK();
-                            t_s_meter_t transmissivity_neig =
+                            t_s_meter_t transmissivityNeig =
                                     getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
 
-                            if (transmissivity_neig != 0 * si::square_meter / day and
-                                transmissivity_self != 0 * si::square_meter / day) {
+                            if (transmissivityNeig != 0 * si::square_meter / day and
+                                transmissivitySelf != 0 * si::square_meter / day) {
                                 t_meter nodeWidth = std::min(getNodeWidth(contributor),
                                                              at(contributor)->getNodeWidth(contributor));
                                 // conductance from contributor node to ghost node
-                                // if refined into four, contributor multiplier is 0.5, multiplier for this node is 0.25
+                                // if refined into four, multiplierContributor is 0.5, multiplierNodeOuter is 0.25
                                 contributorConductance = nodeWidth *
-                                                         ((transmissivity_self * transmissivity_neig)
-                                                          / (transmissivity_self *
+                                                         ((transmissivitySelf * transmissivityNeig)
+                                                          / (transmissivitySelf *
                                                              at(contributor)->getNodeLength(contributor) *
                                                              multiplierContributor +
-                                                             transmissivity_neig * getNodeLength(contributor) *
+                                                             transmissivityNeig * getNodeLength(contributor) *
                                                              multiplierNodeOuter));
-                                contributorConductances += contributorConductance;
                             }
+                            // conductance from this node's center to ghost node inside this node
+                            // if refined into four, multiplierNodeInner is 0.25
+                            nodeConductance = getNodeWidth(contributor) *
+                                              (transmissivitySelf / (getNodeLength(contributor) * multiplierNodeInner));
+
+                            // the alpha coefficient is used to weigh influence on ghost node height difference
+                            t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
+                            //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
+
+                            // conductance to the refined neighbour node
+                            t_s_meter_t conductance =
+                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
+
+                            // calculate ghost node correction
+                            gnc = conductance * (alpha * (getHead() - at(contributor)->getHead()));
+                            out += gnc;
+                            //LOG(debug) << "GNC for nodeID "     << get<large_num, ID>() <<
+                            //              " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
+                            //              " with contributor "  << getAt<large_num, ID>(contributor) <<
+                            //              " = "                 << gnc.value();
                         }
-                        // conductance from this node's center to ghost node inside this node
-                        // (if refined into four, distance is a quarter of this node's length (multiplierNode below))
-                        nodeConductance = getNodeWidth(contributor) *
-                                          (transmissivity_self / (getNodeLength(contributor) * multiplierNodeInner));
-
-                        // the alpha coefficient is used to weigh influence on ghost node height difference
-                        t_dim alpha = contributorConductances / (contributorConductances + nodeConductance);
-                        //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
-
-                        // conductance to the refined neighbour node
-                        t_s_meter_t conductance =
-                                mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
-
-                        // calculate ghost node correction
-                        gnc = conductance * (alpha * (getHead() - at(contributor)->getHead()));
-                        out += gnc;
-                        LOG(debug) << "GNC for nodeID "     << get<large_num, ID>() <<
-                                      " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
-                                      " with contributor "  << getAt<large_num, ID>(contributor) <<
-                                      " = "                 << gnc.value();
-
                     }
                 }
                 return out;
@@ -1530,35 +1534,30 @@ Calculate
                 if (refinedNeigPos == NeighbourPosition::FRONTLEFT or
                     refinedNeigPos == NeighbourPosition::BACKLEFT or
                     refinedNeigPos == NeighbourPosition::FRONTFRONTLEFT or
-                    refinedNeigPos == NeighbourPosition::BACKBACKLEFT or
-                    refinedNeigPos == NeighbourPosition::LEFTLEFT) {
+                    refinedNeigPos == NeighbourPosition::BACKBACKLEFT) {
                     return {NeighbourPosition::LEFT, NeighbourPosition::LEFTFRONT, NeighbourPosition::LEFTBACK,
-                            NeighbourPosition::LEFTLEFTFRONT, NeighbourPosition::LEFTLEFTBACK,
-                            NeighbourPosition::LEFTLEFT};
+                            NeighbourPosition::LEFTLEFTFRONT, NeighbourPosition::LEFTLEFTBACK};
                 } else if (refinedNeigPos == NeighbourPosition::FRONTRIGHT or
                            refinedNeigPos == NeighbourPosition::BACKRIGHT or
                            refinedNeigPos == NeighbourPosition::FRONTFRONTRIGHT or
-                           refinedNeigPos == NeighbourPosition::BACKBACKRIGHT or
-                           refinedNeigPos == NeighbourPosition::RIGHTRIGHT) {
+                           refinedNeigPos == NeighbourPosition::BACKBACKRIGHT) {
                     return {NeighbourPosition::RIGHT, NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTBACK,
-                            NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK,
-                            NeighbourPosition::RIGHTRIGHT};
+                            NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK};
                 } else if (refinedNeigPos == NeighbourPosition::LEFTFRONT or
-                        refinedNeigPos == NeighbourPosition::RIGHTFRONT or
-                        refinedNeigPos == NeighbourPosition::LEFTLEFTFRONT or
-                        refinedNeigPos == NeighbourPosition::RIGHTRIGHTFRONT or
-                        refinedNeigPos == NeighbourPosition::FRONTFRONT) {
+                           refinedNeigPos == NeighbourPosition::RIGHTFRONT or
+                           refinedNeigPos == NeighbourPosition::LEFTLEFTFRONT or
+                           refinedNeigPos == NeighbourPosition::RIGHTRIGHTFRONT) {
                     return {NeighbourPosition::FRONT, NeighbourPosition::FRONTLEFT, NeighbourPosition::FRONTRIGHT,
-                            NeighbourPosition::FRONTFRONTRIGHT, NeighbourPosition::FRONTFRONTLEFT,
-                            NeighbourPosition::FRONTFRONT};
+                            NeighbourPosition::FRONTFRONTRIGHT, NeighbourPosition::FRONTFRONTLEFT};
                 } else if (refinedNeigPos == NeighbourPosition::LEFTBACK or
                            refinedNeigPos == NeighbourPosition::RIGHTBACK or
                            refinedNeigPos == NeighbourPosition::LEFTLEFTBACK or
-                           refinedNeigPos == NeighbourPosition::RIGHTRIGHTBACK or
-                           refinedNeigPos == NeighbourPosition::BACKBACK) {
+                           refinedNeigPos == NeighbourPosition::RIGHTRIGHTBACK) {
                     return {NeighbourPosition::BACK, NeighbourPosition::BACKLEFT, NeighbourPosition::BACKRIGHT,
-                            NeighbourPosition::BACKBACKLEFT, NeighbourPosition::BACKBACKRIGHT,
-                            NeighbourPosition::BACKBACK};
+                            NeighbourPosition::BACKBACKLEFT, NeighbourPosition::BACKBACKRIGHT};
+                } else {
+                    std::forward_list<NeighbourPosition> emptyList{};
+                    return emptyList;
                 }
             }
 
@@ -1569,14 +1568,19 @@ Calculate
 
             std::forward_list<NeighbourPosition>
             getPossibleRefinedNeighbours() {
-                return {NeighbourPosition::FRONTLEFT,  NeighbourPosition::FRONTFRONT, NeighbourPosition::FRONTRIGHT,
-                        NeighbourPosition::FRONTFRONTLEFT,  NeighbourPosition::FRONTFRONTRIGHT,
-                        NeighbourPosition::BACKLEFT,   NeighbourPosition::BACKBACK,  NeighbourPosition::BACKRIGHT,
-                        NeighbourPosition::BACKBACKLEFT,   NeighbourPosition::BACKBACKRIGHT,
-                        NeighbourPosition::LEFTFRONT,  NeighbourPosition::LEFTLEFT,  NeighbourPosition::LEFTBACK,
-                        NeighbourPosition::LEFTLEFTFRONT,  NeighbourPosition::LEFTLEFTBACK,
-                        NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTRIGHT, NeighbourPosition::RIGHTBACK,
-                        NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK};
+                if (hasRefinedNeighbour()) {
+                    return {NeighbourPosition::FRONTLEFT,  NeighbourPosition::FRONTFRONT, NeighbourPosition::FRONTRIGHT,
+                            NeighbourPosition::FRONTFRONTLEFT,  NeighbourPosition::FRONTFRONTRIGHT,
+                            NeighbourPosition::BACKLEFT,   NeighbourPosition::BACKBACK,  NeighbourPosition::BACKRIGHT,
+                            NeighbourPosition::BACKBACKLEFT,   NeighbourPosition::BACKBACKRIGHT,
+                            NeighbourPosition::LEFTFRONT,  NeighbourPosition::LEFTLEFT,  NeighbourPosition::LEFTBACK,
+                            NeighbourPosition::LEFTLEFTFRONT,  NeighbourPosition::LEFTLEFTBACK,
+                            NeighbourPosition::RIGHTFRONT, NeighbourPosition::RIGHTRIGHT, NeighbourPosition::RIGHTBACK,
+                            NeighbourPosition::RIGHTRIGHTFRONT, NeighbourPosition::RIGHTRIGHTBACK};
+                } else {
+                    std::forward_list<NeighbourPosition> emptyList{};
+                    return emptyList;
+                }
             }
 
             static std::forward_list<NeighbourPosition>
@@ -1588,7 +1592,9 @@ Calculate
             std::forward_list<NeighbourPosition>
             getPossibleNeighbours_horizontal(){
                 std::forward_list<NeighbourPosition> possiblePositions = getNeigPos_LRFB();
-                possiblePositions.merge(getPossibleRefinedNeighbours());
+                if (hasRefinedNeighbour()){
+                    possiblePositions.merge(getPossibleRefinedNeighbours());
+                }
                 return possiblePositions;
             }
 
@@ -1629,7 +1635,7 @@ Calculate
                 for (int zetaID = 0; zetaID < zetas.size() - 1; ++zetaID) {
                     if (zetas[zetaID] < zetas[zetaID+1]) {
                         LOG(userinfo) << "At nodeID " << getID() << ": zeta at ID= " << zetaID << ":" <<
-                        zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
+                                      zetas[zetaID].value() << ", zeta at ID+1: " <<  zetas[zetaID+1].value();
                         throw "Vector of zetas needs to be sorted!";
                     }
                 }
@@ -1706,7 +1712,7 @@ Calculate
                     return zeta;
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
-                    ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
+                          ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
 
@@ -1744,7 +1750,7 @@ Calculate
                     return get<std::vector<t_meter>, ZetasChange>()[localZetaID];
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
-                    ": ZetasChange[localZetaID = " + std::to_string(localZetaID) + "]";
+                          ": ZetasChange[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
 
@@ -1821,240 +1827,247 @@ Calculate
              */
             void setEffectivePorosity_direct(t_dim effectivePorosity) { set<t_dim, EffectivePorosity>(effectivePorosity); }
 
-        /**
-         * @brief Updates GW recharge
-         * Curently assumes only one recharge as external flow!
-         * @param amount The new flow amount
-         * @param Should the recharge in the dynamic rivers be locked or updated by this change?
-         */
-        void updateUniqueFlow(double amount, FlowType flow = RECHARGE, bool lock = true) {
-            if (lock and flow == RECHARGE) {
+            /**
+             * @brief Updates GW recharge
+             * Curently assumes only one recharge as external flow!
+             * @param amount The new flow amount
+             * @param Should the recharge in the dynamic rivers be locked or updated by this change?
+             */
+            void updateUniqueFlow(double amount, FlowType flow = RECHARGE, bool lock = true) {
+                if (lock and flow == RECHARGE) {
+                    if (hasTypeOfExternalFlow(RIVER_MM)) {
+                        //get current recharge and lock it before setting new recharge
+                        //in arid regions recharge might be 0
+                        t_vol_t recharge{0 * si::cubic_meter /day};
+                        if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
+                        //also lock conductance value
+                        getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
+                        getExternalFlowByName(RIVER_MM).setLockRecharge(recharge); //TODO: never used; in calcERC read but not used
+                        getExternalFlowByName(RIVER_MM).setLock(); //locks conductance to steady state conductance and inhibits updates later
+                        //!comment! if this code is deactivated locked conductance and locked recharge is lost if flow is removed in addExternalFlowFlowHead but not important bc. never used (in calcERC) if conductance should be changed by calcERC
+                    }
+                }
+                if (hasTypeOfExternalFlow(flow)) {
+                    removeExternalFlow(flow);
+                }
+
+                addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
+                if(numOfExternalFlows != externalFlows.size()){
+                    throw "Number of external flows don't match";
+                }
+            }
+
+
+            /**
+             * Scale dynamic rivers for sensitivity
+             * @param mult
+             */
+            void scaleDynamicRivers(double mult) {
                 if (hasTypeOfExternalFlow(RIVER_MM)) {
-                    //get current recharge and lock it before setting new recharge
-                    //in arid regions recharge might be 0
-                    t_vol_t recharge{0 * si::cubic_meter /day};
-                    if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
-                    //also lock conductance value
-                    getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
-                    getExternalFlowByName(RIVER_MM).setLockRecharge(recharge); //TODO: never used; in calcERC read but not used
-                    getExternalFlowByName(RIVER_MM).setLock(); //locks conductance to steady state conductance and inhibits updates later
-                    //!comment! if this code is deactivated locked conductance and locked recharge is lost if flow is removed in addExternalFlowFlowHead but not important bc. never used (in calcERC) if conductance should be changed by calcERC
+                    getExternalFlowByName(RIVER_MM).setMult(mult);
                 }
             }
-            if (hasTypeOfExternalFlow(flow)) {
-                removeExternalFlow(flow);
-            }
 
-            addExternalFlow(flow, 0 * si::meter, amount, 0 * si::meter);
-            if(numOfExternalFlows != externalFlows.size()){
-                throw "Number of external flows don't match";
-            }
-        }
-
-
-        /**
-         * Scale dynamic rivers for sensitivity
-         * @param mult
-         */
-        void scaleDynamicRivers(double mult) {
-            if (hasTypeOfExternalFlow(RIVER_MM)) {
-                getExternalFlowByName(RIVER_MM).setMult(mult);
-            }
-        }
-
-        /**
-         * @brief Update wetlands, lakes conduct if conduct is set to 0 due to reductionFactor -> reset to initial conduct from steady state to allow GW flow into SWB
-         * @param reductionFactor 0 <= reductionFactor <= 1
-         * @param type type of flow
-         */
-        void updateExternalFlowConduct(double reductionFactor, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = getExternalFlowByName(type).getFlowHead();
-                t_meter bottom = getExternalFlowByName(type).getBottom();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                double initConduct = getExternalFlowByName(type).getInitConductance().value();
-                double conduct = initConduct;
-                if (reductionFactor != 0.)
-                    conduct *= reductionFactor;
-                // else conduct does not change and is initial value
-                removeExternalFlow(type);
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
-            }
-        }
-
-        /**
-         *@brief saves conductance of steady state solution
-         */
-        void saveNodeSteadyStateConduct() {
-            double conduct;
-            if (hasTypeOfExternalFlow(Model::FlowType::LAKE)) {
-                conduct = getExternalFlowByName(Model::FlowType::LAKE).getConductance().value();
-                getExternalFlowByName(Model::FlowType::LAKE).setInitConductance(conduct);
-            }
-            if (hasTypeOfExternalFlow(Model::FlowType::WETLAND)) {
-                conduct = getExternalFlowByName(Model::FlowType::WETLAND).getConductance().value();
-                getExternalFlowByName(Model::FlowType::WETLAND).setInitConductance(conduct);
-            }
-            if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_LAKE)) {
-                conduct = getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).getConductance().value();
-                getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).setInitConductance(conduct);
-            }
-            if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_WETLAND)) {
-                conduct = getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).getConductance().value();
-                getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).setInitConductance(conduct);
-            }
-        }
-
-        /**
-        *@brief saves river depth (flow head - bottom) of steady state solution
-        */
-        void saveNodeSteadyStateRiverDepth() {
-            double RiverDepth;
-            if (hasTypeOfExternalFlow(Model::FlowType::RIVER_MM)){
-                RiverDepth = getExternalFlowByName(Model::FlowType::RIVER_MM).getFlowHead().value() - getExternalFlowByName(Model::FlowType::RIVER_MM).getBottom().value();
-                if (RiverDepth < 1.)    // else if 0 head could never change
-                    RiverDepth = 1.;
-                getExternalFlowByName(Model::FlowType::RIVER_MM).setRiverDepthSteadyState(RiverDepth);
-            }
-        };
-
-        /**
-        * @brief Multiplies flow head for Sensitivity An. wetlands, lakes, rivers
-        * @param amount
-        * @param type
-        */
-        void updateExternalFlowFlowHead(double amount, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount; //TODO: if amount puts flowhead down head might be under bottom
-                double conduct = getExternalFlowByName(type).getConductance().value();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                t_meter bottom = getExternalFlowByName(type).getBottom();
-                double initConduct = getExternalFlowByName(type).getInitConductance().value();
-                removeExternalFlow(type);
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
-            }
-        }
-
-        /**
-        * @brief Sets flowHead for wetlands, lakes, rivers; only used for global lakes at the moment
-        * @param amount
-        * @param type
-        */
-        void setExternalFlowFlowHead(double amount, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = amount * si::meter;
-                double conduct = getExternalFlowByName(type).getConductance().value();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                t_meter bottom = getExternalFlowByName(type).getBottom();
-                double initConduct = getExternalFlowByName(type).getInitConductance().value();
-                removeExternalFlow(type);
-                if (flowHead.value() < bottom.value())
-                    flowHead = bottom;
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
-            }
-        }
-
-        /**
-       * @brief adds delta to flowHead An. wetlands, lakes, rivers
-       * @note Also checks for locked recharge
-       * @param amount
-       * @param type
-       */
-        void addExternalFlowFlowHead(double amount, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                ExternalFlow& externalFlow = getExternalFlowByName(type);
-                t_meter delta{amount * si::meter};
-                t_meter bottom{externalFlow.getBottom()};
-                t_meter flowHead{externalFlow.getFlowHead() + delta};
-                double initConduct = externalFlow.getInitConductance().value();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                //The river is dry
-                if(std::isnan(amount)){ flowHead = bottom; }
-                double conduct{externalFlow.getConductance().value()};
-                bool lock{externalFlow.getLock()};
-                t_vol_t recharge{externalFlow.getLockRecharge()};
-                t_s_meter_t l_cond{externalFlow.getLockConduct()};
-                removeExternalFlow(type);
-                if (flowHead.value() < bottom.value())
-                    flowHead = bottom;
-                NANChecker(flowHead.value(), "Stage value");
-                NANChecker(l_cond.value(), "Conduct value");
-                NANChecker(bottom.value(), "Bottom value");
-
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
-                if (lock) {
-                    getExternalFlowByName(type).setLock();
-                    getExternalFlowByName(type).setLockRecharge(recharge);
-                    getExternalFlowByName(type).setLockConduct(l_cond);
+            /**
+             * @brief Update wetlands, lakes conduct if conduct is set to 0 due to reductionFactor -> reset to initial conduct from steady state to allow GW flow into SWB
+             * @param reductionFactor 0 <= reductionFactor <= 1
+             * @param type type of flow
+             */
+            void updateExternalFlowConduct(double reductionFactor, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    t_meter flowHead = getExternalFlowByName(type).getFlowHead();
+                    t_meter bottom = getExternalFlowByName(type).getBottom();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                    double conduct = initConduct;
+                    if (reductionFactor != 0.)
+                        conduct *= reductionFactor;
+                    // else conduct does not change and is initial value
+                    removeExternalFlow(type);
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
                 }
             }
-        }
 
-        /**
-         * @brief Multiplies flow bottom for Sensitivity An. wetlands, lakes, rivers
-         * @param amount
-         * @param type
-         */
-        void updateExternalFlowBottom(double amount, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = getExternalFlowByName(type).getFlowHead();
-                double conduct = getExternalFlowByName(type).getConductance().value();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                t_meter bottom = getExternalFlowByName(type).getBottom() * amount; // TODO: if amount puts bottom upwards head might be under bottom
-                double initConduct = getExternalFlowByName(type).getInitConductance().value();
-                removeExternalFlow(type);
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+            /**
+             *@brief saves conductance of steady state solution
+             */
+            void saveNodeSteadyStateConduct() {
+                double conduct;
+                if (hasTypeOfExternalFlow(Model::FlowType::LAKE)) {
+                    conduct = getExternalFlowByName(Model::FlowType::LAKE).getConductance().value();
+                    getExternalFlowByName(Model::FlowType::LAKE).setInitConductance(conduct);
+                }
+                if (hasTypeOfExternalFlow(Model::FlowType::WETLAND)) {
+                    conduct = getExternalFlowByName(Model::FlowType::WETLAND).getConductance().value();
+                    getExternalFlowByName(Model::FlowType::WETLAND).setInitConductance(conduct);
+                }
+                if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_LAKE)) {
+                    conduct = getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).getConductance().value();
+                    getExternalFlowByName(Model::FlowType::GLOBAL_LAKE).setInitConductance(conduct);
+                }
+                if (hasTypeOfExternalFlow(Model::FlowType::GLOBAL_WETLAND)) {
+                    conduct = getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).getConductance().value();
+                    getExternalFlowByName(Model::FlowType::GLOBAL_WETLAND).setInitConductance(conduct);
+                }
             }
-        }
 
-        /**
-        * @brief Set bottom for wetlands, lakes, rivers
-        * @param amount
-        * @param type
-        */
-        void setExternalFlowBottom(double amount, FlowType type) {
-            if (hasTypeOfExternalFlow(type)) {
-                t_meter flowHead = getExternalFlowByName(type).getFlowHead();
-                double conduct = getExternalFlowByName(type).getConductance().value();
-                double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
-                t_meter bottom = amount * si::meter;
-                double initConduct = getExternalFlowByName(type).getInitConductance().value();
-                removeExternalFlow(type);
-                if (flowHead.value() < bottom.value())
-                    flowHead = bottom;
-                addExternalFlow(type, flowHead, conduct, bottom);
-                getExternalFlowByName(type).setInitConductance(initConduct);
-                getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+            /**
+            *@brief saves river depth (flow head - bottom) of steady state solution
+            */
+            void saveNodeSteadyStateRiverDepth() {
+                double RiverDepth;
+                if (hasTypeOfExternalFlow(Model::FlowType::RIVER_MM)){
+                    RiverDepth = getExternalFlowByName(Model::FlowType::RIVER_MM).getFlowHead().value() - getExternalFlowByName(Model::FlowType::RIVER_MM).getBottom().value();
+                    if (RiverDepth < 1.)    // else if 0 head could never change
+                        RiverDepth = 1.;
+                    getExternalFlowByName(Model::FlowType::RIVER_MM).setRiverDepthSteadyState(RiverDepth);
+                }
+            };
+
+            /**
+            * @brief Multiplies flow head for Sensitivity An. wetlands, lakes, rivers
+            * @param amount
+            * @param type
+            */
+            void updateExternalFlowFlowHead(double amount, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    t_meter flowHead = getExternalFlowByName(type).getFlowHead() * amount; //TODO: if amount puts flowhead down head might be under bottom
+                    double conduct = getExternalFlowByName(type).getConductance().value();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    t_meter bottom = getExternalFlowByName(type).getBottom();
+                    double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                    removeExternalFlow(type);
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+                }
             }
-        }
 
-        /**
-         * @brief Check for type river
-         * @return bool
-         */
-        bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
+            /**
+            * @brief Sets flowHead for wetlands, lakes, rivers; only used for global lakes at the moment
+            * @param amount
+            * @param type
+            */
+            void setExternalFlowFlowHead(double amount, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    t_meter flowHead = amount * si::meter;
+                    double conduct = getExternalFlowByName(type).getConductance().value();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    t_meter bottom = getExternalFlowByName(type).getBottom();
+                    double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                    removeExternalFlow(type);
+                    if (flowHead.value() < bottom.value())
+                        flowHead = bottom;
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+                }
+            }
 
-        /**
-        * @brief Check for type river
-        * @return bool
-        */
-        bool hasRiver_MM() { return hasTypeOfExternalFlow(RIVER_MM); }
+            /**
+           * @brief adds delta to flowHead An. wetlands, lakes, rivers
+           * @note Also checks for locked recharge
+           * @param amount
+           * @param type
+           */
+            void addExternalFlowFlowHead(double amount, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    ExternalFlow& externalFlow = getExternalFlowByName(type);
+                    t_meter delta{amount * si::meter};
+                    t_meter bottom{externalFlow.getBottom()};
+                    t_meter flowHead{externalFlow.getFlowHead() + delta};
+                    double initConduct = externalFlow.getInitConductance().value();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    //The river is dry
+                    if(std::isnan(amount)){ flowHead = bottom; }
+                    double conduct{externalFlow.getConductance().value()};
+                    bool lock{externalFlow.getLock()};
+                    t_vol_t recharge{externalFlow.getLockRecharge()};
+                    t_s_meter_t l_cond{externalFlow.getLockConduct()};
+                    removeExternalFlow(type);
+                    if (flowHead.value() < bottom.value())
+                        flowHead = bottom;
+                    NANChecker(flowHead.value(), "Stage value");
+                    NANChecker(l_cond.value(), "Conduct value");
+                    NANChecker(bottom.value(), "Bottom value");
 
-        /**
-         * @brief Check for type GHB
-         * @return bool
-         */
-        bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+                    if (lock) {
+                        getExternalFlowByName(type).setLock();
+                        getExternalFlowByName(type).setLockRecharge(recharge);
+                        getExternalFlowByName(type).setLockConduct(l_cond);
+                    }
+                }
+            }
+
+            /**
+             * @brief Multiplies flow bottom for Sensitivity An. wetlands, lakes, rivers
+             * @param amount
+             * @param type
+             */
+            void updateExternalFlowBottom(double amount, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    t_meter flowHead = getExternalFlowByName(type).getFlowHead();
+                    double conduct = getExternalFlowByName(type).getConductance().value();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    t_meter bottom = getExternalFlowByName(type).getBottom() * amount; // TODO: if amount puts bottom upwards head might be under bottom
+                    double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                    removeExternalFlow(type);
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+                }
+            }
+
+            /**
+            * @brief Set bottom for wetlands, lakes, rivers
+            * @param amount
+            * @param type
+            */
+            void setExternalFlowBottom(double amount, FlowType type) {
+                if (hasTypeOfExternalFlow(type)) {
+                    t_meter flowHead = getExternalFlowByName(type).getFlowHead();
+                    double conduct = getExternalFlowByName(type).getConductance().value();
+                    double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
+                    t_meter bottom = amount * si::meter;
+                    double initConduct = getExternalFlowByName(type).getInitConductance().value();
+                    removeExternalFlow(type);
+                    if (flowHead.value() < bottom.value())
+                        flowHead = bottom;
+                    addExternalFlow(type, flowHead, conduct, bottom);
+                    getExternalFlowByName(type).setInitConductance(initConduct);
+                    getExternalFlowByName(type).setRiverDepthSteadyState(RiverDepth);
+                }
+            }
+
+            /**
+             * @brief Check for type river
+             * @return bool
+             */
+            bool hasRiver() { return hasTypeOfExternalFlow(RIVER); }
+
+            /**
+            * @brief Check for type river
+            * @return bool
+            */
+            bool hasRiver_MM() { return hasTypeOfExternalFlow(RIVER_MM); }
+
+            /**
+             * @brief Check for type GHB
+             * @return bool
+             */
+            bool hasGHB() { return hasTypeOfExternalFlow(GENERAL_HEAD_BOUNDARY); }
+
+
+            /**
+            * @brief Check if node has any refined neighbour
+            * @return bool
+            */
+            bool hasRefinedNeighbour() { return get<bool, HasRefinedNeighbour>(); }
 
             /**
              * @brief Get Q part (external sources) of flow equations
@@ -2248,7 +2261,7 @@ Calculate
                         std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
 
                         if ((isZetaActive(localZetaID) and // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
-                            at(got)->isZetaActive(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
+                             at(got)->isZetaActive(localZetaID))) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
                             //%% head part %%
                             t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
                             t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
@@ -2344,8 +2357,8 @@ Calculate
                                     // vertical leakage to DOWN neighbour
                                     auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                                     if(getFluxDown() < 0 * (si::cubic_meter / day) and
-                                        at(got)->getNusTop() < nusInZones[localZetaID] and
-                                        getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
+                                       at(got)->getNusTop() < nusInZones[localZetaID] and
+                                       getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
                                         continue;
                                     } else{
                                         out += getFluxDown(); // in SWI2: qzbot
@@ -2484,7 +2497,7 @@ Calculate
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] *
-                                (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
+                                    (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
                         // Note: in SWI2 documentation is, BOUY is calculated by adding headdiff (would be out +=),
                         // MODFLOW code for headdiff is as implemented here (with out -=)
                     }
@@ -2492,8 +2505,8 @@ Calculate
                     t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
                     out = verticalConductance *
                           (headdiff +
-                          0.5 * (at(got)->getZetas().back() - getZetas().front()) *
-                          (at(got)->getNusBot() + getNusTop()));
+                           0.5 * (at(got)->getZetas().back() - getZetas().front()) *
+                           (at(got)->getNusBot() + getNusTop()));
                     // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP,
                     // in MODFLOW code there is a + in the calculation of QLEXTRA
                     //LOG(debug) << "headdiff: " << headdiff.value() << std::endl;
@@ -2571,7 +2584,7 @@ Calculate
                         // if groundwater head is ABOVE the bottom of the node
                         if (head > bottomOfNode) {
                             newHeight = head;
-                        // if groundwater head is BELOW OR EQUAL to the bottom of the node
+                            // if groundwater head is BELOW OR EQUAL to the bottom of the node
                         } else { // head <= bottomOfNode
                             newHeight = bottomOfNode;
                         }
@@ -2584,7 +2597,7 @@ Calculate
                                 setZeta(localZetaID, newHeight);
                             }
                         }
-                    // if groundwater head is ABOVE OR EQUAL to the top of the node
+                        // if groundwater head is ABOVE OR EQUAL to the top of the node
                     } else { // head >= topOfNode
                         // clip zeta to the top of the node
                         setZeta(0, topOfNode);
@@ -2630,7 +2643,7 @@ Calculate
                                     t_meter zeta_back_top = at(top)->getZetas().back();
                                     at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
 
-                                // if vertical flux through the top of the node is negative...
+                                    // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
                                                 (get<t_s_meter, Area>() * getEffectivePorosity() * get<t_dim, StepModifier>()); // * get<t_dim, StepModifier>()
@@ -2675,14 +2688,14 @@ Calculate
 
                                 // if tracking tip/toe: raise/lower this zeta surface in this node by:
                                 delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((at(got)->getEffectivePorosity() * getLengthNeig(got)) /
-                                                   ((getEffectivePorosity() * getNodeLength(got)) +
-                                                    (at(got)->getEffectivePorosity() * getLengthNeig(got))));
+                                             ((at(got)->getEffectivePorosity() * getLengthNeig(got)) /
+                                              ((getEffectivePorosity() * getNodeLength(got)) +
+                                               (at(got)->getEffectivePorosity() * getLengthNeig(got))));
                                 // if tracking tip/toe: lower/raise this zeta surface in neighbouring node by:
                                 delta_neig = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                                  ((getEffectivePorosity() * getNodeLength(got)) /
-                                                   ((getEffectivePorosity() * getNodeLength(got)) +
-                                                    (at(got)->getEffectivePorosity() * getLengthNeig(got))));
+                                             ((getEffectivePorosity() * getNodeLength(got)) /
+                                              ((getEffectivePorosity() * getNodeLength(got)) +
+                                               (at(got)->getEffectivePorosity() * getLengthNeig(got))));
 
                                 if (at(got)->isZetaAtBottom(localZetaID)) {
                                     //%% Toe tracking %%
@@ -2712,14 +2725,14 @@ Calculate
                                     if (got_opp != neighbours.end()){
                                         if (at(got_opp)->isZetaActive(localZetaID)) {
                                             // change zeta in other direction neighbour
-                                                delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
-                                                             (getNodeLength(got) * getEffectivePorosity()) /
-                                                             (getLengthNeig(got_opp) *
-                                                              at(got_opp)->getEffectivePorosity()));
-                                                t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
-                                                at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
-                                                setZeta(localZetaID, getZetas().back());
-                                                //LOG(debug) << "delta_opp (toe): " << delta_opp.value() << std::endl;
+                                            delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
+                                                         (getNodeLength(got) * getEffectivePorosity()) /
+                                                         (getLengthNeig(got_opp) *
+                                                          at(got_opp)->getEffectivePorosity()));
+                                            t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
+                                            at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
+                                            setZeta(localZetaID, getZetas().back());
+                                            //LOG(debug) << "delta_opp (toe): " << delta_opp.value() << std::endl;
                                         }
                                     }
                                 }
@@ -2730,21 +2743,21 @@ Calculate
             }
 
             NeighbourPosition getOppositePosition(NeighbourPosition position) {
-                    if (position == NeighbourPosition::BACK or
-                            position == NeighbourPosition::BACKLEFT or position == NeighbourPosition::BACKRIGHT) {
-                        return NeighbourPosition::FRONT;
-                    } else if (position == NeighbourPosition::FRONT or
-                        position == NeighbourPosition::FRONTLEFT or position == NeighbourPosition::FRONTRIGHT) {
-                        return NeighbourPosition::BACK;
-                    } else if (position == NeighbourPosition::LEFT or
-                               position == NeighbourPosition::LEFTFRONT or position == NeighbourPosition::LEFTBACK) {
-                        return NeighbourPosition::RIGHT;
-                    } else if (position == NeighbourPosition::RIGHT or
-                               position == NeighbourPosition::RIGHTFRONT or position == NeighbourPosition::RIGHTBACK) {
-                        return NeighbourPosition::LEFT;
-                    } else {
-                        throw "Position unavailable for function getOppositePosition";
-                    }
+                if (position == NeighbourPosition::BACK or
+                    position == NeighbourPosition::BACKLEFT or position == NeighbourPosition::BACKRIGHT) {
+                    return NeighbourPosition::FRONT;
+                } else if (position == NeighbourPosition::FRONT or
+                           position == NeighbourPosition::FRONTLEFT or position == NeighbourPosition::FRONTRIGHT) {
+                    return NeighbourPosition::BACK;
+                } else if (position == NeighbourPosition::LEFT or
+                           position == NeighbourPosition::LEFTFRONT or position == NeighbourPosition::LEFTBACK) {
+                    return NeighbourPosition::RIGHT;
+                } else if (position == NeighbourPosition::RIGHT or
+                           position == NeighbourPosition::RIGHTFRONT or position == NeighbourPosition::RIGHTBACK) {
+                    return NeighbourPosition::LEFT;
+                } else {
+                    throw "Position unavailable for function getOppositePosition";
+                }
             }
 
             /**
@@ -2851,11 +2864,11 @@ Calculate
                                 }
                                 // calculate delta zeta of node and neighbour
                                 delta_self = maxDelta * (at(got)->getEffectivePorosity() * getLengthNeig(got)) /
-                                                 (getEffectivePorosity() * getNodeLength(got) +
-                                                 at(got)->getEffectivePorosity() * getLengthNeig(got));
+                                             (getEffectivePorosity() * getNodeLength(got) +
+                                              at(got)->getEffectivePorosity() * getLengthNeig(got));
                                 delta_neig = maxDelta * (getEffectivePorosity() * getNodeLength(got)) /
-                                                 (getEffectivePorosity() * getNodeLength(got) +
-                                                 at(got)->getEffectivePorosity() * getLengthNeig(got));
+                                             (getEffectivePorosity() * getNodeLength(got) +
+                                              at(got)->getEffectivePorosity() * getLengthNeig(got));
 
                                 // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                                 // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour
@@ -2949,7 +2962,7 @@ Calculate
                     return frontBackMap.at(neig);
                 } catch (const std::out_of_range &e) { return false;}
                 //return (neig == FRONT or neig == BACK or
-                 //       neig == FRONTLEFT or neig == FRONTRIGHT or neig == BACKLEFT or neig == BACKRIGHT);
+                //       neig == FRONTLEFT or neig == FRONTRIGHT or neig == BACKLEFT or neig == BACKRIGHT);
             }
 
             /**
@@ -3036,7 +3049,7 @@ Calculate
                                 //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
                             } else {
                                 conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
-                                    //LOG(debug) << "horizontal conductance: " << conduct.value();
+                                //LOG(debug) << "horizontal conductance: " << conduct.value();
                             }
                         }
                         NANChecker(conduct.value(), "Conductances");
@@ -3130,19 +3143,17 @@ Calculate
                     storageFlow = 0 * (si::cubic_meter / day);
                 }
                 //LOG(debug) << "storageFlow: " << storageFlow.value() << std::endl;
-                bool useGhostNodeCorrection = false; // todo move to config
-                t_vol_t gncFromNodes {0 * (si::cubic_meter / day)};
-                t_vol_t gncToRefined {0 * (si::cubic_meter / day)};
 
-                if(useGhostNodeCorrection) {
-                    gncFromNodes = getGNCFromNodes();
-                    //LOG(debug) << "gncFromNodes: " << gncFromNodes.value() << std::endl;
-                    gncToRefined = getGNCToRefinedNode();
-                    //LOG(debug) << "gncToRefined: " << gncToRefined.value() << std::endl;
-                }
+                t_vol_t gncFromNodes = 0 * (si::cubic_meter / day);
+                //gncFromNodes = getGNCFromNodes();
+                //LOG(debug) << "gncFromNodes: " << gncFromNodes.value() << std::endl;
+
+                t_vol_t gncToRefined = 0 * (si::cubic_meter / day);
+                //gncToRefined = getGNCToRefinedNode();
+                //LOG(debug) << "gncToRefined: " << gncToRefined.value() << std::endl;
 
                 t_vol_t out = extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + gncFromNodes +
-                        gncToRefined;
+                              gncToRefined;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
@@ -3270,9 +3281,9 @@ Calculate
                     }
                 }
 
-            return std::make_pair(Vx.value(), Vy.value());
+                return std::make_pair(Vx.value(), Vy.value());
+            };
         };
-};
 
 /**
  * @class StandardNode
@@ -3297,6 +3308,7 @@ Calculate
                          bool useEfolding,
                          bool confined,
                          large_num refID,
+                         bool hasRefinedNeighbour,
                          bool densityVariable,
                          std::vector<t_dim> delnus,
                          std::vector<t_dim> nusInZones,
@@ -3308,8 +3320,8 @@ Calculate
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     head, aquiferDepth, anisotropy, specificYield, specificStorage, useEfolding,
-                                    confined, refID, densityVariable, delnus, nusInZones, effPorosity,
-                                    maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
+                                    confined, refID, hasRefinedNeighbour, densityVariable, delnus, nusInZones,
+                                    effPorosity, maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor, vdfLock) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -3328,36 +3340,36 @@ Calculate
                 set<t_meter, Head>(current_head + change);
             };
 
-        virtual t_meter
-        __calcInitialHead(t_meter initialParam) {
-            t_meter elevation = get<t_meter, TopElevation>();
-            if (elevation >= initialParam) {
-                return elevation - initialParam; // todo check whether this is correct
+            virtual t_meter
+            __calcInitialHead(t_meter initialParam) {
+                t_meter elevation = get<t_meter, TopElevation>();
+                if (elevation >= initialParam) {
+                    return elevation - initialParam; // todo check whether this is correct
+                }
+                return elevation;
             }
-            return elevation;
-        }
 
-        virtual bool
-        __isStaticNode() { return false; }
+            virtual bool
+            __isStaticNode() { return false; }
 
-        friend class boost::serialization::access;
-        template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-            boost::serialization::void_cast_register<NodeInterface, StandardNode>();
-            boost::serialization::void_cast_register<StandardNode, NodeInterface>();
-            boost::serialization::base_object<NodeInterface>(*this);
-            LOG(debug) << "Serializing Standard Node";
-            ar & nodes;
-            ar & neighbours;
-            ar & externalFlows;
-            ar & numOfExternalFlows;
-            ar & initial_head;
-            ar & simpleDistance;
-            ar & steadyState;
-            ar & fields;
-            ar & cached;
-            ar & eq_flow;
-        }
+            friend class boost::serialization::access;
+            template<class Archive>
+            void serialize(Archive & ar, const unsigned int version) {
+                boost::serialization::void_cast_register<NodeInterface, StandardNode>();
+                boost::serialization::void_cast_register<StandardNode, NodeInterface>();
+                boost::serialization::base_object<NodeInterface>(*this);
+                LOG(debug) << "Serializing Standard Node";
+                ar & nodes;
+                ar & neighbours;
+                ar & externalFlows;
+                ar & numOfExternalFlows;
+                ar & initial_head;
+                ar & simpleDistance;
+                ar & steadyState;
+                ar & fields;
+                ar & cached;
+                ar & eq_flow;
+            }
 
         };
 
@@ -3383,7 +3395,7 @@ Calculate
                     ID,
                     ID,
                     0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15,
-                    0.000015, false, true, 0, true,{0.0, 0.1}, {0.0, 0.1},
+                    0.000015, false, true, 0, false, false,{0.0, 0.1}, {0.0, 0.1},
                     0.2, 0.2, 0.2, 0.1, 0.1,0.001 * si::meter) {}
 
         private:

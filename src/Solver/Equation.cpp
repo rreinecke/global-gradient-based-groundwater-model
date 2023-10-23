@@ -14,7 +14,7 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     this->RCLOSE_HEAD = options.getConverganceCriteriaHead();
     this->RCLOSE_ZETA = options.getConverganceCriteriaZeta();
     this->initialHead = options.getInitialHead();
-    this->maxHeadChange = options.getMaxHeadChange();
+    this->maxAllowedHeadChange = options.getMaxHeadChange();
     this->isAdaptiveDamping = options.isDampingEnabled();
     this->dampMin = options.getMinDamp();
     this->dampMax = options.getMaxDamp();
@@ -64,7 +64,7 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     if(vdf) {
         LOG(userinfo) << "Simulating variable density flow" << std::endl;
         this->numberOfZones = options.getDensityZones().size();
-        this->maxZetaChange = options.getMaxZetaChange();
+        this->maxAllowedZetaChange = options.getMaxZetaChange();
 
 #pragma omp parallel for
         for (int i = 0; i < numberOfNodesTotal; ++i) {
@@ -133,6 +133,7 @@ Equation::updateMatrix() {
 #endif
 #pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
+        //if (std::div(j,100000).rem == 0) {LOG(numerics) << "updating Matrix...";}
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
         addToA(nodes->at(id));
@@ -147,10 +148,6 @@ Equation::updateMatrix() {
         LOG(numerics) << "Recompressing Matrix";
         A.makeCompressed();
     }
-
-    //LOG(debug) << "A (updateMatrix):\n" << A << std::endl;
-    //LOG(debug) << "x (updateMatrix):\n" << x << std::endl;
-    //LOG(debug) << "b (updateMatrix):\n" << b << std::endl;
 }
 
 void inline
@@ -204,6 +201,7 @@ Equation::preconditioner() {
         LOG(numerics) << "Fail in decomposing matrix";
         throw "Fail in decomposing matrix";
     }
+    LOG(numerics) << "    ... done";
 }
 
 void inline
@@ -229,7 +227,7 @@ Equation::updateIntermediateHeads() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
-        //nodes->at(k)->setHead((double) heads[id] * si::meter);
+        // set new head (= old head + change) and headChange
         nodes->at(id)->setHeadChange((double) changes[id] * si::meter);
         //LOG(debug) << "head (updateIntermediateHeads): " << nodes->at(id)->getHead().value();
     }
@@ -349,39 +347,43 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
-    LOG(numerics) << "Updating Matrix";
+    LOG(numerics) << "Initialize Matrix for current time step";
     updateMatrix();
 
     if (!isCached) {
         LOG(numerics) << "Compressing matrix";
         A.makeCompressed();
-
-        LOG(numerics) << "Cached Matrix";
         isCached = true;
+        LOG(numerics) << "    ... done";
     }
 
     preconditioner(); // decomposing matrix
-    adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
+    adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxAllowedHeadChange, x);
 
     LOG(numerics) << "Running Time Step";
 
-    double maxHead{0};
-    double oldMaxHead{0};
+    double maxHeadChange{0};
+    double oldMaxHeadChange{0};
     int itterScale{0};
 
     // Returns true if max headchange is greater than defined val
-    auto isHeadChangeGreater = [this,&maxHead]() -> bool {
-        double lowerBound = maxHeadChange;
+    auto isHeadChangeGreater = [this,&maxHeadChange]() -> bool {
         double changeMax = 0;
+        double headMax = 0;
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            double val = std::abs(
+            double changeAtNode = std::abs(
                     nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
-            changeMax = (val > changeMax) ? val : changeMax;
+            changeMax = (changeAtNode > changeMax) ? changeAtNode : changeMax;
+            double headAtNode = std::abs(
+                    nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
+            headMax = (headAtNode > headMax) ? headAtNode : headMax;
+
         }
-	    maxHead = changeMax;
+	    maxHeadChange = changeMax;
+        LOG(numerics) << "MAX Head: " << headMax;
         LOG(numerics) << "MAX Head Change: " << changeMax;
-        return changeMax > lowerBound;
+        return changeMax > maxAllowedHeadChange;
     };
 
     long iterations{0};
@@ -427,14 +429,14 @@ Equation::solve() {
             }
         }
 
-        if(maxHead == oldMaxHead){
+        if(maxHeadChange == oldMaxHeadChange){
             //The head change is really the same -> increase inner iterations
             itterScale = itterScale + 10;
         }else{
             itterScale = 0;
         }
         cg.setMaxIterations(inner_iterations + itterScale);
-        oldMaxHead = maxHead;
+        oldMaxHeadChange = maxHeadChange;
 
         /**
          * @brief residual norm convergence
@@ -456,7 +458,7 @@ Equation::solve() {
         iterations++;
     }
     //LOG(debug) << "A:\n" << A << std::endl;
-    LOG(debug) << "x:\n" << x << std::endl;
+    //LOG(debug) << "x:\n" << x << std::endl;
     //LOG(debug) << "b (= rhs):\n" << b << std::endl;
 
     if (iterations == IITER) {
@@ -515,27 +517,26 @@ Equation::solve_zetas(){
             //LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;
             preconditioner_zetas();
 
-            double maxZeta{0};
-            double oldMaxZeta{0};
+            double maxZetaChange{0};
+            double oldMaxZetaChange{0};
             int itterScale{0};
 
             // Returns true if max zetachange is greater than defined val
-            auto isZetaChangeGreater = [this, &maxZeta, &iterOffset]() -> bool {
-                double lowerBound = maxZetaChange;
-                double changeMax = 0;
+            auto isZetaChangeGreater = [this, &maxZetaChange, &iterOffset]() -> bool {
+                double zetaChangeMax = 0;
 
 #pragma omp parallel for
                 for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
-                    double val;
+                    double zetaChangeNode;
                     for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
-                        val = std::abs(nodes->at(k + iterOffset)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
+                        zetaChangeNode = std::abs(nodes->at(k + iterOffset)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
                         //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
-                        changeMax = (val > changeMax) ? val : changeMax;
+                        zetaChangeMax = (zetaChangeNode > zetaChangeMax) ? zetaChangeNode : zetaChangeMax;
                     }
                 }
-                maxZeta = changeMax;
-                LOG(numerics) << "MAX Zeta Change: " << changeMax;
-                return changeMax > lowerBound;
+                maxZetaChange = zetaChangeMax;
+                LOG(numerics) << "MAX Zeta Change: " << zetaChangeMax;
+                return zetaChangeMax > maxAllowedZetaChange;
             };
 
             long iterations{0};
@@ -585,14 +586,14 @@ Equation::solve_zetas(){
                     }
                 }
 
-                if (maxZeta == oldMaxZeta) {
+                if (maxZetaChange == oldMaxZetaChange) {
                     //The zeta change is really the same -> increase inner iterations
                     itterScale = itterScale + 10;
                 } else {
                     itterScale = 0;
                 }
                 cg_zetas.setMaxIterations(inner_iterations + itterScale);
-                oldMaxZeta = maxZeta;
+                oldMaxZetaChange = maxZetaChange;
 
                 /**
                  * @brief residual norm convergence // Question: make function of this?

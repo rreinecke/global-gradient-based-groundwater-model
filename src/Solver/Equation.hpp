@@ -150,9 +150,9 @@ namespace GlobalFlow {
 
             void updateClosingCrit(double crit) { cg.setTolerance(crit); }
 
-            void updateMaxHeadChange(double head){
-                maxHeadChange = head;
-            }
+            //void updateAllowedMaxHeadChange(double head){
+            //    maxAllowedHeadChange = head;
+            //}
 
             void updateMaxInnerItter(int itter){
                 inner_iterations = itter;
@@ -209,8 +209,8 @@ namespace GlobalFlow {
         bool isCached{false};
         bool isCached_zetas{false};
 
-        double maxHeadChange{0.01};
-        double maxZetaChange{0.01};
+        double maxAllowedHeadChange{0.01};
+        double maxAllowedZetaChange{0.01};
         double dampMin{0.01};
         double dampMax{0.01};
 

@@ -19,7 +19,7 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "true",
+      "density_variable": "false",
       "density_zones": [
         1000,
         1005,
