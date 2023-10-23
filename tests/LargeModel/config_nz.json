@@ -52,7 +52,7 @@
         "efold_as_array": "true",
         "eq_wtd_from_file": "true",
         "initial_head_from_file": "false",
-        "initial_zetas_as_array": "true",
+        "initial_zetas_as_array": "false",
         "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
@@ -61,7 +61,7 @@
         "zones_sources_sinks_from_file": "false"
       },
       "default_data": {
-        "effective_porosity": 0.2,
+        "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
           0.27,
@@ -87,7 +87,6 @@
         "elevation": "elevation.csv",
         "effective_porosity": "effective_porosity.csv",
         "equal_water_table_depth": "mean_wtd.csv",
-        "initial_zetas": "initial_zetas_global.csv",
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
         "ghb_conductance": "caspian_data.csv",

@@ -10,7 +10,7 @@
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
       "layers": 2,
-      "use_efolding": "false",
+      "use_efolding": "true",
       "confinement": [
         "true",
         "true"
@@ -33,14 +33,14 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 50,
+      "threads": 20,
       "solver": "PCG",
-      "iterations": 100,
-      "inner_itter": 10,
-      "closing_crit_head": 1e-185,
+      "iterations": 20,
+      "inner_itter": 5,
+      "closing_crit_head": 1e-180,
       "closing_crit_zeta": 1e-8,
       "head_change": 1,
-      "zeta_change": 0.01,
+      "zeta_change": 0.1,
       "damping": "false",
       "min_damp": 0.3,
       "max_damp": 0.95
@@ -64,7 +64,7 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          0.027,
+          0.27,
           0.027
         ],
         "ghb_K": 10,

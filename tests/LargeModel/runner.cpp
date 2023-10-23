@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_nz.json");
+        op.load("data/config_na.json");
     }
 
     void Runner::setupSimulation() {
@@ -16,7 +16,7 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
         for (Simulation::step step : stepper) {
             LOG(userinfo) << "Running a steady state step";
             step.first->toggleSteadyState();
