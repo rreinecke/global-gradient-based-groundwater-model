@@ -21,11 +21,14 @@ namespace GlobalFlow {
             LOG(userinfo) << "Running a steady state step";
             step.first->toggleSteadyState();
             step.first->solve();
+            LOG(userinfo) << "Solved steady state step with " << step.first->getItter() << " iteration(s)"; // and error of: " << step.first->getError() << std::endl;
             sim.printMassBalances(debug);
             step.first->toggleSteadyState();
         }
 
-        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::MONTH, 100);
+        int stepCount = 100;
+        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::MONTH, stepCount);
+        LOG(userinfo) << "Runnning " << stepCount << " transient step(s) of " << Simulation::MONTH << " day(s)";
 
         // for saving zetas in a csv
         std::ofstream myfile;
@@ -35,7 +38,7 @@ namespace GlobalFlow {
         int stepNumber{1};
         for (Simulation::step step : transientStepper) {
             step.first->solve();
-            LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iterations"; // and error of: " << step.first->getError() << std::endl;
+            LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
 
             // for saving zetas in a csv

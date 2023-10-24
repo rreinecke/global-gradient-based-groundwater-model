@@ -71,13 +71,13 @@ namespace GlobalFlow {
 
     private:
         /** @var _eq @brief The groundwater equation */
-        Solver::Equation *_eq;
+        Solver::Equation *_eq{};
         /** @var op @brief The options object holding all user input */
         Simulation::Options op;
         /** @var sim @brief The simulation object holding the data */
         Simulation::Simulation sim;
         /** @var reader @brief The data reader object responsible for reading in data */
-        DataProcessing::GlobalDataReader *reader;
+        DataProcessing::GlobalDataReader *reader{};
 
         /**
          * @brief Helper function for arcID mappings

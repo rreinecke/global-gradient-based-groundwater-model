@@ -35,8 +35,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     Eigen::SparseMatrix<pr_t> __A(numberOfNodesTotal, numberOfNodesTotal);
 
     A = std::move(__A);
-    maxNumOfNeighbours = (std::sqrt(maxRefinement)*4)+2;
-    A.reserve(long_vector::Constant(numberOfNodesTotal, maxNumOfNeighbours+1));
+    maxNumOfNeighbours = (std::sqrt(maxRefinement)*4)+2; // +2 for top/down
+    A.reserve(long_vector::Constant(numberOfNodesTotal, maxNumOfNeighbours+1)); // +1 for this node
 
     //Init first result vector x by writing initial heads
     //Initial head should be positive
@@ -170,7 +170,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     const long numActive = numberOfNodesPerLayer - numInactive;
     Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
     A_zetas = std::move(__A_zetas);
-    A_zetas.reserve(long_vector::Constant(numActive, maxNumOfNeighbours+1));
+    A_zetas.reserve(long_vector::Constant(numActive, maxNumOfNeighbours-2+1)); // +1 for this node, -2 since no top/down
     // todo acutally, A_zetas needs 2 less (top and down not required), fix first in getMarixEntries(int localZetaID)
     long_vector __b_zetas(numActive);
     b_zetas = std::move(__b_zetas);
@@ -493,6 +493,7 @@ Equation::solve() {
  */
 void
 Equation::solve_zetas(){
+    LOG(numerics) << "Solving for zeta surfaces";
     updateZetas_TZero();
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
@@ -527,7 +528,7 @@ Equation::solve_zetas(){
             auto isZetaChangeGreater = [this, &maxZetaChange, &iterOffset]() -> bool {
                 double zetaChangeMax = 0;
 
-//#pragma omp parallel for
+#pragma omp parallel for
                 for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
                     double zetaChangeNode;
                     for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
