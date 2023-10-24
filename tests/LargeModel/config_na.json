@@ -16,15 +16,16 @@
         "true"
       ],
       "grid_refined": "false",
+      "max_refinement": 1,
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "vdf_config": {
       "density_variable": "false",
       "density_zones": [
-        1000,
-        1012.5,
-        1025
+        999.5,
+        1001.1,
+        1026.6
       ],
       "max_tip_slope": 0.2,
       "max_toe_slope": 0.2,
@@ -33,9 +34,9 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 20,
+      "threads": 10,
       "solver": "PCG",
-      "iterations": 20,
+      "iterations": 30,
       "inner_itter": 5,
       "closing_crit_head": 1e-180,
       "closing_crit_zeta": 1e-8,
@@ -93,7 +94,7 @@
         "lithology": "glhymps2.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
-        "recharge": "mean_yearly_sum_recharge.csv",
+        "recharge": "recharge_ISIMIP_2b.csv",
         "river_extent": "river_extent.csv",
         "spatID-arcID": "spatID-arcID.csv",
         "river_elevation": "surface_water_elevation.csv",

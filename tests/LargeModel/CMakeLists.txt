@@ -32,7 +32,7 @@ configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../.
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
 
 # recharge
-configure_file(../../data_5min/mean_yearly_sum_recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_yearly_sum_recharge.csv COPYONLY)
+configure_file(../../data_5min/recharge_ISIMIP_2b.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_ISIMIP_2b.csv COPYONLY)
 
 ## global and local wetlands
 configure_file(../../data_5min/G_LOCWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCWET.csv COPYONLY)

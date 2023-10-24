@@ -124,10 +124,10 @@ class GlobalDataReader : public DataReader {
             }
 
             LOG(userinfo) << "Reading groundwater recharge";
-            //readGWRecharge(buildDir(op.getRecharge()));
-            readGWRechargeMapping(buildDir(op.getRecharge()),
-                                  [](const double &recharge, const double &area) {
-                                      return (((recharge / 1000) * area) / 365);});
+            readGWRecharge(buildDir(op.getRecharge()));
+            //readGWRechargeMapping(buildDir(op.getRecharge()),
+            //                      [](const double &recharge, const double &area) {
+            //                          return (((recharge / 1000) * area) / 365);});
 
 
             if (op.isKRiverFromFile()) {
@@ -146,7 +146,7 @@ class GlobalDataReader : public DataReader {
                                  buildDir(op.getLocalWetlands()));
 
             if (op.isDensityVariable()) {
-                LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size() << " active zeta surfaces"; // requires elevation to be set
+                LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "    reading from file(s)";
                     readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),

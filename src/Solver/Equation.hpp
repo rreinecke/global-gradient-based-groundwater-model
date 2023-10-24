@@ -226,6 +226,10 @@ namespace GlobalFlow {
         bool vdf{false};
 
         int numberOfZones{0};
+
+        int maxRefinement{1};
+
+        int maxNumOfNeighbours{1};
         /**
          * Helper for updating the matrix
          * @param node

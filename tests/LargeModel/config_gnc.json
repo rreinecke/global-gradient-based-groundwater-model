@@ -91,7 +91,7 @@
         "lithology": "glhymps2.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
-        "recharge": "mean_yearly_sum_recharge.csv",
+        "recharge": "recharge_ISIMIP_2b.csv",
         "river_extent": "river_extent.csv",
         "spatID-arcID": "spatID-arcID.csv",
         "river_elevation": "surface_water_elevation.csv",

@@ -556,9 +556,7 @@ namespace GlobalFlow {
             readTwoColumns(path, [this](double data, int nodeID) {
                 nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                    0 * Model::si::meter,
-                                                   data *
-                                                   nodes->at(nodeID)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>().value(),
+                                                   ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365,
                                                    0 * Model::si::meter);
             });
         };

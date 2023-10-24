@@ -22,7 +22,7 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     this->gnc = options.isGridRefined(); // gnc = Ghost Node Correction
 
     this->inner_iterations = options.getInnerItter();
-
+    this->maxRefinement = options.getMaxRefinement();
     this->nodes = nodes;
 
 
@@ -35,7 +35,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     Eigen::SparseMatrix<pr_t> __A(numberOfNodesTotal, numberOfNodesTotal);
 
     A = std::move(__A);
-    A.reserve(long_vector::Constant(numberOfNodesTotal, 7));
+    maxNumOfNeighbours = (std::sqrt(maxRefinement)*4)+2;
+    A.reserve(long_vector::Constant(numberOfNodesTotal, maxNumOfNeighbours+1));
 
     //Init first result vector x by writing initial heads
     //Initial head should be positive
@@ -128,10 +129,10 @@ Equation::updateMatrix() {
     Index n = A.outerSize();
 
 #ifdef EIGEN_HAS_OPENMP
-    Eigen::initParallel();
-    Index threads = Eigen::nbThreads();
+    Eigen::initParallel(); // initialize Eigen (https://eigen.tuxfamily.org/dox/TopicMultiThreading.html)
+    Index threads = Eigen::nbThreads(); // get number of threads specified in config file, and set in Simulation.cpp
 #endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+#pragma omp parallel for //schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
         //if (std::div(j,100000).rem == 0) {LOG(numerics) << "updating Matrix...";}
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
@@ -169,7 +170,8 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     const long numActive = numberOfNodesPerLayer - numInactive;
     Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
     A_zetas = std::move(__A_zetas);
-    A_zetas.reserve(long_vector::Constant(numActive, 5));
+    A_zetas.reserve(long_vector::Constant(numActive, maxNumOfNeighbours+1));
+    // todo acutally, A_zetas needs 2 less (top and down not required), fix first in getMarixEntries(int localZetaID)
     long_vector __b_zetas(numActive);
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);
@@ -201,7 +203,7 @@ Equation::preconditioner() {
         LOG(numerics) << "Fail in decomposing matrix";
         throw "Fail in decomposing matrix";
     }
-    LOG(numerics) << "    ... done";
+    //LOG(numerics) << "    ... done";
 }
 
 void inline
@@ -354,7 +356,7 @@ Equation::solve() {
         LOG(numerics) << "Compressing matrix";
         A.makeCompressed();
         isCached = true;
-        LOG(numerics) << "    ... done";
+        //LOG(numerics) << "    ... done";
     }
 
     preconditioner(); // decomposing matrix
@@ -448,8 +450,8 @@ Equation::solve() {
             break;
         }
 
-        LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-        LOG(numerics) << "|Residual|_l2: " << cg.error();
+        //LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+        //LOG(numerics) << "|Residual|_l2: " << cg.error();
         LOG(numerics) << "Head change bigger: " << headFail;
 
         updateMatrix();
@@ -525,7 +527,7 @@ Equation::solve_zetas(){
             auto isZetaChangeGreater = [this, &maxZetaChange, &iterOffset]() -> bool {
                 double zetaChangeMax = 0;
 
-#pragma omp parallel for
+//#pragma omp parallel for
                 for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
                     double zetaChangeNode;
                     for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
@@ -603,8 +605,8 @@ Equation::solve_zetas(){
                     LOG(numerics) << "cg_zetas success";
                     break;
                 }
-                LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
-                LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
+                //LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
+                //LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
                 LOG(numerics) << "Zeta change bigger: " << zetaFail;
 
                 updateMatrix_zetas(layer, localZetaID);

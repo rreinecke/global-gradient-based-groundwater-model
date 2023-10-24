@@ -1231,7 +1231,7 @@ Calculate
                 return mapNeigPosToRefIdToRefNeigPos;
             }
 
-            int getNumofNeighbours() { return (int) neighbours.size(); }
+            int getNumOfNeighbours() { return (int) neighbours.size(); }
 
             class NodeNotFoundException : public std::exception {
                 virtual const char *what() const throw() { return "Node does not exist"; }
@@ -3025,7 +3025,7 @@ Calculate
              * The left hand side of the equation
              */
             std::unordered_map<large_num, t_s_meter_t> getMatrixEntries() {
-                size_t numC = getNumofNeighbours() + 1; // matrix needs 1 entry per neighbour + 1 entry for this node
+                size_t numC = getNumOfNeighbours() + 1; // matrix needs 1 entry per neighbour + 1 entry for this node
                 //LOG(debug) << "numC: " << numC;
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
@@ -3086,7 +3086,8 @@ Calculate
              * @return map <CellID,Conductance>
              */
             std::unordered_map<large_num, t_s_meter_t> getMatrixEntries(int localZetaID) {
-                size_t numC = 5;
+                size_t numC = getNumOfNeighbours() + 1; // matrix needs 1 entry per neighbour + 1 for this node
+                // Todo: in previous line: actually, matrix needs only 1 entry per horizontal neighbour
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(numC);
                 std::forward_list<NeighbourPosition> possible_neighbours = getPossibleNeighbours_horizontal();
