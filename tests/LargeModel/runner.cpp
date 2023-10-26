@@ -16,24 +16,26 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
+        Simulation::TimeFrame stepSize = Simulation:: YEAR;
+        int stepCount = 100;
+
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSize, 1);
         for (Simulation::step step : stepper) {
             LOG(userinfo) << "Running a steady state step";
             step.first->toggleSteadyState();
             step.first->solve();
-            LOG(userinfo) << "Solved steady state step with " << step.first->getItter() << " iteration(s)"; // and error of: " << step.first->getError() << std::endl;
+            LOG(userinfo) << "Solved steady state step with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
             step.first->toggleSteadyState();
         }
 
-        int stepCount = 100;
-        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, Simulation::MONTH, stepCount);
-        LOG(userinfo) << "Runnning " << stepCount << " transient step(s) of " << Simulation::MONTH << " day(s)";
+        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, stepSize, stepCount);
+        LOG(userinfo) << "Runnning " << stepCount << " transient step(s). Stepsize is " << stepSize << " day(s)";
 
         // for saving zetas in a csv
         std::ofstream myfile;
         myfile.open ("timestep_results.csv");
-        myfile << "timestep,nodeID,lon,lat,head,zeta0,zeta1Active,zeta1,zeta2active,zeta2,zeta3,zeta4" << std::endl;
+        myfile << "timestep,nodeID,lon,lat,head,zeta0,zeta1Active,zeta1,zeta2active,zeta2,zeta3active,zeta3,zeta4" << std::endl;
 
         int stepNumber{1};
         for (Simulation::step step : transientStepper) {
@@ -48,13 +50,14 @@ namespace GlobalFlow {
                        << "," << sim.getNodes()->at(j)->getLon()
                        << "," << sim.getNodes()->at(j)->getLat()
                        << "," << sim.getNodes()->at(j)->getHead().value()
-                       //<< "," << sim.getNodes()->at(j)->getZeta(0).value()
-                       //<< "," << sim.getNodes()->at(j)->isZetaActive(1)
-                       //<< "," << sim.getNodes()->at(j)->getZeta(1).value()
-                       //<< "," << sim.getNodes()->at(j)->isZetaActive(2)
-                       //<< "," << sim.getNodes()->at(j)->getZeta(2).value()
-                       //<< "," << sim.getNodes()->at(j)->getZeta(3).value()
-                       //<< "," << sim.getNodes()->at(j)->getZeta(4).value()
+                       << "," << sim.getNodes()->at(j)->getZeta(0).value()
+                       << "," << sim.getNodes()->at(j)->isZetaActive(1)
+                       << "," << sim.getNodes()->at(j)->getZeta(1).value()
+                       << "," << sim.getNodes()->at(j)->isZetaActive(2)
+                       << "," << sim.getNodes()->at(j)->getZeta(2).value()
+                        << "," << sim.getNodes()->at(j)->isZetaActive(3)
+                        << "," << sim.getNodes()->at(j)->getZeta(3).value()
+                       << "," << sim.getNodes()->at(j)->getZeta(4).value()
                        << std::endl;
             }
             ++stepNumber;
@@ -108,9 +111,7 @@ namespace GlobalFlow {
         }
         myfile.close();
     }
-
     Runner::Runner() = default;
-
 }//ns
 
 

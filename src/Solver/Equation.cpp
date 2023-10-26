@@ -89,7 +89,7 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
     map = node->getMatrixEntries();
 
     auto nodeID = node->getProperties().get<large_num, Model::ID>();
-
+//#pragma omp parallel for
     for (const auto &conductance : map) {
         // conductance.first is the nodeID of the respective neighbour node
         NANChecker(conductance.second.value(), "Matrix entry");
@@ -158,6 +158,7 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     index_mapping.clear();
 
     // finding inactive nodes
+//#pragma omp parallel for
     for (large_num i = 0; i < numberOfNodesPerLayer; ++i) {
         if ( nodes->at(i + iterOffset)->isZetaActive(localZetaID) ) {
             index_mapping[i] = i - numInactive;
@@ -171,12 +172,12 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
     A_zetas = std::move(__A_zetas);
     A_zetas.reserve(long_vector::Constant(numActive, maxNumOfNeighbours-2+1)); // +1 for this node, -2 since no top/down
-    // todo acutally, A_zetas needs 2 less (top and down not required), fix first in getMarixEntries(int localZetaID)
     long_vector __b_zetas(numActive);
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);
     x_zetas = std::move(__x_zetas);
 
+//#pragma omp parallel for
     for (large_num j = 0; j < numberOfNodesPerLayer; ++j) {
         auto id = index_mapping[j];
         if (id != -1) {
@@ -208,11 +209,11 @@ Equation::preconditioner() {
 
 void inline
 Equation::preconditioner_zetas() {
-    Eigen::SelfAdjointEigenSolver<SparseMatrix<pr_t>> selfAdjointSolver(A_zetas);
-    if ( selfAdjointSolver.info() != Success) {
-        LOG(numerics) << "A_zetas is not self-adjoint!";
-        throw "Fail before decomposing";
-    }
+    //Eigen::SelfAdjointEigenSolver<SparseMatrix<pr_t>> selfAdjointSolver(A_zetas);
+    //if ( selfAdjointSolver.info() != Success) {
+    //    LOG(numerics) << "A_zetas is not self-adjoint!";
+    //    throw "Fail before decomposing";
+    //}
 
     LOG(numerics) << "Decomposing Matrix (zetas)";
     cg_zetas.compute(A_zetas);
@@ -370,20 +371,20 @@ Equation::solve() {
 
     // Returns true if max headchange is greater than defined val
     auto isHeadChangeGreater = [this,&maxHeadChange]() -> bool {
-        double changeMax = 0;
-        double headMax = 0;
+        double changeMax{0.0};
+        double headMax{0.0};
+        double changeAtNode{0.0};
+        double headAtNode{0.0};
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            double changeAtNode = std::abs(
-                    nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
+            changeAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
             changeMax = (changeAtNode > changeMax) ? changeAtNode : changeMax;
-            double headAtNode = std::abs(
-                    nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
+            headAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
             headMax = (headAtNode > headMax) ? headAtNode : headMax;
 
         }
-	    maxHeadChange = changeMax;
         LOG(numerics) << "MAX Head: " << headMax;
+        maxHeadChange = changeMax;
         LOG(numerics) << "MAX Head Change: " << changeMax;
         return changeMax > maxAllowedHeadChange;
     };
@@ -499,9 +500,9 @@ Equation::solve_zetas(){
     updateTopZetasToHeads();
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
         large_num iterOffset = layer * numberOfNodesPerLayer;
-        LOG(debug) << "Finding zeta surface heights in layer " << layer;
+        LOG(numerics) << "Finding zeta surface heights in layer " << layer;
         for (int localZetaID = 1; localZetaID < numberOfZones; localZetaID++) {
-            LOG(debug) << "Solving for zeta surface " << localZetaID << "";
+            LOG(numerics) << "Solving for zeta surface " << localZetaID << "";
             LOG(numerics) << "Updating Matrix (zetas)";
             updateMatrix_zetas(iterOffset, localZetaID);
 
@@ -525,18 +526,19 @@ Equation::solve_zetas(){
             int itterScale{0};
 
             // Returns true if max zetachange is greater than defined val
-            auto isZetaChangeGreater = [this, &maxZetaChange, &iterOffset]() -> bool {
-                double zetaChangeMax = 0;
-
+            auto isZetaChangeGreater = [this, &maxZetaChange, &iterOffset, &localZetaID]() -> bool {
+                double zetaChangeMax{0.0};
+                double zetaChangeNode{0.0};
+                double zetaAtNode{0.0};
+                double zetaMax{0.0};
 #pragma omp parallel for
                 for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
-                    double zetaChangeNode;
-                    for (int l = 1; l < numberOfZones; l++) { // localZetaID needs to be defined within "isZetaChangeGreater"
-                        zetaChangeNode = std::abs(nodes->at(k + iterOffset)->getZetaChange(l).value()); // todo improve for loop (by getting rid of it)
-                        //LOG(debug) << "val (zetas change) (in solve_zeta): " << val << std::endl;
-                        zetaChangeMax = (zetaChangeNode > zetaChangeMax) ? zetaChangeNode : zetaChangeMax;
-                    }
+                    zetaChangeNode = std::abs(nodes->at(k + iterOffset)->getZetaChange(localZetaID).value());
+                    zetaChangeMax = (zetaChangeNode > zetaChangeMax) ? zetaChangeNode : zetaChangeMax;
+                    zetaAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
+                    zetaMax = (zetaAtNode > zetaMax) ? zetaAtNode : zetaMax;
                 }
+                LOG(numerics) << "MAX Zeta: " << zetaMax;
                 maxZetaChange = zetaChangeMax;
                 LOG(numerics) << "MAX Zeta Change: " << zetaChangeMax;
                 return zetaChangeMax > maxAllowedZetaChange;

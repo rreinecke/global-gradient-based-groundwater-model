@@ -171,16 +171,7 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;//SurfaceLeftRight = EdgeLengthLeftRight * VerticalDepth
         struct SurfaceFrontBack;//SurfaceFrontBack = EdgeLengthLeftRight * VerticalDepth
         struct VolumeOfCell;
-        struct EffectivePorosity;
-        struct Zetas;
-        struct Zetas_TZero;
-        struct ZetasChange;
-        struct ZetasPosInNode;
-        struct Delnus;
-        struct NusInZones;
-        struct RefID;
-        struct HasRefinedNeighbour;
-        struct RefinedInto;
+        // properties for variable density flow
         struct DensityVariable;
         struct MaxTipSlope;
         struct MaxToeSlope;
@@ -188,6 +179,17 @@ namespace GlobalFlow {
         struct SlopeAdjFactor;
         struct VDFLock;
         struct RHSConstantDensity_TZero;
+        struct EffectivePorosity;
+        struct Zetas;
+        struct Zetas_TZero;
+        struct ZetasChange;
+        struct ZetasPosInNode;
+        struct Delnus;
+        struct NusInZones;
+        // propperties for ghost node correction
+        struct RefID;
+        struct RefinedInto;
+        struct MaxRefinement;
 
 /**
  * Definition of type and unit for each field
@@ -230,8 +232,8 @@ namespace GlobalFlow {
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
             PhysicalProperty<t_c_meter, VolumeOfCell>,
             PhysicalProperty<t_dim, EffectivePorosity>,
-            PhysicalProperty<bool, HasRefinedNeighbour>,
             PhysicalProperty<large_num, RefID>,
+            PhysicalProperty<large_num, MaxRefinement>,
             PhysicalProperty<large_num, RefinedInto>,
             PhysicalProperty<bool, DensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,

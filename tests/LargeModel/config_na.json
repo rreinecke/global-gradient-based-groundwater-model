@@ -9,9 +9,10 @@
       "resolution_in_degree": 0.08333,
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
-      "layers": 1,
+      "layers": 2,
       "use_efolding": "true",
       "confinement": [
+        "true",
         "true"
       ],
       "grid_refined": "false",
@@ -64,7 +65,8 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          0.27
+          0.27,
+          0.027
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
@@ -72,6 +74,7 @@
           100
         ],
         "anisotropy": [
+          10,
           10
         ],
         "specific_yield": 0.15,

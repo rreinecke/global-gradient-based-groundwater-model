@@ -348,8 +348,8 @@ void buildBottomLayers(NodeVector nodes,
     size_t nodesPerLayer = nodes->size();
     nodes->reserve(numberOfLayers * nodesPerLayer);
 
-    LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << numberOfLayers
-               << " layers";
+    //LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << numberOfLayers
+    //           << " layers";
 
     size_t id = nodesPerLayer;
     large_num spatID;
@@ -365,7 +365,7 @@ void buildBottomLayers(NodeVector nodes,
     double specificStorage;
     bool useEfolding;
     large_num refID;
-    bool hasRefinedNeighbour;
+    large_num maxRefinement;
     bool densityVariable;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
@@ -399,7 +399,7 @@ void buildBottomLayers(NodeVector nodes,
                             Model::SpecificStorage>().value();
             useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
             refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
-            hasRefinedNeighbour = nodes->at(i)->getProperties().get<bool, Model::HasRefinedNeighbour>();
+            maxRefinement = nodes->at(i)->getProperties().get<large_num, Model::MaxRefinement>();
             densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
             delnus = nodes->at(i)->getProperties().
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
@@ -439,7 +439,7 @@ void buildBottomLayers(NodeVector nodes,
                                                             useEfolding,
                                                             confined[layer + 1],
                                                             refID,
-                                                            hasRefinedNeighbour,
+                                                            maxRefinement,
                                                             densityVariable,
                                                             delnus,
                                                             nusInZones,
@@ -464,8 +464,8 @@ void buildBottomLayers(NodeVector nodes,
             }
         }
     }
-    LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) "
-               << nodesPerLayer * numberOfLayers;
+    //LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) "
+    //           << nodesPerLayer * numberOfLayers;
 };
 
 }//ns
