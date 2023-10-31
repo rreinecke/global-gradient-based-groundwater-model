@@ -23,7 +23,7 @@ namespace GlobalFlow {
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
 
 
-                LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeIDs(),
                                               op.getResolution(),

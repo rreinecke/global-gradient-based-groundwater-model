@@ -899,7 +899,7 @@ namespace GlobalFlow {
                 zetaGhybenHerzberg = - (minDensity / (maxDensity - minDensity)) * initial_head;
                 //LOG(debug) << "zetaGhybenHerzberg: " << zetaGhybenHerzberg << ", head: " << initial_head;
 
-                for (int localZetaID = 1; localZetaID < densityZones.size() - 1; ++localZetaID){
+                for (int localZetaID = 1; localZetaID < densityZones.size(); ++localZetaID){
                     zeta = zetaGhybenHerzberg + zetaDeltas[localZetaID];
                     //LOG(debug) << "zeta[localZetaID = " << localZetaID << "]: " << zeta;
                     nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);

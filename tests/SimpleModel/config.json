@@ -10,12 +10,13 @@
       "resolution_in_degree": 1,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
+      "use_efolding": "false",
       "confinement": [
         "true",
         "true"
       ],
-      "use_efolding": "false",
       "grid_refined": "false",
+      "max_refinement": 1,
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },

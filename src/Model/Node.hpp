@@ -1434,7 +1434,7 @@ Calculate
                             {2, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKLEFT} } },
                             {3, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKBACKRIGHT} } },
                             {4, { {NeighbourPosition::FRONT,  NeighbourPosition::BACKRIGHT},
-                                        {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT}} },
+                                        {NeighbourPosition::RIGHT,  NeighbourPosition::LEFTFRONT} } },
                             {5, { {NeighbourPosition::LEFT,   NeighbourPosition::RIGHTRIGHTFRONT} } },
                             {6, { {} } }, // has only refined neighbours
                             {7, { {} } }, // has only refined neighbours
@@ -1444,11 +1444,11 @@ Calculate
                             {11, { {} } }, // has only refined neighbours
                             {12, { {NeighbourPosition::RIGHT, NeighbourPosition::LEFTLEFTBACK} } },
                             {13, { {NeighbourPosition::BACK, NeighbourPosition::FRONTLEFT},
-                                        {NeighbourPosition::LEFT, NeighbourPosition::RIGHTBACK}} },
+                                        {NeighbourPosition::LEFT, NeighbourPosition::RIGHTBACK} } },
                             {14, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTLEFT} } },
                             {15, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTFRONTRIGHT} } },
                             {16, { {NeighbourPosition::BACK,  NeighbourPosition::FRONTRIGHT},
-                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } }};
+                                        {NeighbourPosition::RIGHT, NeighbourPosition::LEFTBACK} } } };
                 }
                 return mapRefIdToNeigToRefNeig.at(refID).at(neigPos);
             }

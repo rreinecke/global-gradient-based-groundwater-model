@@ -67,6 +67,7 @@ TEST(FluidMechanics, calculateVerticalConductance) {
     quantity<Velocity> k_vert_neig = 0.1 * si::meter / day;
     quantity<Velocity> k_vert_self = 0.1 * si::meter / day;
     quantity<Meter> verticalSize_self = 1 * si::meter;
+    quantity<Meter> verticalSize_neig = 1 * si::meter;
     quantity<Meter> head_self = 1 * si::meter;
     quantity<Meter> elevation_self = 1 * si::meter;
     quantity<SquareMeter> area_self = 1 * si::square_meter;
@@ -75,9 +76,8 @@ TEST(FluidMechanics, calculateVerticalConductance) {
     quantity<Meter> head_neig = 1 * si::meter;
     bool confined = false;
 
-    FlowInputVert t = std::make_tuple(k_vert_neig, k_vert_self, verticalSize_self, head_self, elevation_self, area_self,
-                                      elevation_neig, depth_neig, head_neig,
-                                      confined);
+    FlowInputVert t = std::make_tuple(k_vert_neig, k_vert_self, verticalSize_self, verticalSize_neig, head_self,
+                                      head_neig, elevation_self, elevation_neig, area_self, confined);
     ASSERT_DOUBLE_EQ(m.calculateVerticalConductance(t).value(), 0.1);
 }
 

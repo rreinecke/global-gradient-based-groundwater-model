@@ -27,6 +27,7 @@ class USG_ex1_DataReader : public DataReader {
                             op.getSpecificStorage(),
                             op.useEfolding(),
                             op.isConfined(0),
+                            op.getMaxRefinement(),
                             op.isDensityVariable(),
                             op.getEffectivePorosity(),
                             op.getMaxTipSlope(),
@@ -73,101 +74,6 @@ class USG_ex1_DataReader : public DataReader {
         }
 
     private:
-        template<class T>
-        using Matrix = std::vector<std::vector<T>>;
-
-        /**
-             * @brief Initial reading of node definitions - without col and row
-             * @note Without col and row
-             * Reads a csv file with x and y coordinates for predefined grid of cells
-             * @param nodes Vector of nodes
-             * @param path Path to read definitions from
-             * @param numberOfNodesPerLayer The number of expected computation nodes
-             * @param defaultK The default conductivity
-             * @param aquiferDepth The default depth per cell
-             * @param anisotropy The default relation of vertical and horizontal conductivity
-             * @param specificYield The default specific yield
-             * @param specificStorage The default specific storage
-             * @param confined If node is part of a confined layer?
-             * @return number of total top nodes
-             */
-        int
-        readLandMaskRefined(NodeVector nodes,
-                     std::string path,
-                     large_num numberOfNodesPerLayer,
-                     double edgeLengthLeftRight,
-                     double edgeLengthFrontBack,
-                     int numberOfLayers,
-                     double defaultK,
-                     double initialHead,
-                     double aquiferDepth,
-                     double anisotropy,
-                     double specificYield,
-                     double specificStorage,
-                     bool useEfolding,
-                     bool confined,
-                     bool isDensityVariable,
-                     double effPorosity,
-                     double maxTipSlope,
-                     double maxToeSlope,
-                     double minDepthFactor,
-                     double slopeAdjFactor,
-                     double vdfLock,
-                     std::vector<double> densityZones) {
-            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
-            double lon{0};
-            double lat{0};
-            double area{0};
-            large_num refID{0};
-            large_num nodeID{0};
-            large_num spatID{0};
-
-            lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
-            std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
-            std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-
-            while (in.read_row(spatID, lon, lat, area, refID)) {
-
-                if (edgeLengthLeftRight == edgeLengthFrontBack) {
-                    edgeLengthLeftRight = edgeLengthFrontBack = std::sqrt(area);
-                }
-
-                nodes->emplace_back(new Model::StandardNode(nodes,
-                                                            lat,
-                                                            lon,
-                                                            area * Model::si::square_meter,
-                                                            edgeLengthLeftRight * Model::si::meter,
-                                                            edgeLengthFrontBack * Model::si::meter,
-                                                            spatID,
-                                                            nodeID,
-                                                            defaultK * (Model::si::meter / Model::day),
-                                                            initialHead * Model::si::meter,
-                                                            aquiferDepth,
-                                                            anisotropy,
-                                                            specificYield,
-                                                            specificStorage,
-                                                            useEfolding,
-                                                            confined,
-                                                            refID,
-                                                            isDensityVariable,
-                                                            delnus,
-                                                            nusInZones,
-                                                            effPorosity,
-                                                            maxTipSlope,
-                                                            maxToeSlope,
-                                                            minDepthFactor,
-                                                            slopeAdjFactor,
-                                                            vdfLock * Model::si::meter));
-                for (int layer = 0; layer < numberOfLayers; layer++) {
-                    lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
-                }
-                nodeID++;
-            }
-            //Return number of total top nodes
-            return nodeID - 1;
-        };
-
         void readConduct(std::string path) override {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");

@@ -9,6 +9,7 @@ set(HEADERS
    ${CMAKE_CURRENT_SOURCE_DIR}/GlobalDataReader.hpp
    PARENT_SCOPE
 )
+configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config.json COPYONLY)
 configure_file(config_nz.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_nz.json COPYONLY)
 configure_file(config_gnc.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_gnc.json COPYONLY)
 configure_file(config_na.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_na.json COPYONLY)

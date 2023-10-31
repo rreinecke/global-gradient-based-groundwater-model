@@ -1,8 +1,8 @@
 {
   "config": {
     "model_config": {
-      "nodes": "grid_na.csv",
-      "number_of_nodes_per_layer": 396787,
+      "nodes": "grid.csv",
+      "number_of_nodes_per_layer": 2161074,
       "x_range": 360,
       "y_range": 180,
       "is_global": "true",
@@ -21,7 +21,7 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "true",
+      "density_variable": "false",
       "density_zones": [
         999.5,
         1001.1,

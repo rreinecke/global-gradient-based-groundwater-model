@@ -35,8 +35,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     Eigen::SparseMatrix<pr_t> __A(numberOfNodesTotal, numberOfNodesTotal);
 
     A = std::move(__A);
-    maxNumOfNeighbours = (std::sqrt(maxRefinement)*4)+2; // +2 for top/down
-    A.reserve(long_vector::Constant(numberOfNodesTotal, maxNumOfNeighbours+1)); // +1 for this node
+    int numberOfEntries = (int) (std::sqrt(maxRefinement) * 4) + 2 + 1; // +2 for top/down, + 1 for this node
+    A.reserve(long_vector::Constant(numberOfNodesTotal, numberOfEntries));
 
     //Init first result vector x by writing initial heads
     //Initial head should be positive
@@ -171,7 +171,8 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
     const long numActive = numberOfNodesPerLayer - numInactive;
     Eigen::SparseMatrix<pr_t> __A_zetas(numActive, numActive);
     A_zetas = std::move(__A_zetas);
-    A_zetas.reserve(long_vector::Constant(numActive, maxNumOfNeighbours-2+1)); // +1 for this node, -2 since no top/down
+    int numberOfEntries = (int) (std::sqrt(maxRefinement) * 4) + 1; // +2 for top/down, + 1 for this node
+    A_zetas.reserve(long_vector::Constant(numActive, numberOfEntries));
     long_vector __b_zetas(numActive);
     b_zetas = std::move(__b_zetas);
     long_vector __x_zetas(numActive);

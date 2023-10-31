@@ -229,7 +229,6 @@ namespace GlobalFlow {
 
         int maxRefinement{1};
 
-        int maxNumOfNeighbours{1};
         /**
          * Helper for updating the matrix
          * @param node

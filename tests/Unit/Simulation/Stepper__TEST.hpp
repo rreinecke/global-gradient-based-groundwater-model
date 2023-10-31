@@ -12,23 +12,31 @@ public:
     NodeVector nodes;
     Options op;
     void SetUp(){
-        NodeVector ptr(new std::vector<unique_ptr<GlobalFlow::Model::NodeInterface>>);
+        NodeVector ptr(new std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>);
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, true
+                nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, true
+                nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, true
+                nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true, true
+                nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter
                 ));
 
         nodes->at(0)->setNeighbour(1,RIGHT);
@@ -42,9 +50,9 @@ public:
     }
 
     std::vector<int> make_rnd(){
-        random_device rnd_device;
-        mt19937 mersenne_engine {rnd_device()};
-        uniform_int_distribution<int> dist {2, 30};
+        std::random_device rnd_device;
+        std::mt19937 mersenne_engine {rnd_device()};
+        std::uniform_int_distribution<int> dist {2, 30};
 
         auto gen = [&dist, &mersenne_engine](){
             return dist(mersenne_engine);
@@ -56,7 +64,7 @@ public:
 
     volatile int writeMe{0};
     void IwillCrash(){
-        MockEquation equation(4,nodes,op);
+        MockEquation equation(nodes, op);
 
         Stepper stepper = Stepper(&equation, MONTH, 1,true);
         for (step step : stepper) {writeMe = static_cast<int>(10);}
@@ -66,7 +74,7 @@ public:
 
 //FIXME currently boost log causes a free(): invalid pointer
 TEST_F(StepperFixture,DayLoop){
-    MockEquation equation(4,nodes,op);
+    MockEquation equation(nodes, op);
     Stepper stepper = Stepper(&equation, DAY, 2);
     int p{0};
     double a{0};
@@ -80,7 +88,7 @@ TEST_F(StepperFixture,DayLoop){
 }
 
 TEST_F(StepperFixture,MonthLoop){
-    MockEquation equation(4,nodes,op);
+    MockEquation equation(nodes, op);
     Stepper stepper = Stepper(&equation, MONTH, 10);
     ASSERT_EQ(stepper.getStepSize(),MONTH);
     int p{0};
@@ -101,7 +109,7 @@ TEST_F(DeathStepperFixture,DynmicSteps){
 }
 
 TEST_F(StepperFixture,DynmicStepsRand){
-    MockEquation equation(4,nodes,op);
+    MockEquation equation(nodes, op);
 
     for(int p : make_rnd()){
         Stepper stepper = Stepper(&equation, MONTH, p, true);

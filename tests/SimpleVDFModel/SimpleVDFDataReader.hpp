@@ -19,7 +19,7 @@ namespace GlobalFlow {
                 op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                 op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                 op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                op.isConfined(0), op.isDensityVariable(),
+                op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
                 op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                 op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
 
@@ -28,8 +28,8 @@ namespace GlobalFlow {
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeIDs(),
                                               op.getResolution(),
-                                              op.getLonRange(),
-                                              op.getLatRange(),
+                                              op.getXRange(),
+                                              op.getYRange(),
                                               op.isGlobal(),
                                               op.getNumberOfLayers(),
                                               op.getNumberOfNodesPerLayer(),
@@ -69,9 +69,12 @@ namespace GlobalFlow {
                 readRiverConductance(buildDir(op.getKRiver()));
 
                 if (op.isDensityVariable()) {
-                    LOG(userinfo) << "Reading zetas";
-                    readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
-                                     buildDir(op.getInitialZetasDir()));
+                    LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
+                    if (op.isInitialZetasAsArray()) {
+                        LOG(userinfo) << "    reading from file(s)";
+                        readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                                         buildDir(op.getInitialZetas()), op.getInitialZetas_a());
+                    }
                     if (op.isEffectivePorosityFromFile()){
                         LOG(userinfo) << "Reading effective porosity";
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));

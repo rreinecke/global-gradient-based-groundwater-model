@@ -16,6 +16,7 @@ project(3GM)
 # Build folder structure
 add_subdirectory(src)
 add_subdirectory(lib)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/output)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 

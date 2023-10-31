@@ -15,6 +15,7 @@
         "true"
       ],
       "grid_refined": "true",
+      "max_refinement": 1,
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
