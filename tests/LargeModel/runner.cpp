@@ -6,7 +6,7 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         op = Simulation::Options();
-        op.load("data/config_na.json");
+        op.load("data/config_nz.json");
     }
 
     void Runner::setupSimulation() {
@@ -91,7 +91,7 @@ namespace GlobalFlow {
                    << "," << sim.getNodes()->at(j)->getEffectivePorosity()
                    << "," << sim.getNodes()->at(j)->getElevation().value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()
-                    << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value()
+                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value()
                    << "," << sim.getNodes()->at(j)->getHead().value()
                    << "," << sim.getNodes()->at(j)->getZeta(0).value()
                    << "," << sim.getNodes()->at(j)->isZetaActive(1)

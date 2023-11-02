@@ -957,6 +957,7 @@ Calculate
              *                added as saline water
              *            (4) when saline water leaks down into an aquifer containing only freshwater, that saline water
              *                is added as freshwater
+             * @param localZetaID
              * @note in SWI2 code: SSWI2_IMIX
              */
             t_c_meter calculateInstantaneousMixing(int localZetaID) {
@@ -967,30 +968,33 @@ Calculate
                 if (down != neighbours.end()) {
                     // skip if dimensionless density at bottom of this node is below or equal to
                     // dimension less density at the top of down node
-                    if (getNusBot() <= at(down)->getNusTop()){ return out; } // return 0
+                    if (getNusBot() <= at(down)->getNusTop()){ return out; } // return 0 // line 4150
 
                     // skip if head in this or neighbour node is below node bottom
-                    if (getHead() < getBottom() or at(down)->getHead() < at(down)->getBottom()){ return out; } // return 0
+                    if (getHead() < getBottom() or at(down)->getHead() < at(down)->getBottom()){ return out; } // return 0 // lines 4140 and 4145
 
                     // skip if localZetaID is not involved
                     // todo find the zone number at the bottom of the top node and the top of the down node
-                    // if (localZetaID != getZetaID(getNusBot())) { return out; }
-                    // if (localZetaID != getZetaID(at(down)->getNusTop())) { return out; }
+                    // if (localZetaID != getZetaID(getNusBot())) { return out; } // line 4156
+                    // if (localZetaID != getZetaID(at(down)->getNusTop())) { return out; } // line 4162
 
                     // calculate the flux down
                     t_c_meter fluxDown = getFluxDown().value() * si::cubic_meter;
 
                     // if flux down is positive
-                    if (fluxDown > (0 * si::cubic_meter)) {
+                    if (fluxDown > (0 * si::cubic_meter)) { // line 4168
                         // skip if dim-less density at bottom of down neighbour is greater or equal to
                         // dim-less density at the bottom of this node
-                        if (at(down)->getNusBot() >= getNusBot()) { return out; } // return 0
+                        if (at(down)->getNusBot() >= getNusBot()) { return out; } // return 0 // line 4169
 
                         // skip if dim-less density at top of this node is smaller or equal to
                         // dim-less density at the top of neighbour node
-                        if (getNusTop() <= at(down)->getNusTop()){ return out; } // return 0
+                        if (getNusTop() <= at(down)->getNusTop()){ return out; } // return 0 // line 4172
                     }
-                    if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) { out += fluxDown; }
+                    // TODO
+                    //  check lines 4157 nd 4172 for def of the condiction before "and"
+                    //  check lines 4163 nd 4174 for def of the condiction after "and"
+                    if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) { return fluxDown; } // line 4174
                 }
                 return out;
             }
@@ -1284,9 +1288,8 @@ Calculate
                 }
 
                 if (type == RECHARGE or type == FAST_SURFACE_RUNOFF or type == NET_ABSTRACTION) {
-                    externalFlows.insert(std::make_pair(type,
-                                                        ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day),
-                                                                     type)));
+                    externalFlows.insert(
+                            std::make_pair(type, ExternalFlow(numOfExternalFlows, cond * (si::cubic_meter / day), type)));
                 } else if (type == EVAPOTRANSPIRATION) {
                     externalFlows.insert(std::make_pair(type,
                                                         ExternalFlow(numOfExternalFlows, flowHead, bottom,
@@ -1822,21 +1825,15 @@ Calculate
             int getZoneOfSinks(){ return zoneOfSinks;}
 
             /**
-             * @brief Set effective porosity (applied to all layers below)
-             * @param effectivePorosity effective porosity
+             * @brief Set effective porosity in node and layers below
+             * @param effectivePorosity effective porosity in node
              */
             void setEffectivePorosity(t_dim effectivePorosity) {
-                setEffectivePorosity_direct(effectivePorosity);
+                set<t_dim, EffectivePorosity>(effectivePorosity);
                 applyToAllLayers([&effectivePorosity](NodeInterface *nodeInterface) {
                     nodeInterface->getProperties().set<t_dim, EffectivePorosity>(effectivePorosity);
                 });
             }
-
-            /**
-             * @brief Set effective porosity
-             * @param effectivePorosity effective porosity in node
-             */
-            void setEffectivePorosity_direct(t_dim effectivePorosity) { set<t_dim, EffectivePorosity>(effectivePorosity); }
 
             /**
              * @brief Updates GW recharge
@@ -1853,7 +1850,7 @@ Calculate
                         if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
                         //also lock conductance value
                         getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
-                        getExternalFlowByName(RIVER_MM).setLockRecharge(recharge); //TODO: never used; in calcERC read but not used
+                        getExternalFlowByName(RIVER_MM).setLockRecharge(recharge);
                         getExternalFlowByName(RIVER_MM).setLock(); //locks conductance to steady state conductance and inhibits updates later
                         //!comment! if this code is deactivated locked conductance and locked recharge is lost if flow is removed in addExternalFlowFlowHead but not important bc. never used (in calcERC) if conductance should be changed by calcERC
                     }
@@ -2649,13 +2646,12 @@ Calculate
                 t_meter delta_self; // potential zeta height adjustment for this node
                 t_meter delta_neig; // potential zeta height adjustment for neighbour node
                 t_meter delta_opp; // potential zeta height adjustment for opposite neighbour node
-
+                if (getHead() < getBottom()) { return; }
                 for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
                     auto got_opp = neighbours.find(getOppositePosition(got->first));
+
                     for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                         if (isZetaActive(localZetaID)) {
-                            //if () // todo
-
                             // get max delta of zeta between nodes
                             if (at(got)->isZetaAtBottom(localZetaID)) {
                                 maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
@@ -2663,7 +2659,6 @@ Calculate
                                 maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
                             }
                             //LOG(debug) << "maxDelta: " << maxDelta.value() << std::endl;
-
 
                             // if tracking tip/toe: raise/lower this zeta surface in this node by:
                             delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
@@ -2721,17 +2716,21 @@ Calculate
             }
 
             NeighbourPosition getOppositePosition(NeighbourPosition position) {
-                if (position == NeighbourPosition::BACK or
-                    position == NeighbourPosition::BACKLEFT or position == NeighbourPosition::BACKRIGHT) {
+                if (position == NeighbourPosition::BACK or position == NeighbourPosition::BACKBACK or
+                    position == NeighbourPosition::BACKLEFT or position == NeighbourPosition::BACKRIGHT or
+                    position == NeighbourPosition::BACKBACKLEFT or position == NeighbourPosition::BACKBACKRIGHT) {
                     return NeighbourPosition::FRONT;
-                } else if (position == NeighbourPosition::FRONT or
-                           position == NeighbourPosition::FRONTLEFT or position == NeighbourPosition::FRONTRIGHT) {
+                } else if (position == NeighbourPosition::FRONT or position == NeighbourPosition::FRONTFRONT or
+                           position == NeighbourPosition::FRONTLEFT or position == NeighbourPosition::FRONTRIGHT or
+                           position == NeighbourPosition::FRONTFRONTLEFT or position == NeighbourPosition::FRONTFRONTRIGHT) {
                     return NeighbourPosition::BACK;
-                } else if (position == NeighbourPosition::LEFT or
-                           position == NeighbourPosition::LEFTFRONT or position == NeighbourPosition::LEFTBACK) {
+                } else if (position == NeighbourPosition::LEFT or position == NeighbourPosition::LEFTLEFT or
+                           position == NeighbourPosition::LEFTFRONT or position == NeighbourPosition::LEFTBACK or
+                           position == NeighbourPosition::LEFTLEFTFRONT or position == NeighbourPosition::LEFTLEFTBACK) {
                     return NeighbourPosition::RIGHT;
-                } else if (position == NeighbourPosition::RIGHT or
-                           position == NeighbourPosition::RIGHTFRONT or position == NeighbourPosition::RIGHTBACK) {
+                } else if (position == NeighbourPosition::RIGHT or position == NeighbourPosition::RIGHTRIGHT or
+                           position == NeighbourPosition::RIGHTFRONT or position == NeighbourPosition::RIGHTBACK or
+                            position == NeighbourPosition::RIGHTRIGHTFRONT or position == NeighbourPosition::RIGHTRIGHTBACK) {
                     return NeighbourPosition::LEFT;
                 } else {
                     throw "Position unavailable for function getOppositePosition";

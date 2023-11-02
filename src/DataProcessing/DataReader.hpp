@@ -553,12 +553,14 @@ namespace GlobalFlow {
         /**
          * @brief Read diffuse gw-recharge
          * @param path Where to read the file from
+         * @note needs to be in m^3/day
          */
         virtual void readGWRecharge(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
+                double recharge_m3_per_day = ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365;
                 nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                    0 * Model::si::meter,
-                                                   ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365,
+                                                   recharge_m3_per_day,
                                                    0 * Model::si::meter);
             });
         };
@@ -568,6 +570,7 @@ namespace GlobalFlow {
         * @tparam ConversionFunction Allows the dynamic recalculation of recharge based on cell area
         * @param path Where to read the file from
         * @param convertToRate The conversion function
+        * @note needs to be in m^3/day
         */
         template<typename ConversionFunction>
         void readGWRechargeMapping(std::string path, ConversionFunction convertToRate) {
@@ -618,9 +621,9 @@ namespace GlobalFlow {
                         NANChecker(q_rech, "Recharge-init Problem");
 
                         nodes->at(nodeID.second)->addExternalFlow(Model::RECHARGE,
-                                                                   0 * Model::si::meter,
-                                                                   q_rech,
-                                                            0 * Model::si::meter);
+                                                                  0 * Model::si::meter,
+                                                                  q_rech,
+                                                                  0 * Model::si::meter);
                         //rechargeAdded++;
                     }
                 }

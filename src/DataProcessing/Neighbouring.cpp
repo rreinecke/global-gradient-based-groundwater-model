@@ -389,10 +389,10 @@ void buildBottomLayers(NodeVector nodes,
                     i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthLeftRight>();
             edgeLengthFrontBack = nodes->at(
                     i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
-            K = conductances[layer + 1] * Model::si::meter / Model::day;
+            K = conductances[layer + 1] * Model::si::meter / Model::day; // or: nodes->at(i)->getK__pure();
             head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             aquiferDepth = aquifer_thickness[layer + 1];
-            anisotropy = anisotropies[layer + 1];
+            anisotropy = anisotropies[layer + 1]; // or nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>, Model::Anisotropy>().value();
             specificYield = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                             Model::SpecificYield>().value();
             specificStorage = nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>,
