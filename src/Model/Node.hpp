@@ -958,45 +958,42 @@ Calculate
              *            (4) when saline water leaks down into an aquifer containing only freshwater, that saline water
              *                is added as freshwater
              * @param localZetaID
-             * @note in SWI2 code: SSWI2_IMIX
+             * @note in SWI2 code: SSWI2_IMIX, comments referring to lines (at each "if"), refer to lines in gwf2swi27.f
              */
             t_c_meter calculateInstantaneousMixing(int localZetaID) {
                 t_c_meter out = 0.0 * si::cubic_meter;
                 auto down = neighbours.find(NeighbourPosition::DOWN);
 
                 // skip nodes that do not have a down neighbour
-                if (down != neighbours.end()) {
-                    // skip if dimensionless density at bottom of this node is below or equal to
-                    // dimension less density at the top of down node
-                    if (getNusBot() <= at(down)->getNusTop()){ return out; } // return 0 // line 4150
+                if (down == neighbours.end()) { return out; } // line 4142
 
-                    // skip if head in this or neighbour node is below node bottom
-                    if (getHead() < getBottom() or at(down)->getHead() < at(down)->getBottom()){ return out; } // return 0 // lines 4140 and 4145
+                // skip if dimensionless density at bottom of this node is below or equal to
+                // dimension less density at the top of down node
+                if (getNusBot() <= at(down)->getNusTop()){ return out; } // line 4150
 
-                    // skip if localZetaID is not involved
-                    // todo find the zone number at the bottom of the top node and the top of the down node
-                    // if (localZetaID != getZetaID(getNusBot())) { return out; } // line 4156
-                    // if (localZetaID != getZetaID(at(down)->getNusTop())) { return out; } // line 4162
+                // skip if head in this or neighbour node is below node bottom
+                if (getHead() < getBottom() or at(down)->getHead() < at(down)->getBottom()){ return out; } // lines 4140 and 4145
 
-                    // calculate the flux down
-                    t_c_meter fluxDown = getFluxDown().value() * si::cubic_meter;
+                // skip if localZetaID is not involved
+                auto nusInZones = getNusInZones();
+                if (nusInZones[localZetaID] != getNusBot()) { return out; } // line 4156
+                if (nusInZones[localZetaID] != at(down)->getNusTop()) { return out; } // line 4162
 
-                    // if flux down is positive
-                    if (fluxDown > (0 * si::cubic_meter)) { // line 4168
-                        // skip if dim-less density at bottom of down neighbour is greater or equal to
-                        // dim-less density at the bottom of this node
-                        if (at(down)->getNusBot() >= getNusBot()) { return out; } // return 0 // line 4169
+                // calculate the flux down
+                t_c_meter fluxDown = getFluxDown().value() * si::cubic_meter;
 
-                        // skip if dim-less density at top of this node is smaller or equal to
-                        // dim-less density at the top of neighbour node
-                        if (getNusTop() <= at(down)->getNusTop()){ return out; } // return 0 // line 4172
-                    }
-                    // TODO
-                    //  check lines 4157 nd 4172 for def of the condiction before "and"
-                    //  check lines 4163 nd 4174 for def of the condiction after "and"
-                    if (isZetaAtBottom(localZetaID) and !isZetaAtBottom(localZetaID - 1)) { return fluxDown; } // line 4174
+                // if flux down is positive
+                if (fluxDown > (0 * si::cubic_meter)) { // line 4168
+                    // skip if dim-less density at bottom of down neighbour is greater or equal to
+                    // dim-less density at the bottom of this node
+                    if (at(down)->getNusBot() >= getNusBot()) { return out; } // line 4169
+
+                    // skip if dim-less density at top of this node is smaller or equal to
+                    // dim-less density at the top of neighbour node
+                    if (getNusTop() <= at(down)->getNusTop()){ return out; } // line 4172
                 }
-                return out;
+
+                return fluxDown;
             }
 
             /**
@@ -1731,25 +1728,6 @@ Calculate
             }
 
             /**
-             * @brief get one zeta surface height
-             * @param localZetaID
-             * @return meter
-             */
-            t_meter getZetaIfActive(int localZetaID) {
-
-                if (localZetaID < get<std::vector<t_meter>, Zetas>().size()){
-                    if (isZetaActive(localZetaID)) {
-                        return get<std::vector<t_meter>, Zetas>()[localZetaID];
-                    } else {
-                        return 0 * si::meter;
-                    }
-                } else {
-                    throw "Not set at nodeID " + std::to_string(getID()) +
-                          ": Zetas[localZetaID = " + std::to_string(localZetaID) + "]";
-                }
-            }
-
-            /**
              * @brief get all zeta surface changes
              * @return vector<meter>
              */
@@ -1778,6 +1756,9 @@ Calculate
                           ": Zetas_TZero[localZetaID = " + std::to_string(localZetaID) + "]";
                 }
             }
+
+            std::vector<t_dim> getNusInZones() { return get<std::vector<t_dim>, NusInZones>();}
+
 
             /**
              *  @brief set the zone(s) of sources and sinks
