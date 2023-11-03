@@ -183,7 +183,6 @@ namespace GlobalFlow {
         struct Zetas;
         struct Zetas_TZero;
         struct ZetasChange;
-        struct ZetasPosInNode;
         struct Delnus;
         struct NusInZones;
         // propperties for ghost node correction
@@ -239,7 +238,6 @@ namespace GlobalFlow {
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
             PhysicalProperty<std::vector<t_meter>, ZetasChange>,
-            PhysicalProperty<std::vector<std::string>, ZetasPosInNode>,
             PhysicalProperty<std::vector<t_dim>, Delnus>,
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
             PhysicalProperty<t_dim, MaxTipSlope>,
