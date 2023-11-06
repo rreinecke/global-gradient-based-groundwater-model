@@ -602,10 +602,42 @@ Calculate
                     t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
 
                     if (onlyOut) {
-                        if (flow.value() > 0) { lateral_flow = lateral_flow - flow; }
-                    } else { lateral_flow = lateral_flow - flow; }
+                        if (flow.value() > 0) { lateral_flow -= flow; }
+                    } else { lateral_flow -= flow; }
                 }
                 return lateral_flow;
+            }
+
+            /**
+             * Calculate the lateral groundwater flow to (-)/from (+) a neighbouring node
+             * @return
+             */
+            std::unordered_map< NeighbourPosition, double> getFlowToOrFromNeighbours() {
+                std::unordered_map< NeighbourPosition, double> mapNeighboursToFlows;
+                t_vol_t lateralFlow{0 * si::cubic_meter / day};
+                t_s_meter_t conductance{0 * si::square_meter / day};
+                std::vector<NeighbourPosition> neigPos_LRFB = getNeigPos_LRFB();
+                for (const auto &neigPos: neigPos_LRFB) {
+                    auto got = horizontal_neighbours.find(neigPos);
+                    if (got == horizontal_neighbours.end()) {
+                        mapNeighboursToFlows[neigPos] = std::nan("1") ;
+                    } else {
+                        if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
+                            conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got),
+                                                                                 get<t_meter, EFolding>(),
+                                                                                 getAt<t_meter, EFolding>(got));
+                        } else {
+                            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        }
+                        // if this head is larger than neihgbour head, flow is out, which is negative
+                        lateralFlow = -conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) *
+                                      get<t_dim, StepModifier>();
+                        mapNeighboursToFlows[got->first] = lateralFlow.value() ;
+                    }
+
+
+                }
+                return mapNeighboursToFlows;
             }
 
             /**

@@ -17,7 +17,7 @@ namespace GlobalFlow {
 
     void Runner::simulate() {
         Simulation::TimeFrame stepSize = Simulation:: YEAR;
-        int stepCount = 500;
+        int stepCount = 10;
 
         LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
         Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSize, 1);
@@ -43,12 +43,18 @@ namespace GlobalFlow {
             // for saving zetas in a csv
             std::ofstream myfile;
             myfile.open ("./output/timestep_" + std::to_string(stepNumber) + "_of_" + std::to_string(stepCount) + ".csv");
-            myfile << "timestep,nodeID,head,ghb,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+            myfile << "timestep,nodeID,head,ghb,front,back,left,right,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+            std::unordered_map< Model::NeighbourPosition, double> flowMap;
             for (int j = 0; j < sim.getNodes()->size(); ++j) {
+                flowMap = sim.getNodes()->at(j)->getFlowToOrFromNeighbours();
                 myfile << stepNumber
                        << "," << sim.getNodes()->at(j)->getID()
                        << "," << sim.getNodes()->at(j)->getHead().value()
                        << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
+                       << "," << flowMap[Model::NeighbourPosition::FRONT]
+                       << "," << flowMap[Model::NeighbourPosition::BACK]
+                       << "," << flowMap[Model::NeighbourPosition::LEFT]
+                       << "," << flowMap[Model::NeighbourPosition::RIGHT]
                        << "," << sim.getNodes()->at(j)->getZeta(0).value()
                        << "," << sim.getNodes()->at(j)->isZetaActive(1)
                        << "," << sim.getNodes()->at(j)->getZeta(1).value()

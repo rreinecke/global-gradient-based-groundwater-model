@@ -557,7 +557,7 @@ namespace GlobalFlow {
          */
         virtual void readGWRecharge(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
-                double recharge_m3_per_day = ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365;
+                double recharge_m3_per_day = ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365; // Todo remove / 365 (read data should be mm/day)
                 nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                    0 * Model::si::meter,
                                                    recharge_m3_per_day,

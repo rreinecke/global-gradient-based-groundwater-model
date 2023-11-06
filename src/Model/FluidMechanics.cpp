@@ -15,12 +15,7 @@ namespace GlobalFlow {
             return 0.0 * si::meter;
         };
 
-        quantity<MeterSquaredPerTime> calcEfoldingTrans(t_vel
-                                                        k,
-                                                        t_meter f, t_meter
-                                                        z,
-                                                        t_meter h
-        ) {
+        quantity<MeterSquaredPerTime> calcEfoldingTrans(t_vel k, t_meter f, t_meter z, t_meter h) {
             quantity<MeterSquaredPerTime> t; //transmissivity
             const quantity<Meter> d{100 * si::meter};
             if (f == 0 * si::meter) { f = 1 * si::meter; }
@@ -72,7 +67,8 @@ namespace GlobalFlow {
             return out;
         }
 
-        quantity<MeterSquaredPerTime> FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept {
+        quantity<MeterSquaredPerTime>
+        FluidMechanics::calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept {
             t_vel k_neig;
             t_vel k_self;
             t_meter nodeLength_neig; // node length in flow direction (of neighbour)
@@ -188,17 +184,14 @@ namespace GlobalFlow {
             return out;
         };
 
-        quantity<MeterSquaredPerTime> FluidMechanics::getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
+        quantity<MeterSquaredPerTime> FluidMechanics::getHCOF(bool steadyState,
+                                                              quantity<Dimensionless> stepModifier,
                                                               t_s_meter storageCapacity,
                                                               quantity<MeterSquaredPerTime> P) noexcept {
             if (steadyState) {
-                // LOG(debug) << "HCOF for steady state sim. (= P) (in getHCOF): " << P.value() << std::endl;
                 return P;
             } else {
                 quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
-                //LOG(debug) << "P = " << P.value() << std::endl;
-                //LOG(debug) << "storageCapacity = " << storageCapacity.value() << std::endl;
-                //LOG(debug) << "HCOF for transient sim. (= P - storage capacity/time step): " << out.value() << std::endl;
                 NANChecker(out.value(), "HCOF");
                 return out;}
         }
