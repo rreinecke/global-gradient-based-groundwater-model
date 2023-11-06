@@ -7,7 +7,14 @@ parent: Input and Outputs
 
 # Data Input
 
+## SpatID
+Before diving into the individual input types, the reasoning behind the used spatID needs to be explained: 
+It is an identifier of the location on earth. 
+Each input file uses spatIDs to identify where in the grid that data should be added to the node properties.
+It is essential that all input files share the same principle of defining the spatID.
+
 ## Model grid (e.g., grid.csv)
+The most important data for the model is the grid, because nodes are created only for the spatIDs given in the grid definition file. 
 Model grid definition. X/Y give the lon/lat position. The remaining data sets will read only data for spatIDs read from this file.  
 
 * 1st column: "spatID" - spatial ID
@@ -24,6 +31,11 @@ spatID,X,Y,area,col,row
 2248179,172.957001,-34.458401,70.481796,78,1
 ...
 ```
+
+Note: 
+Lets say, you have global data on recharge, elevation, rivers, and lithology and want to build a model for one country only. 
+Then you could crop the respective global grid to that country and run the model. 
+Nodes will only be created where defined by the grid.
 
 ## Groundwater recharge (e.g., recharge.csv)
 Groundwater recharge rate.

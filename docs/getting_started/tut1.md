@@ -10,95 +10,32 @@ nav_order: 1
 ## simple conceptual model
 
 The following picture shows the conceptual example model:
-![](simple_model.png)
+![](../simple_model.png)
 
 ## Running the model
 
-After compilation (see [here](http://globalgroundwatermodel.org/getstarted)):
+After compilation (see [here](http://globalgroundwatermodel.org/getstarted)), type into the terminal (while in the build folder):
 ```
-simple_model
+./simple_model
 ```
-It will yield a depth to water table CSV file called wtd.csv for a simple model. The output can be changed (see "Write out data" below)
+The resulting depth to water table for that model is saved in a CSV ("wtd.csv"). The output can be changed (see "Write out data" below). Congratulations! You just ran the first standalone groundwater model in 3GM! 
 
-## How to use
-The following will guide you through the building blocks of the simple model shipped along with the code.
-It assumes that you've constructed your model domain and have input data for the following
-* Groundwater recharge (recharge_simple.csv)
-* Surface elevation (elevation_simple.csv)
-* Rivers, location, elevation and depth (rivers_simple.csv)
-* Hydrogeology (lithology_simple.csv)
-* Riverbed conductance (rivers_simple.csv)
-* Inital head guess (otherwise the model assumes the surface elevation as best guess) ("heads_simple.csv")
+An important feature of the framework is the GW_interface connecting any model with the groundwater code.
+You need to implement this interface if you want to couple your model to G³M-f (see example [here](http://globalgroundwatermodel.org/coupling)).
 
-Center building stone for the framework is the GW_interface connecting any model with the groundwater code.
-Implement this interface if you want to couple your model to G³M-f or build a custom standalone application.
-In tests/SimpleModel you'll find an example implementation explained further in the following.
 
-```
-class GW_Interface {
-    public:
-        virtual ~GW_Interface() {}
+In this simple model tutorial, we will stick with the standalone application and explain how to adapt its inputs to change the model. 
 
-        virtual void
-        loadSettings() = 0;
+## Model inputs
+The following will guide you through the different inputs of the simple model shipped along with the code. Let's start with the basics. The inputs for the groundwater model are: the congig.json, the grid and additional data such as:
+* Groundwater recharge (tests/SimpleModel/data/recharge.csv)
+* Surface elevation (tests/SimpleModel/data/elevation.csv)
+* Rivers, location, elevation and depth (tests/SimpleModel/data/rivers.csv)
+* Hydrogeology (tests/SimpleModel/data/lithology.csv)
+* Riverbed conductance (tests/SimpleModel/data/rivers.csv)
+* Inital head guess (if not given, the model assumes the head is equal to the default value from config.json) (tests/SimpleModel/data/heads_simple.csv)
 
-        virtual void
-        setupSimulation() = 0;
-
-        virtual void
-        writeData() = 0;
-
-        virtual void
-        simulate() = 0;
-};
-```
-
-The following shows the code for a simple model loop running a steady-state model with daily timesteps.
-```
-void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running a steady state step";
-        step.first->toogleSteadyState();
-        step.first->solve();
-        sim.printMassBalances();
-    }
-    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
-    //sim.save();
-}
-```
-
-### Write out data
-Data is written into a file depending on the settings in build/data/out_simple.json:
-* "name": name of the created  output file
-* "type": file type (current options are "csv" and "gfs-json", help for netCDF output implementation is appreciated)
-* "field": name of the field (the list of field options can be found in src/DataProcessing/DataOutput/FieldCollector.hpp, e.g., "Velocity")
-* "ID": if true, the node ID is written into the output file
-* "position": if true, node positions (Y and X, or latitude and longitude) are written into the file
-
-```
-{
-  "output": {
-    "StaticResult": [
-      {
-        "name": "wtd",
-        "type": "csv",
-        "field": "DepthToWaterTable",
-        "ID": "false",
-        "position": "true"
-      }
-    ],
-    "InnerIteration": {
-    },
-    "OuterIteration": {
-    }
-  }
-}
-
-```
-The output file (here "wtd.csv") is written into the build directory.
-
-For advanced users: If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
+[Here](http://globalgroundwatermodel.org/input_output/data) we explain the format these files need to have. 
 
 ### Model configuration
 
@@ -195,6 +132,55 @@ The model parameters (e.g. aquifer settings, convergence criteria, location of i
   }
 }
 ```
+
+## Model runner
+
+The model runner ("simple.cpp") is the file you adapt once the data and config.json are ready.  It loads the settings, sets up the simulation, runs the simulation and writes out the results. In the simulation setup, you define whether a timestep is run in steady state or transient, the timestep length, and the number of timesteps. The following shows the code for a simple model loop running a steady-state model with daily timesteps.
+```
+void StandaloneRunner::simulate() {
+    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
+    for (Simulation::step step : stepper) {
+        LOG(userinfo) << "Running a steady state step";
+        step.first->toogleSteadyState();
+        step.first->solve();
+        sim.printMassBalances();
+    }
+    DataProcessing::DataOutput::OutputManager("data/out_simple.json", sim).write();
+    //sim.save();
+}
+```
+
+### Write out data
+Data is written into a file depending on the settings in build/data/out_simple.json:
+* "name": name of the created  output file
+* "type": file type (current options are "csv" and "gfs-json", help for netCDF output implementation is appreciated)
+* "field": name of the field (the list of field options can be found in src/DataProcessing/DataOutput/FieldCollector.hpp, e.g., "Velocity")
+* "ID": if true, the node ID is written into the output file
+* "position": if true, node positions (Y and X, or latitude and longitude) are written into the file
+
+```
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "wtd",
+        "type": "csv",
+        "field": "DepthToWaterTable",
+        "ID": "false",
+        "position": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}
+
+```
+The output file (here "wtd.csv") is written into the build directory.
+
+For advanced users: If you want to add custom fields you can do so in src/DataProcessing/DataOutput.
 
 ## Further documentation:
 
