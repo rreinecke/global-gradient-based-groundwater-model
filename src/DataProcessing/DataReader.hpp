@@ -432,7 +432,7 @@ namespace GlobalFlow {
             }
         };
 
-        void setVariableDensityConditionsAtBoundary(int numZones, double aquiferDepth){
+        void setVariableDensityConditionsAtBoundary(large_num numZones, double aquiferDepth){
             std::vector<Model::quantity<Model::Meter>> zetas;
             Model::quantity<Model::Meter> zeta;
             for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
@@ -879,13 +879,13 @@ namespace GlobalFlow {
          */
         void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
                              std::vector<double> densityZones) {
-            double initial_head{};
-            double zetaGhybenHerzberg{};
+            double initial_head{0.0};
+            double zetaGhybenHerzberg{0.0};
             double minDensity = densityZones.front();
             double maxDensity = densityZones.back();
             double meanDensity = (maxDensity + minDensity) * 0.5;
             double maxDifDensity = (maxDensity - minDensity) * 0.5; // calculate maximum difference from mean to min/max
-            double zeta{};
+            double zeta{0.0};
             std::vector<double> zetaDeltas;
 
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
@@ -904,6 +904,7 @@ namespace GlobalFlow {
 
                 for (int localZetaID = 1; localZetaID < densityZones.size(); ++localZetaID){
                     zeta = zetaGhybenHerzberg + zetaDeltas[localZetaID];
+                    if (zeta > 0){ zeta = 0; }
                     //LOG(debug) << "zeta[localZetaID = " << localZetaID << "]: " << zeta;
                     nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                 }

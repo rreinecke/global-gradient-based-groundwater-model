@@ -30,11 +30,15 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             // River head <= river bottom (may happen in transient coupling)
             if (flowHead <= bottom){
                 // Groundwater head >= river bottom --> allow gaining conditions of river!
-                if(head >= bottom){return -calcERC(recharge, eq_head, head, eqFlow);}
-                return out;}
-            // River head > river bottom
-            return -calcERC(recharge, eq_head, head, eqFlow);
-
+                if(head >= bottom) {
+                    return -calcERC(recharge, eq_head, head, eqFlow);
+                } else {
+                    return out;
+                }
+            } else {
+                // River head > river bottom
+                return -calcERC(recharge, eq_head, head, eqFlow);
+            }
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom) {

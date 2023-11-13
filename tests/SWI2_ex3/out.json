@@ -2,7 +2,7 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head_vdf3",
+        "name": "swi2_ex3_head",
         "type": "csv",
         "field": "Head",
         "ID": "true",
@@ -10,7 +10,7 @@
         "all_layers": "false"
       },
       {
-        "name": "zeta1_vdf3",
+        "name": "swi2_ex3_zeta1",
         "type": "csv",
         "field": "Zeta1",
         "ID": "true",

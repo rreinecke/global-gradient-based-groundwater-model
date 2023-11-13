@@ -193,7 +193,8 @@ namespace GlobalFlow {
             } else {
                 quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
                 NANChecker(out.value(), "HCOF");
-                return out;}
+                return out;
+            }
         }
     }
 }//ns

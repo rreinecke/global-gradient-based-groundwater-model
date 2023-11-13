@@ -2,7 +2,7 @@
   "output": {
     "StaticResult": [
       {
-        "name": "head_vdf2",
+        "name": "swi2_ex2_head",
         "type": "csv",
         "field": "Head",
         "ID": "true",
@@ -10,7 +10,7 @@
         "all_layers": "true"
       },
       {
-        "name": "zeta1_vdf2",
+        "name": "swi2_ex2_zeta1",
         "type": "csv",
         "field": "Zeta1",
         "ID": "true",
@@ -18,7 +18,7 @@
         "all_layers": "true"
       },
       {
-        "name": "zeta2_vdf2",
+        "name": "swi2_ex2_zeta2",
         "type": "csv",
         "field": "Zeta2",
         "ID": "true",

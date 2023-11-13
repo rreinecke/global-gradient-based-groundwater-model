@@ -42,8 +42,8 @@ void StandaloneRunner::simulate() {
 
     // for saving zetas in a csv
     std::ofstream myfile;
-    myfile.open ("zetas.csv");
-    myfile << "timestep,nodeID,zeta" << std::endl;
+    myfile.open ("swi2_ex1_zeta1_timesteps.csv");
+    myfile << "timestep,nodeID,zeta1" << std::endl;
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " << stepNumber;

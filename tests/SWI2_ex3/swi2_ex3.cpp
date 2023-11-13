@@ -15,7 +15,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
-    myfile.open ("node_attributes_vdf3.csv");
+    myfile.open ("swi2_ex3_node_attributes.csv");
     myfile << "nodeID,spatID,refID,lon,lat,area,edgeLR,edgeFB,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,zeta[1],recharge" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -51,10 +51,10 @@ void StandaloneRunner::simulate() {
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        //step.first->toggleSteadyState(); // turn steady state on
+        step.first->toggleSteadyState(); // turn steady state on
         step.first->solve(); // solve equations
         sim.printMassBalances(debug);
-        //step.first->toggleSteadyState(); // turn steady state off
+        step.first->toggleSteadyState(); // turn steady state off
         ++stepNumber;
     }
 
@@ -68,14 +68,25 @@ void StandaloneRunner::simulate() {
         }
     }
 
+    // for saving zetas in a csv
+    std::ofstream myfile;
+    myfile.open ("swi2_ex3_zeta1_timestep_500.csv");
+    myfile << "timestep,nodeID,zeta1" << std::endl;
+    // for saving zetas in a csv
+    for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        double zeta = sim.getNodes()->at(j)->getZeta(1).value();
+        myfile << stepNumber << "," << j << "," << zeta << std::endl;
+    }
+    myfile.close();
+
     LOG(userinfo) << "Running stress period 2";
     Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        //step.first->toggleSteadyState();
+        step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
-        //step.first->toggleSteadyState();
+        step.first->toggleSteadyState();
         ++stepNumber;
     }
 
