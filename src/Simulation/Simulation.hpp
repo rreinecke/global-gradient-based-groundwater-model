@@ -274,8 +274,8 @@ namespace GlobalFlow {
                 mpf_float_1000 error = 0;
 
                 for (int j = 0; j < nodes->size(); ++j) {
-                    out = out + fun1(j);
-                    in = in + fun2(j);
+                    out += fun1(j);
+                    in += fun2(j);
                 }
                 //error = in - abs(out);
                 if (abs(in - abs(out)) > 0.00001) {
@@ -308,8 +308,8 @@ namespace GlobalFlow {
              * @return
              */
             MassError getVDFMassError() {
-                return getError([this](int pos) { return nodes->at(pos)->getVDF_OUT().value(); },
-                                [this](int pos) { return nodes->at(pos)->getVDF_IN().value(); } );
+                return getError([this](int pos) { return nodes->at(pos)->getCurrentOUT_VDF().value(); },
+                                [this](int pos) { return nodes->at(pos)->getCurrentIN_VDF().value(); } );
             }
 
             MassError getZoneChangeMassError() {
@@ -475,17 +475,18 @@ namespace GlobalFlow {
                 }
                 if (op.isDensityVariable()){
                     MassError vdfErr = getVDFMassError();
-                    LOG(level) << "Total VDF mass error (sum over all zones): " << vdfErr.ERR <<
+                    LOG(level) << "VDF step mass error (sum over all zones): " << vdfErr.ERR <<
                                "  In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
                     MassError zchgErr = getZoneChangeMassError();
-                    LOG(level) << "Zone change (sum over all zones): " << zchgErr.ERR <<
-                               "  In: " << zchgErr.IN << "  Out: " << zchgErr.OUT;
+                    LOG(level) << "Zone change (sum over all zones): In: " << zchgErr.IN << "  Out: " << zchgErr.OUT;
                     MassError imixErr = getInstantaneousMixingMassError();
-                    LOG(level) << "Instantaneous mixing (sum over all zones): " << imixErr.ERR <<
-                               "  In: " << imixErr.IN << "  Out: " << imixErr.OUT;
+                    LOG(level) << "Instantaneous mixing (sum over all zones): In: " << imixErr.IN << "  Out: " << imixErr.OUT;
                     MassError tttErr = getTipToeTrackingMassError();
-                    LOG(level) << "Tip toe tracking (sum over all zones): " << tttErr.ERR <<
-                               "  In: " << tttErr.IN << "  Out: " << tttErr.OUT;
+                    LOG(level) << "Tip toe tracking (sum over all zones): In: " << tttErr.IN << "  Out: " << tttErr.OUT;
+                    if (abs(vdfErr.ERR) > 1){
+                        LOG(GlobalFlow::critical) << "VDF step mass error > 1 --> quitting";
+                        throw new MassErrorTooBig();
+                    }
                 }
                 if (op.isGridRefined()){
                     MassError gncErr = getGNCMassError();

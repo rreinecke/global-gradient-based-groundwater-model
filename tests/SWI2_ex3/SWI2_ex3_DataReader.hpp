@@ -60,7 +60,7 @@ namespace GlobalFlow {
                 readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                readGHB_conductance(buildDir(op.getKGHBDir()));
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading zetas";

@@ -155,8 +155,6 @@ namespace GlobalFlow {
         struct StepSize;
         struct OUT;
         struct IN;
-        struct VDF_OUT;
-        struct VDF_IN;
         struct ZCHG_OUT;
         struct ZCHG_IN;
         struct GNC_OUT;
@@ -212,8 +210,6 @@ namespace GlobalFlow {
             PhysicalProperty<quantity < d_time>, StepSize>,
             PhysicalProperty<t_c_meter, OUT>,
             PhysicalProperty<t_c_meter, IN>,
-            PhysicalProperty<t_c_meter, VDF_OUT>,
-            PhysicalProperty<t_c_meter, VDF_IN>,
             PhysicalProperty<t_c_meter, ZCHG_OUT>,
             PhysicalProperty<t_c_meter, ZCHG_IN>,
             PhysicalProperty<t_c_meter, GNC_OUT>,

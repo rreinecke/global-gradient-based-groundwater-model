@@ -401,34 +401,95 @@ namespace GlobalFlow {
         };
 
         /**
+         * @brief Read in a custom definition for the general head boundary using conductivity and multiplying it with
+         * the length of the GHB along the node edges without neighbour
+         * @param path Where to read from
+         */
+        virtual void readGHB_conductivity(std::string path) {
+            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductivity", "elevation");
+            large_num spatID{0};
+            int layer{0};
+            large_num refID{0};
+            double elevation{0};
+            double conductivity{0};
+            large_num nodeID;
+            double conductance{0};
+            double ghbLength{0};
+            double ghbDistance{0};
+            double ghbVerticalSize{0};
+
+            std::vector<Model::NeighbourPosition> neigPos_LRFB;
+            std::unordered_map<Model::NeighbourPosition, large_num> horizontal_neighbours;
+
+            while (in.read_row(spatID, layer, refID, conductivity, elevation)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                }
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+                // calculate the length and distance of the GHB
+                neigPos_LRFB = nodes->at(nodeID)->getNeigPos_LRFB();
+                for (const auto &neigPos: neigPos_LRFB) {
+                    auto got = horizontal_neighbours.find(neigPos);
+                    if (got == horizontal_neighbours.end()) { // no neighbour at position
+                        // use square root of area if edge lengths are equal (edge lengths could be 0 if read from file)
+                        if (nodes->at(nodeID)->getEdgeLengthLeftRight().value() ==
+                            nodes->at(nodeID)->getEdgeLengthFrontBack().value()) {
+                            ghbLength += sqrt(nodes->at(nodeID)->getArea().value());
+                            ghbDistance += sqrt(nodes->at(nodeID)->getArea().value()) * 0.5;
+                        } else { // todo:
+                            // use individual edge lengths if they are not equal
+                            if (neigPos == Model::NeighbourPosition::LEFT or
+                                neigPos == Model::NeighbourPosition::RIGHT) {
+                                ghbLength += nodes->at(nodeID)->getEdgeLengthLeftRight().value();
+                                ghbDistance += nodes->at(nodeID)->getEdgeLengthFrontBack().value() * 0.5;
+                            } else {
+                                ghbLength += nodes->at(nodeID)->getEdgeLengthFrontBack().value();
+                                ghbDistance += nodes->at(nodeID)->getEdgeLengthLeftRight().value() * 0.5;
+                            }
+                        }
+                    }
+                }
+                ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value();
+                conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance;
+                nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                   elevation * Model::si::meter,
+                                                   conductance,
+                                                   elevation * Model::si::meter);
+            }
+        };
+
+        // todo if ever ghb should be defined diferently (not everywhere where there is no neighbour)
+        /**
          * @brief Read in a custom definition for the general head boundary
          * @param path Where to read from
          */
-        virtual void readHeadBoundary(std::string path) {
-            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct");
+        virtual void readGHB_conductance(std::string path) {
+            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductance", "elevation");
             large_num spatID{0};
             double elevation{0};
-            double conduct{0};
-            std::unordered_map<large_num, large_num> nodeIDs;
+            double conductance{0};
+            large_num nodeID;
             int layer{0};
             large_num refID{0};
 
-            while (in.read_row(spatID, elevation, conduct)) {
+            while (in.read_row(spatID, layer, refID, conductance, elevation)) {
                 try {
-                    nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
 
-                for (auto nodeID: nodeIDs) {
-                    nodes->at(nodeID.second)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                                              elevation * Model::si::meter,
-                                                              conduct,
-                                                              elevation * Model::si::meter);
-                }
+                nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
+                                                   elevation * Model::si::meter,
+                                                   conductance,
+                                                   elevation * Model::si::meter);
             }
         };
 
@@ -551,13 +612,13 @@ namespace GlobalFlow {
         };
 
         /**
-         * @brief Read diffuse gw-recharge
+         * @brief Read diffuse gw-recharge (input is in mm/day, is transformed to m^3/day)
          * @param path Where to read the file from
          * @note needs to be in m^3/day
          */
         virtual void readGWRecharge(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
-                double recharge_m3_per_day = ((data / 1000) * nodes->at(nodeID)->getArea().value()) / 365; // Todo remove / 365 (read data should be mm/day)
+                double recharge_m3_per_day = ((data / 1000) * nodes->at(nodeID)->getArea().value());
                 nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
                                                    0 * Model::si::meter,
                                                    recharge_m3_per_day,
@@ -638,12 +699,25 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          */
         virtual void readConduct(std::string path) {
-            readTwoColumns(path, [this](double data, int nodeID) {
-                if (data != 0) { // todo check the impact of the default value on the result! median of glhymps is 0.273
-                    //0 is possible data error, known to occur with Gleeson based map
-                    nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day)); // Question: check if val > 10 m/day?
+            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conduct");
+            large_num spatID{0};
+            int layer{0};
+            int refID{0};
+            double conduct{0};
+            large_num nodeID;
+
+            while (in.read_row(spatID, layer, refID, conduct)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer). at(refID);
                 }
-            });
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+                nodes->at(nodeID)->setK(conduct * (Model::si::meter / Model::day));
+
+            }
         };
 
         /**

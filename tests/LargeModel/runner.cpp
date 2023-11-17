@@ -5,8 +5,9 @@ namespace GlobalFlow {
     //int sim_id{0};
 
     void Runner::loadSettings() {
+        pathToConfig = "data/config_na.json";
         op = Simulation::Options();
-        op.load("data/config_na.json");
+        op.load(pathToConfig);
     }
 
     void Runner::setupSimulation() {
@@ -17,7 +18,8 @@ namespace GlobalFlow {
 
     void Runner::simulate() {
         Simulation::TimeFrame stepSize = Simulation:: YEAR;
-        int stepCount = 1000;
+        int stepCount = 2500;
+        std::string pathToOutput;
 
         LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
         Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSize, 1);
@@ -35,15 +37,21 @@ namespace GlobalFlow {
 
         int stepNumber{1};
 
-        const auto default_precision = (int) std::cout.precision();
         for (Simulation::step step : transientStepper) {
+            if (pathToConfig == "data/config_nz.json") {
+                pathToOutput = "";
+            } else {
+                pathToOutput = "/mnt/storage/";
+            }
+
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
             // saving timestep results in CSVs
-            std::ofstream zetasFile("/mnt/simulations/output/zetas_timestep_" + std::to_string(stepNumber) + "_of_" + std::to_string(stepCount) + ".csv");
+            std::ofstream zetasFile(pathToOutput + "output/zetas_timestep_" + std::to_string(stepNumber) + "_of_" +
+                                    std::to_string(stepCount) + ".csv");
             if (zetasFile.is_open()) {
-                zetasFile << "timestep,nodeID,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+                zetasFile << "timestep,nodeID,head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
                 for (int j = 0; j < sim.getNodes()->size(); ++j) {
                     zetasFile << stepNumber
                               << "," << sim.getNodes()->at(j)->getID()
@@ -58,7 +66,7 @@ namespace GlobalFlow {
                 }
                 zetasFile.close();
             }
-            std::ofstream flowsFile("/mnt/simulations/output/flows_timestep_" + std::to_string(stepNumber) + "_of_" + std::to_string(stepCount) + ".csv");
+            std::ofstream flowsFile(pathToOutput + "output/flows_timestep_" + std::to_string(stepNumber) + "_of_" + std::to_string(stepCount) + ".csv");
             if (flowsFile.is_open()) {
                 flowsFile << "timestep,nodeID,ghb,front,back,left,right" << std::endl;
                 std::unordered_map<Model::NeighbourPosition, double> flowMap;
@@ -121,7 +129,6 @@ namespace GlobalFlow {
     }
     Runner::Runner() = default;
 }//ns
-
 
 
 int main() {

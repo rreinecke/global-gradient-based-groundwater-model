@@ -25,17 +25,17 @@ configure_file(../../data_5min/grid_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/.
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
-configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
+configure_file(../../data_5min/conduct_vdf.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/conduct_vdf.csv COPYONLY)
 configure_file(../../data_5min/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/effective_porosity.csv COPYONLY)
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
-configure_file(../../data_5min/caspian_data.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/caspian_data.csv COPYONLY)
+configure_file(../../data_5min/ghb_conductivity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity.csv COPYONLY)
 
 # rivers
 configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
 
 # recharge
-configure_file(../../data_5min/recharge_ISIMIP_2b.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_ISIMIP_2b.csv COPYONLY)
+configure_file(../../data_5min/recharge_mean.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_mean.csv COPYONLY)
 
 ## global and local wetlands
 configure_file(../../data_5min/G_LOCWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCWET.csv COPYONLY)

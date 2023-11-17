@@ -281,11 +281,6 @@ namespace GlobalFlow {
         void inline updateZoneChange();
 
         /**
-         * Calculate the final variable density flow budget
-         */
-        void inline updateVDFBudget();
-
-        /**
         * Calculate the ghost node correction flow budget
         */
         void inline updateGNCBudget();

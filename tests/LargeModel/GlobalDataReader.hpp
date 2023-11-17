@@ -103,7 +103,7 @@ class GlobalDataReader : public DataReader {
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                readGHB_conductivity(buildDir(op.getKGHBDir()));
             }
 
             if (op.isKFromFile()) {

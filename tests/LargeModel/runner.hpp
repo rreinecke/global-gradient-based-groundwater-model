@@ -79,6 +79,8 @@ namespace GlobalFlow {
         /** @var reader @brief The data reader object responsible for reading in data */
         DataProcessing::GlobalDataReader *reader{};
 
+        std::string pathToConfig{};
+
         /**
          * @brief Helper function for arcID mappings
          * @return a set of arcIDs

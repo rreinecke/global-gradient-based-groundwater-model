@@ -245,7 +245,6 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
         if (id != -1) {
             // todo get nodeID
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
-            nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
         }
     }
@@ -318,14 +317,6 @@ Equation::updateZoneChange() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->saveZoneChange();
-    }
-}
-
-void inline
-Equation::updateVDFBudget() {
-#pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        nodes->at(k)->saveVDFMassBalance();
     }
 }
 
@@ -638,8 +629,6 @@ Equation::solve_zetas(){
 
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
-
-    updateVDFBudget();
 }
 
 

@@ -704,6 +704,8 @@ Calculate
 
             t_s_meter getArea(){return get<t_s_meter, Area>();}
 
+            t_meter getVerticalSize(){return get< t_meter, VerticalSize >(); }
+
             t_dim getEffectivePorosity(){return get<t_dim, EffectivePorosity>();}
 
             t_meter getEdgeLengthLeftRight(){return get<t_meter, EdgeLengthLeftRight>();}
@@ -874,9 +876,9 @@ Calculate
                               flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     }
                 } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
-                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
-                          flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
-                }
+                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * head + // = conductance * gw_head
+                          flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>(); // = conductance * ghb_elevation (in examples = 0) * timestep
+                } // todo fix GHB (be aware that examples need to still work)!
                 return ex;
             }
 
@@ -977,13 +979,13 @@ Calculate
 
                 // calculate zone change ((zeta-zetaBelow) * Area is the current zone volume, with old zetas old vol)
                 // not dividing by (day * step size) since we want to get the volumetric budget over full time step
-                out += ((getEffectivePorosity() * get<t_s_meter, Area>()) *
-                        ((zeta - zetaBelow) - (zetaOld - zetaBelowOld)));
+                out += (getEffectivePorosity() * get<t_s_meter, Area>()) *
+                        ((zeta - zetaBelow) - (zetaOld - zetaBelowOld));
                 return out;
             }
 
 
-            /** // todo debug
+            /**
              * @brief Instantaneous mixing of water, as described in SWI2 documentation under "Vertical Leakage Between
              * Aquifers": (2) when freshwater leaks up into an aquifer containing only saline water, that freshwater is
              *                added as saline water
@@ -1028,24 +1030,6 @@ Calculate
                 return fluxDown;
             }
 
-            /**
-             * @brief save volumetric density zone change between last and new time step
-             */
-            void saveZoneChange() noexcept {
-                set<t_c_meter, ZCHG_IN>(getZoneChange(true));
-                set<t_c_meter, ZCHG_OUT>(getZoneChange(false));
-            }
-
-            t_c_meter getZoneChange(bool in) noexcept {
-                t_c_meter zoneChange_in;
-                t_c_meter zoneChange_out;
-                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
-                    t_c_meter zoneChange = calculateZoneChange(localZetaID);
-                    if (zoneChange.value() > 0) { zoneChange_in += zoneChange; } else { zoneChange_out += zoneChange; }
-                }
-                if (in) { return zoneChange_in; } else { return zoneChange_out; }
-            }
-
             t_c_meter getInstantaneousMixing(bool in) noexcept {
                 t_c_meter iMix_in;
                 t_c_meter iMix_out;
@@ -1056,15 +1040,33 @@ Calculate
                 if (in) { return iMix_in; } else { return iMix_out; }
             }
 
+            /**
+             * @brief save volumetric density zone change between last and new time step
+             */
+            void saveZoneChange() noexcept {
+                set<t_c_meter, ZCHG_IN>(getZoneChange(true));
+                set<t_c_meter, ZCHG_OUT>(getZoneChange(false));
+            }
+
+            t_c_meter getZoneChange(bool in) noexcept {
+                t_c_meter zoneChange_in = 0 * si::cubic_meters;
+                t_c_meter zoneChange_out = 0 * si::cubic_meters;
+                for (int localZetaID = 0; localZetaID < getZetas().size() - 1; ++localZetaID) {
+                    t_c_meter zoneChange = calculateZoneChange(localZetaID);
+                    if (zoneChange.value() > 0) { zoneChange_in += zoneChange; } else { zoneChange_out += zoneChange; }
+                }
+                if (in) { return zoneChange_in; } else { return zoneChange_out; }
+            }
+
             t_c_meter getTipToeTrackingZoneChange(bool in) {
                 t_c_meter result = 0 * si::cubic_meters;
-                t_c_meter tttOut = getZoneChange(false) - get<t_c_meter, ZCHG_OUT>();
-                t_c_meter tttIn = getZoneChange(true) - get<t_c_meter, ZCHG_IN>();
+                t_c_meter tttOut = getZoneChange(false) - getZCHG_OUT();
+                t_c_meter tttIn = getZoneChange(true) - getZCHG_IN();
                 if (in) {
-                    if (tttOut.value() > 0) { result += tttOut; }
+                    if (tttOut.value() > 0) { result += tttOut; } // higher by 3 orders of magnitude
                     if (tttIn.value() > 0) { result += tttIn; }
                 } else {
-                    if (tttOut.value() < 0) { result += tttOut; }
+                    if (tttOut.value() < 0) { result += tttOut; } // lower
                     if (tttIn.value() < 0) { result += tttIn; }
                 }
                 return result;
@@ -1074,32 +1076,27 @@ Calculate
              * @brief save variable density flow mass balance in node property (called before and after adjustment)
              * @param
              */
-            void saveVDFMassBalance() noexcept {
-                t_c_meter vdfOut = getVDF_OUT();
-                t_c_meter vdfIn = getVDF_IN();
+            t_c_meter getCurrentIN_VDF() {
+                t_c_meter vdfIn = 0 * si::cubic_meter;
+                bool in = true;
+                vdfIn += getZCHG_IN(); // add current zone change before tip toe tracking
+                vdfIn += getInstantaneousMixing(in); // add instantaneous mixing
+                vdfIn += getTipToeTrackingZoneChange(in); // add zone change from tiptoetracking
+                return vdfIn;
+            }
 
-                // add current zone change before tip toe tracking
-                vdfOut += getZCHG_OUT();
-                vdfIn += getZCHG_IN();
-
-                // add current instantaneous mixing budget
-                vdfOut += getInstantaneousMixing(false);
-                vdfIn += getInstantaneousMixing(true);
-
-                vdfOut += getTipToeTrackingZoneChange(false);
-                vdfIn += getTipToeTrackingZoneChange(true);
-
-                set<t_c_meter, VDF_OUT>(vdfOut);
-                set<t_c_meter, VDF_IN>(vdfIn);
+            t_c_meter getCurrentOUT_VDF() {
+                t_c_meter vdfOut = 0 * si::cubic_meter;
+                bool out = false;
+                vdfOut += getZCHG_OUT(); // add current zone change before tip toe tracking
+                vdfOut += getInstantaneousMixing(out); // add instantaneous mixing
+                vdfOut += getTipToeTrackingZoneChange(out); // add zone change from tiptoetracking
+                return vdfOut;
             }
 
             t_c_meter getZCHG_OUT() { return get<t_c_meter, ZCHG_OUT>(); }
 
             t_c_meter getZCHG_IN() { return get<t_c_meter, ZCHG_IN>(); }
-
-            t_c_meter getVDF_OUT() { return get<t_c_meter, VDF_OUT>(); }
-
-            t_c_meter getVDF_IN() { return get<t_c_meter, VDF_IN>(); }
 
             void saveGNCMassBalance(){
                 t_c_meter gncOut = getGNC_OUT();
@@ -1283,6 +1280,10 @@ Calculate
 
             std::unordered_map<NeighbourPosition, large_num> getListOfNeighbours(){
                 return neighbours;
+            }
+
+            std::unordered_map<NeighbourPosition, large_num> getListOfHorizontalNeighbours(){
+                return horizontal_neighbours;
             }
 
             /**
