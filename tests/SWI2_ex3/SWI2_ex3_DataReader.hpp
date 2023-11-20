@@ -48,7 +48,7 @@ namespace GlobalFlow {
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConduct(buildDir(op.getLithology()));
+                    readConductivity(buildDir(op.getLithology()));
                 }
 
                 if (op.isInitialHeadFromFile()){

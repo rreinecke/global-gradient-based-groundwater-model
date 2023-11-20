@@ -1,2 +1,2 @@
-spatID,elevation,conduct
-49,0,1000000000
+spatID,layer,refID,elevation,conductance
+49,0,0,0,1000000000

@@ -233,7 +233,9 @@ Equation::updateIntermediateHeads() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         // set new head (= old head + change) and headChange
         nodes->at(id)->setHeadChange((double) changes[id] * si::meter);
-        //LOG(debug) << "head (updateIntermediateHeads): " << nodes->at(id)->getHead().value();
+        //if (changes[id] > 10000){
+        //    LOG(debug) << "head (updateIntermediateHeads) [" << id << "]: " << nodes->at(id)->getHead().value();
+        //}
     }
 }
 

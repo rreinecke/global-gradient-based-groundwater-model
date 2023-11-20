@@ -108,7 +108,7 @@ class GlobalDataReader : public DataReader {
 
             if (op.isKFromFile()) {
                 LOG(userinfo) << "Reading hydraulic conductivity";
-                readConduct(buildDir(op.getLithology()));
+                readConductivity(buildDir(op.getLithology()));
             }
 
             LOG(userinfo) << "Reading elevation";

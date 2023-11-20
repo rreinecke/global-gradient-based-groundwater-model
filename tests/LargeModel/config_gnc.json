@@ -89,7 +89,7 @@
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
         "ghb_conductance": "ghb_conductivity.csv",
-        "lithology": "condcut_vdf.csv",
+        "lithology": "condcutivity_vdf.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
         "recharge": "recharge_mean.csv",

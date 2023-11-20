@@ -401,9 +401,10 @@ namespace GlobalFlow {
         };
 
         /**
-         * @brief Read in a custom definition for the general head boundary using conductivity and multiplying it with
-         * the length of the GHB along the node edges without neighbour
+         * @brief Read in a custom definition for the general head boundary using conductivity; multiplying it with
+         * the (1) length of the GHB along the node edges without neighbour and (2) its height; and dividing by distance
          * @param path Where to read from
+         * @note transforms hydraulic conductivity [m/day] to conductance [m^2/day]
          */
         virtual void readGHB_conductivity(std::string path) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
@@ -440,7 +441,7 @@ namespace GlobalFlow {
                             nodes->at(nodeID)->getEdgeLengthFrontBack().value()) {
                             ghbLength += sqrt(nodes->at(nodeID)->getArea().value());
                             ghbDistance += sqrt(nodes->at(nodeID)->getArea().value()) * 0.5;
-                        } else { // todo:
+                        } else {
                             // use individual edge lengths if they are not equal
                             if (neigPos == Model::NeighbourPosition::LEFT or
                                 neigPos == Model::NeighbourPosition::RIGHT) {
@@ -454,7 +455,10 @@ namespace GlobalFlow {
                     }
                 }
                 ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value();
-                conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance;
+                conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance; // m/day to m^2/day
+                if (conductance == 0) {
+                    conductance = 0.001; // set conductance to a min of 0.001 m^2/day
+                }
                 nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                    elevation * Model::si::meter,
                                                    conductance,
@@ -695,12 +699,12 @@ namespace GlobalFlow {
         };
 
         /**
-         * @brief Read cell conductance definition
+         * @brief Read cell conductivity definition
          * @param path Where to read the file from
          */
-        virtual void readConduct(std::string path) {
+        virtual void readConductivity(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conduct");
+            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductivity");
             large_num spatID{0};
             int layer{0};
             int refID{0};
@@ -852,10 +856,10 @@ namespace GlobalFlow {
                             throw "Error in reading spatID";
                         }
 
-                        double elevation = nodes->at(nodeID.second)->getElevation().value();
-                        try {
-                            elevation = nodes->at(nodeID.second)->getExternalFlowElevation(Model::RIVER_MM).value();
-                        } catch (const std::out_of_range &ex) {}
+                        double elevation = nodes->at(nodeID.second)->getExternalFlowElevation(Model::RIVER_MM);
+                        if (std::isnan(elevation)){
+                            elevation = nodes->at(nodeID.second)->getElevation().value();
+                        }
 
                         double flowElevation = elevation;
                         double bottom = elevation;

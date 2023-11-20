@@ -65,7 +65,7 @@ class SimpleRefinedDataReader : public DataReader {
             }
 
             LOG(userinfo) << "Reading lithology";
-            readConduct(buildDir(op.getLithology()));
+            readConductivity(buildDir(op.getLithology()));
 
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
@@ -83,32 +83,11 @@ class SimpleRefinedDataReader : public DataReader {
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                readGHB_conductance(buildDir(op.getKGHBDir()));
             }
         }
 
     private:
-        void readConduct(std::string path) override {
-            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "data", "refID");
-            large_num spatID{0};
-            double data{0};
-            large_num refID{0};
-            int layer{0};
-            large_num nodeID;
-
-            while (in.read_row(spatID, data, refID)) {
-                try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
-                }
-                catch (const std::out_of_range &ex) {
-                    //if Node does not exist ignore entry
-                    continue;
-                }
-                nodes->at(nodeID)->setK(data * (Model::si::meter / Model::day));
-            }
-        };
-
         void readElevation(std::string path) override {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "data", "refID");
@@ -198,31 +177,6 @@ class SimpleRefinedDataReader : public DataReader {
                 continue;
             }
             nodes->at(nodeID)->setHead_direct(data);
-        }
-    }
-
-    void readHeadBoundary(std::string path) override {
-        io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-        in.read_header(io::ignore_no_column, "spatID", "elevation", "conduct", "refID");
-        large_num spatID{0};
-        double head{0};
-        double conduct{0};
-        int layer{0};
-        large_num nodeID;
-        large_num refID{0};
-
-        while (in.read_row(spatID, head, conduct, refID)) {
-            try {
-                nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
-            }
-            catch (const std::out_of_range &ex) {
-                //if Node does not exist ignore entry
-                continue;
-            }
-            nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
-                                               head * Model::si::meter,
-                                               conduct,
-                                               head * Model::si::meter);
         }
     }
 };

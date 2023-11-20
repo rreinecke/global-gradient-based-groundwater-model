@@ -5,7 +5,7 @@ namespace GlobalFlow {
     //int sim_id{0};
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_na.json";
+        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na: 452736, na2: grid_400986
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -18,7 +18,7 @@ namespace GlobalFlow {
 
     void Runner::simulate() {
         Simulation::TimeFrame stepSize = Simulation:: YEAR;
-        int stepCount = 2500;
+        int stepCount = 2;
         std::string pathToOutput;
 
         LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
@@ -51,7 +51,7 @@ namespace GlobalFlow {
             std::ofstream zetasFile(pathToOutput + "output/zetas_timestep_" + std::to_string(stepNumber) + "_of_" +
                                     std::to_string(stepCount) + ".csv");
             if (zetasFile.is_open()) {
-                zetasFile << "timestep,nodeID,head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+                zetasFile << "timestep,nodeID,head" << std::endl; // ,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3
                 for (int j = 0; j < sim.getNodes()->size(); ++j) {
                     zetasFile << stepNumber
                               << "," << sim.getNodes()->at(j)->getID()
@@ -96,13 +96,13 @@ namespace GlobalFlow {
     void Runner::writeNodeInfosToCSV(){
         // For node infos:
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,lon,lat,area,K,hasGHB,effPor,elevation,recharge,Qriver,initial_head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl; // zeta0,zeta1Active,zeta1,zeta2active,zeta2
+        myfile << "nodeID,spatID,lon,lat,area,K,hasGHB,ghb,ghb_conductance,ghb_elevation,effPor,elevation,recharge,Qriver,initial_head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl; // zeta0,zeta1Active,zeta1,zeta2active,zeta2
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
-            /*std::string neighboursStr;
-            for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
-                neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
-            }*/
+            //std::string neighboursStr;
+            //for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
+            //    neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+            //}
             myfile << sim.getNodes()->at(j)->getID()
                    << "," << std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision)
                    << "," << sim.getNodes()->at(j)->getLon()
@@ -112,6 +112,9 @@ namespace GlobalFlow {
                    //<< "," << neighboursStr
                    << "," << sim.getNodes()->at(j)->getK().value()
                    << "," << sim.getNodes()->at(j)->hasGHB()
+                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
+                   << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getEffectivePorosity()
                    << "," << sim.getNodes()->at(j)->getElevation().value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()

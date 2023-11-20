@@ -336,7 +336,7 @@ namespace GlobalFlow {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out = simulation.getNodes()->at(i)->getExternalFlowElevation(Model::RIVER_MM).value();
+                                    out = simulation.getNodes()->at(i)->getExternalFlowElevation(Model::RIVER_MM);
                                 }
                                 catch ( std::exception &e) {
                                 }

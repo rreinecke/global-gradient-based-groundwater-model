@@ -353,9 +353,9 @@ namespace GlobalFlow {
 
                 if (pNode->hasGHB()) {
                     stream << "\nGHB conductance: "
-                           << pNode->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY).value();
+                           << pNode->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY);
                     stream << "\nGHB elevation: "
-                           << pNode->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY).value();
+                           << pNode->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
                 }
 
                 if (pNode->hasTypeOfExternalFlow(RECHARGE)){
@@ -802,11 +802,11 @@ Calculate
              * @param type The flow type
              * @return Conductance
              */
-            t_s_meter_t getExternalFlowConductance(FlowType type) {
+            double getExternalFlowConductance(FlowType type) {
                 if (hasTypeOfExternalFlow(type)) {
-                    return externalFlows.at(type).getConductance();
+                    return externalFlows.at(type).getConductance().value();
                 } else {
-                    return 0 * si::square_meter / day;
+                    return std::nan("1");
                 }
             }
 
@@ -815,11 +815,11 @@ Calculate
              * @param type The flow type
              * @return Head
              */
-            t_meter getExternalFlowElevation(FlowType type) {
+            double getExternalFlowElevation(FlowType type) {
                 if (hasTypeOfExternalFlow(type)) {
-                    return externalFlows.at(type).getFlowHead();
+                    return externalFlows.at(type).getFlowHead().value();
                 } else {
-                    return 0 * si::meter;
+                    return std::nan("1");
                 }
             }
 
@@ -878,7 +878,7 @@ Calculate
                 } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head + // = conductance * gw_head
                           flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>(); // = conductance * ghb_elevation (in examples = 0) * timestep
-                } // todo fix GHB (be aware that examples need to still work)!
+                }
                 return ex;
             }
 

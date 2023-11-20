@@ -39,14 +39,14 @@ namespace GlobalFlow {
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConduct(buildDir(op.getLithology()));
+                    readConductivity(buildDir(op.getLithology()));
                 }
 
                 //LOG(userinfo) << "Reading the groundwater recharge";
                 //readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                readGHB_conductance(buildDir(op.getKGHBDir()));
 
                 if (op.isDensityVariable()) {
                     LOG(userinfo) << "Reading zetas";

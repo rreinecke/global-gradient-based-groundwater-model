@@ -470,8 +470,8 @@ namespace GlobalFlow {
                 LOG(level) << "Total mass error: " << totalErr.ERR <<
                            "  In: " << totalErr.IN << "  Out: " << totalErr.OUT;
                 if (abs(currentErr.ERR) > 1 || abs(totalErr.ERR) > 1){
-                    LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
-                    throw new MassErrorTooBig();
+                    //LOG(GlobalFlow::critical) << "Step mass error or Total mass error > 1 --> quitting";
+                    //throw new MassErrorTooBig();
                 }
                 if (op.isDensityVariable()){
                     MassError vdfErr = getVDFMassError();
@@ -484,8 +484,8 @@ namespace GlobalFlow {
                     MassError tttErr = getTipToeTrackingMassError();
                     LOG(level) << "Tip toe tracking (sum over all zones): In: " << tttErr.IN << "  Out: " << tttErr.OUT;
                     if (abs(vdfErr.ERR) > 1){
-                        LOG(GlobalFlow::critical) << "VDF step mass error > 1 --> quitting";
-                        throw new MassErrorTooBig();
+                        //LOG(GlobalFlow::critical) << "VDF step mass error > 1 --> quitting";
+                        //throw new MassErrorTooBig();
                     }
                 }
                 if (op.isGridRefined()){

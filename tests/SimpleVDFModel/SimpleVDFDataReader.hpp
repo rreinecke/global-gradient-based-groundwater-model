@@ -49,12 +49,12 @@ namespace GlobalFlow {
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConduct(buildDir(op.getLithology()));
+                    readConductivity(buildDir(op.getLithology()));
                 }
 
                 if (op.isKGHBFromFile()){
                     LOG(userinfo) << "Reading the boundary condition";
-                    readHeadBoundary(buildDir(op.getKGHBDir()));
+                    readGHB_conductance(buildDir(op.getKGHBDir()));
                 }
 
                 if (op.isInitialHeadFromFile()){

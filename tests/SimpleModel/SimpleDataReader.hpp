@@ -65,7 +65,7 @@ class SimpleDataReader : public DataReader {
             }
 
             LOG(userinfo) << "Reading lithology";
-            readConduct(buildDir(op.getLithology()));
+            readConductivity(buildDir(op.getLithology()));
 
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
@@ -81,7 +81,7 @@ class SimpleDataReader : public DataReader {
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition";
-                readHeadBoundary(buildDir(op.getKGHBDir()));
+                readGHB_conductance(buildDir(op.getKGHBDir()));
             }
         }
 
