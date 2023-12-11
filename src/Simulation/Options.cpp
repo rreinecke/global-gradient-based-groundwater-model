@@ -97,6 +97,8 @@ namespace GlobalFlow {
             K = getTypeArray<double>("K", default_data);
             INITIAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
+            RIVER_CONDUCTIVITY = default_data.get<double>("river_conductivity");
+            SWB_ELEVATION_FACTOR = default_data.get<double>("swb_elevation_factor");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
 
             ANISOTROPY = getTypeArray<double>("anisotropy", default_data);

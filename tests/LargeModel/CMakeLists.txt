@@ -20,16 +20,18 @@ configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid
 configure_file(data_5min/grid_nz_refined.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined.csv COPYONLY)
 configure_file(data_5min/grid_nz_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined_16.csv COPYONLY)
 configure_file(data_5min/grid_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na.csv COPYONLY)
-configure_file(data_5min/grid_na2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na2.csv COPYONLY)
+configure_file(data_5min/grid_na_dk.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na_dk.csv COPYONLY)
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
 configure_file(../../data_5min/grid_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_refined_16.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 
 # read the data for the model (nodes that are not in the grid read above are ignored)
 configure_file(../../data_5min/conductivity_vdf.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/conductivity_vdf.csv COPYONLY)
+configure_file(../../data_5min/glhymps2.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/glhymps2.csv COPYONLY)
 configure_file(../../data_5min/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/effective_porosity.csv COPYONLY)
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
 configure_file(../../data_5min/ghb_conductivity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity.csv COPYONLY)
+configure_file(data_5min/ghb_conductivity_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity_na.csv COPYONLY)
 
 # rivers
 configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/river_extent.csv COPYONLY)
@@ -52,9 +54,6 @@ configure_file(../../data_5min/E-Folding/Australia_F.csv ${CMAKE_CURRENT_BINARY_
 configure_file(../../data_5min/E-Folding/Eurasia_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Eurasia_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/N_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/N_America_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/S_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/S_America_F.csv COPYONLY)
-
-## mapping from spatID (used in most of the data) to arcID (used in recharge data)
-configure_file(../../data_5min/spatID-arcID.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/spatID-arcID.csv COPYONLY)
 
 ## zetas
 configure_file(../../data_5min/Zetas/initial_zeta1_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta1_global.csv COPYONLY)

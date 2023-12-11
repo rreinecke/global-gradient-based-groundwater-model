@@ -142,6 +142,7 @@ Equation::updateMatrix() {
         b(id) = nodes->at(id)->getRHS().value();
 
         NANChecker(b[id], "Right hand side");
+        //if (std::div(j,100000).rem == 0) {LOG(numerics) << "node done:" << id;}
     }
 
     //Check if after iteration former 0 values turned to non-zero
@@ -369,17 +370,20 @@ Equation::solve() {
         double headMax{0.0};
         double changeAtNode{0.0};
         double headAtNode{0.0};
+        double nodeID_headMax{0};
+        double nodeID_changeMax{0};
 #pragma omp parallel for
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
             changeAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
+            nodeID_changeMax = (changeAtNode > changeMax) ? k : nodeID_changeMax;
             changeMax = (changeAtNode > changeMax) ? changeAtNode : changeMax;
             headAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
+            nodeID_headMax = (headAtNode > headMax) ? k : nodeID_headMax;
             headMax = (headAtNode > headMax) ? headAtNode : headMax;
-
         }
-        LOG(numerics) << "MAX Head: " << headMax;
+        LOG(numerics) << "MAX Head: " << headMax << ", nodeID at MAX Head: " << nodeID_headMax;
         maxHeadChange = changeMax;
-        LOG(numerics) << "MAX Head Change: " << changeMax;
+        LOG(numerics) << "MAX Head Change: " << changeMax << ", nodeID at MAX Head Change: " << nodeID_changeMax;
         return changeMax > maxAllowedHeadChange;
     };
 
@@ -489,7 +493,6 @@ Equation::solve() {
 void
 Equation::solve_zetas(){
     LOG(numerics) << "Solving for zeta surfaces";
-    updateZetas_TZero();
     LOG(numerics) << "If unconfined: clipping top zeta to new surface heights";
     updateTopZetasToHeads();
     for (large_num layer = 0; layer < numberOfLayers; layer++) {
@@ -631,6 +634,7 @@ Equation::solve_zetas(){
 
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
+    updateZetas_TZero();
 }
 
 

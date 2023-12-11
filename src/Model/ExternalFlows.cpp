@@ -3,7 +3,7 @@
 namespace GlobalFlow {
 namespace Model {
 
-t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
+t_s_meter_t ExternalFlow::getP(t_meter eq_gw_head, t_meter gw_head,
                                t_vol_t recharge,
                                t_vol_t eqFlow) const noexcept {
 
@@ -17,7 +17,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             return out;
         case EVAPOTRANSPIRATION:
             //flowHead = surface, bottom = extinction depth
-            if ((head < flowHead - bottom) xor (head > flowHead)) {
+            if ((gw_head < flowHead - bottom) xor (gw_head > flowHead)) {
                 return out;
             } else {
                 return -special_flow / bottom;
@@ -30,19 +30,19 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             // River head <= river bottom (may happen in transient coupling)
             if (flowHead <= bottom){
                 // Groundwater head >= river bottom --> allow gaining conditions of river!
-                if(head >= bottom) {
-                    return -calcERC(recharge, eq_head, head, eqFlow);
+                if(gw_head >= bottom) {
+                    return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
                 } else {
                     return out;
                 }
             } else {
                 // River head > river bottom
-                return -calcERC(recharge, eq_head, head, eqFlow);
+                return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
             }
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return -conductance;
                 } else {
                     return out;
@@ -53,7 +53,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return -conductance;
                 } else {
 		            return out;
@@ -64,7 +64,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return -conductance;
                 } else {
                     return out;
@@ -75,7 +75,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case GLOBAL_LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-                if (head >= bottom) {
+                if (gw_head >= bottom) {
                     return -conductance;
                 } else {
                     return out;
@@ -84,8 +84,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
                 return -conductance;
             }
         case DRAIN:
-            if (head > flowHead) {
-                return -calcERC(recharge, eq_head, head, eqFlow);
+            if (gw_head > flowHead) {
+                return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
             } else {
                 return out;
             }
@@ -95,7 +95,7 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
     return out;
 }
 
-t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
+t_vol_t ExternalFlow::getQ(t_meter eq_gw_head, t_meter gw_head,
                            t_vol_t recharge,
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
@@ -107,32 +107,32 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case NET_ABSTRACTION:
             return this->special_flow;
         case EVAPOTRANSPIRATION:
-            if (head < flowHead - bottom) {
+            if (gw_head < flowHead - bottom) {
                 return out;
-            } else if (flowHead - bottom <= head and head <= flowHead) {
+            } else if (flowHead - bottom <= gw_head and gw_head <= flowHead) {
                 return -this->special_flow + (this->special_flow * flowHead) / bottom;
             } else {
                 return -this->special_flow;
             }
         case FLOODPLAIN_DRAIN:
-            return -calculateFloodplainDrainage(head);
+            return -calculateFloodplainDrainage(gw_head);
         case RIVER:
             return conductance * flowHead;
         case RIVER_MM:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-                if (head >= bottom) {
-                    return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+                if (gw_head >= bottom) {
+                    return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
                 } else {
                     return out;
                 }
             } else {
-                return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+                return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
             }
         case WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -142,7 +142,7 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -152,7 +152,7 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-		        if (head >= bottom) {
+		        if (gw_head >= bottom) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -162,7 +162,7 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case GLOBAL_LAKE:
             //Can happen in transient coupling
             if (flowHead <= bottom) {
-                if (head >= bottom) {
+                if (gw_head >= bottom) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -170,8 +170,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             }
             return conductance * flowHead;
         case DRAIN:
-            if (head > flowHead) {
-                return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+            if (gw_head > flowHead) {
+                return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
             } else {
                 return out;
             }

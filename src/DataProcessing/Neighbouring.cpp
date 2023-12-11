@@ -5,16 +5,17 @@ namespace GlobalFlow {
 
 /**
  * @brief function to add boundaries to nodes with no neighbours
+ * @return total sum of boundaries added
  *
  */
-void addBoundary(NodeVector const& nodes,
+int addBoundary(NodeVector const& nodes,
                  double boundaryConduct,
                  Simulation::Options::BoundaryCondition boundaryCondition,
                  large_num nodeID,
-                 int layer, bool isGlobal) {
+                 int layer, bool isGlobal, int sumBoundaries) {
 
-    if (layer > 0) {
-        return;
+    if (layer > 0 or nodes->at(nodeID)->hasGHB()) {
+        return sumBoundaries;
     }
 
     if (isGlobal){
@@ -32,6 +33,7 @@ void addBoundary(NodeVector const& nodes,
                 break;
         }
     }
+    return sumBoundaries + 1;
 }
 
 /**
@@ -61,6 +63,7 @@ void buildBySpatID(NodeVector nodes,
     large_num refID;
     large_num nodeID;
     Model::NeighbourPosition neigPos;
+    int sumBoundaries{0};
 
     for (large_num nodeIDTopLayer = 0; nodeIDTopLayer < numberOfNodesPerLayer; ++nodeIDTopLayer) {
         spatID = nodes->at(nodeIDTopLayer)->getSpatID();
@@ -78,22 +81,26 @@ void buildBySpatID(NodeVector nodes,
                         nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
                         nodes->at(nodeID)->setNeighbours(nodeIDs_neig, neigPositions[neigPosID]);
                     } else {
-                        addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal);
+                        sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal,
+                                                    sumBoundaries);
                     }
                 } else { // ####  set neighbour of refined node ####
-                    setNeigOfRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal, refID, nodeID,
-                                         layer,spatIDtoNodeIDs, boundaryConduct, boundaryCondition);
+                    sumBoundaries = setNeigOfRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal,
+                                                         refID, nodeID, layer,spatIDtoNodeIDs, boundaryConduct,
+                                                         boundaryCondition, sumBoundaries);
                 }
             }
         }
     }
+    LOG(debug) << "    Added " << sumBoundaries << " boundaries";
 }
 
 
-void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
                           large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
-                      std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                      double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition) {
+                          std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                      double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
+                      int sumBoundaries) {
     large_num refID_neig{};
     std::unordered_map<large_num, large_num> nodeIDs = spatIDtoNodeIDs.at(spatID).at(layer);
     // define map to set neighbour OUTSIDE refined node: neigPos >maps to> refID >maps to> refID_neig
@@ -103,7 +110,8 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPo
     try {
         refID_neig = mapOutside.at(neigPos).at(refID);
         setNeighbourOutsideRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal, nodeID, layer,
-                                       spatIDtoNodeIDs, boundaryConduct, boundaryCondition, refID_neig, neigPos);
+                                       spatIDtoNodeIDs, boundaryConduct, boundaryCondition, refID_neig, neigPos,
+                                       sumBoundaries);
     } catch (const std::out_of_range &ex) {}
 
     // define map to set neighbour WITHIN refined node: neigPos >maps to> refID >maps to> refID_neig
@@ -115,6 +123,7 @@ void setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPo
         large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(layer).at(refID_neig); // layer = 0
         nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neigPos);
     } catch (const std::out_of_range &ex) {}
+    return sumBoundaries;
 }
 
 /**
@@ -238,11 +247,12 @@ defineMapInside(large_num refinedInto) {
     return mapInside;
 }
 
-void setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+int setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
                                     large_num xRange, large_num yRange, bool isGlobal, large_num nodeID, int layer,
                                     std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
                                     double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                                    large_num ref_id_neig, Model::NeighbourPosition neighbourPosition) {
+                                    large_num ref_id_neig, Model::NeighbourPosition neighbourPosition,
+                                    int sumBoundaries) {
     int spatID_neig = getNeighbourSpatID((int) spatID, neigPos, resolution, xRange, yRange, isGlobal);
     if (spatIDtoNodeIDs.contains(spatID_neig)) {
         std::unordered_map<large_num, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); // layer = 0
@@ -252,8 +262,9 @@ void setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::N
             nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(ref_id_neig), neighbourPosition);
         }
     } else {
-        addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal); // layer = 0
+        sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal, sumBoundaries); // layer = 0
     }
+    return sumBoundaries;
 };
 
 

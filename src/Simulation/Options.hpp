@@ -87,6 +87,8 @@ namespace GlobalFlow {
             double INITIAL_HEAD{0.0};
             std::vector<double> K{0.001};
             double GHB_K{0.1};
+            double RIVER_CONDUCTIVITY{10.0};
+            double SWB_ELEVATION_FACTOR{0.8};
             std::vector<int> AQUIFER_DEPTH{100};
             std::vector<double> ANISOTROPY{10};
             double SPECIFIC_YIELD{0.15};
@@ -442,6 +444,13 @@ namespace GlobalFlow {
             getGHBConduct() {
                 return GHB_K;
             }
+
+            double
+            getRiverConductivity() {
+                return RIVER_CONDUCTIVITY;
+            }
+
+            double getSWBElevationFactor() { return SWB_ELEVATION_FACTOR; }
 
             std::vector<int>
             getAquiferDepth() {

@@ -155,15 +155,15 @@ namespace GlobalFlow {
              * @return A dimensionless factor that can be used to modify
              * hydraulic conductance depending on depth.
              *
-             * E-Folding function as defined by Ying Fan et al. e^(-(Depth - Factor)).
+             * E-Folding function as defined by Ying Fan et al. e^(-Depth / E-Folding Depth).
              */
-            t_dim efoldingFromData(t_meter z) {
+            t_dim efoldingFromData(t_meter depth) {
                 t_meter folding = get<t_meter, EFolding>();
                 if (folding == 0.0 * si::meter)
                     return 1 * si::si_dimensionless;
                 //Alter if a different size should be used and not full vertical size
-                //z = (z / (2 * si::si_dimensionless));
-                t_dim out = exp(-z / folding);
+                //depth = (depth / (2 * si::si_dimensionless));
+                t_dim out = exp(-depth / folding);
                 if (out == 0 * si::si_dimensionless)
                     return 1e-7 * si::si_dimensionless;
                 return out;
@@ -876,8 +876,11 @@ Calculate
                               flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
                     }
                 } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
-                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * head + // = conductance * gw_head
-                          flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>(); // = conductance * ghb_elevation (in examples = 0) * timestep
+                    //LOG(debug) << "getting GHB flow";
+                    ex = (flow.getP(eq_head, head, recharge, eqFlow) * head + // = ghb_conductance * gw_head
+                          flow.getQ(eq_head, head, recharge, eqFlow)) // = ghb_conductance * ghb_elevation (often = 0)
+                                  * get<t_dim, StepModifier>();
+                    //LOG(debug) << "GHB flow:" << ex.value();
                 }
                 return ex;
             }
@@ -1662,16 +1665,20 @@ Calculate
                     zeta = getBottom();
                 }
 
-                // add initial values to vectors "zetas" and "zetasChange"
+                // add initial values to vectors "zetas", "zetasTZero" and "zetasChange"
                 std::vector<t_meter> zetas;
+                std::vector<t_meter> zetasTZero;
                 std::vector<t_meter> zetasChange;
                 if (localZetaID == 0) {
                     zetas.push_back(zeta);
+                    zetasTZero.push_back(zeta);
                     zetasChange.push_back(0 * si::meter);
                 } else {
                     zetas = getZetas();
+                    zetasTZero = getZetasTZero();
                     zetasChange = getZetasChange();
                     zetas.insert(zetas.begin() + localZetaID, zeta);
+                    zetasTZero.insert(zetasTZero.begin() + localZetaID, zeta);
                     zetasChange.insert(zetasChange.begin() + localZetaID, 0 * si::meter);
                 }
 
@@ -1685,7 +1692,8 @@ Calculate
                 }
 
                 setZetas(zetas);
-                set<std::vector<t_meter>,ZetasChange>(zetas);
+                set<std::vector<t_meter>,Zetas_TZero>(zetasTZero);
+                set<std::vector<t_meter>,ZetasChange>(zetasChange);
                 //LOG(debug) << "nodeID: " << getID() << ", localZetaID: " << localZetaID << ", zeta: " << zeta.value() << ", getZeta: " << getZeta(localZetaID).value();
             }
 
@@ -3316,7 +3324,9 @@ Calculate
              * @param delta
              */
             virtual void __setHeadChange(t_meter change) {
-                NANChecker(change.value(), "Set Head Change");
+                // todo pass a string including the nodeID
+                //std::string message = "Set Head Change at nodeID = " + std::to_string(getID());
+                NANChecker(change.value(), "Set Head Change at nodeID = " + std::to_string(getID()));
                 t_meter current_head = get<t_meter, Head>();
                 set<t_meter, HeadChange>(change);
                 set<t_meter, Head>(current_head + change);

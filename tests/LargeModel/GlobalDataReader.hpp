@@ -86,33 +86,31 @@ class GlobalDataReader : public DataReader {
                                           op.getGHBConduct(),
                                           op.getBoundaryCondition());
 
+            LOG(userinfo) << "Reading elevation";
+            readElevation(buildDir(op.getElevation()));
+
+            /*LOG(userinfo) << "Reading groundwater recharge";
+            readGWRecharge(buildDir(op.getRecharge()));*/
+
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
                 DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
-            }
 
-            if (op.getNumberOfLayers() > 1) {
                 if (op.useEfolding()) {
                     LOG(userinfo) << "Reading e-folding";
                     readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
                 }
             }
 
-            LOG(userinfo) << "Reading mapping of SpatID to ArcID";
-            readSpatIDtoArcID(buildDir(op.getMapping()));
-
-            if(op.isKGHBFromFile()) {
-                LOG(userinfo) << "Reading the boundary condition";
+            /*if(op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
                 readGHB_conductivity(buildDir(op.getKGHBDir()));
-            }
+            }*/
 
             if (op.isKFromFile()) {
-                LOG(userinfo) << "Reading hydraulic conductivity";
+                LOG(userinfo) << "Reading hydraulic conductivity (potentially for several layers)";
                 readConductivity(buildDir(op.getLithology()));
             }
-
-            LOG(userinfo) << "Reading elevation";
-            readElevation(buildDir(op.getElevation()));
 
             // read either initial head (default) or equilibrium water table depth from file, if available
             if (op.isInitialHeadFromFile()){
@@ -123,21 +121,14 @@ class GlobalDataReader : public DataReader {
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }
 
-            LOG(userinfo) << "Reading groundwater recharge";
-            readGWRecharge(buildDir(op.getRecharge()));
-            //readGWRechargeMapping(buildDir(op.getRecharge()),
-            //                      [](const double &recharge, const double &area) {
-            //                          return (((recharge / 1000) * area) / 365);});
-
-
-            if (op.isKRiverFromFile()) {
+            /*if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
                 LOG(userinfo) << "Reading river properties (elevation, length, width, depth), calculating conductance";
                 readBlueCells(buildDir(op.getRiverElevation()),
                               calculateRiverStage(buildDir(op.getRiverExtent())));
-            }
+            }*/
 
             LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),
@@ -145,6 +136,13 @@ class GlobalDataReader : public DataReader {
                                  buildDir(op.getLocalLakes()),
                                  buildDir(op.getLocalWetlands()));
 
+            LOG(userinfo) << "Adding river at nodes without surface water body";
+            // should be placed after readBlueCells and readLakesAndWetlands
+            addRiverWhereNoSurfaceWaterBody(op.getSWBElevationFactor(), op.getRiverConductivity());
+
+            // ################################################################
+            // #################### if density is variable ####################
+            // ################################################################
             if (op.isDensityVariable()) {
                 LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
                 if (op.isInitialZetasAsArray()) {
@@ -153,7 +151,7 @@ class GlobalDataReader : public DataReader {
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 } else {
                     LOG(userinfo) << "    using Ghyben-Herzberg";
-                    setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10,
+                    setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, // todo add to config
                                            op.getDensityZones());
                 }
 
@@ -168,10 +166,9 @@ class GlobalDataReader : public DataReader {
                                           op.getDensityZones());
                 }
 
-                LOG(userinfo) << "Setting the variable density conditions at general head boundaries";
+                LOG(userinfo) << "Setting the zones of sinks and sources";
                 // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
-                setVariableDensityConditionsAtBoundary(op.getDensityZones().size(),
-                                                       op.getAquiferDepth()[0]);
+                setZonesOfSinksAndSources(op.getDensityZones().size());
             }
         }
     };

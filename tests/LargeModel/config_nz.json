@@ -77,6 +77,8 @@
           10,
           10
         ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
         "zones_sources_sinks": [
@@ -91,7 +93,7 @@
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
         "ghb_conductance": "ghb_conductivity.csv",
-        "lithology": "conductivity_vdf.csv",
+        "lithology": "glhymps2.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
         "recharge": "recharge_mean.csv",
