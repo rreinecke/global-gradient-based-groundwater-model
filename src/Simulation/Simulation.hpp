@@ -113,10 +113,40 @@ namespace GlobalFlow {
 
             Solver::Equation *getEquation() { return eq.get(); };
 
+            void saveStepResults(std::string pathToOutput, int stepNumber, int stepCount) {
+
+                std::ofstream zetasFile(pathToOutput + "output/zetas_timestep_" + std::to_string(stepNumber) + "_of_" +
+                                        std::to_string(stepCount) + ".csv");
+                if (zetasFile.is_open()) {
+                    zetasFile
+                            << "timestep,nodeID,head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3,ghb,front,back,left,right"
+                            << std::endl;
+                    for (int j = 0; j < nodes->size(); ++j) {
+                        auto flowMap = nodes->at(j)->getFlowToOrFromNeighbours();
+                        zetasFile << stepNumber
+                                  << "," << nodes->at(j)->getID()
+                                  << "," << nodes->at(j)->getHead().value()
+                                  << "," << nodes->at(j)->getZeta(0).value()
+                                  << "," << nodes->at(j)->isZetaActive(1)
+                                  << "," << nodes->at(j)->getZeta(1).value()
+                                  << "," << nodes->at(j)->isZetaActive(2)
+                                  << "," << nodes->at(j)->getZeta(2).value()
+                                  << "," << nodes->at(j)->getZeta(3).value()
+                                  << "," << nodes->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
+                                  << "," << flowMap[Model::NeighbourPosition::FRONT]
+                                  << "," << flowMap[Model::NeighbourPosition::BACK]
+                                  << "," << flowMap[Model::NeighbourPosition::LEFT]
+                                  << "," << flowMap[Model::NeighbourPosition::RIGHT]
+                                  << std::endl;
+                    }
+                    zetasFile.close();
+                }
+            };
+
             /**
              * Serialize current node state
              */
-            void save() {
+            void saveNodeState() {
                 if (serialize) {
                     LOG(stateinfo) << "Saving state for faster reboot..";
                     {

@@ -89,8 +89,8 @@ class GlobalDataReader : public DataReader {
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
 
-            /*LOG(userinfo) << "Reading groundwater recharge";
-            readGWRecharge(buildDir(op.getRecharge()));*/
+            LOG(userinfo) << "Reading groundwater recharge";
+            readGWRecharge(buildDir(op.getRecharge()));
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
@@ -102,10 +102,10 @@ class GlobalDataReader : public DataReader {
                 }
             }
 
-            /*if(op.isKGHBFromFile()) {
+            if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
                 readGHB_conductivity(buildDir(op.getKGHBDir()));
-            }*/
+            }
 
             if (op.isKFromFile()) {
                 LOG(userinfo) << "Reading hydraulic conductivity (potentially for several layers)";
@@ -121,14 +121,14 @@ class GlobalDataReader : public DataReader {
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }
 
-            /*if (op.isKRiverFromFile()) {
+            if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
                 LOG(userinfo) << "Reading river properties (elevation, length, width, depth), calculating conductance";
                 readBlueCells(buildDir(op.getRiverElevation()),
                               calculateRiverStage(buildDir(op.getRiverExtent())));
-            }*/
+            }
 
             LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),

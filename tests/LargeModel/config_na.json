@@ -37,7 +37,7 @@
       "threads": 1,
       "solver": "PCG",
       "iterations": 100,
-      "inner_itter": 5,
+      "inner_itter": 20,
       "closing_crit_head": 1e-185,
       "closing_crit_zeta": 1e-7,
       "head_change": 1,
@@ -65,8 +65,8 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          0.27,
-          0.027
+          2,
+          2
         ],
         "ghb_K": 10,
         "aquifer_thickness": [

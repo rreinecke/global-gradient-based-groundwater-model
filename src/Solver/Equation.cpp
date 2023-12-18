@@ -93,9 +93,9 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
     for (const auto &conductance : map) {
         // conductance.first is the nodeID of the respective neighbour node
         NANChecker(conductance.second.value(), "Matrix entry");
-        if (isCached) {
+        if (A.isCompressed()) {
             A.coeffRef(nodeID, conductance.first) = conductance.second.value();
-        } else {
+        } else { // if not compressed: only during matrix initialization (first call of "updateMatrix()")
             A.insert(nodeID, conductance.first) = conductance.second.value();
         }
     }
@@ -115,39 +115,32 @@ Equation::addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID)
             NANChecker(entry.second.value(), "Matrix entry (zetas)");
             zoneConductance = entry.second;
             //LOG(debug) << "colID = " << colID << ", rowID = " << rowID << ", iterOffset = " << iterOffset;
-            //if (isCached_zetas) {
-                A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
-            //} else {
-            //    A_zetas.insert(rowID, colID) = zoneConductance.value();
-            //}
+            A_zetas.coeffRef(rowID, colID) = zoneConductance.value();
         }
     }
 }
 
 void inline
 Equation::updateMatrix() {
+    LOG(numerics) << "Updating matrix";
     Index n = A.outerSize();
 
-#ifdef EIGEN_HAS_OPENMP
+/*#ifdef EIGEN_HAS_OPENMP
     Eigen::initParallel(); // initialize Eigen (https://eigen.tuxfamily.org/dox/TopicMultiThreading.html)
     Index threads = Eigen::nbThreads(); // get number of threads specified in config file, and set in Simulation.cpp
-#endif
+#endif*/
 #pragma omp parallel for //schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
     for (large_num j = 0; j < numberOfNodesTotal; ++j) {
-        //if (std::div(j,100000).rem == 0) {LOG(numerics) << "updating Matrix...";}
+        //if (std::div(j,100000).rem == 0) {LOG(numerics) << "... reached nodeID " << j;}
         large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
         addToA(nodes->at(id));
         //---------------------Right
         b(id) = nodes->at(id)->getRHS().value();
-
         NANChecker(b[id], "Right hand side");
-        //if (std::div(j,100000).rem == 0) {LOG(numerics) << "node done:" << id;}
     }
-
-    //Check if after iteration former 0 values turned to non-zero
-    if ((not A.isCompressed()) and isCached) { // Question: is this necessary?
-        LOG(numerics) << "Recompressing Matrix";
+    if (!A.isCompressed()) {
+        LOG(numerics) << "Compressing Matrix";
         A.makeCompressed();
     }
 }
@@ -190,10 +183,8 @@ Equation::updateMatrix_zetas(large_num iterOffset, int localZetaID) {
             b_zetas(id) = nodes->at(j + iterOffset)->getRHS(localZetaID).value();
         }
     }
-
-    //Check if after iteration former 0 values turned to non-zero
-    if ((not A_zetas.isCompressed()) and isCached_zetas) {
-        LOG(numerics) << "Recompressing Matrix (zetas)";
+    if (A_zetas.size() != 0 and !A_zetas.isCompressed()) {
+        LOG(numerics) << "Compressing Matrix (zetas)";
         A_zetas.makeCompressed();
     }
 }
@@ -206,17 +197,10 @@ Equation::preconditioner() {
         LOG(numerics) << "Fail in decomposing matrix";
         throw "Fail in decomposing matrix";
     }
-    //LOG(numerics) << "    ... done";
 }
 
 void inline
 Equation::preconditioner_zetas() {
-    //Eigen::SelfAdjointEigenSolver<SparseMatrix<pr_t>> selfAdjointSolver(A_zetas);
-    //if ( selfAdjointSolver.info() != Success) {
-    //    LOG(numerics) << "A_zetas is not self-adjoint!";
-    //    throw "Fail before decomposing";
-    //}
-
     LOG(numerics) << "Decomposing Matrix (zetas)";
     cg_zetas.compute(A_zetas);
     if (cg_zetas.info() != Success) {
@@ -234,9 +218,6 @@ Equation::updateIntermediateHeads() {
         large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
         // set new head (= old head + change) and headChange
         nodes->at(id)->setHeadChange((double) changes[id] * si::meter);
-        //if (changes[id] > 10000){
-        //    LOG(debug) << "head (updateIntermediateHeads) [" << id << "]: " << nodes->at(id)->getHead().value();
-        //}
     }
 }
 
@@ -246,7 +227,6 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
     for (large_num k = 0; k < numberOfNodesPerLayer; ++k) {
         auto id = index_mapping[k];
         if (id != -1) {
-            // todo get nodeID
             nodes->at(k + iterOffset)->setZeta(localZetaID, (double) x_zetas[id] * si::meter);
             nodes->at(k + iterOffset)->setZetaChange(localZetaID, (double) x_zetas[id] * si::meter);
         }
@@ -345,17 +325,9 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
-    LOG(numerics) << "Initialize Matrix for current time step";
-    updateMatrix();
-
-    if (!isCached) {
-        LOG(numerics) << "Compressing matrix";
-        A.makeCompressed();
-        isCached = true;
-        //LOG(numerics) << "    ... done";
-    }
-
-    preconditioner(); // decomposing matrix
+    LOG(numerics) << "Initializing Matrix (before iteration)";
+    updateMatrix(); // updating matrix before iteration
+    preconditioner(); // decomposing matrix before iteration
     adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxAllowedHeadChange, x);
 
     LOG(numerics) << "Running Time Step";
@@ -368,6 +340,9 @@ Equation::solve() {
     auto isHeadChangeGreater = [this,&maxHeadChange]() -> bool {
         double changeMax{0.0};
         double headMax{0.0};
+        double headSum{0.0};
+        double headMean{0.0};
+        double countHeadAbove10k{0.0};
         double changeAtNode{0.0};
         double headAtNode{0.0};
         double nodeID_headMax{0};
@@ -380,10 +355,14 @@ Equation::solve() {
             headAtNode = std::abs(nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
             nodeID_headMax = (headAtNode > headMax) ? k : nodeID_headMax;
             headMax = (headAtNode > headMax) ? headAtNode : headMax;
+            headSum += headAtNode;
+            if (headAtNode > 10000) {countHeadAbove10k++;}
         }
-        LOG(numerics) << "MAX Head: " << headMax << ", nodeID at MAX Head: " << nodeID_headMax;
+        headMean = headSum / numberOfNodesTotal;
+        LOG(numerics) << "MAX Head: " << headMax << " (nodeID: " << nodeID_headMax << ")";
+        LOG(numerics) << "MEAN Head: " << headMean << ", Head > 10,000 at " << countHeadAbove10k << " nodes";
         maxHeadChange = changeMax;
-        LOG(numerics) << "MAX Head Change: " << changeMax << ", nodeID at MAX Head Change: " << nodeID_changeMax;
+        LOG(numerics) << "MAX Head Change: " << changeMax << " (nodeID: " << nodeID_changeMax << ")";
         return changeMax > maxAllowedHeadChange;
     };
 
@@ -401,7 +380,7 @@ Equation::solve() {
         int innerItter{0};
         innerItter = cg.iterations();
         if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergence criterion to small - solution found without iterations";
+            LOG(numerics) << "Convergence criterion met without iterations. ";
             break;
         }
 
@@ -424,7 +403,6 @@ Equation::solve() {
                 smallHeadChanges++;
                 if (smallHeadChanges >= 2) {
                     LOG(numerics) << "Reached head change convergence";
-                    //LOG(debug) << "x (converged):\n" << x << std::endl;
                     break;
                 }
             }
@@ -445,16 +423,12 @@ Equation::solve() {
         LOG(numerics) << "Inner iterations: " << innerItter;
         if (cg.info() == Success and iterations != 0) {
             LOG(numerics) << "cg solver success"; // this is always reached in outer iteration 1 (starts at 0)
-
             break;
         }
-
-        //LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-        //LOG(numerics) << "|Residual|_l2: " << cg.error();
         LOG(numerics) << "Head change bigger: " << headFail;
 
         updateMatrix();
-        preconditioner();
+        preconditioner(); // decomposing matrix during iteration
 
         iterations++;
     }
@@ -470,7 +444,6 @@ Equation::solve() {
 
     __itter = iterations;
     __error = cg.error_inf();
-
 
     /**
      * ###############################
@@ -505,14 +478,6 @@ Equation::solve_zetas(){
 
             if (A_zetas.size() == 0){ // if matrix empty continue with next iteration
                 continue;
-            }
-
-            if (!isCached_zetas) {
-                LOG(numerics) << "Compressing matrix (zetas)";
-                A_zetas.makeCompressed();
-
-                LOG(numerics) << "Cached Matrix (zetas)";
-                isCached_zetas = true;
             }
 
             //LOG(debug) << "A_zetas (before preconditioner):\n" << A_zetas << std::endl;

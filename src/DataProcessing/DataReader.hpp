@@ -464,12 +464,12 @@ namespace GlobalFlow {
                     }
                 }
                 ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value();
+
+                if (conductivity < 0.00001) {
+                    conductivity = 0.00001; // set conductivity to a min of 0.00001 m/day
+                }
                 conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance; // m/day to m^2/day
 
-                if (conductance < 0.00001) {
-                    conductance = 0.00001; // set conductance to a min of 0.00001 m^2/day
-                }
-                conductance = 10;
                 nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY,
                                                    elevation * Model::si::meter,
                                                    conductance,
@@ -715,11 +715,11 @@ namespace GlobalFlow {
             large_num spatID{0};
             int layer{0};
             int refID{0};
-            double conduct{0};
+            double conductivity{0};
             large_num nodeID;
 
             int i{0};
-            while (in.read_row(spatID, layer, refID, conduct)) {
+            while (in.read_row(spatID, layer, refID, conductivity)) {
                 try {
                     nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
                 }
@@ -727,10 +727,10 @@ namespace GlobalFlow {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                if (conduct == 0) {
-                    //conduct = 0.001;
+                if (conductivity < 0.00001) {
+                    conductivity = 0.00001;
                 }
-                nodes->at(nodeID)->setK(conduct * (Model::si::meter / Model::day));
+                nodes->at(nodeID)->setK(conductivity * (Model::si::meter / Model::day));
                 i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";

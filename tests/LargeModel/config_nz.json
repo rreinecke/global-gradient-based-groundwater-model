@@ -65,8 +65,8 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          0.27,
-          0.027
+          2,
+          2
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
