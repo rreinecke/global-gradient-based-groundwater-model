@@ -23,17 +23,19 @@ int addBoundary(NodeVector const& nodes,
             case Simulation::Options::GENERAL_HEAD_NEIGHBOUR: {
                 auto head = nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>();
                 nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, head, boundaryConduct, head);
+                sumBoundaries++;
             }
                 break;
             case Simulation::Options::GENERAL_HEAD_BOUNDARY: {
                 nodes->at(nodeID)->addExternalFlow(Model::GENERAL_HEAD_BOUNDARY, 0 * Model::si::meter,
                                                    boundaryConduct, 0 * Model::si::meter);
+                sumBoundaries++;
             }
             default:
                 break;
         }
     }
-    return sumBoundaries + 1;
+    return sumBoundaries;
 }
 
 /**

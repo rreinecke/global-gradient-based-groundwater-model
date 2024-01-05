@@ -77,7 +77,7 @@ namespace GlobalFlow {
         /** @var sim @brief The simulation object holding the data */
         Simulation::Simulation sim;
         /** @var reader @brief The data reader object responsible for reading in data */
-        DataProcessing::GlobalDataReader *reader{};
+        DataProcessing::TransientDataReader *reader{};
 
         std::string pathToConfig{};
 

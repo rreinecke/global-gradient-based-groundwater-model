@@ -1,6 +1,6 @@
 set(SOURCE
    ${SOURCE}
-   ${CMAKE_CURRENT_SOURCE_DIR}/runner.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/runner.cpp
    PARENT_SCOPE
 )
 set(HEADERS
@@ -54,9 +54,3 @@ configure_file(../../data_5min/E-Folding/Australia_F.csv ${CMAKE_CURRENT_BINARY_
 configure_file(../../data_5min/E-Folding/Eurasia_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/Eurasia_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/N_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/N_America_F.csv COPYONLY)
 configure_file(../../data_5min/E-Folding/S_America_F.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/E-Folding/S_America_F.csv COPYONLY)
-
-## zetas
-configure_file(../../data_5min/Zetas/initial_zeta1_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta1_global.csv COPYONLY)
-configure_file(../../data_5min/Zetas/initial_zeta2_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta2_global.csv COPYONLY)
-configure_file(../../data_5min/Zetas/initial_zeta3_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta3_global.csv COPYONLY)
-configure_file(../../data_5min/Zetas/initial_zeta4_global.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zeta4_global.csv COPYONLY)

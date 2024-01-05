@@ -594,9 +594,27 @@ namespace GlobalFlow {
          */
         void readElevation(std::string path, std::vector<std::string> files) {
             loopFiles(path, files, [this](std::string path) {
-                readTwoColumns(path, [this](double data, int nodeID) {
-                    nodes->at(nodeID)->setElevation(data * Model::si::meter);
-                });
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "refID", "elevation");
+                large_num spatID{0};
+                int layer{0};
+                int refID{0};
+                double elevation{0};
+                large_num nodeID;
+
+                int i{0};
+                while (in.read_row(spatID, refID, elevation)) {
+                    try {
+                        nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    nodes->at(nodeID)->setElevation(elevation * Model::si::meter);
+                    i++;
+                }
+                LOG(debug) << "    ... for " << i << " nodes";
             });
         };
 
@@ -607,9 +625,27 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          */
         virtual void readElevation(std::string path) {
-            readTwoColumns(path, [this](double data, int nodeID) {
-                nodes->at(nodeID)->setElevation(data * Model::si::meter);
-            });
+            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "refID", "elevation");
+            large_num spatID{0};
+            int layer{0};
+            int refID{0};
+            double elevation{0};
+            large_num nodeID;
+
+            int i{0};
+            while (in.read_row(spatID, refID, elevation)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                }
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+                nodes->at(nodeID)->setElevation(elevation * Model::si::meter);
+                i++;
+            }
+            LOG(debug) << "    ... for " << i << " nodes";
         };
 
         /**

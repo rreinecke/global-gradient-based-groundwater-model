@@ -13,9 +13,25 @@ void StandaloneRunner::setupSimulation() {
     _eq = sim.getEquation();
 }
 
-void StandaloneRunner::writeNodeInfosToCSV(){
-    // empty
-}
+    void StandaloneRunner::writeNodeInfosToCSV() {
+        // For node infos:
+        std::ofstream myfile;
+        myfile.open ("node_attributes_swi2.csv");
+        myfile << "nodeID,spatID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1]" << std::endl;
+
+        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+            myfile << j << "," <<
+                   sim.getNodes()->at(j)->getSpatID() << "," <<
+                   sim.getNodes()->at(j)->getLon() << "," <<
+                   sim.getNodes()->at(j)->getLat() << "," <<
+                   sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                   sim.getNodes()->at(j)->getElevation().value() << "," <<
+                   sim.getNodes()->at(j)->getBottom().value() << "," <<
+                   sim.getNodes()->at(j)->getK().value() << "," <<
+                   sim.getNodes()->at(j)->getZeta(1).value() <<
+                   std::endl;
+        }
+    }
 
 void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 1000);

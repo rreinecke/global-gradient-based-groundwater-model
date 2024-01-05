@@ -30,7 +30,7 @@ namespace GlobalFlow {
                                                   op.getInitialK(),
                                                   op.getAnisotropy());
 
-                LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeIDs(),
                                               op.getResolution(),

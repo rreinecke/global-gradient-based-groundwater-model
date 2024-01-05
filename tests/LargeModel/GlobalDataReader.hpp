@@ -33,12 +33,12 @@ namespace DataProcessing {
          * @brief This class provides methods for loading large input data
          * The paths are specified in the json file in in the data folder
          */
-class GlobalDataReader : public DataReader {
+class TransientDataReader : public DataReader {
     public:
         /**
          * @brief Constructor
          */
-        GlobalDataReader() = default;
+        TransientDataReader() = default;
 
         /**
          * @brief overriding read data for the large model

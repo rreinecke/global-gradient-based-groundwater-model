@@ -113,33 +113,77 @@ namespace GlobalFlow {
 
             Solver::Equation *getEquation() { return eq.get(); };
 
-            void saveStepResults(std::string pathToOutput, int stepNumber, int stepCount) {
+            void saveStepResults(std::string pathToOutput, int stepNumber, int stepCount, int stepSize,
+                                 boost::gregorian::date d) {
+                // nodeID,0,1,2
+                // step 1,0.8,0.9,0.95
+                // step 2,... appending at bottom of file
 
-                std::ofstream zetasFile(pathToOutput + "output/zetas_timestep_" + std::to_string(stepNumber) + "_of_" +
-                                        std::to_string(stepCount) + ".csv");
-                if (zetasFile.is_open()) {
-                    zetasFile
-                            << "timestep,nodeID,head,zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3,ghb,front,back,left,right"
-                            << std::endl;
-                    for (int j = 0; j < nodes->size(); ++j) {
-                        auto flowMap = nodes->at(j)->getFlowToOrFromNeighbours();
-                        zetasFile << stepNumber
-                                  << "," << nodes->at(j)->getID()
-                                  << "," << nodes->at(j)->getHead().value()
-                                  << "," << nodes->at(j)->getZeta(0).value()
-                                  << "," << nodes->at(j)->isZetaActive(1)
-                                  << "," << nodes->at(j)->getZeta(1).value()
-                                  << "," << nodes->at(j)->isZetaActive(2)
-                                  << "," << nodes->at(j)->getZeta(2).value()
-                                  << "," << nodes->at(j)->getZeta(3).value()
-                                  << "," << nodes->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
-                                  << "," << flowMap[Model::NeighbourPosition::FRONT]
-                                  << "," << flowMap[Model::NeighbourPosition::BACK]
-                                  << "," << flowMap[Model::NeighbourPosition::LEFT]
-                                  << "," << flowMap[Model::NeighbourPosition::RIGHT]
-                                  << std::endl;
+                std::stringstream ss;
+                ss << d.day() << d.month() << d.year();
+                std::string simDate = ss.str();
+                std::vector<std::string> variables = {"head", "zeta0", "zeta1", "zeta2", "zeta3", "ghb", "sum_neig"};
+
+                for (auto & variable : variables) {
+                    std::string filename = pathToOutput + variable + "_" + simDate +
+                                           "_" + std::to_string(stepSize) + "_days_step.csv";
+                    if (stepNumber == 1) {
+                        // create new file / replace old file.
+                        std::ofstream newFile(filename);
+                        // at top of file: add nodeIDs
+                        for (int j = 0; j < nodes->size(); ++j) {
+                            if (j == 0) {
+                                newFile << "nodeID";
+                            }
+                            newFile << "," << nodes->at(j)->getID();
+                        }
+                        newFile << std::endl;
+                        newFile.close();
                     }
-                    zetasFile.close();
+
+                    // in all other lines: add step number followed be the variable values
+                    std::stringstream newLine;
+                    newLine << "step " << stepNumber;
+                    for (int j = 0; j < nodes->size(); ++j) {
+                        double value{0};
+                        if(variable == "head") {
+                            value = nodes->at(j)->getHead().value();
+                        } else if(variable ==  "zeta0") {
+                            value = nodes->at(j)->getZeta(0).value();
+                        } else if(variable ==  "zeta1") {
+                            if (nodes->at(j)->isZetaActive(1)) {
+                                value = nodes->at(j)->getZeta(1).value();
+                            } else {
+                                value = std::nan("1");
+                            }
+                        } else if(variable ==  "zeta2") {
+                            if (nodes->at(j)->isZetaActive(2)) {
+                                value = nodes->at(j)->getZeta(2).value();
+                            } else {
+                                value = std::nan("1");
+                            }
+                        } else if(variable ==  "zeta3") {
+                            value = nodes->at(j)->getZeta(3).value();
+                        } else if(variable ==  "ghb") {
+                            value = nodes->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                        } else if(variable ==  "sum_neig") {
+                            auto flowMap = nodes->at(j)->getFlowToOrFromNeighbours();
+                            value = flowMap[Model::NeighbourPosition::FRONT] +
+                                    flowMap[Model::NeighbourPosition::BACK] +
+                                    flowMap[Model::NeighbourPosition::LEFT] +
+                                    flowMap[Model::NeighbourPosition::RIGHT];
+                        }
+                        if (std::isnan(value)){
+                            newLine << ",";
+                        } else {
+                            newLine << "," << value;
+                        }
+                    }
+
+                    std::ofstream file;
+                    file.open(filename, std::ios::app); // open file, ready to append
+                    file << newLine.str() << std::endl; // append new line to file
+                    file.close();
                 }
             };
 

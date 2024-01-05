@@ -18,7 +18,7 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV() {
     // For node infos:
     std::ofstream myfile;
-    myfile.open ("node_attributes_output.csv");
+    myfile.open ("node_attributes_simpleVDF.csv");
     myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1]" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -43,12 +43,10 @@ void StandaloneRunner::simulate() {
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        if (stepNumber == 1) {
-            step.first->toggleSteadyState();
-        }
+        step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
-
+        step.first->toggleSteadyState();
         stepNumber++;
     }
 

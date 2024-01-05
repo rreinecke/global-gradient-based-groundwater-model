@@ -3324,8 +3324,6 @@ Calculate
              * @param delta
              */
             virtual void __setHeadChange(t_meter change) {
-                // todo pass a string including the nodeID
-                //std::string message = "Set Head Change at nodeID = " + std::to_string(getID());
                 NANChecker(change.value(), "Set Head Change at nodeID = " + std::to_string(getID()));
                 t_meter current_head = get<t_meter, Head>();
                 set<t_meter, HeadChange>(change);

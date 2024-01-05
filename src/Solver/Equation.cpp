@@ -124,20 +124,18 @@ void inline
 Equation::updateMatrix() {
     LOG(numerics) << "Updating matrix";
     Index n = A.outerSize();
-
-/*#ifdef EIGEN_HAS_OPENMP
+#ifdef EIGEN_HAS_OPENMP
     Eigen::initParallel(); // initialize Eigen (https://eigen.tuxfamily.org/dox/TopicMultiThreading.html)
     Index threads = Eigen::nbThreads(); // get number of threads specified in config file, and set in Simulation.cpp
-#endif*/
-#pragma omp parallel for //schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-    for (large_num j = 0; j < numberOfNodesTotal; ++j) {
+#endif
+#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
+    for (large_num id = 0; id < numberOfNodesTotal; ++id) {
         //if (std::div(j,100000).rem == 0) {LOG(numerics) << "... reached nodeID " << j;}
-        large_num id = nodes->at(j)->getProperties().get<large_num, Model::ID>();
         //---------------------Left
         addToA(nodes->at(id));
         //---------------------Right
-        b(id) = nodes->at(id)->getRHS().value();
-        NANChecker(b[id], "Right hand side");
+        b(long(id)) = nodes->at(id)->getRHS().value();
+        NANChecker(b[long(id)], "Right hand side");
     }
     if (!A.isCompressed()) {
         LOG(numerics) << "Compressing Matrix";
@@ -209,15 +207,28 @@ Equation::preconditioner_zetas() {
     }
 }
 
+bool inline
+Equation::nanInHeadChanges() {
+    long_vector changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
+
+    bool nanInChanges{false};
+#pragma omp parallel for
+    for (large_num id = 0; id < numberOfNodesTotal; ++id) {
+        if (std::isnan(changes[id])){
+            nanInChanges = true;
+        }
+    }
+    return nanInChanges;
+}
+
 void inline
 Equation::updateIntermediateHeads() {
     long_vector changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
 
 #pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
+    for (large_num id = 0; id < numberOfNodesTotal; ++id) {
         // set new head (= old head + change) and headChange
-        nodes->at(id)->setHeadChange((double) changes[id] * si::meter);
+        nodes->at(id)->setHeadChange(changes[id] * si::meter);
     }
 }
 
@@ -370,11 +381,25 @@ Equation::solve() {
     bool headFail{false};
     char smallHeadChanges{0};
     bool headConverged{false};
-
+    int nanInHeadChangeCounter{0};
     while (iterations < IITER) {
         LOG(numerics) << "Outer iteration: " << iterations;
-        //Solve inner iterations
-        x = cg.solveWithGuess(b, x);
+        auto x_t0 = x; // save heads of previous outer iteration
+        x = cg.solveWithGuess(b, x); // solving inner iterations
+        //LOG(debug) << "A:\n" << A << std::endl;
+        //LOG(debug) << "x:\n" << x << std::endl;
+        //LOG(debug) << "b (= rhs):\n" << b << std::endl;
+        if (nanInHeadChanges()){  // if there is a nan value in calculated head change of any node
+            LOG(numerics) << "Nan in head changes. Trying to solve the same outer iteration again.";
+            x = x_t0; // reset heads back to heads of previous outer iteration
+            nanInHeadChangeCounter++;
+            // if there were nans in head change in several (e.g., 5) outer iteration trials
+            if (nanInHeadChangeCounter >= 5) { // todo move to config
+                throw "Fail: nan in head change solution is persistent.";
+            }
+            continue;
+        }
+
         updateIntermediateHeads();
 
         int innerItter{0};
@@ -599,6 +624,7 @@ Equation::solve_zetas(){
 
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
+    LOG(numerics) << "Updating zetasTZero";
     updateZetas_TZero();
 }
 

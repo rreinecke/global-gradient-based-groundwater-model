@@ -265,6 +265,11 @@ namespace GlobalFlow {
         void inline preconditioner_zetas();
 
         /**
+        * Check whether nan in head changes
+        */
+        bool inline nanInHeadChanges();
+
+        /**
          * Update heads in inner iteration
          */
         void inline updateIntermediateHeads();

@@ -18,37 +18,40 @@ namespace GlobalFlow {
 
     void Runner::simulate() {
         Simulation::TimeFrame stepSize = Simulation::YEAR;
-        int stepCount = 3000;
-        std::string pathToOutput;
+        int steadyStepCount = 3000;
+        int transientStepCount = 0;
+        int totalStepCount = steadyStepCount + transientStepCount;
+        int stepNumber{1};
+        boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
 
         LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSize, 1); // simulate 1 steady state step
-        for (Simulation::step step : stepper) {
-            LOG(userinfo) << "Running a steady state step";
-            step.first->toggleSteadyState();
-            step.first->solve();
-            LOG(userinfo) << "Solved steady state step with " << step.first->getItter() << " iteration(s)";
-            sim.printMassBalances(debug);
-            step.first->toggleSteadyState();
+        std::string pathToOutput;
+        if (pathToConfig == "data/config_nz.json") {
+            pathToOutput = "output/";
+        } else {
+            pathToOutput = "/mnt/storage/output_test/";
         }
 
-        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, stepSize, stepCount);
-        LOG(userinfo) << "Runnning " << stepCount << " transient step(s)";
+        Simulation::Stepper steadyStepper = Simulation::Stepper(_eq, stepSize, steadyStepCount);
+        LOG(userinfo) << "Runnning " << steadyStepCount << " steady step(s)";
+        for (Simulation::step step : steadyStepper) {
+            step.first->toggleSteadyState();
+            step.first->solve();
+            LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter() << " iteration(s)";
+            sim.printMassBalances(debug);
+            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
+            LOG(userinfo) << "Saved step results";
+            step.first->toggleSteadyState();
+            ++stepNumber;
+        }
 
-        int stepNumber{1};
-
+        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, stepSize, transientStepCount);
+        LOG(userinfo) << "Runnning " << transientStepCount << " transient step(s)";
         for (Simulation::step step : transientStepper) {
             step.first->solve();
-            LOG(userinfo) << "Solved step " << stepNumber << " with " << step.first->getItter() << " iteration(s)";
+            LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
-
-            // saving timestep results in CSVs
-            if (pathToConfig == "data/config_nz.json") {
-                pathToOutput = "";
-            } else {
-                pathToOutput = "/mnt/storage/";
-            }
-            sim.saveStepResults(pathToOutput, stepNumber, stepCount);
+            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
             ++stepNumber;
             }
 

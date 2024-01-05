@@ -34,7 +34,7 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 1,
+      "threads": 90,
       "solver": "PCG",
       "iterations": 100,
       "inner_itter": 20,
@@ -99,14 +99,6 @@
         "recharge": "recharge_mean.csv",
         "river_extent": "river_extent.csv",
         "river_elevation": "surface_water_elevation.csv",
-        "zetas": {
-          "Zetas": [
-            "initial_zeta1_global.csv",
-            "initial_zeta2_global.csv",
-            "initial_zeta3_global.csv",
-            "initial_zeta4_global.csv"
-          ]
-        },
         "e-folding": {
           "E-Folding": [
             "Africa_F.csv",

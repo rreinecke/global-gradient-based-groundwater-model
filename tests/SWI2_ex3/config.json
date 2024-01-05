@@ -80,6 +80,8 @@
           100,
           60
         ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
         "zones_sources_sinks": [

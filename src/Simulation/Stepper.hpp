@@ -31,7 +31,9 @@ namespace GlobalFlow {
             FORTNIGHT = 15,
 	        MONTH = 30,
 	        YEAR = 365,
-            TWO_YEARS = 730
+            TWO_YEARS = 730,
+            TEN_YEARS = 3650,
+            HUNDRED_YEARS = 36500
         };
 
         typedef std::pair<Solver::Equation *, double> step;

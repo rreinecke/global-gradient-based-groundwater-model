@@ -124,6 +124,23 @@ add_executable(large_model tests/LargeModel/runner.cpp ${large_model_src} ${HEAD
 target_link_libraries(large_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
 
 ################################
+# Large scale transient model (with Variable Density Flow (VDF), sea level rise, changing recharge)
+################################
+add_subdirectory(tests/LargeTransientModel)
+set(large_transient_model_src ${SOURCE})
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleModel/simple.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/USG_ex1/usg_ex1.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleRefinedModel/simpleRefined.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex1/swi2_ex1.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex3/swi2_ex3.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
+list(REMOVE_ITEM large_transient_model_src ${CMAKE_SOURCE_DIR}/tests/LargeModel/runner.cpp)
+add_executable(large_transient_model tests/LargeTransientModel/transient_runner.cpp ${large_transient_model_src} ${HEADERS})
+target_link_libraries(large_transient_model pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES})
+
+
+################################
 # Unit Tests
 ################################
 # Thanks to https://crascit.com/2015/07/25/cmake-gtest
