@@ -17,44 +17,53 @@ namespace GlobalFlow {
     }
 
     void Runner::simulate() {
-        Simulation::TimeFrame stepSize = Simulation::YEAR;
-        int steadyStepCount = 3000;
-        int transientStepCount = 0;
-        int totalStepCount = steadyStepCount + transientStepCount;
+        std::vector<int> steadyStateStressPeriodSteps = op.getSteadyStateStressPeriodSteps();
+        std::vector<int> transientStressPeriodSteps = op.getTransientStressPeriodSteps();
+        std::vector<std::string> steadyStateStressPeriodStepsizes = op.getSteadyStateStressPeriodStepsizes();
+        std::vector<std::string> transientStressPeriodStepsizes = op.getTransientStressPeriodStepsizes();
+
         int stepNumber{1};
         boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
+        std::stringstream ss;
+        ss << date.day() << date.month() << date.year();
+        std::string simDate = ss.str();
 
-        LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
-        std::string pathToOutput;
-        if (pathToConfig == "data/config_nz.json") {
-            pathToOutput = "output/";
-        } else {
-            pathToOutput = "/mnt/storage/output_test/";
-        }
-
-        Simulation::Stepper steadyStepper = Simulation::Stepper(_eq, stepSize, steadyStepCount);
-        LOG(userinfo) << "Runnning " << steadyStepCount << " steady step(s)";
-        for (Simulation::step step : steadyStepper) {
-            step.first->toggleSteadyState();
-            step.first->solve();
-            LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter() << " iteration(s)";
-            sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
-            LOG(userinfo) << "Saved step results";
-            step.first->toggleSteadyState();
-            ++stepNumber;
-        }
-
-        Simulation::Stepper transientStepper = Simulation::Stepper(_eq, stepSize, transientStepCount);
-        LOG(userinfo) << "Runnning " << transientStepCount << " transient step(s)";
-        for (Simulation::step step : transientStepper) {
-            step.first->solve();
-            LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter() << " iteration(s)";
-            sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
-            ++stepNumber;
+        std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
+        for (int i = 0; i < steadyStateStressPeriodSteps.size(); ++i) {
+            if (steadyStateStressPeriodSteps[i] == 0) { continue; }
+            LOG(userinfo) << "Steady state stress period " << i+1 << ": " <<
+                          steadyStateStressPeriodSteps[i] << " step(s), with stepsize " <<
+                          steadyStateStressPeriodStepsizes[i];
+            Simulation::Stepper steadyStepper = Simulation::Stepper(_eq, steadyStateStressPeriodStepsizes[i],
+                                                                    steadyStateStressPeriodSteps[i]);
+            for (Simulation::step step : steadyStepper) {
+                step.first->toggleSteadyState();
+                step.first->solve();
+                LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter()
+                              << " iteration(s)";
+                sim.printMassBalances(debug);
+                sim.saveStepResults(pathToOutput, stepNumber);
+                step.first->toggleSteadyState();
+                ++stepNumber;
             }
+        }
 
+        for (int i = 0; i < transientStressPeriodSteps.size(); ++i) {
+            if (transientStressPeriodSteps[i] == 0) { continue; }
+            LOG(userinfo) << "Transient stress period " << i+1 << ": " <<
+                          transientStressPeriodSteps[i] << " step(s), with stepsize " <<
+                          transientStressPeriodStepsizes[i];
+            Simulation::Stepper transientStepper = Simulation::Stepper(_eq, transientStressPeriodStepsizes[i],
+                                                                       transientStressPeriodSteps[i]);
+            for (Simulation::step step: transientStepper) {
+                step.first->solve();
+                LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter()
+                              << " iteration(s)";
+                sim.printMassBalances(debug);
+                sim.saveStepResults(pathToOutput, stepNumber);
+                ++stepNumber;
+            }
+        }
         sim.saveNodeState();
     }
 
@@ -63,42 +72,38 @@ namespace GlobalFlow {
     }
 
     void Runner::writeNodeInfosToCSV(){
-        // For node infos:
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,neighbours,K,hasGHB,ghb,ghb_conductance,ghb_elevation,"
-               << "effPor,elevation,recharge,Qriver,river_conductance,river_elevation,initial_head,"
-               << "zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,K,hasGHB,C_ghb,EL_ghb,"
+               << "Por_eff,EL,GWR,C_river,EL_river,H_ini," << std::endl;
+               //<< "zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl; // keeping this for debug
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
-            std::string neighboursStr;
+            /*std::string neighboursStr;
             for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
                 neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
-            }
+            }*/ // keeping this for debug
             myfile << sim.getNodes()->at(j)->getID()
                    << "," << std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision)
                    << "," << sim.getNodes()->at(j)->getLon()
                    << "," << sim.getNodes()->at(j)->getLat()
                    << "," << sim.getNodes()->at(j)->getArea().value()
                    << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
-                   << "," << neighboursStr
                    << "," << sim.getNodes()->at(j)->getK().value()
                    << "," << sim.getNodes()->at(j)->hasGHB()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getEffectivePorosity()
                    << "," << sim.getNodes()->at(j)->getElevation().value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getHead().value()
-                   << "," << sim.getNodes()->at(j)->getZeta(0).value()
+                   /*<< "," << sim.getNodes()->at(j)->getZeta(0).value()
                    << "," << sim.getNodes()->at(j)->isZetaActive(1)
                    << "," << sim.getNodes()->at(j)->getZeta(1).value()
                    << "," << sim.getNodes()->at(j)->isZetaActive(2)
                    << "," << sim.getNodes()->at(j)->getZeta(2).value()
-                   << "," << sim.getNodes()->at(j)->getZeta(3).value()
+                   << "," << sim.getNodes()->at(j)->getZeta(3).value()*/ // keeping this for debug
                    << std::endl;
         }
         myfile.close();

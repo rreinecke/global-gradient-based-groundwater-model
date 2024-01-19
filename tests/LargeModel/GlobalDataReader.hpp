@@ -33,12 +33,12 @@ namespace DataProcessing {
          * @brief This class provides methods for loading large input data
          * The paths are specified in the json file in in the data folder
          */
-class TransientDataReader : public DataReader {
+class GlobalDataReader : public DataReader {
     public:
         /**
          * @brief Constructor
          */
-        TransientDataReader() = default;
+        GlobalDataReader() = default;
 
         /**
          * @brief overriding read data for the large model
@@ -46,7 +46,18 @@ class TransientDataReader : public DataReader {
          * @note Number of nodes per layer for global: 2161074, for North America: 396787, for New Zealand: 4603
          */
         void readData(Simulation::Options op) override {
+            std::vector<int> steadyStateStressPeriodSteps = op.getSteadyStateStressPeriodSteps();
+            std::vector<int> transientStressPeriodSteps = op.getTransientStressPeriodSteps();
+            int n_totalSteadyStateSteps = std::accumulate(steadyStateStressPeriodSteps.begin(),
+                                                          steadyStateStressPeriodSteps.end(), 0);
+            int n_totalTransientSteps = std::accumulate(transientStressPeriodSteps.begin(),
+                                                        transientStressPeriodSteps.end(), 0);
+            int n_totalSteps = n_totalSteadyStateSteps + n_totalTransientSteps;
+            LOG(userinfo) << "Total number of time steps simulated: " << n_totalSteps <<
+                          " (total steady state steps: " << n_totalSteadyStateSteps <<
+                          ", total transient steps: " << n_totalTransientSteps << ") ";
             LOG(userinfo) << "Reading land mask (with default values from config)";
+
             if (op.isGridRefined()){
                 readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),

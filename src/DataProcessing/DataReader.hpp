@@ -848,7 +848,7 @@ namespace GlobalFlow {
                     double K = nodes->at(nodeID.second)->getK().value();
                     // Conductance estimation following Harbaugh (2005)
                     riverConductance = K * riverLength * riverWidth / (riverElevation - riverBottom);
-                    if (riverConductance <= 0) { riverConductance = 1; }
+                    if (riverConductance <= 1) { riverConductance = 1; }
 
                     nodes->at(nodeID.second)->addExternalFlow(Model::RIVER_MM,
                                                               riverElevation * Model::si::meter,

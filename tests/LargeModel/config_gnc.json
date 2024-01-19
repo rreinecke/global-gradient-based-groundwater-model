@@ -1,6 +1,18 @@
 {
   "config": {
     "model_config": {
+      "steady_state_stress_period_steps": [
+        0
+      ],
+      "transient_stress_period_steps": [
+        1
+      ],
+      "steady_state_stress_period_stepsizes": [
+        ""
+      ],
+      "transient_stress_period_stepsizes": [
+        "MONTH"
+      ],
       "nodes": "grid_nz_refined.csv",
       "number_of_nodes_per_layer": 6322,
       "x_range": 360,
@@ -95,7 +107,7 @@
         "recharge": "recharge_mean.csv",
         "river_extent": "river_extent.csv",
         "spatID-arcID": "spatID-arcID.csv",
-        "river_elevation": "surface_water_elevation.csv",
+        "river_elevation": "surface_water_elevation_for_variable_sea_level.csv",
         "zetas": {
           "Zetas": [
             "initial_zeta1_global.csv",

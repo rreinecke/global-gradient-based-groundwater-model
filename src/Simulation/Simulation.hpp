@@ -41,7 +41,6 @@
 #include "../Model/Node.hpp"
 #include "../DataProcessing/Neighbouring.hpp"
 #include "../Misc/Helpers.hpp"
-//#include "sensitivity.hpp"
 
 namespace boost { namespace serialization {
 
@@ -113,20 +112,21 @@ namespace GlobalFlow {
 
             Solver::Equation *getEquation() { return eq.get(); };
 
-            void saveStepResults(std::string pathToOutput, int stepNumber, int stepCount, int stepSize,
-                                 boost::gregorian::date d) {
+            void saveStepResults(std::string pathToOutput, int stepNumber) {
                 // nodeID,0,1,2
                 // step 1,0.8,0.9,0.95
                 // step 2,... appending at bottom of file
 
-                std::stringstream ss;
-                ss << d.day() << d.month() << d.year();
-                std::string simDate = ss.str();
+                // create path to output of this simulation, if path does not exist yet
+                const boost::filesystem::path path = pathToOutput;
+                if (!boost::filesystem::is_directory(path)) {
+                    boost::filesystem::create_directory(path);
+                }
+
                 std::vector<std::string> variables = {"head", "zeta0", "zeta1", "zeta2", "zeta3", "ghb", "sum_neig"};
 
                 for (auto & variable : variables) {
-                    std::string filename = pathToOutput + variable + "_" + simDate +
-                                           "_" + std::to_string(stepSize) + "_days_step.csv";
+                    std::string filename = pathToOutput + variable + ".csv";
                     if (stepNumber == 1) {
                         // create new file / replace old file.
                         std::ofstream newFile(filename);
@@ -168,10 +168,12 @@ namespace GlobalFlow {
                             value = nodes->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
                         } else if(variable ==  "sum_neig") {
                             auto flowMap = nodes->at(j)->getFlowToOrFromNeighbours();
-                            value = flowMap[Model::NeighbourPosition::FRONT] +
-                                    flowMap[Model::NeighbourPosition::BACK] +
-                                    flowMap[Model::NeighbourPosition::LEFT] +
-                                    flowMap[Model::NeighbourPosition::RIGHT];
+                            for (auto it=flowMap.begin(); it != flowMap.end(); ++it) {
+                                double flow = flowMap[it->first];
+                                if (!std::isnan(flow)){ // if flow from/to neighbours is nan, do not add it to "value"
+                                    value += flow;
+                                }
+                            }
                         }
                         if (std::isnan(value)){
                             newLine << ",";

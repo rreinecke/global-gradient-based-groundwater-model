@@ -80,6 +80,10 @@ namespace GlobalFlow {
             double RCLOSE_ZETA{0.1};
 
             std::string SOLVER{"PCG"};
+            std::vector<int> STEADY_STATE_STRESS_PERIOD_STEPS{0};
+            std::vector<int> TRANSIENT_STRESS_PERIOD_STEPS{0};
+            std::vector<std::string> STEADY_STATE_STRESS_PERIOD_STEPSIZES{""};
+            std::vector<std::string> TRANSIENT_STRESS_PERIOD_STEPSIZES{""};
             std::string NODES{""};
             int THREADS{0};
             bool CACHE{false};
@@ -136,6 +140,18 @@ namespace GlobalFlow {
                 GENERAL_HEAD_NEIGHBOUR,
                 STATIC_HEAD_SEA_LEVEL
             };
+
+            std::vector<int> getSteadyStateStressPeriodSteps() { return STEADY_STATE_STRESS_PERIOD_STEPS; }
+
+            std::vector<int> getTransientStressPeriodSteps() { return TRANSIENT_STRESS_PERIOD_STEPS; }
+
+            std::vector<std::string> getSteadyStateStressPeriodStepsizes() {
+                return STEADY_STATE_STRESS_PERIOD_STEPSIZES;
+            }
+
+            std::vector<std::string> getTransientStressPeriodStepsizes() {
+                return TRANSIENT_STRESS_PERIOD_STEPSIZES;
+            }
 
             void setClosingCritHead(double crit_head) { RCLOSE_HEAD = crit_head; }
 

@@ -27,16 +27,19 @@ namespace GlobalFlow {
         int totalStepCount = steadyStepCount + transientStepCount;
         int stepNumber{1};
         boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
+        std::stringstream ss;
+        ss << date.day() << date.month() << date.year();
+        std::string simDate = ss.str();
 
         LOG(userinfo) << "Stepsize is " << stepSize << " day(s)";
         std::string pathToOutput;
         if (pathToConfig == "data/config_nz.json") {
             pathToOutput = "output/";
         } else {
-            pathToOutput = "/mnt/storage/output_transient/";
+            pathToOutput = "/mnt/storage/output_transient_" + simDate + "/";
         }
 
-        std::vector<std::string> rechargeFiles = {"recharge/recharge_WaterGAP_1901-1.csv",
+        std::vector<std::string> rechargeFiles = {"recharge/recharge_WaterGAP_1901-1.csv", // todo try to read netCDF: https://gerasimosmichalitsianos.wordpress.com/2017/12/13/usingcppwithnetcdf/
                                                   "recharge/recharge_WaterGAP_1901-2.csv",
                                                   "recharge/recharge_WaterGAP_1901-3.csv",
                                                   "recharge/recharge_WaterGAP_1901-4.csv",
@@ -57,7 +60,7 @@ namespace GlobalFlow {
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
+            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize);
             LOG(userinfo) << "Saved step results";
             step.first->toggleSteadyState();
             ++stepNumber;
@@ -70,7 +73,7 @@ namespace GlobalFlow {
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize, date);
+            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize);
             ++stepNumber;
             }
 

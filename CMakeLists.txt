@@ -178,6 +178,7 @@ list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex2/swi2_ex2.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SWI2_ex3/swi2_ex3.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/SimpleVDFModel/simpleVDF.cpp)
 list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/LargeModel/runner.cpp)
+list(REMOVE_ITEM testing_src ${CMAKE_SOURCE_DIR}/tests/LargeTransientModel/transient_runner.cpp)
 
 add_executable(runUnitTests ${testing_src} ${testing_hrd})
 target_link_libraries(runUnitTests pthread ${Boost_LIBRARIES} ${GMP_LIBRARIES} gtest gtest_main gmock gmock_main)

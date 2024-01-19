@@ -31,9 +31,10 @@ namespace GlobalFlow {
             FORTNIGHT = 15,
 	        MONTH = 30,
 	        YEAR = 365,
-            TWO_YEARS = 730,
-            TEN_YEARS = 3650,
-            HUNDRED_YEARS = 36500
+            TWO_YEARS = YEAR * 2,
+            TEN_YEARS = YEAR * 10,
+            HUNDRED_YEARS = YEAR * 100,
+            THOUSAND_YEARS = YEAR * 1000
         };
 
         typedef std::pair<Solver::Equation *, double> step;
@@ -124,6 +125,11 @@ namespace GlobalFlow {
                 _equation->updateStepSize(_timeFrame);
             }
 
+            Stepper(Solver::Equation *eq, const std::string& time, const size_t steps, bool dynStep = false)
+                    : _equation(eq), _timeFrame(getStepSizeWithString(time)), _steps(steps), _dyn(dynStep) {
+                _equation->updateStepSize(_timeFrame);
+            }
+
             virtual Solver::Equation *
             get(int col) const {
                 return _equation;
@@ -143,6 +149,22 @@ namespace GlobalFlow {
             const int getStepSize() {
                 return _timeFrame;
             };
+
+            const int getStepSizeWithString(const std::string& step){
+                if (step == "DAY") { return DAY; }
+                else if (step == "TWO_DAYS") { return TWO_DAYS; }
+                else if (step == "FOUR_DAYS") { return FOUR_DAYS; }
+                else if (step == "WEEK") { return WEEK; }
+                else if (step == "TEN_DAYS") { return TEN_DAYS; }
+                else if (step == "FORTNIGHT") { return FORTNIGHT; }
+                else if (step == "MONTH") { return MONTH; }
+                else if (step == "YEAR") { return YEAR; }
+                else if (step == "TWO_YEARS") { return TWO_YEARS; }
+                else if (step == "TEN_YEARS") { return TEN_YEARS; }
+                else if (step == "HUNDRED_YEARS") { return HUNDRED_YEARS; }
+                else if (step == "THOUSAND_YEARS") { return THOUSAND_YEARS; }
+                else {throw "Provided step size " + step + " not availabe";}
+            }
 
         private:
             Solver::Equation *_equation;

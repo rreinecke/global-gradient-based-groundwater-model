@@ -45,6 +45,10 @@ namespace GlobalFlow {
             tree = tree.get_child("config");
 
             pt::ptree config = tree.get_child("model_config");
+            STEADY_STATE_STRESS_PERIOD_STEPS = getTypeArray<int>("steady_state_stress_period_steps", config);
+            TRANSIENT_STRESS_PERIOD_STEPS = getTypeArray<int>("transient_stress_period_steps", config);
+            STEADY_STATE_STRESS_PERIOD_STEPSIZES = getTypeArray<std::string>("steady_state_stress_period_stepsizes", config);
+            TRANSIENT_STRESS_PERIOD_STEPSIZES = getTypeArray<std::string>("transient_stress_period_stepsizes", config);
             NODES = config.get<std::string>("nodes");
             NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
             Y_RANGE = config.get<long>("y_range");
