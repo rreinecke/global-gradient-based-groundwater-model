@@ -17,18 +17,26 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV(){
         std::ofstream myfile;
         myfile.open ("node_attributes_vdf1.csv");
-        myfile << "nodeID,lon,lat,neighbour_count,elevation,bottom,hyd_cond,zeta[1],recharge" << std::endl;
+        myfile << "nodeID,lon,lat,neig_count,neigs,EL,bottom,K,Por_eff,zeta1,GWR, C_GHB, EL_GHB" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            myfile << j << "," <<
+            std::string neighboursStr;
+            for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
+                neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
+            }
+            myfile << sim.getNodes()->at(j)->getID() << "," <<
                    sim.getNodes()->at(j)->getLon() << "," <<
                    sim.getNodes()->at(j)->getLat() << "," <<
                    sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
+                   neighboursStr << "," <<
                    sim.getNodes()->at(j)->getElevation().value() << "," <<
                    sim.getNodes()->at(j)->getBottom().value() << "," <<
                    sim.getNodes()->at(j)->getK().value() << "," <<
+                   sim.getNodes()->at(j)->getEffectivePorosity().value() << "," <<
                    sim.getNodes()->at(j)->getZeta(1).value() << "," <<
-                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+                   sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
+                   sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY) << "," <<
+                   sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY) <<
                    std::endl;
         }
         myfile.close();

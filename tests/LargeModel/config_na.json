@@ -2,7 +2,7 @@
   "config": {
     "model_config": {
       "steady_state_stress_period_steps": [
-        6000
+        10
       ],
       "transient_stress_period_steps": [
         0

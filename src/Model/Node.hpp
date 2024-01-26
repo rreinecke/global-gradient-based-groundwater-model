@@ -1816,6 +1816,7 @@ Calculate
              *
              * Here we use zoneOfSinks and zoneOfSources (containing values between 0 and number of density zones).
              * Thus, sources and sinks are associated to the respective zone. Rule: zoneOfSinks <= zoneOfSources
+             *
              * For simulation of submarine groundwater discharge:
              * - zoneOfSinks: 0 (fresh water)
              * - zoneOfSources: an integer between 1 and the number of zones (brackish/saline water)
@@ -2119,7 +2120,8 @@ Calculate
              */
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (getEffectivePorosity() * get<t_s_meter, Area>()) /
-                                  (day); // * get<t_dim, StepModifier>()
+                                  day;
+                                  //(day * get<t_dim, StepModifier>());
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }

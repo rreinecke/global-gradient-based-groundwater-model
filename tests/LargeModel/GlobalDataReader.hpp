@@ -100,8 +100,8 @@ class GlobalDataReader : public DataReader {
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
 
-            LOG(userinfo) << "Reading groundwater recharge";
-            readGWRecharge(buildDir(op.getRecharge()));
+            /*LOG(userinfo) << "Reading groundwater recharge";
+            readGWRecharge(buildDir(op.getRecharge()));*/
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
@@ -132,7 +132,7 @@ class GlobalDataReader : public DataReader {
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }
 
-            if (op.isKRiverFromFile()) {
+            /*if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
@@ -150,7 +150,7 @@ class GlobalDataReader : public DataReader {
             LOG(userinfo) << "Adding river at nodes without surface water body";
             // should be placed after readBlueCells and readLakesAndWetlands
             addRiverWhereNoSurfaceWaterBody(op.getSWBElevationFactor(), op.getRiverConductivity());
-
+            */
             // ################################################################
             // #################### if density is variable ####################
             // ################################################################

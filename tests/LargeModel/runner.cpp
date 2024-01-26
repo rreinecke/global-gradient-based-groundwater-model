@@ -73,9 +73,8 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,K,hasGHB,C_ghb,EL_ghb,"
-               << "Por_eff,EL,GWR,C_river,EL_river,H_ini," << std::endl;
-               //<< "zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl; // keeping this for debug
+        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+               << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             /*std::string neighboursStr;
@@ -84,6 +83,7 @@ namespace GlobalFlow {
             }*/ // keeping this for debug
             myfile << sim.getNodes()->at(j)->getID()
                    << "," << std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision)
+                   << "," << sim.getNodes()->at(j)->getLayer()
                    << "," << sim.getNodes()->at(j)->getLon()
                    << "," << sim.getNodes()->at(j)->getLat()
                    << "," << sim.getNodes()->at(j)->getArea().value()
@@ -98,12 +98,6 @@ namespace GlobalFlow {
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getHead().value()
-                   /*<< "," << sim.getNodes()->at(j)->getZeta(0).value()
-                   << "," << sim.getNodes()->at(j)->isZetaActive(1)
-                   << "," << sim.getNodes()->at(j)->getZeta(1).value()
-                   << "," << sim.getNodes()->at(j)->isZetaActive(2)
-                   << "," << sim.getNodes()->at(j)->getZeta(2).value()
-                   << "," << sim.getNodes()->at(j)->getZeta(3).value()*/ // keeping this for debug
                    << std::endl;
         }
         myfile.close();

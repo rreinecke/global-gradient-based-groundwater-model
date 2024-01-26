@@ -2,16 +2,16 @@
   "config": {
     "model_config": {
       "steady_state_stress_period_steps": [
-        0
+        200
       ],
       "transient_stress_period_steps": [
-        1
+        0
       ],
       "steady_state_stress_period_stepsizes": [
-        ""
+        "TWO_DAYS"
       ],
       "transient_stress_period_stepsizes": [
-        "MONTH"
+        ""
       ],
       "nodes": "grid_swi2_ex1.csv",
       "number_of_nodes_per_layer": 50,
@@ -46,10 +46,10 @@
     "numerics": {
       "threads": 20,
       "solver": "PCG",
-      "iterations": 5000,
-      "inner_itter": 30,
+      "iterations": 100,
+      "inner_itter": 50,
       "closing_crit_head": 1E-80,
-      "closing_crit_zeta": 1E-8,
+      "closing_crit_zeta": 1E-30,
       "head_change": 0.0001,
       "zeta_change": 0.0000001,
       "damping": "false",
@@ -90,7 +90,7 @@
         "specific_storage": 0.000015,
         "zones_sources_sinks": [
           0,
-          1
+          0
         ]
       },
       "data": {

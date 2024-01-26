@@ -470,6 +470,9 @@ Equation::solve() {
     __itter = iterations;
     __error = cg.error_inf();
 
+    LOG(numerics) << "Updating heads";
+    updateFinalHeads();
+
     /**
      * ###############################
      * # Solve Zeta Surface Equation #
@@ -478,10 +481,21 @@ Equation::solve() {
      if(vdf) {
          solve_zetas();
      }
+
+     /*if(vdf) {
+         LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
+         adjustZetaHeights();
+         LOG(numerics) << "Updating zetasTZero";
+         updateZetas_TZero();
+     }*/
+    /**
+    * ###############################
+    * # Update budgets #
+    * ###############################
+    */
      if(gnc) {
          updateGNCBudget();
      }
-     updateFinalHeads();
      updateBudget();
     }
 
