@@ -500,8 +500,11 @@ Set Properties
              * @brief Update the current head change (in comparison to last time step)
              * @note Should only be called at end of time step
              */
-            void updateHeadChange() noexcept {
+            void updateHeadChange_TZero() noexcept {
                 set < t_meter, HeadChange_TZero > (get<t_meter, Head>() - get<t_meter, Head_TZero>());
+            }
+
+            void updateHead_TZero() noexcept {
                 set < t_meter, Head_TZero > (get<t_meter, Head>());
             }
 
@@ -2218,53 +2221,40 @@ Calculate
              * G = RHS (of flow, for constant density) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
              */
             t_vol_t getSources(int localZetaID){
-                t_vol_t out = 0.0 * (si::cubic_meter / day);
-                /* if nodes can be inactive: return 0 at inactive nodes
-                if (nodeInactive) { return out; }
-                 */
                 // todo: compute BUFF with SSWI2_BDCH for constant head cells
                 t_vol_t sources = 0.0 * (si::cubic_meter / day);
-                //LOG(debug) << "zoneToUse: " << zoneToUse << std::endl;
 
-                if (isZetaActive(localZetaID)) { // if "iz.NE.1" and IPLPOS == 0 (line 3570-3571)
-                    // if the new groundwater head is above or equal to the node bottom
-                    if (get<t_meter, Head>() >= getBottom()) { // lines 3532-3536
-                        // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
-                        auto RHSConstantDensity = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                // if the new groundwater head is above or equal to the node bottom
+                if (get<t_meter, Head>() >= getBottom()) { // lines 3532-3536
+                    // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
+                    auto RHSConstantDensity = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
 
-                        // get HCOF (= P-((SS_i,j,k * DELR_j * DELC_i)/(t^m - t^m-1))) of NEW time step
-                        t_s_meter_t hcof = mechanics.getHCOF(steadyState,
-                                                             get<t_dim, StepModifier>(),
-                                                             getStorageCapacity(),
-                                                             getP());
-                        // calculate the boundary flux
-                        sources = RHSConstantDensity - hcof * get<t_meter, Head>(); // see line 3535-3536
-                        //LOG(debug) << "RHSConstantDensity: " << RHSConstantDensity.value() << std::endl;
-                        //LOG(debug) << "hcof: " << hcof.value() << std::endl;
-                        //LOG(debug) << "boundaryFlux: " << boundaryFlux.value() << std::endl;
-
-                    }
-
-                    large_num zoneToUse = zoneOfSources; // zone of flow sources in node
-                    if (zoneOfSources > zoneOfSinks and // if we intend to simulate submarine groundwater discharge
-                        sources > 0 * (si::cubic_meter / day)) { // and boundary flux is positive (-> out of node)
-                        zoneToUse = zoneOfSinks; // use the zone of sinks (= top of aquifer = fresh water)
-                    }
-                    // Question: add 3539-3540 with "if (ibound < 0){q=-BUFF}"?
-                    t_dim factor = 1 * si::si_dimensionless;
-                    if (localZetaID <= zoneToUse) {
-                        if (zoneToUse > 100){ // lines 3548-3553
-                            if (sources > 0 * (si::cubic_meter / day) and
-                                (getZetas().front() - getZetas().back()) > 0 * si::meter) {
-                                factor = (getZeta(localZetaID) - getZetas().back()) / (getZetas().front() - getZetas().back());
-                            }
-                        }
-                        out = sources * factor;
-                    }
+                    // get HCOF (= P-((SS_i,j,k * DELR_j * DELC_i)/(t^m - t^m-1))) of NEW time step
+                    t_s_meter_t hcof = mechanics.getHCOF(steadyState,
+                                                         get<t_dim, StepModifier>(),
+                                                         getStorageCapacity(),
+                                                         getP());
+                    // calculate the boundary flux
+                    sources = RHSConstantDensity - hcof * get<t_meter, Head>(); // see line 3535-3536
                 }
 
-                NANChecker(out.value(), "getSources");
-                return out;
+                large_num zoneToUse = zoneOfSources; // zone of flow sources in node
+                if (zoneOfSources > zoneOfSinks and // if we intend to simulate submarine groundwater discharge
+                    sources > 0 * (si::cubic_meter / day)) { // and boundary flux is positive (-> out of node)
+                    zoneToUse = zoneOfSinks; // use the zone of sinks (= top of aquifer = fresh water)
+                }
+
+                // Question: add 3539-3540 with "if (ibound < 0){q=-BUFF}"?
+                t_dim factor = 1 * si::si_dimensionless;
+                if (localZetaID <= zoneToUse) {
+                    if (zoneToUse > 100){ // lines 3548-3553
+                        if (sources > 0 * (si::cubic_meter / day) and
+                            (getZetas().front() - getZetas().back()) > 0 * si::meter) {
+                            factor = (getZeta(localZetaID) - getZetas().back()) / (getZetas().front() - getZetas().back());
+                        }
+                    }
+                }
+                return sources * factor;
             }
 
             /**

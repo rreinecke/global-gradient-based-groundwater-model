@@ -209,7 +209,12 @@ Equation::preconditioner_zetas() {
 
 bool inline
 Equation::nanInHeadChanges() {
-    long_vector changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
+    long_vector changes;
+    if (isAdaptiveDamping) {
+        changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
+    } else {
+        changes = x_t0 - x;
+    }
 
     bool nanInChanges{false};
 #pragma omp parallel for
@@ -223,8 +228,13 @@ Equation::nanInHeadChanges() {
 
 void inline
 Equation::updateIntermediateHeads() {
-    long_vector changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
-
+    long_vector changes;
+    if (isAdaptiveDamping) {
+        changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
+    } else {
+        changes = x - x_t0;
+    }
+    //LOG(debug) << "changes: \n" << changes;
 #pragma omp parallel for
     for (large_num id = 0; id < numberOfNodesTotal; ++id) {
         // set new head (= old head + change) and headChange
@@ -245,12 +255,20 @@ Equation::updateIntermediateZetas(large_num iterOffset, int localZetaID) {
 }
 
 void inline
-Equation::updateFinalHeads() {
+Equation::updateHeadChangeTZero() {
 #pragma omp parallel for
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        nodes->at(k)->updateHeadChange();
+        nodes->at(k)->updateHeadChange_TZero();
     }
 }
+
+void inline
+Equation::updateHeadTZero() {
+#pragma omp parallel for
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->updateHead_TZero();
+        }
+    }
 
 void inline
 Equation::updateTopZetasToHeads() {
@@ -384,7 +402,7 @@ Equation::solve() {
     int nanInHeadChangeCounter{0};
     while (iterations < IITER) {
         LOG(numerics) << "Outer iteration: " << iterations;
-        auto x_t0 = x; // save heads of previous outer iteration
+        x_t0 = x; // save heads of previous outer iteration
         x = cg.solveWithGuess(b, x); // solving inner iterations
         //LOG(debug) << "A:\n" << A << std::endl;
         //LOG(debug) << "x:\n" << x << std::endl;
@@ -457,9 +475,9 @@ Equation::solve() {
 
         iterations++;
     }
-    //LOG(debug) << "A:\n" << A << std::endl;
-    //LOG(debug) << "x:\n" << x << std::endl;
-    //LOG(debug) << "b (= rhs):\n" << b << std::endl;
+    //LOG(debug) << "matrix (A):\n" << A << std::endl;
+    //LOG(debug) << "head (x):\n" << x << std::endl;
+    //LOG(debug) << "rhs (b):\n" << b << std::endl;
 
     if (iterations == IITER) {
         std::cerr << "Fail in solving matrix with max iterations\n";
@@ -469,9 +487,6 @@ Equation::solve() {
 
     __itter = iterations;
     __error = cg.error_inf();
-
-    LOG(numerics) << "Updating heads";
-    updateFinalHeads();
 
     /**
      * ###############################
@@ -493,10 +508,14 @@ Equation::solve() {
     * # Update budgets #
     * ###############################
     */
-     if(gnc) {
-         updateGNCBudget();
-     }
-     updateBudget();
+    if(gnc) {
+        updateGNCBudget();
+    }
+    updateBudget();
+
+    LOG(numerics) << "Last Updating head change and head of previous time step";
+    updateHeadChangeTZero();
+    updateHeadTZero();
     }
 
 /**

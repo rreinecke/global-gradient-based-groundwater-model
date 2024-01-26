@@ -183,6 +183,7 @@ namespace GlobalFlow {
         NodeVector nodes;
 
         long_vector x;
+        long_vector x_t0;
         long_vector b;
         SparseMatrix<pr_t> A;
 
@@ -296,9 +297,14 @@ namespace GlobalFlow {
         void inline updateBudget();
 
         /**
-         * Write the final head to the nodes
+         * Update head change of previous time step
          */
-        void inline updateFinalHeads();
+        void inline updateHeadChangeTZero();
+
+        /**
+         * Update head of previous time step
+         */
+        void inline updateHeadTZero();
 
         /**
          * Write the final zeta surface heights to the nodes

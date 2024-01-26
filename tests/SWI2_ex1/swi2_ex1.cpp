@@ -46,32 +46,28 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 200);
     int stepNumber = 1;
 
-    //LOG(debug) << sim.getNodes()->at(1);
-
     // for saving zetas in a csv
-    std::ofstream myfile;
-    myfile.open ("swi2_ex1_zeta1_timesteps.csv");
-    myfile << "timestep,nodeID,zeta1" << std::endl;
+    std::ofstream myfile("swi2_ex1_timesteps.csv");
+    myfile << "timestep,nodeID,zeta1,head" << std::endl;
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " << stepNumber;
-
-        if (stepNumber == 1) {
-            step.first->toggleSteadyState();
-        }
+        step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
 
         // for saving zetas in a csv
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            double zeta = sim.getNodes()->at(j)->getZeta(1).value();
-            myfile << stepNumber << "," << j << "," << zeta << std::endl;
+            myfile << stepNumber
+            << "," << sim.getNodes()->at(j)->getID()
+            << "," << sim.getNodes()->at(j)->getZeta(1).value()
+            << "," << sim.getNodes()->at(j)->getHead().value()
+            << std::endl;
         }
-
+        step.first->toggleSteadyState();
         stepNumber++;
     }
     myfile.close(); // for saving zetas in a csv
-    //sim.save();
 }
 
 void StandaloneRunner::getResults() {}
@@ -79,7 +75,6 @@ void StandaloneRunner::getResults() {}
 void StandaloneRunner::writeData() {
     DataProcessing::DataOutput::OutputManager("data/out_swi2_ex1.json", sim).write();
 }
-
 
 StandaloneRunner::StandaloneRunner() = default;
 
