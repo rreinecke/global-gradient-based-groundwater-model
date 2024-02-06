@@ -14,9 +14,8 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::writeNodeInfosToCSV(){
-    std::ofstream myfile;
-    myfile.open ("swi2_ex3_node_attributes.csv");
-    myfile << "nodeID,spatID,refID,lon,lat,area,edgeLR,edgeFB,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,zeta[1],recharge" << std::endl;
+    std::ofstream myfile("swi2_ex3_node_attributes.csv");
+    myfile << "nodeID,spatID,refID,lon,lat,area,edgeLR,edgeFB,neig_count,neighbours,EL,bottom,K,hasGHB,C_GHB,EL_GHB,Por_eff,zeta1_ini,GWR" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         std::string neighbours;
@@ -37,6 +36,9 @@ void StandaloneRunner::writeNodeInfosToCSV(){
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
                sim.getNodes()->at(j)->hasGHB() << "," <<
+               sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY) << "," <<
+               sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY) << "," <<
+               sim.getNodes()->at(j)->getEffectivePorosity().value() << "," <<
                sim.getNodes()->at(j)->getZeta(1).value() << "," <<
                sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
                std::endl;
@@ -49,10 +51,23 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     int stepNumber{1};
 
+    // for saving zetas in a csv
+    std::ofstream myfile("swi2_ex3_timesteps.csv");
+    myfile << "timestep,nodeID,zeta1,head" << std::endl;
+
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
         step.first->toggleSteadyState(); // turn steady state on
         step.first->solve(); // solve equations
+
+        // for saving zetas in a csv
+        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+            myfile << stepNumber
+                   << "," << sim.getNodes()->at(j)->getID()
+                   << "," << sim.getNodes()->at(j)->getZeta(1).value()
+                   << "," << sim.getNodes()->at(j)->getHead().value()
+                   << std::endl;
+        }
         sim.printMassBalances(debug);
         step.first->toggleSteadyState(); // turn steady state off
         ++stepNumber;
@@ -68,17 +83,6 @@ void StandaloneRunner::simulate() {
         }
     }
 
-    // for saving zetas in a csv
-    std::ofstream myfile;
-    myfile.open ("swi2_ex3_zeta1_timestep_500.csv");
-    myfile << "timestep,nodeID,zeta1" << std::endl;
-    // for saving zetas in a csv
-    for (int j = 0; j < sim.getNodes()->size(); ++j) {
-        double zeta = sim.getNodes()->at(j)->getZeta(1).value();
-        myfile << stepNumber << "," << j << "," << zeta << std::endl;
-    }
-    myfile.close();
-
     LOG(userinfo) << "Running stress period 2";
     Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
@@ -86,11 +90,18 @@ void StandaloneRunner::simulate() {
         step.first->toggleSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
+        // for saving zetas in a csv
+        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+            myfile << stepNumber
+                   << "," << sim.getNodes()->at(j)->getID()
+                   << "," << sim.getNodes()->at(j)->getZeta(1).value()
+                   << "," << sim.getNodes()->at(j)->getHead().value()
+                   << std::endl;
+        }
         step.first->toggleSteadyState();
         ++stepNumber;
     }
-
-    //sim.save();
+    myfile.close(); // for saving zetas in a csv
 }
 
 void StandaloneRunner::getResults() {}

@@ -371,6 +371,7 @@ void buildBottomLayers(NodeVector nodes,
     Model::quantity<Model::Meter> edgeLengthLeftRight;
     Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
+    bool headActive;
     Model::quantity<Model::Meter> head;
     double aquiferDepth;
     double anisotropy;
@@ -403,6 +404,7 @@ void buildBottomLayers(NodeVector nodes,
             edgeLengthFrontBack = nodes->at(
                     i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = conductances[layer + 1] * Model::si::meter / Model::day; // or: nodes->at(i)->getK__pure();
+            headActive = nodes->at(i)->getProperties().get<bool, Model::HeadActive>();
             head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             aquiferDepth = aquifer_thickness[layer + 1];
             anisotropy = anisotropies[layer + 1]; // or nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>, Model::Anisotropy>().value();
@@ -444,6 +446,7 @@ void buildBottomLayers(NodeVector nodes,
                                                             spatID,
                                                             id,
                                                             K,
+                                                            headActive,
                                                             head,
                                                             aquiferDepth,
                                                             anisotropy,

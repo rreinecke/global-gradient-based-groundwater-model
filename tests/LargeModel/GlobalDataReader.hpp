@@ -58,6 +58,11 @@ class GlobalDataReader : public DataReader {
                           ", total transient steps: " << n_totalTransientSteps << ") ";
             LOG(userinfo) << "Reading land mask (with default values from config)";
 
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% build grid (read grid, set neighbors, add lower layers) %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
             if (op.isGridRefined()){
                 readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
@@ -97,31 +102,18 @@ class GlobalDataReader : public DataReader {
                                           op.getGHBConduct(),
                                           op.getBoundaryCondition());
 
-            LOG(userinfo) << "Reading elevation";
-            readElevation(buildDir(op.getElevation()));
-
-            /*LOG(userinfo) << "Reading groundwater recharge";
-            readGWRecharge(buildDir(op.getRecharge()));*/
-
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
-                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers());
-
-                if (op.useEfolding()) {
-                    LOG(userinfo) << "Reading e-folding";
-                    readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
-                }
+                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers()); // todo is it possible to include this in buildBySpatID
             }
 
-            if(op.isKGHBFromFile()) {
-                LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
-                readGHB_conductivity(buildDir(op.getKGHBDir()));
-            }
-
-            if (op.isKFromFile()) {
-                LOG(userinfo) << "Reading hydraulic conductivity (potentially for several layers)";
-                readConductivity(buildDir(op.getLithology()));
-            }
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read hydraulic conductivity of nodes and model boundary %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
+            LOG(userinfo) << "Reading elevation";
+            readElevation(buildDir(op.getElevation()));
 
             // read either initial head (default) or equilibrium water table depth from file, if available
             if (op.isInitialHeadFromFile()){
@@ -132,7 +124,30 @@ class GlobalDataReader : public DataReader {
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }
 
-            /*if (op.isKRiverFromFile()) {
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read hydraulic conductivity of nodes and model boundary %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
+            /*if (op.isKFromFile()) {
+                LOG(userinfo) << "Reading hydraulic conductivity (applying to all layers)";
+                readConductivity(buildDir(op.getLithology()));
+            }
+
+            if(op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
+                readGHB_elevation_conductivity(buildDir(op.getKGHBDir()));
+            }*/
+
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read external flows %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
+            LOG(userinfo) << "Reading groundwater recharge"; // todo make possible to set default recharge in config
+            readGWRecharge(buildDir(op.getRecharge()));
+
+            if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));
             } else {
@@ -150,10 +165,12 @@ class GlobalDataReader : public DataReader {
             LOG(userinfo) << "Adding river at nodes without surface water body";
             // should be placed after readBlueCells and readLakesAndWetlands
             addRiverWhereNoSurfaceWaterBody(op.getSWBElevationFactor(), op.getRiverConductivity());
-            */
-            // ################################################################
-            // #################### if density is variable ####################
-            // ################################################################
+
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read data for variable density %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
             if (op.isDensityVariable()) {
                 LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
                 if (op.isInitialZetasAsArray()) {

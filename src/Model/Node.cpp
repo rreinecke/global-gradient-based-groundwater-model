@@ -50,6 +50,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              unsigned long int spatID,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
+                             bool headActive,
                              quantity<Meter> head,
                              double aquiferDepth,
                              double anisotropy,
@@ -75,6 +76,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set < unsigned long int, SpatID > (spatID);
     fields.set < unsigned long int, ID > (identifier);
     fields.set<quantity<Velocity>, K>(conduct);
+    fields.set<bool, HeadActive>(headActive);
     fields.set<quantity<Meter>, Head>(head);
     fields.set<bool, UseEfolding>(useEfolding);
     fields.set<bool, Confinement>(confined);

@@ -37,16 +37,15 @@ class AdaptiveDamping {
         }
 
 
-        vector getDamping(vector &residuals, vector &x, bool apply) {
+        vector getChanges(vector &residuals, vector &x, bool isAdaptiveDamping) {
             assert(x.rows() == x_t0.rows() && "Damping hasn't been properly initialized");
             vector changes = x - x_t0;
-	    pr_t sigma;
-	    if(apply)
-		sigma = applyAdaptiveDamping(changes.maxCoeff(), getDampNorm(residuals, x));
+            pr_t sigma{1.0};
+            if (isAdaptiveDamping) {
+                sigma = applyAdaptiveDamping(changes.maxCoeff(), getDampNorm(residuals, x));
+                LOG(numerics) << "Damping applied: " << sigma;
+            }
             x_t0 = x;
-	    if (not apply)
-                return changes;
-            LOG(numerics) << "Damping applied: " << sigma;
             return changes * sigma;
         }
 

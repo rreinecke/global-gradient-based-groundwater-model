@@ -60,7 +60,7 @@ namespace GlobalFlow {
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize);
+            sim.saveStepResults(pathToOutput, stepNumber);
             LOG(userinfo) << "Saved step results";
             step.first->toggleSteadyState();
             ++stepNumber;
@@ -73,7 +73,7 @@ namespace GlobalFlow {
             step.first->solve();
             LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter() << " iteration(s)";
             sim.printMassBalances(debug);
-            sim.saveStepResults(pathToOutput, stepNumber, totalStepCount, stepSize);
+            sim.saveStepResults(pathToOutput, stepNumber);
             ++stepNumber;
             }
 

@@ -2,10 +2,8 @@
 
 namespace GlobalFlow {
 
-    //int sim_id{0};
-
     void Runner::loadSettings() {
-        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
+        pathToConfig = "data/config_nz.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -37,13 +35,13 @@ namespace GlobalFlow {
             Simulation::Stepper steadyStepper = Simulation::Stepper(_eq, steadyStateStressPeriodStepsizes[i],
                                                                     steadyStateStressPeriodSteps[i]);
             for (Simulation::step step : steadyStepper) {
-                step.first->toggleSteadyState();
+                step.first->setSteadyState();
                 step.first->solve();
                 LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter()
                               << " iteration(s)";
                 sim.printMassBalances(debug);
                 sim.saveStepResults(pathToOutput, stepNumber);
-                step.first->toggleSteadyState();
+                step.first->setTransient();
                 ++stepNumber;
             }
         }
@@ -73,7 +71,7 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,headActive,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
                << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
@@ -89,6 +87,7 @@ namespace GlobalFlow {
                    << "," << sim.getNodes()->at(j)->getArea().value()
                    << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
                    << "," << sim.getNodes()->at(j)->getK().value()
+                   << "," << sim.getNodes()->at(j)->getHeadActive()
                    << "," << sim.getNodes()->at(j)->hasGHB()
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
@@ -103,7 +102,7 @@ namespace GlobalFlow {
         myfile.close();
     }
     Runner::Runner() = default;
-}//ns
+}
 
 
 int main() {

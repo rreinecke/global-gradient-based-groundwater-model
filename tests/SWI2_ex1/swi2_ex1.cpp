@@ -15,8 +15,7 @@ void StandaloneRunner::setupSimulation() {
 }
 
 void StandaloneRunner::writeNodeInfosToCSV(){
-        std::ofstream myfile;
-        myfile.open ("node_attributes_vdf1.csv");
+        std::ofstream myfile("swi2_ex1_node_attributes.csv");
         myfile << "nodeID,lon,lat,neig_count,neigs,EL,bottom,K,Por_eff,zeta1,GWR, C_GHB, EL_GHB" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {

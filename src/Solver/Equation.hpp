@@ -114,15 +114,20 @@ namespace GlobalFlow {
              * Toggle the steady-state in all nodes
              * @return
              */
-            bool toggleSteadyState() {
-                SteadyState = !SteadyState;
-                bool state = SteadyState;
+            void setSteadyState() {
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [state](std::unique_ptr<Model::NodeInterface> const &node) {
-                                  node->toggleSteadyState(state);
+                              [](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->setSteadyState();
                               });
-                return SteadyState;
+            }
+
+            void setTransient() {
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->setTransient();
+                              });
             }
 
             /**
@@ -154,9 +159,9 @@ namespace GlobalFlow {
             //    maxAllowedHeadChange = head;
             //}
 
-            void updateMaxInnerItter(int itter){
-                inner_iterations = itter;
-                cg.setMaxIterations(itter);
+            void updateMaxInnerItter(int iter){
+                max_inner_iterations = iter;
+                cg.setMaxIterations(iter);
             }
 
             /**
@@ -175,7 +180,9 @@ namespace GlobalFlow {
 
         large_num numberOfNodesTotal;
 
-        int initialHead;
+        large_num numberOfActiveNodes;
+
+        double initialHead;
 
         /**
          * _var_ only used if disabling of cells is required
@@ -183,7 +190,6 @@ namespace GlobalFlow {
         NodeVector nodes;
 
         long_vector x;
-        long_vector x_t0;
         long_vector b;
         SparseMatrix<pr_t> A;
 
@@ -197,14 +203,14 @@ namespace GlobalFlow {
         AdaptiveDamping adaptiveDamping;
         AdaptiveDamping adaptiveDamping_zetas;
 
-        int IITER{0};//FIXME this is used as outer iterations
+        long MAX_OUTER_ITERATIONS{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
 
-        int inner_iterations{0};
+        long max_inner_iterations{0};
 
         //From current run
-        int __itter{0};
+        long __itter{0};
         double __error{0};
 
         bool isCached{false};
@@ -215,8 +221,10 @@ namespace GlobalFlow {
         double dampMin{0.01};
         double dampMax{0.01};
 
-        //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping;
+        std::unordered_map<large_num, long long> iter_to_rowID;
+        std::unordered_map<large_num, large_num> rowID_to_nodeID;
+        std::unordered_map<large_num, large_num> neigNodeID_to_colID;
+
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -235,16 +243,16 @@ namespace GlobalFlow {
          * @param node
          * @param cached
          */
-        void addToA(std::unique_ptr<Model::NodeInterface> const &node);
+        void addToA(large_num &rowID);
 
         void addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID);
 
         /**
          * Update the matrix for the current iteration
          */
-        void inline updateMatrix();
+        void inline updateEquation();
 
-        void inline updateMatrix_zetas(large_num iterOffset, int localZetaID);
+        void inline updateEquation_zetas(large_num iterOffset, int localZetaID);
 
         /**
          * Reallocate matrix and vectors based on dried nodes
@@ -258,12 +266,12 @@ namespace GlobalFlow {
         /**
          * Run the preconditioner for heads
          */
-        void inline preconditioner();
+        void inline preconditionMatrix();
 
         /**
          * Run the preconditioner for zetas
          */
-        void inline preconditioner_zetas();
+        void inline preconditionMatrix_zetas();
 
         /**
         * Check whether nan in head changes
@@ -323,10 +331,6 @@ namespace GlobalFlow {
         void inline adjustZetaHeights();
 
         bool SteadyState = false;
-
-        //Only for testing purposes
-        bool simpleHead = true;
-
         };
 }
 }

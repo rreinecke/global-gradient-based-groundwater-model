@@ -52,7 +52,7 @@
       "closing_crit_head": 1E-80,
       "closing_crit_zeta": 1E-7,
       "head_change": 0.001,
-      "zeta_change": 0.001,
+      "zeta_change": 0.00001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

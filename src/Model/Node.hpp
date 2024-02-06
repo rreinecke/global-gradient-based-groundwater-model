@@ -228,11 +228,11 @@ namespace GlobalFlow {
 
             using map_itter = std::unordered_map<NeighbourPosition, large_num>::const_iterator;
 
-            p_node & at(map_itter pos) { return nodes->at(pos->second); }
+            p_node & at(large_num nodeID) { return nodes->at(nodeID); }
 
             template<typename T, typename F>
-            T getAt(map_itter pos) {
-                return at(pos)->get<T, F>();
+            T getAt(large_num nodeID) {
+                return at(nodeID)->get<T, F>();
             }
 
             /**
@@ -394,6 +394,7 @@ namespace GlobalFlow {
                           large_num SpatID,
                           large_num ID,
                           t_vel K,
+                          bool headActive,
                           t_meter head,
                           double aquiferDepth,
                           double anisotropy,
@@ -479,17 +480,13 @@ Set Properties
              * Assumes that if initialhead = false that the eq_head is also used as initial head
              * @param head
              */
-            void setEqHead(t_meter wtd) {
+            void setEqHead_allLayers(t_meter wtd) {
                 t_meter eqhead = get<t_meter, Elevation>() - wtd;
-                //if (eqhead.value() > 500) {
-                //	eqhead = 500 * si::meter;
-                //}
                 set < t_meter, EQHead > (eqhead);
-                setHead_direct(eqhead.value());
-                //setHead_direct(get<t_meter, Elevation>().value());
+                setHead(eqhead);
                 applyToAllLayers([eqhead](NodeInterface *nodeInterface) {
                     try {
-                        nodeInterface->setHead_direct(eqhead.value());
+                        nodeInterface->setHead(eqhead);
                         nodeInterface->set<t_meter, EQHead>(eqhead);
                     }
                     catch (...) {}
@@ -508,14 +505,26 @@ Set Properties
                 set < t_meter, Head_TZero > (get<t_meter, Head>());
             }
 
-            void initHead_t0() noexcept { set < t_meter, Head_TZero > (get<t_meter, Head>()); }
+            void setHead_TZero(t_meter head) noexcept { set<t_meter, Head_TZero>(head); }
+
+            void setHead_TZero_allLayers(t_meter head) noexcept {
+                setHead_TZero(head);
+                applyToAllLayers([&head](NodeInterface *nodeInterface) {
+                    nodeInterface->setHead_TZero(head);
+                });
+            }
 
             void setHead(t_meter head) noexcept {
                 NANChecker(head.value(), "Set Head");
                 set<t_meter, Head>(head);
             }
 
-            void setHead_direct(double head) noexcept { set < t_meter, Head > (head * si::meter); }
+            void setHead_allLayers(t_meter head) noexcept {
+                setHead(head);
+                applyToAllLayers([&head](NodeInterface *nodeInterface) {
+                    nodeInterface->setHead(head);
+                });
+            }
 
 /*****************************************************************
 Helpers
@@ -531,30 +540,30 @@ Helpers
             t_vol_t eq_flow{0 * si::cubic_meter / day};
 
             template<class HeadType>
-            FlowInputHor createDataTuple(map_itter got) {
-                return std::make_tuple(at(got)->getK(),
+            FlowInputHor createDataTuple(NeighbourPosition neigPos, large_num neigNodeID) {
+                return std::make_tuple(at(neigNodeID)->getK(),
                                        getK(),
-                                       at(got)->getNodeLength(got), // length of neighbour node (parallel to direction)
-                                       getNodeLength(got), // length of this node (parallel to direction)
-                                       std::min(getNodeWidth(got), at(got)->getNodeWidth(got)), // width of smaller node (perpendicular to direction)
-                                       getAt<t_meter, HeadType>(got),
+                                       at(neigNodeID)->getNodeLength(neigPos), // length of neighbour node (parallel to direction)
+                                       getNodeLength(neigPos), // length of this node (parallel to direction)
+                                       std::min(getNodeWidth(neigPos), at(neigNodeID)->getNodeWidth(neigPos)), // width of smaller node (perpendicular to direction)
+                                       getAt<t_meter, HeadType>(neigNodeID),
                                        get<t_meter, HeadType>(),
-                                       getAt<t_meter, Elevation>(got),
+                                       getAt<t_meter, Elevation>(neigNodeID),
                                        get<t_meter, Elevation>(),
-                                       getAt<t_meter, VerticalSize>(got),
+                                       getAt<t_meter, VerticalSize>(neigNodeID),
                                        get<t_meter, VerticalSize>(),
                                        get<bool, Confinement>());
             }
 
-            FlowInputVert createDataTuple(map_itter got) {
-                return std::make_tuple(at(got)->getK_vertical(),
+            FlowInputVert createDataTuple(large_num neigNodeID) {
+                return std::make_tuple(at(neigNodeID)->getK_vertical(),
                                        getK_vertical(),
                                        get<t_meter, VerticalSize>(),
-                                       getAt<t_meter, VerticalSize>(got),
+                                       getAt<t_meter, VerticalSize>(neigNodeID),
                                        get<t_meter, Head>(),
-                                       getAt<t_meter, Head>(got),
+                                       getAt<t_meter, Head>(neigNodeID),
                                        get<t_meter, Elevation>(),
-                                       getAt<t_meter, Elevation>(got),
+                                       getAt<t_meter, Elevation>(neigNodeID),
                                        get<t_s_meter, Area>(),
                                        get<bool, Confinement>());
             }
@@ -595,14 +604,14 @@ Calculate
                 t_vol_t lateral_flow{0 * si::cubic_meter / day};
                 t_s_meter_t conductance;
 
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                        conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(got));
+                        conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(neigNodeID));
                     } else {
-                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                     }
 
-                    t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(got));
+                    t_vol_t flow = conductance * (get<t_meter, HeadType>() - getAt<t_meter, HeadType>(neigNodeID));
 
                     if (onlyOut) {
                         if (flow.value() > 0) { lateral_flow -= flow; }
@@ -620,22 +629,22 @@ Calculate
                 t_vol_t lateralFlow{0 * si::cubic_meter / day};
                 t_s_meter_t conductance{0 * si::square_meter / day};
                 std::vector<NeighbourPosition> neigPos_LRFB = getNeigPos_LRFB();
-                for (const auto &neigPos: neigPos_LRFB) {
-                    auto got = horizontal_neighbours.find(neigPos);
-                    if (got == horizontal_neighbours.end()) {
+                for (const auto &neigPos: neigPos_LRFB) { // todo only LRFB or maybe also other nodes?
+                    if (horizontal_neighbours.find(neigPos) == horizontal_neighbours.end()) {
                         mapNeighboursToFlows[neigPos] = std::nan("1") ;
                     } else {
+                        large_num neigNodeID = horizontal_neighbours[neigPos];
                         if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                            conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got),
+                            conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID),
                                                                                  get<t_meter, EFolding>(),
-                                                                                 getAt<t_meter, EFolding>(got));
+                                                                                 getAt<t_meter, EFolding>(neigNodeID));
                         } else {
-                            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                            conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                         }
                         // if this head is larger than neihgbour head, flow is out, which is negative
-                        lateralFlow = -conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got)) *
+                        lateralFlow = -conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(neigNodeID)) *
                                       get<t_dim, StepModifier>();
-                        mapNeighboursToFlows[got->first] = lateralFlow.value() ;
+                        mapNeighboursToFlows[neigPos] = lateralFlow.value() ;
                     }
 
 
@@ -683,8 +692,8 @@ Calculate
              * @brief Modify hydraulic conductivity (applied to all layers below)
              * @param conduct conductivity (if e-folding enabled scaled on layers)
              */
-            void setK(t_vel conduct) {
-                setK_direct(conduct);
+            void setK_allLayers(t_vel conduct) {
+                setK(conduct);
                 applyToAllLayers([&conduct](NodeInterface *nodeInterface) {
                     nodeInterface->getProperties().set<t_vel, K>(conduct);
                 });
@@ -694,8 +703,18 @@ Calculate
              * @brief Modify hydraulic conductivity (no e-folding, no layers)
              * @param conduct conductivity
              */
-            void setK_direct(t_vel conduct) { set < t_vel, K > (conduct); }
+            void setK(t_vel conduct) { set < t_vel, K > (conduct); }
 
+            void setHeadActive_allLayers(bool headActive) {
+                setHeadActive(headActive);
+                applyToAllLayers([&headActive](NodeInterface *nodeInterface) {
+                    nodeInterface->getProperties().set<bool, HeadActive>(headActive);
+                });
+            }
+
+            void setHeadActive(bool headActive) { set<bool, HeadActive>(headActive); }
+
+            bool getHeadActive() { return get<bool, HeadActive>(); }
 
             int getSpatID() {return (int) get<large_num, SpatID>();}
 
@@ -736,11 +755,17 @@ Calculate
             t_c_meter getIN() noexcept { return get<t_c_meter, IN>(); }
 
             /**
-             * @brief Toggle steady state simulation
-             * @param onOFF true=on
+             * @brief Make simulation steady state at nodes
              * Turns all storage equations to zero with no time steps
              */
-            void toggleSteadyState(bool onOFF) { this->steadyState = onOFF; }
+            void setSteadyState() { steadyState = true; }
+
+            /**
+             * @brief Make simulation transient at node
+             * Turns all storage equations to on
+             */
+            void setTransient() { steadyState = false; }
+
 
             void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
 
@@ -895,27 +920,27 @@ Calculate
              * this calculates the needed additional exchange volume
              */
             t_vol_t calculateDewateredFlow() noexcept {
-                auto hasDown = neighbours.find(DOWN);
-                auto hasUp = neighbours.find(TOP);
                 t_vol_t out = 0 * si::cubic_meter / day;
 
-                if (hasDown != neighbours.end()) {
-                    t_meter elev = getAt<t_meter, Elevation>(hasDown);
-                    t_meter head_n = getAt<t_meter, Head>(hasDown);
+                if (neighbours.find(DOWN) != neighbours.end()) {
+                    large_num nodeIDDown = neighbours.find(DOWN)->first;
+                    auto elev = getAt<t_meter, Elevation>(nodeIDDown);
+                    auto head_n = getAt<t_meter, Head>(nodeIDDown);
                     //Check if a dewatered condition is present
                     if (head_n < elev and get<t_meter, Head>() > elev) {
-                        t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
+                        t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(nodeIDDown));
                         out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
                     }
                 }
 
-                if (hasUp != neighbours.end()) {
-                    t_meter elev = getAt<t_meter, Elevation>(hasUp);
-                    t_meter head_n = getAt<t_meter, Head>(hasUp);
+                if (neighbours.find(TOP) != neighbours.end()) {
+                    large_num nodeIDTop = neighbours.find(TOP)->first;
+                    t_meter elev = getAt<t_meter, Elevation>(nodeIDTop);
+                    t_meter head_n = getAt<t_meter, Head>(nodeIDTop);
                     //Check if a dewatered condition is present
                     if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
                         t_s_meter_t conductance_above =
-                                mechanics.calculateVerticalConductance(createDataTuple(hasUp));
+                                mechanics.calculateVerticalConductance(createDataTuple(nodeIDTop));
                         out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
                                get<t_dim, StepModifier>();
                     }
@@ -1002,22 +1027,21 @@ Calculate
              */
             t_c_meter calculateInstantaneousMixing(int localZetaID) {
                 t_c_meter out = 0.0 * si::cubic_meter;
-                auto down = neighbours.find(NeighbourPosition::DOWN);
-
                 // skip nodes that do not have a down neighbour
-                if (down == neighbours.end()) { return out; } // line 4142
+                if (neighbours.find(DOWN) == neighbours.end()) { return out; } // line 4142
 
                 // skip if dimensionless density at bottom of this node is below or equal to
                 // dimension less density at the top of down node
-                if (getNusBot() <= at(down)->getNusTop()){ return out; } // line 4150
+                large_num nodeIDDown = neighbours[DOWN];
+                if (getNusBot() <= at(nodeIDDown)->getNusTop()){ return out; } // line 4150
 
                 // skip if head in this or neighbour node is below node bottom
-                if (getHead() < getBottom() or at(down)->getHead() < at(down)->getBottom()){ return out; } // lines 4140 and 4145
+                if (getHead() < getBottom() or at(nodeIDDown)->getHead() < at(nodeIDDown)->getBottom()){ return out; } // lines 4140 and 4145
 
                 // skip if localZetaID is not involved
                 auto nusInZones = getNusInZones();
                 if (nusInZones[localZetaID] != getNusBot()) { return out; } // line 4156
-                if (nusInZones[localZetaID] != at(down)->getNusTop()) { return out; } // line 4162
+                if (nusInZones[localZetaID] != at(nodeIDDown)->getNusTop()) { return out; } // line 4162
 
                 // calculate the flux down
                 t_c_meter fluxDown = getFluxDown().value() * si::cubic_meter;
@@ -1026,11 +1050,11 @@ Calculate
                 if (fluxDown > (0 * si::cubic_meter)) { // line 4168
                     // skip if dim-less density at bottom of down neighbour is greater or equal to
                     // dim-less density at the bottom of this node
-                    if (at(down)->getNusBot() >= getNusBot()) { return out; } // line 4169
+                    if (at(nodeIDDown)->getNusBot() >= getNusBot()) { return out; } // line 4169
 
                     // skip if dim-less density at top of this node is smaller or equal to
                     // dim-less density at the top of neighbour node
-                    if (getNusTop() <= at(down)->getNusTop()){ return out; } // line 4172
+                    if (getNusTop() <= at(nodeIDDown)->getNusTop()){ return out; } // line 4172
                 }
 
                 return fluxDown;
@@ -1415,15 +1439,15 @@ Calculate
                 std::vector<NeighbourPosition> neigPos_LRFB = getNeigPos_LRFB();
 
                 for (const auto &neigPos: neigPos_LRFB) {
-                    auto neig = horizontal_neighbours.find(neigPos);
-                    if (neig != horizontal_neighbours.end()) {
+                    if (horizontal_neighbours.find(neigPos) != horizontal_neighbours.end()) {
                         // if neighbour is unrefined
-                        if (at(neig)->getRefinedInto() == 1) { // if neig is not refined
+                        large_num neigNodeID = horizontal_neighbours[neigPos];
+                        if (at(neigNodeID)->getRefinedInto() == 1) { // if neig is not refined
                             // get the refined neighbour position this node has relative to that unrefined neighbour
                             NeighbourPosition refNeigPos = getRefNeigPosToUnrefNeig(get<large_num, RefID>(), neigPos,
                                                                                     getRefinedInto());
                             //LOG(debug) << "getGNCToRefinedNode, nodeID: " << getID() << ", neig nodeID: " << at(neig)->getID();
-                            out += at(neig)->calculateGhostNodeCorrection({refNeigPos});
+                            out += at(neigNodeID)->calculateGhostNodeCorrection({refNeigPos});
                         }
                     }
                 }
@@ -1506,20 +1530,20 @@ Calculate
 
                 int neigRefInto{};
                 int contrRefInto{};
-                for (const auto &position: possibleRefNeigPos) {
-                    auto refinedNeig = horizontal_neighbours.find(position);
-                    if (refinedNeig != horizontal_neighbours.end()) {
-                        potentialContributors = getPotentialContributors(position);
-                        for (const auto &potContrPos: potentialContributors) {
-                            auto contributor = horizontal_neighbours.find(potContrPos); // contributor is named "j" in USG doc
-                            if (contributor == horizontal_neighbours.end()) { // at model boundary: no contributor
+                for (const auto &refNeigPos: possibleRefNeigPos) {
+                    if (horizontal_neighbours.find(refNeigPos) != horizontal_neighbours.end()) {
+                        large_num refNeigNodeID = horizontal_neighbours[refNeigPos];
+                        potentialContributors = getPotentialContributors(refNeigPos);
+                        for (const auto &contrPos: potentialContributors) {
+                            if (horizontal_neighbours.find(contrPos) == horizontal_neighbours.end()) { // at model boundary: no contributor
                                 continue; // todo implement impact of GHB (not required if all nodes at coast/GHB are refined)
                             }
+                            large_num contrNodeID = horizontal_neighbours[contrPos]; // contributor is named "j" in USG doc
 
-                            contrRefInto = (int) at(contributor)->getRefinedInto();
+                            contrRefInto = (int) at(contrNodeID)->getRefinedInto();
                             multiplierContributor = ( 1.0 / (2.0 * sqrt(contrRefInto) )) * si::si_dimensionless;
 
-                            neigRefInto = (int) at(refinedNeig)->getRefinedInto();
+                            neigRefInto = (int) at(contrNodeID)->getRefinedInto();
                             if (neigRefInto == 4) {
                                 multiplierNodeInner = (1.0 / 4.0) * si::si_dimensionless;
                                 multiplierNodeOuter = (1.0 / 4.0) * si::si_dimensionless;
@@ -1527,7 +1551,7 @@ Calculate
                                 multiplierNodeInner = (2.0 / 6.0) * si::si_dimensionless;
                                 multiplierNodeOuter = (1.0 / 6.0) * si::si_dimensionless;
                             } else if (neigRefInto == 16) {
-                                if (refinedNeig->first > 18) {
+                                if (refNeigPos > 18) { // todo debug
                                     multiplierNodeInner = (1.0 / 8.0) * si::si_dimensionless;
                                     multiplierNodeOuter = (3.0 / 8.0) * si::si_dimensionless;
                                 } else {
@@ -1537,37 +1561,37 @@ Calculate
                             }
 
                             t_s_meter_t transmissivityNeig =
-                                    getAt<t_meter, VerticalSize>(contributor) * at(contributor)->getK();
+                                    getAt<t_meter, VerticalSize>(contrNodeID) * at(contrNodeID)->getK();
 
                             if (transmissivityNeig != 0 * si::square_meter / day and
                                 transmissivitySelf != 0 * si::square_meter / day) {
-                                t_meter nodeWidth = std::min(getNodeWidth(contributor),
-                                                             at(contributor)->getNodeWidth(contributor));
+                                t_meter nodeWidth = std::min(getNodeWidth(contrPos),
+                                                             at(contrNodeID)->getNodeWidth(contrPos));
                                 // conductance from contributor node to ghost node
                                 // if refined into four, multiplierContributor is 0.5, multiplierNodeOuter is 0.25
                                 contributorConductance = nodeWidth *
                                                          ((transmissivitySelf * transmissivityNeig)
                                                           / (transmissivitySelf *
-                                                             at(contributor)->getNodeLength(contributor) *
+                                                             at(contrNodeID)->getNodeLength(contrPos) *
                                                              multiplierContributor +
-                                                             transmissivityNeig * getNodeLength(contributor) *
+                                                             transmissivityNeig * getNodeLength(contrPos) *
                                                              multiplierNodeOuter));
                             }
                             // conductance from this node's center to ghost node inside this node
                             // if refined into four, multiplierNodeInner is 0.25
-                            nodeConductance = getNodeWidth(contributor) *
-                                              (transmissivitySelf / (getNodeLength(contributor) * multiplierNodeInner));
+                            nodeConductance = getNodeWidth(contrPos) *
+                                              (transmissivitySelf / (getNodeLength(contrPos) * multiplierNodeInner));
 
                             // the alpha coefficient is used to weigh influence on ghost node height difference
                             t_dim alpha = contributorConductance / (contributorConductance + nodeConductance);
                             //LOG(debug) << "alpha = " << alpha << ", contributorConductance = " << contributorConductance.value();
 
                             // conductance to the refined neighbour node
-                            t_s_meter_t conductance =
-                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refinedNeig));
+                            t_s_meter_t condRefNeig =
+                                    mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(refNeigPos, refNeigNodeID));
 
                             // calculate ghost node correction
-                            gnc = conductance * (alpha * (getHead() - at(contributor)->getHead()));
+                            gnc = condRefNeig * (alpha * (getHead() - at(contrNodeID)->getHead()));
                             out += gnc;
                             //LOG(debug) << "GNC for nodeID "     << get<large_num, ID>() <<
                             //              " to refined nodeID " << getAt<large_num, ID>(refinedNeig) <<
@@ -1710,9 +1734,8 @@ Calculate
                 auto zetas = getZetas();
                 if (localZetaID < zetas.size()) {
                     // limit zeta value to node top and bottom (in SWI2: lines 660-680)
-                    auto topOfNode = get<t_meter, Elevation>();
-                    if (zeta > topOfNode - get<t_meter, VDFLock>()) {
-                        zetas[localZetaID] = topOfNode;
+                    if (zeta > getElevation() - get<t_meter, VDFLock>()) {
+                        zetas[localZetaID] = getElevation();
                     } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
                         zetas[localZetaID] = getBottom();
                     } else {
@@ -1737,11 +1760,18 @@ Calculate
              * @param localZetaID zeta surface id in this node
              * @param height zeta height
              */
-            void setZetaChange(int localZetaID, t_meter zeta){
-                NANChecker(zeta.value(), "zeta (in setZetaChange)");
+            void setZetaChange(int localZetaID, t_meter newZeta){
+                NANChecker(newZeta.value(), "zeta (in setZetaChange)");
                 auto zetasChange = getZetasChange();
                 if (localZetaID < zetasChange.size()) {
-                    zetasChange[localZetaID] = zeta - getZeta(localZetaID);
+                    auto oldZeta = getZeta(localZetaID);
+                    if (newZeta > getElevation() - get<t_meter, VDFLock>()) {
+                        newZeta = getElevation();
+                    }
+                    if (newZeta < getBottom() + get<t_meter, VDFLock>()){
+                        newZeta = getBottom();
+                    }
+                    zetasChange[localZetaID] = newZeta - oldZeta;
                 }
                 set<std::vector<t_meter>, ZetasChange>(zetasChange);
             }
@@ -1782,8 +1812,9 @@ Calculate
              * @return meter
              */
             t_meter getZetaChange(int localZetaID){
-                if (localZetaID < get<std::vector<t_meter>, ZetasChange>().size()){
-                    return get<std::vector<t_meter>, ZetasChange>()[localZetaID];
+                auto zetasChange = get<std::vector<t_meter>, ZetasChange>();
+                if (localZetaID < zetasChange.size()){
+                    return zetasChange[localZetaID];
                 } else {
                     throw "Not set at nodeID " + std::to_string(getID()) +
                           ": ZetasChange[localZetaID = " + std::to_string(localZetaID) + "]";
@@ -2268,15 +2299,15 @@ Calculate
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
                 // pseudo source term calculation (in 2 parts)
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     // calculating zone conductances for pseudo source term calculation
-                    std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
+                    std::vector<t_s_meter_t> zoneConductances = getZoneConductances(neigPos, neigNodeID);
 
                     if (isZetaActive(localZetaID) and // if IPLPOS == 0 (line 3571)
-                        at(got)->isZetaActive(localZetaID)) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
+                        at(neigNodeID)->isZetaActive(localZetaID)) { // if neighbouring IPLPOS == 0 (e.g. line 2094)
                         //%% head part %%
                         t_s_meter_t zoneCondCumHead = getZoneConductanceCum(localZetaID,zoneConductances);
-                        t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                        t_vol_t head_part = -zoneCondCumHead * (getAt<t_meter, Head>(neigNodeID) - get<t_meter, Head>());
                         out += head_part;
                         //LOG(debug) << "head_part: " << head_part.value() << std::endl;
 
@@ -2291,7 +2322,7 @@ Calculate
                                 zoneCondCumDelnus = getZoneConductanceCum(zetaID, zoneConductances);
                             }
                             t_vol_t delnus_part = -delnus[zetaID] * zoneCondCumDelnus *
-                                                  (at(got)->getZeta(zetaID) - getZeta(zetaID));
+                                                  (at(neigNodeID)->getZeta(zetaID) - getZeta(zetaID));
                             out += delnus_part;
                             //LOG(debug) << "delnus_part (zetaID = " << zetaID << "): " << delnus_part.value() << std::endl;
                         }
@@ -2307,14 +2338,14 @@ Calculate
              * @param localZetaID zeta surface id in this node
              * @return volume per time
              */
-            t_vol_t getFluxHorizontal(map_itter got, int localZetaID){
+            t_vol_t getFluxHorizontal(NeighbourPosition neigPos, large_num neigNodeID, int localZetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
-                std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
+                std::vector<t_s_meter_t> zoneConductances = getZoneConductances(neigPos, neigNodeID);
                 t_s_meter_t zoneCondCum = getZoneConductanceCum(localZetaID, zoneConductances);
                 // %%head part %% for left/back neighbour
-                t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(got) - get<t_meter, Head>());
+                t_vol_t head_part = zoneCondCum * (getAt<t_meter, Head>(neigNodeID) - get<t_meter, Head>());
                 out += head_part;
                 //LOG(debug) << "head_part (tip/toe): " << head_part.value() << std::endl;
 
@@ -2327,7 +2358,7 @@ Calculate
                         zoneCondCumZeta = getZoneConductanceCum(zetaID,zoneConductances);
                     }
                     t_vol_t delnus_part = delnus[zetaID] * zoneCondCumZeta *
-                                          (at(got)->getZeta(zetaID) - getZeta(zetaID));
+                                          (at(neigNodeID)->getZeta(zetaID) - getZeta(zetaID));
                     out += delnus_part;
                     //LOG(debug) << "delnus_part: " << delnus_part.value() << std::endl;
                 }
@@ -2345,28 +2376,28 @@ Calculate
 
                 // tip and toe flow calculation
                 if (isZetaActive(localZetaID)) { // if IPLPOS == 0 (line 3571)
-                    for (auto got = neighbours.begin(); got != neighbours.end(); ++got) {
-                        if (!at(got)->isZetaActive(localZetaID)) { // if IPLPOS == 0 (line 3571)
-                            if (got->first == NeighbourPosition::TOP) {
+                    for (auto const &[neigPos, neigNodeID]: neighbours) {
+                        if (!at(neigNodeID)->isZetaActive(localZetaID)) { // if IPLPOS == 0 (line 3571)
+                            if (neigPos == NeighbourPosition::TOP) {
                                 // vertical leakage to TOP neighbour
                                 auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                                 if (getFluxTop() < 0 * (si::cubic_meter / day) and
-                                    at(got)->getNusBot() >= nusInZones[localZetaID] and
-                                    getNusBot() >= at(got)->getNusBot()) { // IF ((qztop.LT.0).AND.(NUBOT(i,j,k-1).GE.NUS(iz)).AND.(NUBOT(j,i,k).GE.NUBOT(i,j,k-1))) THEN
+                                    at(neigNodeID)->getNusBot() >= nusInZones[localZetaID] and
+                                    getNusBot() >= at(neigNodeID)->getNusBot()) { // IF ((qztop.LT.0).AND.(NUBOT(i,j,k-1).GE.NUS(iz)).AND.(NUBOT(j,i,k).GE.NUBOT(i,j,k-1))) THEN
                                     out += getFluxTop(); // in SWI2: qztop
                                 }
-                            } else if (got->first == NeighbourPosition::DOWN) {
+                            } else if (neigPos == NeighbourPosition::DOWN) {
                                 // vertical leakage to DOWN neighbour
                                 auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                                 if(getFluxDown() < 0 * (si::cubic_meter / day) and
-                                   at(got)->getNusTop() < nusInZones[localZetaID] and
-                                   getNusTop() <= at(got)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
+                                   at(neigNodeID)->getNusTop() < nusInZones[localZetaID] and
+                                   getNusTop() <= at(neigNodeID)->getNusTop()) { // IF ((qzbot.LT.0).AND.(NUTOP(i,j,k+1).LT.NUS(iz)).AND.(NUTOP(j,i,k).LE.NUTOP(i,j,k+1))) THEN
                                     continue;
                                 } else{
                                     out += getFluxDown(); // in SWI2: qzbot
                                 }
                             } else { // if neighbour is horizontal
-                                out -= getFluxHorizontal(got, localZetaID); // SSWI2_QR (left/right), SSWI2_QC (front/back)
+                                out -= getFluxHorizontal(neigPos, neigNodeID, localZetaID); // SSWI2_QR (left/right), SSWI2_QC (front/back)
                             }
                         }
                     }
@@ -2379,7 +2410,7 @@ Calculate
              * @param got neighbouring node
              * @return vector with entries in square meter per time
              */
-            std::vector<t_s_meter_t> getZoneConductances(map_itter got) {
+            std::vector<t_s_meter_t> getZoneConductances(NeighbourPosition neigPos, large_num neigNodeID) {
                 std::vector<t_s_meter_t> out;
                 t_s_meter_t conductance;
                 t_s_meter_t zoneConductance;
@@ -2392,12 +2423,13 @@ Calculate
                 // calculate the zone thicknesses and their sum
                 for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++) {
                     deltaZeta = getZeta(localZetaID) - getZeta(localZetaID + 1);
-                    deltaZeta_neig = at(got)->getZeta(localZetaID) - at(got)->getZeta(localZetaID + 1);
+                    deltaZeta_neig = at(neigNodeID)->getZeta(localZetaID) - at(neigNodeID)->getZeta(localZetaID + 1);
                     if (deltaZeta <= (0 * si::meter) or deltaZeta_neig <= (0 * si::meter)){ // adapted from SWI2 code line 1149
                         zoneThickness = 0 * si::meter;
                     } else {
-                        zoneThickness = ((getLengthNeig(got) * deltaZeta) + (getNodeLength(got) * deltaZeta_neig)) /
-                                        (getLengthNeig(got) + getNodeLength(got));
+                        zoneThickness = ((getLengthNeig(neigPos, neigNodeID) * deltaZeta) +
+                                         (getNodeLength(neigPos) * deltaZeta_neig)) /
+                                        (getLengthNeig(neigPos, neigNodeID) + getNodeLength(neigPos));
                         sumOfZoneThicknesses += zoneThickness;
                     }
                     NANChecker(zoneThickness.value(), "zoneThickness");
@@ -2409,24 +2441,24 @@ Calculate
                     //LOG(debug) << "zoneThicknesses[" << localZetaID << "]:" << zoneThicknesses[localZetaID].value();
                     zoneConductance = 0 * si::square_meter / day;
                     if (sumOfZoneThicknesses != (0 * si::meter)) { // adapted from SWI2 code line 1159
-                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                        conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                         //LOG(debug) << "conductance:" << conductance.value();
                         zoneConductance = conductance * (zoneThicknesses[localZetaID] / sumOfZoneThicknesses);
                         //LOG(debug) << "zoneConductance[" << localZetaID << "] :" << zoneConductance.value();
                     }
-                    /* if nodes can be inactive:
                     else {
-                    if (nodeInactive()){
-                        if (1 < localZetaID < (getZetas().size() - 2) {
-                            if((getZetaPosInNode(localZetaID) != "between") or // adapted from SWI2 code lines 1212-1222
-                               (at(got)->getZetaPosInNode(localZetaID) != "between") or
-                               (getZetaPosInNode(localZetaID + 1) != "between") or
-                               (at(got)->getZetaPosInNode(localZetaID + 1) != "between"))) {
-                                // this section is reached if getZetas().size() >= 4 and numberOfZones >= 3
-                                zoneConductance = 0 * si::square_meter / day; // zone is inactive or across layers
+                        if (!getHeadActive()) {
+                            if (1 < localZetaID < (getZetas().size() - 2)) {
+                                if(!isZetaActive(localZetaID) or // adapted from SWI2 code lines 1212-1222
+                                   !at(neigNodeID)->isZetaActive(localZetaID) or
+                                   !isZetaActive(localZetaID + 1) or
+                                   !at(neigNodeID)->isZetaActive(localZetaID + 1)) {
+                                    // this section is reached if getZetas().size() >= 4 and numberOfZones >= 3
+                                    zoneConductance = 0 * si::square_meter / day; // zone is inactive or across layers
+                                }
                             }
                         }
-                    } */
+                    }
                     //LOG(debug) << "zoneConductance[id = " << localZetaID << "] : " << zoneConductance.value() << std::endl;
                     out.push_back(zoneConductance);
                     NANChecker(zoneConductance.value(), "zoneConductance");
@@ -2459,19 +2491,18 @@ Calculate
              */
             t_vol_t getPseudoSourceNode() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
-                /* if nodes can be inactive: return 0 at inactive nodes
-                if (nodeInactive) { return out; }
-                 */
+                if (!getHeadActive()) { return out; }
+
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
                 // pseudo source term calculation
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
-                    if (isAnyZetaBetween() or at(got)->isAnyZetaBetween()) { // check if there are any active zeta surfaces
-                        std::vector<t_s_meter_t> zoneConductances = getZoneConductances(got);
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
+                    if (isAnyZetaBetween() or at(neigNodeID)->isAnyZetaBetween()) { // check if there are any active zeta surfaces
+                        std::vector<t_s_meter_t> zoneConductances = getZoneConductances(neigPos, neigNodeID);
                         for (int zetaID = 0; zetaID < getZetas().size() - 1; zetaID++) {
                             t_s_meter_t zoneConductanceCum = getZoneConductanceCum(zetaID, zoneConductances);
                             t_vol_t pseudoSource = delnus[zetaID] * zoneConductanceCum *
-                                                   (at(got)->getZeta(zetaID) - getZeta(zetaID));
+                                                   (at(neigNodeID)->getZeta(zetaID) - getZeta(zetaID));
                             out -= pseudoSource;
                         }
                     }
@@ -2490,21 +2521,21 @@ Calculate
                 t_meter headdiff = 0 * si::meter;
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
-                auto got = neighbours.find(NeighbourPosition::TOP);
-                if (got != neighbours.end()){ //Current node has a top node
+                if (neighbours.find(TOP) != neighbours.end()){ //Current node has a top node
+                    large_num neigNodeID = neighbours[TOP];
                     // first part of the flux correction term
                     for (int localZetaID = 0; localZetaID < getZetas().size() - 1; localZetaID++){
                         headdiff -= nusInZones[localZetaID] *
-                                    (at(got)->getZeta(localZetaID + 1) - at(got)->getZeta(localZetaID));
+                                    (at(neigNodeID)->getZeta(localZetaID + 1) - at(neigNodeID)->getZeta(localZetaID));
                         // Note: in SWI2 documentation is, BOUY is calculated by adding headdiff (would be out +=),
                         // MODFLOW code for headdiff is as implemented here (with out -=)
                     }
                     // second part of the flux correction term (vertical conductance *  BOUY)
-                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
+                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
                     out = verticalConductance *
                           (headdiff +
-                           0.5 * (at(got)->getZetas().back() - getZetas().front()) *
-                           (at(got)->getNusBot() + getNusTop()));
+                           0.5 * (at(neigNodeID)->getZetas().back() - getZetas().front()) *
+                           (at(neigNodeID)->getNusBot() + getNusTop()));
                     // Note in SWI2 documentation, BOUY is calculated with a - between NUBOT and NUTOP,
                     // in MODFLOW code there is a + in the calculation of QLEXTRA
                     //LOG(debug) << "headdiff: " << headdiff.value() << std::endl;
@@ -2515,12 +2546,12 @@ Calculate
             t_vol_t getVerticalFluxCorrections(){
                 t_vol_t out = 0 * (si::cubic_meter / day);
 
-                for (auto got = vertical_neighbours.begin(); got != vertical_neighbours.end(); ++got) {
-                    if (got->first == NeighbourPosition::TOP) {
+                for (auto const &[neigPos, neigNodeID]: vertical_neighbours) {
+                    if (neigPos == NeighbourPosition::TOP) {
                         out -= getVerticalFluxCorrection();
                     }
-                    if (got->first == NeighbourPosition::DOWN) {
-                        out += at(got)->getVerticalFluxCorrection();
+                    if (neigPos == NeighbourPosition::DOWN) {
+                        out += at(neigNodeID)->getVerticalFluxCorrection();
                     }
                 }
                 return out;
@@ -2533,11 +2564,11 @@ Calculate
              */
             t_vol_t getFluxTop() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                auto got = neighbours.find(NeighbourPosition::TOP);
-                if (got != neighbours.end()) {
+                if (neighbours.find(TOP) != neighbours.end()) {
+                    large_num neigNodeID = neighbours[TOP];
                     t_vol_t fluxFromTopNode = getVerticalFluxCorrection();
-                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) - fluxFromTopNode;
+                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
+                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(neigNodeID))) - fluxFromTopNode;
                     //LOG(debug) << "getFluxTop: " << out.value();
                 }
                 return out;
@@ -2550,11 +2581,11 @@ Calculate
              */
             t_vol_t getFluxDown() {
                 t_vol_t out = 0 * (si::cubic_meter / day);
-                auto got = neighbours.find(NeighbourPosition::DOWN);
-                if (got != neighbours.end()) {
-                    t_vol_t fluxFromDownNode = at(got)->getVerticalFluxCorrection();
-                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(got));
-                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(got))) + fluxFromDownNode;
+                if (neighbours.find(DOWN) != neighbours.end()) {
+                    large_num neigNodeID = neighbours[DOWN];
+                    t_vol_t fluxFromDownNode = at(neigNodeID)->getVerticalFluxCorrection();
+                    t_s_meter_t verticalConductance = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
+                    out = (verticalConductance * (get<t_meter, Head>() - getAt<t_meter, Head>(neigNodeID))) + fluxFromDownNode;
                     //LOG(debug) << "getFluxDown: " << out.value();
                 }
                 return out;
@@ -2608,36 +2639,35 @@ Calculate
              * are between the top and bottom of a node)
              * @note in SWI2 code: SSWI2_VERTMOVE
              */
-            void verticalZetaMovement() {
+            void zetaMovementBetweenLayers() {
                 // skip nodes where head is below the bottom of the node
                 t_vol_t fluxCorrectionTop; // in SWI2: qztop
                 t_s_meter_t verticalConductanceTop;
                 t_meter deltaZeta;
-                auto top = neighbours.find(NeighbourPosition::TOP);
-                // skip nodes that do not have a top neighbour
-                if (top == neighbours.end()) { // no neighbour at position
-                } else {
+                if (neighbours.find(TOP) != neighbours.end()) {
+                    large_num topNodeID = neighbours[TOP];
                     // if head is above the bottom of the node, both in this node AND in the node above (SWI2 line 2325)
                     if (get<t_meter, Head>() >= getBottom() and
-                        getAt<t_meter, Head>(top) >= (getAt<t_meter, Elevation>(top) - getAt<t_meter, VerticalSize>(top))) {
+                        getAt<t_meter, Head>(topNodeID) >=
+                                (getAt<t_meter, Elevation>(topNodeID) - getAt<t_meter, VerticalSize>(topNodeID))) {
 
                         for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
                             // - at the top of the current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
-                            if (isZetaAtTop(localZetaID) and at(top)->isZetaAtBottom(localZetaID)) {
+                            if (isZetaAtTop(localZetaID) and at(topNodeID)->isZetaAtBottom(localZetaID)) {
 
                                 // calculate flux through the top
                                 fluxCorrectionTop = getFluxTop();
                                 //LOG(debug) << "fluxCorrectionTop: " << fluxCorrectionTop.value() << std::endl;
 
                                 // if vertical flux through the top of the node is positive...
-                                if (fluxCorrectionTop.value() > 0 and at(top)->getEffectivePorosity().value() > 0) {
+                                if (fluxCorrectionTop.value() > 0 and at(topNodeID)->getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(top)); // * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(topNodeID)); // * get<t_dim, StepModifier>()
                                     // ...lift zeta height of the lowest zeta surface in top node
-                                    t_meter zeta_back_top = at(top)->getZetas().back();
-                                    at(top)->setZeta(localZetaID, zeta_back_top + deltaZeta);
+                                    t_meter zeta_back_top = at(topNodeID)->getZetas().back();
+                                    at(topNodeID)->setZeta(localZetaID, zeta_back_top + deltaZeta);
 
                                     // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
@@ -2664,64 +2694,64 @@ Calculate
                 t_meter delta_neig; // potential zeta height adjustment for neighbour node
                 t_meter delta_opp; // potential zeta height adjustment for opposite neighbour node
                 if (getHead() < getBottom()) { return; }
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
-                    auto got_opp = neighbours.find(getOppositePosition(got->first));
-
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                         if (isZetaActive(localZetaID)) {
                             // get max delta of zeta between nodes
-                            if (at(got)->isZetaAtBottom(localZetaID)) {
-                                maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxToeSlope>();
-                            } else if (at(got)->isZetaAtTop(localZetaID)) {
-                                maxDelta = 0.5 * (getNodeLength(got) + getLengthNeig(got)) * get<t_dim, MaxTipSlope>();
+                            if (at(neigNodeID)->isZetaAtBottom(localZetaID)) {
+                                maxDelta = 0.5 * (getNodeLength(neigPos) + getLengthNeig(neigPos, neigNodeID)) * get<t_dim, MaxToeSlope>();
+                            } else if (at(neigNodeID)->isZetaAtTop(localZetaID)) {
+                                maxDelta = 0.5 * (getNodeLength(neigPos) + getLengthNeig(neigPos, neigNodeID)) * get<t_dim, MaxTipSlope>();
                             }
                             //LOG(debug) << "maxDelta: " << maxDelta.value() << std::endl;
 
                             // if tracking tip/toe: raise/lower this zeta surface in this node by:
                             delta_self = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                         ((at(got)->getEffectivePorosity() * getLengthNeig(got)) /
-                                          ((getEffectivePorosity() * getNodeLength(got)) +
-                                           (at(got)->getEffectivePorosity() * getLengthNeig(got))));
+                                         ((at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID)) /
+                                          ((getEffectivePorosity() * getNodeLength(neigPos)) +
+                                           (at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID))));
                             // if tracking tip/toe: lower/raise this zeta surface in neighbouring node by:
                             delta_neig = get<t_dim, SlopeAdjFactor>() * maxDelta *
-                                         ((getEffectivePorosity() * getNodeLength(got)) /
-                                          ((getEffectivePorosity() * getNodeLength(got)) +
-                                           (at(got)->getEffectivePorosity() * getLengthNeig(got))));
+                                         ((getEffectivePorosity() * getNodeLength(neigPos)) /
+                                          ((getEffectivePorosity() * getNodeLength(neigPos)) +
+                                           (at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID))));
 
-                            if (at(got)->isZetaAtBottom(localZetaID)) {
+                            if (at(neigNodeID)->isZetaAtBottom(localZetaID)) {
                                 //%% Toe tracking %%
-                                t_meter zetaDif = getZeta(localZetaID) - at(got)->getZetas().back();
+                                t_meter zetaDif = getZeta(localZetaID) - at(neigNodeID)->getZetas().back();
                                 //LOG(debug) << "zetaDif (toe): " << zetaDif.value() << std::endl;
                                 if (zetaDif > maxDelta) {
                                     setZeta(localZetaID, getZeta(localZetaID) - delta_self);
                                     //LOG(debug) << "delta_self (toe): " << delta_self.value() << std::endl;
-                                    t_meter zeta_back_neig = at(got)->getZetas().back();
-                                    at(got)->setZeta(localZetaID, zeta_back_neig + delta_neig);
+                                    t_meter zeta_back_neig = at(neigNodeID)->getZetas().back();
+                                    at(neigNodeID)->setZeta(localZetaID, zeta_back_neig + delta_neig);
                                     //LOG(debug) << "delta_neig (toe): " << delta_neig.value() << std::endl;
                                 }
-                            } else if (at(got)->isZetaAtTop(localZetaID)) {
+                            } else if (at(neigNodeID)->isZetaAtTop(localZetaID)) {
                                 //%% Tip tracking %%
-                                t_meter zetaDif = at(got)->getZetas().front() - getZeta(localZetaID);
+                                t_meter zetaDif = at(neigNodeID)->getZetas().front() - getZeta(localZetaID);
                                 //LOG(debug) << "zetaDif (tip): " << zetaDif.value() << std::endl;
                                 if (zetaDif > maxDelta) {
                                     setZeta(localZetaID, getZeta(localZetaID) + delta_self);
                                     //LOG(debug) << "zetaChange_self (tip): " << delta_self.value() << std::endl;
-                                    t_meter zeta_front_neig = at(got)->getZetas().front();
-                                    at(got)->setZeta(localZetaID, zeta_front_neig - delta_neig);
+                                    t_meter zeta_front_neig = at(neigNodeID)->getZetas().front();
+                                    at(neigNodeID)->setZeta(localZetaID, zeta_front_neig - delta_neig);
                                     //LOG(debug) << "zetaChange_neig (tip): " << delta_neig.value() << std::endl;
                                 }
                             }
 
                             if ((getZeta(localZetaID) - getZetas().back()) < (get<t_dim, MinDepthFactor>() * delta_neig)) {
-                                if (got_opp != neighbours.end()){
-                                    if (at(got_opp)->isZetaActive(localZetaID)) {
+                                NeighbourPosition oppNeigPos = getOppositePosition(neigPos);
+                                if (neighbours.find(getOppositePosition(neigPos)) != neighbours.end()){
+                                    large_num nodeIDOppNeig = neighbours[getOppositePosition(neigPos)];
+                                    if (at(nodeIDOppNeig)->isZetaActive(localZetaID)) {
                                         // change zeta in other direction neighbour
                                         delta_opp = ((getZeta(localZetaID) - getZetas().back()) *
-                                                     (getNodeLength(got) * getEffectivePorosity()) /
-                                                     (getLengthNeig(got_opp) *
-                                                      at(got_opp)->getEffectivePorosity()));
-                                        t_meter zeta_opp = at(got_opp)->getZeta(localZetaID);
-                                        at(got_opp)->setZeta(localZetaID, zeta_opp + delta_opp);
+                                                     (getNodeLength(oppNeigPos) * getEffectivePorosity()) /
+                                                     (getLengthNeig(oppNeigPos, nodeIDOppNeig) *
+                                                      at(nodeIDOppNeig)->getEffectivePorosity()));
+                                        t_meter zeta_opp = at(nodeIDOppNeig)->getZeta(localZetaID);
+                                        at(nodeIDOppNeig)->setZeta(localZetaID, zeta_opp + delta_opp);
                                         setZeta(localZetaID, getZetas().back());
                                         //LOG(debug) << "delta_opp (toe): " << delta_opp.value() << std::endl;
                                     }
@@ -2822,9 +2852,7 @@ Calculate
              * @note in SWI2 code: SSWI2_ANTILOCKMIN
              */
             void preventZetaLocking(){
-                /* if nodes can be inactive: return at inactive nodes
-                if (nodeInactive) { return; }
-                 */
+                if (!getHeadActive()) { return; }
                 t_meter maxDelta;
                 t_meter maxAdjustment_self;
                 t_meter maxAdjustment_neig;
@@ -2834,15 +2862,13 @@ Calculate
                 for (int localZetaID = 1; localZetaID < getZetas().size() - 1; localZetaID++) {
                     if (isZetaAtTop(localZetaID) or isZetaAtBottom(localZetaID)) {
                         // iterate through horizontal neighbours
-                        for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
+                        for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
 
-                            /* if nodes can be inactive: return at inactive nodes
-                            if (at(got)->nodeInactive) { return; }
-                             */
+                            if (!at(neigNodeID)->getHeadActive()) { continue; }
 
                             // determine max delta zeta
                             maxAdjustment_self = get<t_meter, VerticalSize>() * get<t_dim, SlopeAdjFactor>();
-                            maxAdjustment_neig = getAt<t_meter, VerticalSize>(got) * get<t_dim, SlopeAdjFactor>();
+                            maxAdjustment_neig = getAt<t_meter, VerticalSize>(neigNodeID) * get<t_dim, SlopeAdjFactor>();
                             if (get<t_meter, VDFLock>() > maxAdjustment_self or
                                 get<t_meter, VDFLock>() > maxAdjustment_neig) {
                                 maxDelta = std::min(maxAdjustment_self, maxAdjustment_neig);
@@ -2851,31 +2877,31 @@ Calculate
                             }
 
                             if (getEffectivePorosity().value() == 0 and
-                                at(got)->getEffectivePorosity().value() == 0){
+                                at(neigNodeID)->getEffectivePorosity().value() == 0){
                                 continue;
                             }
                             // calculate delta zeta of node and neighbour
-                            delta_self = maxDelta * (at(got)->getEffectivePorosity() * getLengthNeig(got)) /
-                                         (getEffectivePorosity() * getNodeLength(got) +
-                                          at(got)->getEffectivePorosity() * getLengthNeig(got));
-                            delta_neig = maxDelta * (getEffectivePorosity() * getNodeLength(got)) /
-                                         (getEffectivePorosity() * getNodeLength(got) +
-                                          at(got)->getEffectivePorosity() * getLengthNeig(got));
+                            delta_self = maxDelta * (at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID)) /
+                                         (getEffectivePorosity() * getNodeLength(neigPos) +
+                                          at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID));
+                            delta_neig = maxDelta * (getEffectivePorosity() * getNodeLength(neigPos)) /
+                                         (getEffectivePorosity() * getNodeLength(neigPos) +
+                                          at(neigNodeID)->getEffectivePorosity() * getLengthNeig(neigPos, neigNodeID));
 
                             // if a zeta surface is at the BOTTOM of this node and at the TOP of the neighbour
                             // else if a zeta surface is at the TOP of this node and at the BOTTOM of the neighbour
                             if (isZetaAtBottom(localZetaID) && // IPLPOS_self = 2
-                                at(got)->isZetaAtTop(localZetaID)) { // IPLPOS_neig = 1
+                                at(neigNodeID)->isZetaAtTop(localZetaID)) { // IPLPOS_neig = 1
                                 // adjust zeta surface heights
                                 setZeta(localZetaID, getZeta(localZetaID) + delta_self);
-                                zeta_neig = at(got)->getZeta(localZetaID);
-                                at(got)->setZeta(localZetaID, zeta_neig - delta_neig);
+                                zeta_neig = at(neigNodeID)->getZeta(localZetaID);
+                                at(neigNodeID)->setZeta(localZetaID, zeta_neig - delta_neig);
                             } else if (isZetaAtTop(localZetaID) && // IPLPOS_self = 1
-                                       at(got)->isZetaAtBottom(localZetaID)) {// IPLPOS_neig = 2
+                                       at(neigNodeID)->isZetaAtBottom(localZetaID)) {// IPLPOS_neig = 2
                                 // adjust zeta surface heights
                                 setZeta(localZetaID, getZeta(localZetaID) - delta_self);
-                                zeta_neig = at(got)->getZeta(localZetaID);
-                                at(got)->setZeta(localZetaID, zeta_neig + delta_neig);
+                                zeta_neig = at(neigNodeID)->getZeta(localZetaID);
+                                at(neigNodeID)->setZeta(localZetaID, zeta_neig + delta_neig);
                             }
                         }
                     }
@@ -2887,11 +2913,11 @@ Calculate
              * @param got neighbour node
              * @return meter
              */
-            t_meter getLengthNeig(map_itter got){
-                if ( isLeftOrRight(got->first) ) {
-                    return getAt<t_meter, EdgeLengthLeftRight>(got);
-                } else if ( isFrontOrBack(got->first) ) {
-                    return getAt<t_meter, EdgeLengthFrontBack>(got);
+            t_meter getLengthNeig(NeighbourPosition neigPos, large_num neigNodeID){
+                if ( isLeftOrRight(neigPos) ) {
+                    return getAt<t_meter, EdgeLengthLeftRight>(neigNodeID);
+                } else if ( isFrontOrBack(neigPos) ) {
+                    return getAt<t_meter, EdgeLengthFrontBack>(neigNodeID);
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
                 }
@@ -2902,10 +2928,10 @@ Calculate
              * @param got neighbour node
              * @return meter
              */
-            t_meter getNodeLength(map_itter got){
-                if ( isLeftOrRight(got->first) ){
+            t_meter getNodeLength(NeighbourPosition neigPos){
+                if ( isLeftOrRight(neigPos) ){
                     return get<t_meter, EdgeLengthLeftRight>();
-                } else if ( isFrontOrBack(got->first) ){
+                } else if ( isFrontOrBack(neigPos) ){
                     return get<t_meter, EdgeLengthFrontBack>();
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
@@ -2917,10 +2943,10 @@ Calculate
              * @param got neighbour node
              * @return meter
              */
-            t_meter getNodeWidth(map_itter got) {
-                if ( isLeftOrRight(got->first) ){
+            t_meter getNodeWidth(NeighbourPosition neigPos) {
+                if ( isLeftOrRight(neigPos) ){
                     return get<t_meter, EdgeLengthFrontBack>();
-                } else if ( isFrontOrBack(got->first)  ){
+                } else if ( isFrontOrBack(neigPos)  ){
                     return get<t_meter, EdgeLengthLeftRight>();
                 } else {
                     throw "Horizontal neighbour (LEFT/RIGHT or FRONT/BACK) required as input";
@@ -3016,27 +3042,26 @@ Calculate
              * The left hand side of the equation
              */
             std::unordered_map<large_num, t_s_meter_t> getMatrixEntries() {
-                size_t maxNumOfNeighbours = (size_t) (std::sqrt(get<large_num, MaxRefinement>()) * 4) + 2; // *4 for sides, +2 for top/down
-                size_t numC = maxNumOfNeighbours + 1; // 1 entry per neighbour, + 1 entry for this node
-                //LOG(debug) << "numC: " << numC;
                 std::unordered_map<large_num, t_s_meter_t> out;
-                out.reserve(numC);
+                out.reserve(neighbours.size()+1);
                 t_s_meter_t conduct;
 
                 //Get all conductances from neighbouring cells
-                for (auto got = neighbours.begin(); got != neighbours.end(); ++got) {
+                for (const auto &[neigPos, neigNodeID]: neighbours) {
+                    // if head of neighbour is not active (K very close to 0): skip
+                    if (!at(neigNodeID)->getHeadActive()) { continue; }
                     conduct = 0 * si::square_meter / day;
-                    if (got->first == TOP or got->first == DOWN) {
-                        conduct = mechanics.calculateVerticalConductance(createDataTuple(got));
+                    if (neigPos == TOP or neigPos == DOWN) {
+                        conduct = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
                         //LOG(debug) << "vertical conductance: " << conduct.value();
                     } else {
                         if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                            conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(got),
+                            conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID),
                                                                              get<t_meter, EFolding>(),
-                                                                             getAt<t_meter, EFolding>(got));
+                                                                             getAt<t_meter, EFolding>(neigNodeID));
                             //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
                         } else {
-                            conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(got));
+                            conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                             //LOG(debug) << "horizontal conductance: " << conduct.value();
                         }
                     }
@@ -3044,13 +3069,13 @@ Calculate
 
                     // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                     // (used to solve for the head at the neighbouring node)
-                    out[nodes->at(got->second)->get<large_num, ID>()] = conduct;
+                    out[neigNodeID] = conduct;
                 }
 
                 // To solve for the head at this node, the conductances to neighbours and HCOF are used
                 t_s_meter_t conductNode = 0 * si::square_meter / day;
                 // subtract the conductances to neighbours (which were calculated above)
-                for (const auto &c : out) { conductNode -= c.second; }
+                for (const auto &[neigNodeID, conductNeig]: out) { conductNode -= conductNeig; }
                 // add HCOF
                 t_s_meter_t hcof = mechanics.getHCOF(steadyState,
                                                      get<t_dim, StepModifier>(),
@@ -3073,27 +3098,25 @@ Calculate
              * @return map <CellID,Conductance>
              */
             std::unordered_map<large_num, t_s_meter_t> getMatrixEntries(int localZetaID) {
-                size_t maxNumOfNeighbours = (size_t) std::sqrt(get<large_num, MaxRefinement>()) * 4; // *4 for sides
-                size_t numC = maxNumOfNeighbours + 1; // matrix needs 1 entry per neighbour + 1 for this node
                 std::unordered_map<large_num, t_s_meter_t> out;
-                out.reserve(numC);
+                out.reserve(horizontal_neighbours.size()+1);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
                 std::vector<t_s_meter_t> zoneConductances;
                 t_s_meter_t zoneConductanceCum;
                 t_s_meter_t zetaMovementConductance;
 
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     zetaMovementConductance = 0 * (si::square_meter / day);
                     if ((isZetaActive(localZetaID) and
-                         at(got)->isZetaActive(localZetaID))) {
-                        zoneConductances = getZoneConductances(got);
+                         at(neigNodeID)->isZetaActive(localZetaID))) {
+                        zoneConductances = getZoneConductances(neigPos, neigNodeID);
                         zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                         zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                         //LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
                     }
                     NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                     // add conductance to out, the key in the unordered map is the ID of the neighbouring node
-                    out[nodes->at(got->second)->get<large_num, ID>()] = zetaMovementConductance;
+                    out[neigNodeID] = zetaMovementConductance;
                 }
 
                 // To solve for zeta in this node, the conductances to neighbours and porosity term are used
@@ -3222,17 +3245,19 @@ Calculate
              * @param pos
              * @return
              */
-            quantity<Velocity> getVelocity(map_itter pos) {
+            quantity<Velocity> getVelocity(NeighbourPosition neigPos, large_num neigNodeID) {
                 t_vol_t lateral_flow{0 * si::cubic_meter / day};
                 auto vert_size = get<t_meter, VerticalSize>();
                 t_s_meter_t conductance;
                 if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(pos), get<t_meter, EFolding>(), getAt<t_meter, EFolding>(pos));
+                    conductance = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID),
+                                                                                               get<t_meter, EFolding>(),
+                                                                                               getAt<t_meter, EFolding>(neigNodeID));
                 } else {
-                    conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(pos));
+                    conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                 }
 
-                lateral_flow = conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(pos));
+                lateral_flow = conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(neigNodeID));
                 return lateral_flow / (vert_size * vert_size);
             }
 
@@ -3246,19 +3271,19 @@ Calculate
                 quantity<Velocity> Vx{};
                 quantity<Velocity> Vy{};
 
-                for (auto got = horizontal_neighbours.begin(); got != horizontal_neighbours.end(); ++got) {
-                    if (got->first == NeighbourPosition::LEFT) {
-                        Vx += -getVelocity(got);
+                for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
+                    if (neigPos == NeighbourPosition::LEFT) {
+                        Vx += -getVelocity(neigPos, neigNodeID);
                     }
-                    if (got->first == NeighbourPosition::BACK) {
-                        Vy += -getVelocity(got);
+                    if (neigPos == NeighbourPosition::BACK) {
+                        Vy += -getVelocity(neigPos, neigNodeID);
                     }
 
-                    if (got->first == NeighbourPosition::RIGHT) {
-                        Vx += getVelocity(got);
+                    if (neigPos == NeighbourPosition::RIGHT) {
+                        Vx += getVelocity(neigPos, neigNodeID);
                     }
-                    if (got->first == NeighbourPosition::FRONT) {
-                        Vy += getVelocity(got);
+                    if (neigPos == NeighbourPosition::FRONT) {
+                        Vy += getVelocity(neigPos, neigNodeID);
                     }
                 }
 
@@ -3281,6 +3306,7 @@ Calculate
                          large_num SpatID,
                          large_num ID,
                          t_vel K,
+                         bool headActive,
                          t_meter head,
                          double aquiferDepth,
                          double anisotropy,
@@ -3300,8 +3326,8 @@ Calculate
                          double slopeAdjFactor,
                          t_meter vdfLock)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
-                                    head, aquiferDepth, anisotropy, specificYield, specificStorage, useEfolding,
-                                    confined, refID, maxRefinement, densityVariable, delnus,
+                                    headActive, head, aquiferDepth, anisotropy, specificYield, specificStorage,
+                                    useEfolding, confined, refID, maxRefinement, densityVariable, delnus,
                                     nusInZones, effPorosity, maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor,
                                     vdfLock) {}
         private:
@@ -3376,7 +3402,7 @@ Calculate
                     edgeLengthFrontBack,
                     ID,
                     ID,
-                    0.3 * (si::meter / day), 1 * si::meter, 100, 10, 0.15,
+                    0.3 * (si::meter / day), true, 1 * si::meter, 100, 10, 0.15,
                     0.000015, false, true, 0, 1, false,{0.0, 0.1}, {0.0, 0.1},
                     0.2, 0.2, 0.2, 0.1, 0.1,0.001 * si::meter) {}
 

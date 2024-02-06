@@ -17,7 +17,7 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
     myfile.open ("node_attributes_simple.csv");
-    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge" << std::endl;
+    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge,initialHead" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         std::string neighbours;
@@ -35,7 +35,8 @@ void StandaloneRunner::writeNodeInfosToCSV(){
                sim.getNodes()->at(j)->getBottom().value() << "," <<
                sim.getNodes()->at(j)->getK().value() << "," <<
                sim.getNodes()->at(j)->hasGHB() << "," <<
-               sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() <<
+               sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
+               sim.getNodes()->at(j)->getHead().value() <<
                std::endl;
     }
     myfile.close();
@@ -45,10 +46,10 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::DAY, 1);
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running a steady state step";
-        step.first->toggleSteadyState();
+        step.first->setSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
-        step.first->toggleSteadyState();
+        step.first->setTransient();
     }
 
     int stepNumber = 1;

@@ -7,7 +7,7 @@
         "field": "Head",
         "ID": "true",
         "position": "true",
-        "all_layers": "false"
+        "all_layers": "true"
       },
       {
         "name": "swi2_ex3_zeta1",

@@ -40,20 +40,20 @@
         1025
       ],
       "max_tip_slope": 0.04,
-      "max_toe_slope": 0.01,
+      "max_toe_slope": 0.02,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 20,
+      "threads": 50,
       "solver": "PCG",
-      "iterations": 100,
-      "inner_itter": 20,
+      "iterations": 1000,
+      "inner_itter": 30,
       "closing_crit_head": 1E-80,
-      "closing_crit_zeta": 1E-7,
-      "head_change": 0.0001,
-      "zeta_change": 0.0001,
+      "closing_crit_zeta": 1E-3,
+      "head_change": 0.001,
+      "zeta_change": 0.001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

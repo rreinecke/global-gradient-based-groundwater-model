@@ -10,12 +10,14 @@ set(HEADERS
    PARENT_SCOPE
 )
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config.json COPYONLY)
+configure_file(config_aus.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_aus.json COPYONLY)
 configure_file(config_nz.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_nz.json COPYONLY)
 configure_file(config_gnc.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_gnc.json COPYONLY)
 configure_file(config_na.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_na.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY)
 
 # read the NewZealand grid and initial head
+configure_file(data_5min/grid_aus.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_aus.csv COPYONLY)
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
 configure_file(data_5min/grid_nz_refined.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined.csv COPYONLY)
 configure_file(data_5min/grid_nz_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined_16.csv COPYONLY)

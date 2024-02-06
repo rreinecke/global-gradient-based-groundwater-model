@@ -260,6 +260,7 @@ namespace GlobalFlow {
             double lon{0};
             double lat{0};
             double area{0};
+            bool headActive{true};
             large_num spatID{0};
             large_num nodeID{0};
             large_num refID{0};
@@ -283,6 +284,7 @@ namespace GlobalFlow {
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
+                                                            headActive,
                                                             initialHead * Model::si::meter,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -355,6 +357,7 @@ namespace GlobalFlow {
             double lon{0};
             double lat{0};
             double area{0};
+            bool headActive{true};
             large_num refID{0};
             large_num nodeID{0};
             large_num spatID{0};
@@ -378,6 +381,7 @@ namespace GlobalFlow {
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
+                                                            headActive,
                                                             initialHead * Model::si::meter,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -413,7 +417,7 @@ namespace GlobalFlow {
          * @param path Where to read from
          * @note transforms hydraulic conductivity [m/day] to conductance [m^2/day]
          */
-        virtual void readGHB_conductivity(std::string path) {
+        virtual void readGHB_elevation_conductivity(std::string path) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductivity", "elevation");
             large_num spatID{0};
@@ -484,7 +488,7 @@ namespace GlobalFlow {
          * @brief Read in a custom definition for the general head boundary
          * @param path Where to read from
          */
-        virtual void readGHB_conductance(std::string path) {
+        virtual void readGHB_elevation_conductance(std::string path) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductance", "elevation");
             large_num spatID{0};
@@ -532,7 +536,8 @@ namespace GlobalFlow {
          */
         virtual void readInitialHeads(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
-                nodes->at(nodeID)->setHead_direct(data);
+                nodes->at(nodeID)->setHead_allLayers(data * Model::si::meter);
+                nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
             });
         };
 
@@ -654,7 +659,8 @@ namespace GlobalFlow {
          */
         void readEqWTD(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
-                nodes->at(nodeID)->setEqHead(data * Model::si::meter);
+                nodes->at(nodeID)->setEqHead_allLayers(data * Model::si::meter);
+                nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
             });
         };
 
@@ -753,8 +759,9 @@ namespace GlobalFlow {
             int refID{0};
             double conductivity{0};
             large_num nodeID;
-
+            double threshold{1e-11}; // todo move to config
             int i{0};
+            int j{0};
             while (in.read_row(spatID, layer, refID, conductivity)) {
                 try {
                     nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
@@ -763,13 +770,16 @@ namespace GlobalFlow {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                if (conductivity < 0.00001) {
-                    conductivity = 0.00001;
-                }
-                nodes->at(nodeID)->setK(conductivity * (Model::si::meter / Model::day));
+                nodes->at(nodeID)->setK_allLayers(conductivity * (Model::si::meter / Model::day));
+
                 i++;
+                if (conductivity < threshold){
+                    nodes->at(nodeID)->setHeadActive_allLayers(false);
+                    j++;
+                }
             }
             LOG(debug) << "    ... for " << i << " nodes";
+            LOG(debug) << "    ... < " << threshold << " at " << j << " nodes";
         };
 
         /**
