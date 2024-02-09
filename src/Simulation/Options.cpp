@@ -67,7 +67,7 @@ namespace GlobalFlow {
                 exit(3);
             }
 
-            BOUNDARY_CONDITION = config.get<std::string>("boundary_condition");
+            DEFAULT_BOUNDARY_CONDITION = config.get<std::string>("default_boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
             pt::ptree numerics = tree.get_child("numerics");

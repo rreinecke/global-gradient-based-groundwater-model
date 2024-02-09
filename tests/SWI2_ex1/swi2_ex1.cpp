@@ -51,7 +51,7 @@ void StandaloneRunner::simulate() {
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " << stepNumber;
-        step.first->toggleSteadyState();
+        step.first->setSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
 
@@ -63,7 +63,7 @@ void StandaloneRunner::simulate() {
             << "," << sim.getNodes()->at(j)->getHead().value()
             << std::endl;
         }
-        step.first->toggleSteadyState();
+        step.first->setTransient();
         stepNumber++;
     }
     myfile.close(); // for saving zetas in a csv

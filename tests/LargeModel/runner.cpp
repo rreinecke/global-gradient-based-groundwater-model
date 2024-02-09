@@ -3,7 +3,7 @@
 namespace GlobalFlow {
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_nz.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
+        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736, filtered: 381205
         op = Simulation::Options();
         op.load(pathToConfig);
     }

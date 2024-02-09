@@ -39,10 +39,10 @@ void StandaloneRunner::simulate() {
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState();
+        step.first->setSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
-        step.first->toggleSteadyState();
+        step.first->setTransient();
         ++stepNumber;
     }
     //sim.save();

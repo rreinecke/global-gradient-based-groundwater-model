@@ -140,9 +140,6 @@ namespace GlobalFlow {
  */
         class NodeInterface {
         private:
-            virtual void
-            __setHeadChange(t_meter change) = 0;
-
             virtual t_meter
             __calcInitialHead(t_meter initialParam) = 0;
 
@@ -450,7 +447,7 @@ Set Properties
              * @brief Set elevation on top layer and propagate to lower layers
              * @param elevation The top elevation (e.g. from DEM)
              */
-            void setElevation(t_meter elevation) {
+            void setElevation_allLayers(t_meter elevation) {
                 set < t_meter, Elevation > (elevation);
                 set < t_meter, TopElevation > (elevation);
                 applyToAllLayers([this](NodeInterface *node) {
@@ -695,7 +692,7 @@ Calculate
             void setK_allLayers(t_vel conduct) {
                 setK(conduct);
                 applyToAllLayers([&conduct](NodeInterface *nodeInterface) {
-                    nodeInterface->getProperties().set<t_vel, K>(conduct);
+                    nodeInterface->setK(conduct);
                 });
             }
 
@@ -3047,33 +3044,37 @@ Calculate
                 t_s_meter_t conduct;
 
                 //Get all conductances from neighbouring cells
-                for (const auto &[neigPos, neigNodeID]: neighbours) {
-                    // if head of neighbour is not active (K very close to 0): skip
-                    if (!at(neigNodeID)->getHeadActive()) { continue; }
+                for (const auto &neighbour: neighbours) {
+                    auto neigPos = neighbour.first;
+                    auto neigNodeID = neighbour.second;
+                    //LOG(debug) << "neigNodeID: " << neigNodeID;
                     conduct = 0 * si::square_meter / day;
-                    if (neigPos == TOP or neigPos == DOWN) {
-                        conduct = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
-                        //LOG(debug) << "vertical conductance: " << conduct.value();
-                    } else {
-                        if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
-                            conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID),
-                                                                             get<t_meter, EFolding>(),
-                                                                             getAt<t_meter, EFolding>(neigNodeID));
-                            //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
+                    // if head is active at this and neighboring node: change conductance to neig to value other than 0
+                    if (at(neigNodeID)->getHeadActive() and getHeadActive()) {
+                        if (neigPos == TOP or neigPos == DOWN) {
+                            conduct = mechanics.calculateVerticalConductance(createDataTuple(neigNodeID));
+                            //LOG(debug) << "vertical conductance: " << conduct.value();
                         } else {
-                            conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
-                            //LOG(debug) << "horizontal conductance: " << conduct.value();
+                            if (get<int, Layer>() > 0 and get<bool, UseEfolding>()) {
+                                conduct = mechanics.calculateEFoldingConductance(createDataTuple<Head>(neigPos, neigNodeID),
+                                                                                 get<t_meter, EFolding>(),
+                                                                                 getAt<t_meter, EFolding>(neigNodeID));
+                                //LOG(debug) << "horizontal conductance (using e-folding): " << conduct.value();
+                            } else {
+                                conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
+                                //LOG(debug) << "horizontal conductance: " << conduct.value();
+                            }
                         }
+                        NANChecker(conduct.value(), "Conductances");
                     }
-                    NANChecker(conduct.value(), "Conductances");
-
                     // add conductance to out, the key in the unordered map is the ID of the neighbouring node
                     // (used to solve for the head at the neighbouring node)
-                    out[neigNodeID] = conduct;
+                    out[neigNodeID] = std::move(conduct);
                 }
 
-                // To solve for the head at this node, the conductances to neighbours and HCOF are used
                 t_s_meter_t conductNode = 0 * si::square_meter / day;
+
+                // To solve for the head at this node, the conductances to neighbours and HCOF are used
                 // subtract the conductances to neighbours (which were calculated above)
                 for (const auto &[neigNodeID, conductNeig]: out) { conductNode -= conductNeig; }
                 // add HCOF
@@ -3083,12 +3084,10 @@ Calculate
                                                      getP());
                 conductNode += hcof;
                 //LOG(debug) << "conductNode: " << conductNode.value();
-
-                // check for nan
                 NANChecker(conductNode.value(), "conductNode");
 
                 // add resulting conductance to solve for the head at this node to out
-                out[get<large_num, ID>()] = conductNode;
+                out[getID()] = std::move(conductNode);
                 return out;
             };
 
@@ -3210,7 +3209,8 @@ Calculate
             }
 
             void setHeadChange(t_meter change) noexcept {
-                __setHeadChange(change);
+                NANChecker(change.value(), "Set Head Change at nodeID = " + std::to_string(getID()));
+                set<t_meter, HeadChange>(change);
             }
 
             t_meter calcInitialHead(t_meter initialParam) noexcept { return __calcInitialHead(initialParam); }
@@ -3336,17 +3336,6 @@ Calculate
 
             //Learning weight
             t_dim weight = 0.1;
-
-            /**
-             * @brief Update heads after one or multiple inner iterations
-             * @param delta
-             */
-            virtual void __setHeadChange(t_meter change) {
-                NANChecker(change.value(), "Set Head Change at nodeID = " + std::to_string(getID()));
-                t_meter current_head = get<t_meter, Head>();
-                set<t_meter, HeadChange>(change);
-                set<t_meter, Head>(current_head + change);
-            };
 
             virtual t_meter
             __calcInitialHead(t_meter initialParam) {

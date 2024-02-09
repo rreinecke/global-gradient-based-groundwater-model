@@ -57,7 +57,7 @@ void StandaloneRunner::simulate() {
 
     for (Simulation::step step : stepper) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState(); // turn steady state on
+        step.first->setSteadyState(); // turn steady state on
         step.first->solve(); // solve equations
 
         // for saving zetas in a csv
@@ -69,7 +69,7 @@ void StandaloneRunner::simulate() {
                    << std::endl;
         }
         sim.printMassBalances(debug);
-        step.first->toggleSteadyState(); // turn steady state off
+        step.first->setTransient(); // turn steady state off
         ++stepNumber;
     }
 
@@ -87,7 +87,7 @@ void StandaloneRunner::simulate() {
     Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::TWO_YEARS, 500);
     for (Simulation::step step : stepper2) {
         LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState();
+        step.first->setSteadyState();
         step.first->solve();
         sim.printMassBalances(debug);
         // for saving zetas in a csv
@@ -98,7 +98,7 @@ void StandaloneRunner::simulate() {
                    << "," << sim.getNodes()->at(j)->getHead().value()
                    << std::endl;
         }
-        step.first->toggleSteadyState();
+        step.first->setTransient();
         ++stepNumber;
     }
     myfile.close(); // for saving zetas in a csv

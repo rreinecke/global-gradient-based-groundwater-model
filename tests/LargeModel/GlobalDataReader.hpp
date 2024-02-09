@@ -108,9 +108,9 @@ class GlobalDataReader : public DataReader {
             }
 
             /*
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-             * %%% read hydraulic conductivity of nodes and model boundary %%%
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% elevation and initial heads %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
@@ -125,25 +125,26 @@ class GlobalDataReader : public DataReader {
             }
 
             /*
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-             * %%% read hydraulic conductivity of nodes and model boundary %%%
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read hydraulic conductivity of nodes %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            /*if (op.isKFromFile()) {
+            if (op.isKFromFile()) {
                 LOG(userinfo) << "Reading hydraulic conductivity (applying to all layers)";
                 readConductivity(buildDir(op.getLithology()));
             }
-
-            if(op.isKGHBFromFile()) {
-                LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
-                readGHB_elevation_conductivity(buildDir(op.getKGHBDir()));
-            }*/
 
             /*
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%
              * %%% read external flows %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
+
+            if(op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading General Head Boundary";
+                readGHB_elevation_conductivity(buildDir(op.getKGHBDir())); // should be placed before reading
+            }
+
             LOG(userinfo) << "Reading groundwater recharge"; // todo make possible to set default recharge in config
             readGWRecharge(buildDir(op.getRecharge()));
 
@@ -156,7 +157,7 @@ class GlobalDataReader : public DataReader {
                               calculateRiverStage(buildDir(op.getRiverExtent())));
             }
 
-            LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after readBlueCells
+            LOG(userinfo) << "Reading lakes and wetlands"; // should be placed after reading rivers
             readLakesAndWetlands(buildDir(op.getGlobalLakes()),
                                  buildDir(op.getGlobalWetlands()),
                                  buildDir(op.getLocalLakes()),

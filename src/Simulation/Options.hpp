@@ -97,7 +97,7 @@ namespace GlobalFlow {
             std::vector<double> ANISOTROPY{10};
             double SPECIFIC_YIELD{0.15};
             double SPECIFIC_STORAGE{0.000015};
-            std::string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
+            std::string DEFAULT_BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
             std::vector<bool> CONFINED{};
             // refinement information
@@ -138,7 +138,8 @@ namespace GlobalFlow {
             enum BoundaryCondition {
                 GENERAL_HEAD_BOUNDARY,
                 GENERAL_HEAD_NEIGHBOUR,
-                STATIC_HEAD_SEA_LEVEL
+                STATIC_HEAD_SEA_LEVEL,
+                NONE
             };
 
             std::vector<int> getSteadyStateStressPeriodSteps() { return STEADY_STATE_STRESS_PERIOD_STEPS; }
@@ -178,13 +179,16 @@ namespace GlobalFlow {
             std::vector<bool> getConfinements() { return CONFINED; }
 
             BoundaryCondition getBoundaryCondition() {
-                if (BOUNDARY_CONDITION == "GeneralHeadBoundary") {
+                if (DEFAULT_BOUNDARY_CONDITION == "GeneralHeadBoundary") {
                     return BoundaryCondition::GENERAL_HEAD_BOUNDARY;
                 }
-                if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
+                if (DEFAULT_BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
                     return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
                 }
-                return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
+                if (DEFAULT_BOUNDARY_CONDITION == "StaticSeaLevel"){
+                    return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
+                }
+                return BoundaryCondition::NONE;
             }
 
             bool isSensitivity() { return SENSITIVITY; }

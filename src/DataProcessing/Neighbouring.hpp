@@ -67,8 +67,8 @@ int addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Opt
 int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
                           large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
                           std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                          double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                          int sumBoundaries);
+                          double boundaryConduct,
+                          Simulation::Options::BoundaryCondition boundaryCondition, int sumBoundaries);
 
 std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
 defineMapOutside(large_num refinedInto);

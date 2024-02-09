@@ -2,7 +2,7 @@
   "config": {
     "model_config": {
       "steady_state_stress_period_steps": [
-        10
+        10000
       ],
       "transient_stress_period_steps": [
         0
@@ -13,8 +13,8 @@
       "transient_stress_period_stepsizes": [
         ""
       ],
-      "nodes": "grid_na.csv",
-      "number_of_nodes_per_layer": 396787,
+      "nodes": "grid_na_dk.csv",
+      "number_of_nodes_per_layer": 452736,
       "x_range": 360,
       "y_range": 180,
       "is_global": "true",
@@ -29,7 +29,7 @@
       ],
       "grid_refined": "false",
       "max_refinement": 1,
-      "boundary_condition": "GeneralHeadBoundary",
+      "default_boundary_condition": "None",
       "sensitivity": "false"
     },
     "vdf_config": {
@@ -50,7 +50,7 @@
       "solver": "PCG",
       "iterations": 200,
       "inner_itter": 10,
-      "closing_crit_head": 1e-180,
+      "closing_crit_head": 1e-80,
       "closing_crit_zeta": 1e-7,
       "head_change": 1,
       "zeta_change": 0.1,
@@ -99,7 +99,7 @@
         ]
       },
       "data": {
-        "elevation": "elevation.csv",
+        "elevation": "elevation_for_variable_sea_level.csv",
         "effective_porosity": "effective_porosity.csv",
         "equal_water_table_depth": "mean_wtd.csv",
         "global_lakes": "G_GLOLAK.csv",

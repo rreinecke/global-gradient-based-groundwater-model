@@ -84,7 +84,7 @@ void buildBySpatID(NodeVector nodes,
                         nodes->at(nodeID)->setNeighbours(nodeIDs_neig, neigPositions[neigPosID]);
                     } else {
                         sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal,
-                                                    sumBoundaries);
+                                                        sumBoundaries);
                     }
                 } else { // ####  set neighbour of refined node ####
                     sumBoundaries = setNeigOfRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal,
@@ -99,10 +99,11 @@ void buildBySpatID(NodeVector nodes,
 
 
 int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
-                          large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
-                          std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                      double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                      int sumBoundaries) {
+                         large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
+                         std::unordered_map<large_num, std::unordered_map<int,
+                         std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                         double boundaryConduct,
+                         Simulation::Options::BoundaryCondition boundaryCondition, int sumBoundaries) {
     large_num refID_neig{};
     std::unordered_map<large_num, large_num> nodeIDs = spatIDtoNodeIDs.at(spatID).at(layer);
     // define map to set neighbour OUTSIDE refined node: neigPos >maps to> refID >maps to> refID_neig

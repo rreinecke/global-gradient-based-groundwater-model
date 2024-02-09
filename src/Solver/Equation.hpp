@@ -27,7 +27,6 @@
 #include <unordered_set>
 
 #include "../../lib/Eigen/Sparse"
-#include "../../lib/Eigen/Dense" // todo remove if not required by SelfAdjointEigenSolver
 
 #include "../../lib/Eigen/Core"
 //#include "../../lib/Eigen/PardisoSupport"
@@ -178,11 +177,9 @@ namespace GlobalFlow {
 
         large_num numberOfLayers;
 
-        large_num numberOfNodesTotal;
+        long numberOfNodesTotal;
 
-        large_num numberOfActiveNodes;
-
-        double initialHead;
+        long numberOfActiveNodes;
 
         /**
          * _var_ only used if disabling of cells is required
@@ -201,7 +198,6 @@ namespace GlobalFlow {
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
-        AdaptiveDamping adaptiveDamping_zetas;
 
         long MAX_OUTER_ITERATIONS{0};
         pr_t RCLOSE_HEAD{0};
@@ -213,18 +209,14 @@ namespace GlobalFlow {
         long __itter{0};
         double __error{0};
 
-        bool isCached{false};
-        bool isCached_zetas{false};
-
+        double maxCurrentHeadChange{0};
         double maxAllowedHeadChange{0.01};
+        double maxCurrentZetaChange{0};
         double maxAllowedZetaChange{0.01};
         double dampMin{0.01};
         double dampMax{0.01};
 
-        std::unordered_map<large_num, long long> iter_to_rowID;
-        std::unordered_map<large_num, large_num> rowID_to_nodeID;
-        std::unordered_map<large_num, large_num> neigNodeID_to_colID;
-
+        std::unordered_map<large_num, long long> nodeID_to_rowID;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -240,11 +232,10 @@ namespace GlobalFlow {
 
         /**
          * Helper for updating the matrix
-         * @param node
-         * @param cached
+         * @param
          */
-        void addToA(large_num &rowID);
 
+        void addToA(large_num &nodeID);
         void addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID);
 
         /**
@@ -273,21 +264,23 @@ namespace GlobalFlow {
          */
         void inline preconditionMatrix_zetas();
 
-        /**
-        * Check whether nan in head changes
-        */
-        bool inline nanInHeadChanges();
+        bool inline isHeadChangeGreater();
+
+        bool inline isZetaChangeGreater(large_num layer, int localZetaID);
 
         /**
          * Update heads in inner iteration
          */
-        void inline updateIntermediateHeads();
+        void inline updateHeads();
+
+        void inline updateHeadChange();
 
         /**
          * Update zetas in inner iteration
          */
-        void inline updateIntermediateZetas(large_num iterOffset, int localZetaID);
+        void inline updateZetas(large_num iterOffset, int localZetaID);
 
+        void inline updateZetaChange(large_num iterOffset, int localZetaID);
 
         /**
          * Update zone change
