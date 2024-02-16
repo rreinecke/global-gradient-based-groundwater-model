@@ -34,18 +34,31 @@ void StandaloneRunner::setupSimulation() {
     }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 1000);
+    std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
+    std::vector<int> numberOfSteps = op.getStressPeriodSteps();
+    std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
+    std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
+
     int stepNumber{1};
 
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->setSteadyState();
-        step.first->solve();
-        sim.printMassBalances(debug);
-        step.first->setTransient();
-        ++stepNumber;
+    for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
+        LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
+                      stepSizes[strssPrd];
+
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
+                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+        for (Simulation::step step : stepper) {
+            step.first->solve();
+            LOG(userinfo) << "Step " << stepNumber << ": ";
+            LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
+            if (isDensityVariable[strssPrd]) {
+                LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
+            }
+            sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+            ++stepNumber;
+        }
     }
-    //sim.save();
+    sim.saveNodeState();
 }
 
 void StandaloneRunner::getResults() {}

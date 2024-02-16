@@ -46,16 +46,9 @@ class GlobalDataReader : public DataReader {
          * @note Number of nodes per layer for global: 2161074, for North America: 396787, for New Zealand: 4603
          */
         void readData(Simulation::Options op) override {
-            std::vector<int> steadyStateStressPeriodSteps = op.getSteadyStateStressPeriodSteps();
-            std::vector<int> transientStressPeriodSteps = op.getTransientStressPeriodSteps();
-            int n_totalSteadyStateSteps = std::accumulate(steadyStateStressPeriodSteps.begin(),
-                                                          steadyStateStressPeriodSteps.end(), 0);
-            int n_totalTransientSteps = std::accumulate(transientStressPeriodSteps.begin(),
-                                                        transientStressPeriodSteps.end(), 0);
-            int n_totalSteps = n_totalSteadyStateSteps + n_totalTransientSteps;
-            LOG(userinfo) << "Total number of time steps simulated: " << n_totalSteps <<
-                          " (total steady state steps: " << n_totalSteadyStateSteps <<
-                          ", total transient steps: " << n_totalTransientSteps << ") ";
+            std::vector<int> stressPeriodSteps = op.getStressPeriodSteps();
+            int n_totalSteps = std::accumulate(stressPeriodSteps.begin(), stressPeriodSteps.end(), 0);
+            LOG(userinfo) << "Total number of time steps simulated: " << n_totalSteps;
             LOG(userinfo) << "Reading land mask (with default values from config)";
 
             /*
@@ -63,22 +56,26 @@ class GlobalDataReader : public DataReader {
              * %%% build grid (read grid, set neighbors, add lower layers) %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            if (op.isGridRefined()){
+            if (op.isGridRefined()) {
                 readLandMaskRefined(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
-                             op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
-                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
-                             op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
-                             op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                                    op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
+                                    op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),
+                                    op.getAquiferDepth()[0],
+                                    op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(),
+                                    op.useEfolding(),
+                                    op.isConfined(0), op.getMaxRefinement(),
+                                    op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
+                                    op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(),
+                                    op.getDensityZones(), op.getSinkZoneGHB(), op.getSourceZoneGHB());
             } else {
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(), op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
+                             op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
             }
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";
@@ -104,7 +101,19 @@ class GlobalDataReader : public DataReader {
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
-                DataProcessing::copyNeighboursToBottomLayers(nodes, op.getNumberOfLayers()); // todo is it possible to include this in buildBySpatID
+                DataProcessing::copyNeighboursToBottomLayers(nodes,
+                                                             op.getNumberOfLayers()); // todo is it possible to include this in buildBySpatID
+            }
+
+            /*
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% General Head Boundary %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             */
+            if (op.isKGHBFromFile()) {
+                LOG(userinfo) << "Reading General Head Boundary";
+                readGHB_elevation_conductivity(
+                        buildDir(op.getKGHBDir())); // should be placed before reading recharge, heads, elevation
             }
 
             /*
@@ -116,10 +125,10 @@ class GlobalDataReader : public DataReader {
             readElevation(buildDir(op.getElevation()));
 
             // read either initial head (default) or equilibrium water table depth from file, if available
-            if (op.isInitialHeadFromFile()){
+            if (op.isInitialHeadFromFile()) {
                 LOG(userinfo) << "Reading initial head";
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
-            } else if (op.isEqWTDFromFile()){
+            } else if (op.isEqWTDFromFile()) {
                 LOG(userinfo) << "Reading equal water table depth";
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }
@@ -135,16 +144,10 @@ class GlobalDataReader : public DataReader {
             }
 
             /*
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%
-             * %%% read external flows %%%
-             * %%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+             * %%% read recharge, rivers, lakes, wetlands %%%
+             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-
-            if(op.isKGHBFromFile()) {
-                LOG(userinfo) << "Reading General Head Boundary";
-                readGHB_elevation_conductivity(buildDir(op.getKGHBDir())); // should be placed before reading
-            }
-
             LOG(userinfo) << "Reading groundwater recharge"; // todo make possible to set default recharge in config
             readGWRecharge(buildDir(op.getRecharge()));
 
@@ -172,32 +175,22 @@ class GlobalDataReader : public DataReader {
              * %%% read data for variable density %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            if (op.isDensityVariable()) {
-                LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
-                if (op.isInitialZetasAsArray()) {
-                    LOG(userinfo) << "    reading from file(s)";
-                    readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
-                                     buildDir(op.getInitialZetas()), op.getInitialZetas_a());
-                } else {
-                    LOG(userinfo) << "    using Ghyben-Herzberg";
-                    setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, // todo add to config
-                                           op.getDensityZones());
-                }
+            if (op.isInitialZetasAsArray()) {
+                LOG(userinfo) << "Reading initial heights of " << op.getDensityZones().size()-1 <<
+                                 " active zeta surfaces from file"; // requires elevation to be set
+                readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                                 buildDir(op.getInitialZetas()), op.getInitialZetas_a());
+            }
 
-                if (op.isEffectivePorosityFromFile()) {
-                    LOG(userinfo) << "Reading effective porosity";
-                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                }
+            if (op.isEffectivePorosityFromFile()) {
+                LOG(userinfo) << "Reading effective porosity";
+                readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+            }
 
-                if (op.isZonesSourcesSinksFromFile()) {
-                    LOG(userinfo) << "Reading zones of sources and sinks";
-                    readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
-                                          op.getDensityZones());
-                }
-
-                LOG(userinfo) << "Setting the zones of sinks and sources";
-                // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
-                setZonesOfSinksAndSources(op.getDensityZones().size());
+            if (op.isZonesSourcesSinksFromFile()) {
+                LOG(userinfo) << "Reading zones of sources and sinks";
+                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
+                                      op.getDensityZones());
             }
         }
     };

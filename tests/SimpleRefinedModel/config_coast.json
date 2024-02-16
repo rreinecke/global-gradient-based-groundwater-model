@@ -1,17 +1,21 @@
 {
   "config": {
     "model_config": {
-      "steady_state_stress_period_steps": [
-        0
+      "stress_period_steady_state": [
+        "true",
+        "true"
       ],
-      "transient_stress_period_steps": [
-        1
+      "stress_period_time_steps": [
+        1,
+        10000
       ],
-      "steady_state_stress_period_stepsizes": [
-        ""
-      ],
-      "transient_stress_period_stepsizes": [
+      "stress_period_time_step_sizes": [
+        "MONTH",
         "MONTH"
+      ],
+      "stress_period_variable_density": [
+        "false",
+        "true"
       ],
       "nodes": "grid_coast_simpleRefined.csv",
       "number_of_nodes_per_layer": 125,
@@ -32,7 +36,6 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "false",
       "density_zones": [
         1000
       ],

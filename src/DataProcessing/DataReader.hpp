@@ -66,7 +66,7 @@ namespace GlobalFlow {
         void initNodes(NodeVector nodeVector) { this->nodes = nodeVector; }
 
         /**
-         * @brief Entry point for reading simulation data
+         * @brief Entry point for reading groundwater head simulation data
          * @attention This method needs to be implemented!
          * @note readData() is called by simulation at startup
          * @param op Options object
@@ -247,14 +247,15 @@ namespace GlobalFlow {
                      bool useEfolding,
                      bool confined,
                      large_num maxRefinement,
-                     bool isDensityVariable,
                      double effPorosity,
                      double maxTipSlope,
                      double maxToeSlope,
                      double minDepthFactor,
                      double slopeAdjFactor,
                      double vdfLock,
-                     std::vector<double> densityZones) {
+                     std::vector<double> densityZones,
+                     int sinkZoneGHB,
+                     int sourceZoneGHB) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area");
             double lon{0};
@@ -264,6 +265,8 @@ namespace GlobalFlow {
             large_num spatID{0};
             large_num nodeID{0};
             large_num refID{0};
+            bool isSteadyState{true};
+            bool isDensityVariable{false};
 
             lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
             std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
@@ -294,6 +297,7 @@ namespace GlobalFlow {
                                                             confined,
                                                             refID,
                                                             maxRefinement,
+                                                            isSteadyState,
                                                             isDensityVariable,
                                                             delnus,
                                                             nusInZones,
@@ -302,7 +306,9 @@ namespace GlobalFlow {
                                                             maxToeSlope,
                                                             minDepthFactor,
                                                             slopeAdjFactor,
-                                                            vdfLock * Model::si::meter));
+                                                            vdfLock * Model::si::meter,
+                                                            sinkZoneGHB,
+                                                            sourceZoneGHB));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
@@ -344,20 +350,23 @@ namespace GlobalFlow {
                             bool useEfolding,
                             bool confined,
                             large_num maxRefinement,
-                            bool isDensityVariable,
                             double effPorosity,
                             double maxTipSlope,
                             double maxToeSlope,
                             double minDepthFactor,
                             double slopeAdjFactor,
                             double vdfLock,
-                            std::vector<double> densityZones) {
+                            std::vector<double> densityZones,
+                            int sinkZoneGHB,
+                            int sourceZoneGHB) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
             double lon{0};
             double lat{0};
             double area{0};
             bool headActive{true};
+            bool isSteadyState{true};
+            bool isDensityVariable{false};
             large_num refID{0};
             large_num nodeID{0};
             large_num spatID{0};
@@ -391,6 +400,7 @@ namespace GlobalFlow {
                                                             confined,
                                                             refID,
                                                             maxRefinement,
+                                                            isSteadyState,
                                                             isDensityVariable,
                                                             delnus,
                                                             nusInZones,
@@ -399,7 +409,9 @@ namespace GlobalFlow {
                                                             maxToeSlope,
                                                             minDepthFactor,
                                                             slopeAdjFactor,
-                                                            vdfLock * Model::si::meter));
+                                                            vdfLock * Model::si::meter,
+                                                            sinkZoneGHB,
+                                                            sourceZoneGHB));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
@@ -483,7 +495,6 @@ namespace GlobalFlow {
             LOG(debug) << "    ... for " << i << " nodes";
         };
 
-        // todo if ever ghb should be defined diferently (not everywhere where there is no neighbour)
         /**
          * @brief Read in a custom definition for the general head boundary
          * @param path Where to read from
@@ -517,25 +528,18 @@ namespace GlobalFlow {
             LOG(debug) << "    ... for " << i << " nodes";
         };
 
-        void setZonesOfSinksAndSources(large_num numZones){
-            int i{0};
-            for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
-                if (nodes->at(nodeID)->hasGHB()){
-                    nodes->at(nodeID)->setZoneOfSinksAndSources(0, numZones-1, numZones);
-                } else {
-                    nodes->at(nodeID)->setZoneOfSinksAndSources(0, 0, numZones);
-                }
-                i++;
-            }
-            LOG(debug) << "    ... for " << i << " nodes";
-        };
-
         /**
          * @brief Read in a custom definition file for initial heads
          * @param path Where to read the file from
          */
         virtual void readInitialHeads(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
+                if (nodes->at(nodeID)->hasGHB()){
+                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    if (data < ghbElevation) {
+                        data = ghbElevation;
+                    }
+                }
                 nodes->at(nodeID)->setHead_allLayers(data * Model::si::meter);
                 nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
             });
@@ -659,6 +663,12 @@ namespace GlobalFlow {
          */
         void readEqWTD(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
+                if (nodes->at(nodeID)->hasGHB()){
+                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    if (data < ghbElevation) {
+                        data = ghbElevation;
+                    }
+                }
                 nodes->at(nodeID)->setEqHead_allLayers(data * Model::si::meter);
                 nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
             });
@@ -1052,19 +1062,6 @@ namespace GlobalFlow {
             LOG(debug) << "    ... for " << i << " nodes";
         };
 
-        void initializeZetas(large_num numberOfNodes){
-            double topOfNode;
-            double bottomOfNode;
-
-            // add zeta surfaces to top and bottom of each node
-            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
-                topOfNode = nodes->at(nodeIter)->getElevation().value();
-                bottomOfNode = nodes->at(nodeIter)->getBottom().value();
-
-                nodes->at(nodeIter)->addZeta(0, topOfNode * Model::si::meter);
-                nodes->at(nodeIter)->addZeta(1, bottomOfNode * Model::si::meter);
-            }
-        }
 
         /**
          * @brief Compute initial density surfaces using Ghyben-Herzberg relation for interface
@@ -1086,8 +1083,10 @@ namespace GlobalFlow {
             std::vector<double> zetaDeltas;
 
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
-            initializeZetas(numberOfNodes); // initialize zeta surface at top and bottom
-
+            // initialize zeta surface at top and bottom
+            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
+                nodes->at(nodeIter)->initializeZetas();
+            }
             for (int localZetaID = 0; localZetaID < densityZones.size(); ++localZetaID) {
                 zetaDeltas.push_back( ((meanDensity - densityZones[localZetaID]) / maxDifDensity) * maxDistance );
                 //LOG(debug) << "zetaDeltas[localZetaID = " << localZetaID << "]: " << zetaDeltas[localZetaID];
@@ -1101,8 +1100,18 @@ namespace GlobalFlow {
 
                 for (int localZetaID = 1; localZetaID < densityZones.size(); ++localZetaID){
                     zeta = zetaGhybenHerzberg + zetaDeltas[localZetaID];
-                    if (zeta > 0){ zeta = 0; }
-                    //LOG(debug) << "zeta[localZetaID = " << localZetaID << "]: " << zeta;
+                    // if node has a GHB
+                    if (nodes->at(nodeID)->hasGHB()){
+                        double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+
+                        if (zeta > ghbElevation) { zeta = ghbElevation; } // if zeta above GHB: set to GHB elevation
+                    // if node has no GHB
+                    } else {
+                        if (zeta > 0) { zeta = 0; } // if zeta above 0: set zto 0
+                    }
+                    if (zeta > 1) {
+                        LOG(debug) << "nodeID: " << nodeID << ", zeta[localZetaID = " << localZetaID << "]: " << zeta;
+                    }
                     nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                 }
             }
@@ -1118,13 +1127,16 @@ namespace GlobalFlow {
                               const std::string& path, std::vector<std::string> files) {
 
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
-            initializeZetas(numberOfNodes); // initialize zeta surface at top and bottom
+            // initialize zeta surface at top and bottom
+            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
+                nodes->at(nodeIter)->initializeZetas();
+            }
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
                 int localZetaID{0};
                 large_num spatID{0};
-                std::unordered_map<large_num, large_num> nodeIDs;
+                std::unordered_map<large_num, large_num> refID_to_nodeID;
                 double zeta{0};
 
                 // loop through layers
@@ -1134,13 +1146,21 @@ namespace GlobalFlow {
 
                     while (inZetas.read_row(spatID, localZetaID, zeta)) {
                         try {
-                            nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                            refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
                         }
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        for (auto nodeID : nodeIDs) { // in case the grid is refined: loop over all nodes at refIDs
-                            nodes->at(nodeID.second)->addZeta(localZetaID, zeta * Model::si::meter);
+                        for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
+                            // if zeta above GHB elevation: set to GHB elevation
+                            if (nodes->at(nodeID)->hasGHB()){
+                                double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                                if (zeta > ghbElevation) {
+                                    zeta = ghbElevation;
+                                }
+                            }
+
+                            nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                         }
                     }
                 }
@@ -1166,26 +1186,23 @@ namespace GlobalFlow {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
             large_num spatID{0};
-            double zoneOfSinks{0};
-            double zoneOfSources{0};
-            std::unordered_map<int, std::unordered_map<large_num, large_num>> mapAtSpatID;
+            int sinkZoneGHB{0};
+            int sourceZoneGHB{0};
+            std::unordered_map<int, std::unordered_map<large_num, large_num>> layers_to_refIDs_to_nodeIDs;
 
-            int layer{0};
-            large_num refID{0};
-            while (in.read_row(spatID, zoneOfSinks, zoneOfSources)) {
+            while (in.read_row(spatID, sinkZoneGHB, sourceZoneGHB)) {
                 try {
-                    mapAtSpatID = lookupSpatIDtoNodeIDs.at(spatID);
+                    layers_to_refIDs_to_nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
                 // loop through layers
-                for (const auto& mapAtLayer : mapAtSpatID) {
+                for (const auto &[layer, refIDs_to_nodeIDs] : layers_to_refIDs_to_nodeIDs) {
                     // loop through refIDs
-                    for (auto nodeIDs : mapAtLayer.second) { // apply to all layers and refIDs at this spatID
-                        nodes->at(nodeIDs.second)->setZoneOfSinksAndSources(zoneOfSinks, zoneOfSources,
-                                                                            densityZones.size());
+                    for (const auto &[refID, nodeID] : refIDs_to_nodeIDs) { // apply to all layers and refIDs at this spatID
+                        nodes->at(nodeID)->setSinkAndSourceZonesGHB(sinkZoneGHB, sourceZoneGHB, densityZones.size());
                     }
                 }
             }

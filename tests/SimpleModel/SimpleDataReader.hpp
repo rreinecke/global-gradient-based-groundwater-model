@@ -28,14 +28,15 @@ class SimpleDataReader : public DataReader {
                          op.useEfolding(),
                          op.isConfined(0),
                          op.getMaxRefinement(),
-                         op.isDensityVariable(),
                          op.getEffectivePorosity(),
                          op.getMaxTipSlope(),
                          op.getMaxToeSlope(),
                          op.getMinDepthFactor(),
                          op.getSlopeAdjFactor(),
                          op.getVDFLock(),
-                        op.getDensityZones());
+                         op.getDensityZones(),
+                         op.getSinkZoneGHB(),
+                         op.getSourceZoneGHB());
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the bottom layers";

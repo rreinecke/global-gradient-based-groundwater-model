@@ -183,18 +183,5 @@ namespace GlobalFlow {
             NANChecker(out.value(), "Vertical Conductance");
             return out;
         };
-
-        quantity<MeterSquaredPerTime> FluidMechanics::getHCOF(bool steadyState,
-                                                              quantity<Dimensionless> stepModifier,
-                                                              t_s_meter storageCapacity,
-                                                              quantity<MeterSquaredPerTime> P) noexcept {
-            if (steadyState) {
-                return P;
-            } else {
-                quantity<MeterSquaredPerTime> out = P - (storageCapacity / (day * stepModifier) );
-                NANChecker(out.value(), "HCOF");
-                return out;
-            }
-        }
     }
 }//ns

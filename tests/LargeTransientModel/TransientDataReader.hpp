@@ -59,17 +59,19 @@ class TransientDataReader : public DataReader {
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
+                             op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
             } else {
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(), op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
+                             op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
             }
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";
@@ -111,7 +113,7 @@ class TransientDataReader : public DataReader {
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
-                readGHB_conductivity(buildDir(op.getKGHBDir()));
+                readGHB_elevation_conductivity(buildDir(op.getKGHBDir()));
             }
 
             if (op.isKFromFile()) {
@@ -173,9 +175,9 @@ class TransientDataReader : public DataReader {
                                           op.getDensityZones());
                 }
 
-                LOG(userinfo) << "Setting the zones of sinks and sources";
+                //LOG(userinfo) << "Setting the zones of sinks and sources";
                 // Needs to be called after GHB was set (after buildByGrid/buildBySpatID and readHeadBoundary)
-                setZonesOfSinksAndSources(op.getDensityZones().size());
+                //setZonesOfSinksAndSources(op.getDensityZones().size());
             }
         }
     };

@@ -3,7 +3,8 @@
 namespace GlobalFlow {
 namespace Model {
 
-t_s_meter_t ExternalFlow::getP(t_meter eq_gw_head, t_meter gw_head,
+t_s_meter_t ExternalFlow::getP(t_meter eq_gw_head,
+                               t_meter gw_head,
                                t_vol_t recharge,
                                t_vol_t eqFlow) const noexcept {
 
@@ -224,7 +225,7 @@ double smoothstep(double edge0, double edge1, double x) {
  */
 t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
                                   t_meter eq_head,
-                                  t_meter current_head,
+                                  t_meter gw_head,
                                   t_vol_t eq_flow) const noexcept {
     //possibility to lock conductance equation with former recharge e.g. from steady-state model
     if (lock_recharge) { return locked_conductance * mult; }
@@ -232,7 +233,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
     //LOG(debug) << "recharge:" << current_recharge.value() << "head:" << eq_head.value() << "StreamStage: " << flowHead.value() << "Bottom" << bottom.value() << "EQFlow" << eq_flow.value() << "AltConduct" << conductance.value();
     t_s_meter_t out;
 
-    if (current_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from input data
+    if (gw_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from input data
         out = conductance;
         if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
         NANChecker(out.value(), "ERC Problem low flow head");
@@ -253,7 +254,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
 
         if (out < conductance) {out = conductance;} //Only happens if cell was loosing in eq and is now gaining
 
-        if (current_head > flowHead + 1 * si::meter) { // for gaining rivers: use approach by Miguez-Macho et al. (2007)
+        if (gw_head > flowHead + 1 * si::meter) { // for gaining rivers: use approach by Miguez-Macho et al. (2007)
             if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
             NANChecker(out.value(), "ERC Problem high river head");
             if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
@@ -261,7 +262,7 @@ t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
 
         } else { // when current GW head and river head are less than 1 meter apart
 
-            double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, current_head.value());
+            double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, gw_head.value());
             double range = std::abs(out.value() - conductance.value());
             //double lower_bound = out.value() > conductance.value() ? out.value() : conductance.value();
             out = (out.value() + range * delta) * si::square_meter / day;

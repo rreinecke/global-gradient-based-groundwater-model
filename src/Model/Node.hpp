@@ -200,9 +200,6 @@ namespace GlobalFlow {
             int numOfExternalFlows{0};
             bool initial_head{true};
             bool simpleDistance{false};
-            bool steadyState{false};
-            large_num zoneOfSinks; // individual for each node
-            large_num zoneOfSources; // individual for each node
 
             friend class FluidMechanics;
 
@@ -257,11 +254,9 @@ namespace GlobalFlow {
             template<typename CompareFunction>
             t_vol_t getFlow(CompareFunction compare) noexcept {
                 t_vol_t out = 0.0 * si::cubic_meter / day;
-                t_vol_t storageFlow = 0.0 * si::cubic_meter / day;
-                if (not steadyState) {
-                    storageFlow = getTotalStorageFlow();
-                    if (compare(storageFlow.value()))
-                        out += boost::units::abs(storageFlow);
+                t_vol_t storageFlow = getStorageFlow();
+                if (compare(storageFlow.value())) {
+                    out += boost::units::abs(storageFlow);
                 }
                 out += getNonStorageFlow(std::forward<CompareFunction>(compare));
                 return out;
@@ -280,91 +275,10 @@ namespace GlobalFlow {
                 ar & numOfExternalFlows;
                 ar & initial_head;
                 ar & simpleDistance;
-                ar & steadyState;
                 ar & fields;
                 ar & cached;
                 ar & eq_flow;
             }
-
-            /**
-             * @brief Overload ostream operator "<<" to return various node properties
-             */
-            friend std::ostream & operator<< (std::ostream & stream, const p_node & pNode) {
-                stream << "Node properties:"
-                       << "\nID [large_num]: "<< pNode->get<large_num, ID>()
-                       << "\nSpatID [large_num]: " << pNode->get<large_num, SpatID>()
-                       << "\nRefID [int]: " << pNode->get<large_num, RefID>()<< "\nLat [double]: " << pNode->get<double, Lat>()
-                       << "\nLon [double]: " << pNode->get<double, Lon>()
-                       << "\nLayer [int]: " << pNode->get<int, Layer>()
-                       << "\nStepModifier [-]: " << pNode->get<t_dim, StepModifier>().value()
-                       << "\nArea [m²]: " << pNode->get<t_s_meter, Area>().value()
-                       << "\nVerticalSize [m]: " << pNode->get<t_meter, VerticalSize>().value()
-                       << "\nElevation [m]: " << pNode->get<t_meter, Elevation>().value()
-                       << "\nTopElevation [m]: " << pNode->get<t_meter, TopElevation>().value()
-                       << "\nEFolding [m]: " << pNode->get<t_meter, EFolding>().value()
-                       << "\nConfinement [bool]: " << pNode->get<bool, Confinement>()
-                       << "\nK [m/s]: " << pNode->get<t_vel, K>().value()
-                       << "\nAnisotropy [-]: " << pNode->get<t_dim, Anisotropy>().value()
-                       << "\nOUT [m³]: " << pNode->get<t_c_meter, OUT>().value()
-                       << "\nIN [m³]: " << pNode->get<t_c_meter, IN>().value()
-                       << "\nHead [m]: " << pNode->get<t_meter, Head>().value()
-                       << "\nEQHead [m]: " << pNode->get<t_meter, EQHead>().value()
-                       << "\nSpecificYield [-]: " << pNode->get<t_dim, SpecificYield>().value()
-                       << "\nSpecificStorage [perUnit]: " << pNode->get<quantity < perUnit>, SpecificStorage>().value()
-                        << "\nEdgeLengthLeftRight [m]: " << pNode->get<t_meter, EdgeLengthLeftRight>().value()
-                        << "\nEdgeLengthFrontBack [m]: " << pNode->get<t_meter, EdgeLengthFrontBack>().value()
-                        << "\nSurfaceLeftRight [m²]: " << pNode->get<t_s_meter, SurfaceLeftRight>().value()
-                        << "\nSurfaceFrontBack [m²]: " << pNode->get<t_s_meter, SurfaceFrontBack>().value()
-                        << "\nEffectivePorosity [-]: " << pNode->get<t_dim, EffectivePorosity>().value()
-                        << "\nDensityVariable [-]: " << pNode->get<bool, DensityVariable>()
-                        << "\nMaxTipSlope [-]: " << pNode->get<t_dim, MaxTipSlope>().value()
-                        << "\nMaxToeSlope [-]: " << pNode->get<t_dim, MaxToeSlope>().value()
-                        << "\nSlopeAdjFactor [-]: " << pNode->get<t_dim, SlopeAdjFactor>().value()
-                        << "\nVDFLock [-]: " << pNode->get<t_meter, VDFLock>().value();
-
-                std::unordered_map<NeighbourPosition, large_num> neighbourList = pNode->getListOfNeighbours();
-                if(neighbourList.find(DOWN) != neighbourList.end()) {
-                    stream << "\nDOWN neighbour lat [double]: " << pNode->getNeighbour(DOWN)->get<double, Lat>()
-                           << "\nDOWN neighbour lon [double]: " << pNode->getNeighbour(DOWN)->get<double, Lon>();
-                }
-                if(neighbourList.find(TOP) != neighbourList.end()) {
-                    stream << "\nTOP neighbour lat [double]: " << pNode->getNeighbour(TOP)->get<double, Lat>()
-                           << "\nTOP neighbour lon [double]: " << pNode->getNeighbour(TOP)->get<double, Lon>();
-                }
-                if(neighbourList.find(LEFT) != neighbourList.end()) {
-                    stream << "\nLEFT neighbour lat [double]: " << pNode->getNeighbour(LEFT)->get<double, Lat>()
-                           << "\nLEFT neighbour lon [double]: " << pNode->getNeighbour(LEFT)->get<double, Lon>();
-                }
-                if(neighbourList.find(RIGHT) != neighbourList.end()) {
-                    stream << "\nRIGHT neighbour lat [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lat>()
-                           << "\nRIGHT neighbour lon [double]: " << pNode->getNeighbour(RIGHT)->get<double, Lon>();
-                }
-                if(neighbourList.find(FRONT) != neighbourList.end()) {
-                    stream << "\nFRONT neighbour lat [double]: " << pNode->getNeighbour(FRONT)->get<double, Lat>()
-                           << "\nFRONT neighbour lon [double]: " << pNode->getNeighbour(FRONT)->get<double, Lon>();
-                }
-                if(neighbourList.find(BACK) != neighbourList.end()) {
-                    stream << "\nBACK neighbour lat [double]: " << pNode->getNeighbour(BACK)->get<double, Lat>()
-                           << "\nBACK neighbour lon [double]: " << pNode->getNeighbour(BACK)->get<double, Lon>();
-                }
-
-                if (pNode->hasGHB()) {
-                    stream << "\nGHB conductance: "
-                           << pNode->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY);
-                    stream << "\nGHB elevation: "
-                           << pNode->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                }
-
-                if (pNode->hasTypeOfExternalFlow(RECHARGE)){
-                    stream << "\nRecharge: "
-                           << pNode->getExternalFlowByName(Model::RECHARGE).getRecharge().value();
-                }
-
-                stream << "\nZone of sinks: " << pNode->zoneOfSinks;
-                stream << "\nZone of sources: " << pNode->zoneOfSources;
-
-                return stream;
-            };
 
             /**
              * @brief Constructor of abstract class NodeInterface
@@ -401,7 +315,8 @@ namespace GlobalFlow {
                           bool confined,
                           large_num refID,
                           large_num refinementInto,
-                          bool densityVariable,
+                          bool isSteadyState,
+                          bool isDensityVariable,
                           std::vector<t_dim> delnus,
                           std::vector<t_dim> nusInZones,
                           double effPorosity,
@@ -409,7 +324,9 @@ namespace GlobalFlow {
                           double maxToeSlope,
                           double minDepthFactor,
                           double slopeAdjFactor,
-                          t_meter vdfLock);
+                          t_meter vdfLock,
+                          int sinkZoneGHB,
+                          int sourceZoneGHB);
 
 /*****************************************************************
 Get Properties
@@ -429,13 +346,13 @@ Get Properties
                     if (get<int, Layer>() > 0) {
                         e_fold = efoldingFromData(get<t_meter, VerticalSize>());
                     }
-                    t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
+                    t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepSize>();
                     if (out < 1e-20 * si::meter / day) {
                         out = 1e-20 * si::meter / day;
                     }
                     return out;
                 } else {
-                    return get<t_vel, K>() * get<t_dim, StepModifier>();
+                    return get<t_vel, K>() * get<t_dim, StepSize>();
                 }
             }
 
@@ -495,12 +412,10 @@ Set Properties
              * @note Should only be called at end of time step
              */
             void updateHeadChange_TZero() noexcept {
-                set < t_meter, HeadChange_TZero > (get<t_meter, Head>() - get<t_meter, Head_TZero>());
+                set < t_meter, HeadChange_TZero > (getHead() - getHead_TZero());
             }
 
-            void updateHead_TZero() noexcept {
-                set < t_meter, Head_TZero > (get<t_meter, Head>());
-            }
+            void updateHead_TZero() noexcept { setHead_TZero(getHead()); }
 
             void setHead_TZero(t_meter head) noexcept { set<t_meter, Head_TZero>(head); }
 
@@ -510,6 +425,8 @@ Set Properties
                     nodeInterface->setHead_TZero(head);
                 });
             }
+
+
 
             void setHead(t_meter head) noexcept {
                 NANChecker(head.value(), "Set Head");
@@ -639,8 +556,8 @@ Calculate
                             conductance = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
                         }
                         // if this head is larger than neihgbour head, flow is out, which is negative
-                        lateralFlow = -conductance * (get<t_meter, Head>() - getAt<t_meter, Head>(neigNodeID)) *
-                                      get<t_dim, StepModifier>();
+                        lateralFlow = -conductance * (getHead() - getAt<t_meter, Head>(neigNodeID)) *
+                                      get<t_dim, StepSize>();
                         mapNeighboursToFlows[neigPos] = lateralFlow.value() ;
                     }
 
@@ -668,7 +585,7 @@ Calculate
              * @return lateral flows
              */
             t_vol_t getLateralFlows() {
-                return calcLateralFlows<Head>(false) * get<t_dim, StepModifier>();
+                return calcLateralFlows<Head>(false) * get<t_dim, StepSize>();
             }
 
             /**
@@ -676,7 +593,7 @@ Calculate
              * @return lateral outflows
              */
             t_vol_t getLateralOutFlows() {
-                return calcLateralFlows<Head>(true) * get<t_dim, StepModifier>();
+                return calcLateralFlows<Head>(true) * get<t_dim, StepSize>();
             }
 
             /**
@@ -737,6 +654,8 @@ Calculate
 
             t_meter getHead(){ return get<t_meter, Head>(); }
 
+            t_meter getHead_TZero() noexcept { return get<t_meter, Head_TZero>(); }
+
             int getLayer(){ return get<int, Layer>(); }
 
             large_num getRefinedInto() { return get<large_num, RefinedInto>(); }
@@ -751,20 +670,11 @@ Calculate
              */
             t_c_meter getIN() noexcept { return get<t_c_meter, IN>(); }
 
-            /**
-             * @brief Make simulation steady state at nodes
-             * Turns all storage equations to zero with no time steps
-             */
-            void setSteadyState() { steadyState = true; }
+            void updateStepSize(double stepSize) { set < t_dim, StepSize > (stepSize * si::si_dimensionless); }
 
-            /**
-             * @brief Make simulation transient at node
-             * Turns all storage equations to on
-             */
-            void setTransient() { steadyState = false; }
+            void updateIsSteadyState(bool isSteadyState) { set<bool, IsSteadyState>(isSteadyState); }
 
-
-            void updateStepSize(double mod) { set < t_dim, StepModifier > (mod * si::si_dimensionless); }
+            void updateIsDensityVariable(bool isDensityVariable) { set<bool, IsDensityVariable>(isDensityVariable); }
 
             /**
              * @brief Storage capacity based on yield or specific storage
@@ -773,6 +683,10 @@ Calculate
              * If the layer is confined or not in water-table condition returns primary capacity.
              */
             t_s_meter getStorageCapacity() noexcept {
+                if (get<bool, IsSteadyState>()) {
+                    return 0 * si::square_meter;
+                }
+
                 t_meter epsilon = 0.001 * si::meter;
                 //TODO make this an option!
                 if (get<int, Layer>() == 0) {
@@ -867,8 +781,8 @@ Calculate
              * Note: Water entering storage is treated as an outflow (-), that is a loss of water from the flow system
              * while water released from storage is treated as inflow (+), that is a source of water to the flow system
              */
-            t_vol_t getTotalStorageFlow() noexcept {
-                return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / (day * get<t_dim, StepModifier>());
+            t_vol_t getStorageFlow() noexcept {
+                return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / (day * get<t_dim, StepSize>());
             }
 
             /**
@@ -880,7 +794,7 @@ Calculate
              */
             t_vol_t calculateExternalFlowVolume(const ExternalFlow &flow) {
                 if (is(flow.getType()).in(RECHARGE, NET_ABSTRACTION)) {
-                    return flow.getRecharge() * get<t_dim, StepModifier>();
+                    return flow.getRecharge() * get<t_dim, StepSize>();
                 }
                 t_vol_t ex;
                 t_meter eq_head = get<t_meter, EQHead>();
@@ -893,18 +807,18 @@ Calculate
                 }
                 t_vol_t eqFlow = getEqFlow();
                 if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
-                    if (flow.flowIsHeadDependent(head)) {
+                    if (flow.isFlowHeadDependent(head)) {
                         ex = (flow.getP(eq_head, head, recharge, eqFlow) * head +
-                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepSize>();
                     } else { // flow is not head dependent when the head is below the bottom of the simulated cell
                         ex = (flow.getP(eq_head, head, recharge, eqFlow) * flow.getBottom() +
-                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepModifier>();
+                              flow.getQ(eq_head, head, recharge, eqFlow)) * get<t_dim, StepSize>();
                     }
                 } else {  // GENERAL_HEAD_BOUNDARY (Question: what about FLOODPLAIN_DRAIN, EVAPOTRANSPIRATION, FAST_SURFACE_RUNOFF)
                     //LOG(debug) << "getting GHB flow";
                     ex = (flow.getP(eq_head, head, recharge, eqFlow) * head + // = ghb_conductance * gw_head
                           flow.getQ(eq_head, head, recharge, eqFlow)) // = ghb_conductance * ghb_elevation (often = 0)
-                                  * get<t_dim, StepModifier>();
+                                  * get<t_dim, StepSize>();
                     //LOG(debug) << "GHB flow:" << ex.value();
                 }
                 return ex;
@@ -926,7 +840,7 @@ Calculate
                     //Check if a dewatered condition is present
                     if (head_n < elev and get<t_meter, Head>() > elev) {
                         t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(nodeIDDown));
-                        out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
+                        out += conductance_below * (head_n - elev) * get<t_dim, StepSize>();
                     }
                 }
 
@@ -939,7 +853,7 @@ Calculate
                         t_s_meter_t conductance_above =
                                 mechanics.calculateVerticalConductance(createDataTuple(nodeIDTop));
                         out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
-                               get<t_dim, StepModifier>();
+                               get<t_dim, StepSize>();
                     }
                 }
                 NANChecker(out.value(), "Dewatered flow");
@@ -950,13 +864,17 @@ Calculate
              * @brief Get all current IN flow
              * @return Flow volume
              */
-            t_c_meter getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; }) * day;}
+            t_c_meter getCurrentIN() noexcept {
+                return getFlow([](double a) -> bool { return a > 0; }) * day;
+            }
 
             /**
              * @brief Get all current OUT flow
              * @return Flow volume
              */
-            t_c_meter getCurrentOUT() noexcept { return -getFlow([](double a) -> bool { return a < 0; }) * day; }
+            t_c_meter getCurrentOUT() noexcept {
+                return -getFlow([](double a) -> bool { return a < 0; }) * day;
+            }
 
             /**
              * @brief Tell cell to save its flow budget
@@ -999,7 +917,7 @@ Calculate
                 }
 
                 // if old head is below bottom of node
-                if (get<t_meter, Head_TZero>() < getBottom()) {
+                if (getHead_TZero() < getBottom()) {
                     // set zetas to bottom of node (zone thickness = zero)
                     zetaOld = getBottom();
                     zetaBelowOld = getBottom();
@@ -1660,21 +1578,35 @@ Calculate
                         NeighbourPosition::LEFT, NeighbourPosition::RIGHT};
             }
 
-            /*std::forward_list<NeighbourPosition>
-            getPossibleNeighbours_horizontal(){
-                std::forward_list<NeighbourPosition> possiblePositions = getNeigPos_LRFB();
-                if (hasRefinedNeighbour()){
-                    possiblePositions.merge(getPossibleRefinedNeighbours());
-                }
-                return possiblePositions;
-            }*/
 
-            /*std::forward_list<NeighbourPosition>
-            getPossibleNeighbours(){
-                std::forward_list<NeighbourPosition> possiblePositions = getPossibleNeighbours_vertical();
-                possiblePositions.merge(getPossibleNeighbours_horizontal());
-                return possiblePositions;
-            }*/
+            void initializeZetas() {
+                std::vector<t_meter> zetas;
+                t_meter zetaTop;
+                // add top zeta (at node elevation or gw head or node bottom)
+                if (getHead() > getBottom()) {
+                    if (getHead() > getElevation()) {
+                        // top zeta is max at node elevation
+                        zetaTop = getElevation();
+                    } else {
+                        // top zeta is at gw head
+                        zetaTop = getHead();
+                    }
+                // if head is below node bottom
+                } else {
+                    zetaTop = getBottom();
+                }
+                zetas.push_back(zetaTop);
+                // add bottom zeta at node bottom
+                zetas.push_back(getBottom());
+                setZetas(zetas);
+
+                // add two zeta changes
+                std::vector<t_meter> zetasChange;
+                zetasChange.push_back(0 * si::meter);
+                zetasChange.push_back(0 * si::meter);
+                set<std::vector<t_meter>,ZetasChange>(zetasChange);
+            }
+
             /**
              * @brief Add a zeta surface to the cell (bounded by elevation at top and by cell bottom at bottom).
              * @param localZetaID
@@ -1682,29 +1614,13 @@ Calculate
              */
             void addZeta(int localZetaID, t_meter zeta){
                 NANChecker(zeta.value(), "zeta (in addZeta)");
-                // limit zeta value to node top and bottom (in SWI2: lines 660-680)
-                if (zeta > getElevation() - get<t_meter, VDFLock>()) {
-                    zeta = getElevation();
-                } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
-                    zeta = getBottom();
-                }
+                if (localZetaID == 0) { throw "localZetaID should not be 0 when adding zetas"; }
+                auto zetas = getZetas();
+                auto zetasChange = getZetasChange();
 
-                // add initial values to vectors "zetas", "zetasTZero" and "zetasChange"
-                std::vector<t_meter> zetas;
-                std::vector<t_meter> zetasTZero;
-                std::vector<t_meter> zetasChange;
-                if (localZetaID == 0) {
-                    zetas.push_back(zeta);
-                    zetasTZero.push_back(zeta);
-                    zetasChange.push_back(0 * si::meter);
-                } else {
-                    zetas = getZetas();
-                    zetasTZero = getZetasTZero();
-                    zetasChange = getZetasChange();
-                    zetas.insert(zetas.begin() + localZetaID, zeta);
-                    zetasTZero.insert(zetasTZero.begin() + localZetaID, zeta);
-                    zetasChange.insert(zetasChange.begin() + localZetaID, 0 * si::meter);
-                }
+                auto zetaLimited = applyZetaLimits(localZetaID, zeta);
+                zetas.insert(zetas.begin() + localZetaID, zetaLimited);
+                zetasChange.insert(zetasChange.begin() + localZetaID, 0 * si::meter);
 
                 // check if zetas vector is sorted
                 for (int zetaID = 0; zetaID < zetas.size() - 1; ++zetaID) {
@@ -1716,7 +1632,7 @@ Calculate
                 }
 
                 setZetas(zetas);
-                set<std::vector<t_meter>,Zetas_TZero>(zetasTZero);
+                set<std::vector<t_meter>,Zetas_TZero>(zetas);
                 set<std::vector<t_meter>,ZetasChange>(zetasChange);
                 //LOG(debug) << "nodeID: " << getID() << ", localZetaID: " << localZetaID << ", zeta: " << zeta.value() << ", getZeta: " << getZeta(localZetaID).value();
             }
@@ -1730,17 +1646,27 @@ Calculate
                 NANChecker(zeta.value(), "height (in setZeta)");
                 auto zetas = getZetas();
                 if (localZetaID < zetas.size()) {
-                    // limit zeta value to node top and bottom (in SWI2: lines 660-680)
-                    if (zeta > getElevation() - get<t_meter, VDFLock>()) {
-                        zetas[localZetaID] = getElevation();
-                    } else if (zeta < getBottom() + get<t_meter, VDFLock>()) {
-                        zetas[localZetaID] = getBottom();
-                    } else {
-                        zetas[localZetaID] = zeta;
-                    }
+                    t_meter zetaLimited = applyZetaLimits(localZetaID, zeta);
+                    zetas[localZetaID] = zetaLimited;
+                    setZetas(zetas);
+                } else {
+                    throw "localZetaID too large in setZeta";
                 }
-                setZetas(zetas);
+
                 //LOG(debug) << "nodeID: " << getID() << ", setZeta[" << localZetaID << "] = " << getZeta(localZetaID).value();
+            }
+
+
+            t_meter applyZetaLimits(int localZetaID, t_meter zeta) {
+                auto zetas = getZetas();
+                // limit zeta height to top zeta (in SWI2: lines 660-680)
+                if (zeta > getZetas().front() - get<t_meter, VDFLock>()) {
+                    zeta = getZetas().front();
+                    // limit zeta height to bottom zeta (in SWI2: lines 660-680)
+                } else if (zeta < getZetas().back() + get<t_meter, VDFLock>()) {
+                    zeta = getZetas().back();
+                }
+                return zeta;
             }
 
             /**
@@ -1749,8 +1675,6 @@ Calculate
              * @param height zeta height
              */
             void setZetas(std::vector<t_meter> zetas) { set<std::vector<t_meter>, Zetas>(zetas); }
-
-            void initZetasTZero() noexcept { set<std::vector<t_meter>, Zetas_TZero>(get<std::vector<t_meter>, Zetas>()); }
 
             /**
              * @brief Update zeta change after one or multiple inner iteration
@@ -1762,18 +1686,15 @@ Calculate
                 auto zetasChange = getZetasChange();
                 if (localZetaID < zetasChange.size()) {
                     auto oldZeta = getZeta(localZetaID);
-                    if (newZeta > getElevation() - get<t_meter, VDFLock>()) {
-                        newZeta = getElevation();
-                    }
-                    if (newZeta < getBottom() + get<t_meter, VDFLock>()){
-                        newZeta = getBottom();
-                    }
-                    zetasChange[localZetaID] = newZeta - oldZeta;
+                    t_meter newZetaLimited = applyZetaLimits(localZetaID, newZeta);
+                    zetasChange[localZetaID] = newZetaLimited - oldZeta;
+                    set<std::vector<t_meter>, ZetasChange>(zetasChange);
+                } else {
+                    throw "localZetaID too large in setZetaChange";
                 }
-                set<std::vector<t_meter>, ZetasChange>(zetasChange);
             }
 
-            void updateZetasTZero(){ set < std::vector<t_meter>, Zetas_TZero > (get<std::vector<t_meter>, Zetas>()); }
+            void updateZetasTZero(){ set < std::vector<t_meter>, Zetas_TZero > (getZetas()); }
 
             /**
              * @brief get all zeta surface heights
@@ -1852,31 +1773,31 @@ Calculate
              * - zoneOfSinks: 0 (fresh water)
              * - zoneOfSources: an integer between 1 and the number of zones (brackish/saline water)
              */
-            void setZoneOfSinksAndSources(large_num zoneSinks, large_num zoneSources, large_num numOfZones) {
-                if (zoneSinks > zoneSources) {
+            void setSinkAndSourceZonesGHB(int sinkZoneGHB, int sourceZoneGHB, large_num numOfZones) {
+                if (sinkZoneGHB > sourceZoneGHB) {
                     throw "Zone number of sinks cannot be larger than zone number of sources";
                 }
 
-                if (zoneSinks < zoneSources and zoneSinks > 0) {
+                if (sinkZoneGHB < sourceZoneGHB and sinkZoneGHB > 0) {
                     throw "If zone number of sinks and sources are not equal (for simulating SGD), zone number of sinks must be 0";
                 }
 
-                if (zoneSinks < numOfZones and zoneSinks >= 0) {
-                    zoneOfSinks = zoneSinks;
+                if (sinkZoneGHB < numOfZones and sinkZoneGHB >= 0) {
+                    set<int, SinkZoneGHB>(sinkZoneGHB);
                 } else {
                     throw "Zone number of sinks must be larger or equal to 0, and below the number of density zones";
                 }
 
-                if (zoneSources < numOfZones and zoneSources >= 0) {
-                    zoneOfSources = zoneSources;
+                if (sourceZoneGHB < numOfZones and sourceZoneGHB >= 0) {
+                    set<int, SourceZoneGHB>(sourceZoneGHB);
                 } else {
                     throw "Zone number of sources must be larger or equal to 0, and below the number of density zones";
                 }
             }
 
-            large_num getZoneOfSources(){ return zoneOfSources;}
+            int getSourceZoneGHB(){ return get<int, SourceZoneGHB>(); }
 
-            large_num getZoneOfSinks(){ return zoneOfSinks;}
+            int getSinkZoneGHB(){ return get<int, SinkZoneGHB>(); }
 
             /**
              * @brief Set effective porosity in node and layers below
@@ -2134,12 +2055,103 @@ Calculate
                 t_vol_t recharge = 0 * si::cubic_meter / day;
                 try {
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
-                } catch (const std::out_of_range &e) {//ignore me cell has no special_flow
+                } catch (const std::out_of_range &e) {//ignore me
                 }
                 t_vol_t eqFlow = getEqFlow();
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 for (const auto &flow : externalFlows) {
-                    out += flow.second.getQ(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
+                    out += flow.second.getQ(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
+                }
+                return out;
+            }
+
+            /**
+             * @brief Get Q part (external sources) source part of RHS of current density zone
+             * @return volume over time
+             */
+            t_vol_t getQ(int localZetaID) noexcept {
+                int densityZone = localZetaID; // the denity zone has the same ID as the zeta interface
+                t_vol_t out = 0.0 * (si::cubic_meter / day);
+                t_vol_t flow = 0.0 * (si::cubic_meter / day);
+
+                t_meter eq_head = get<t_meter, EQHead>();
+                t_meter head_t0 = getHead_TZero(); // need the previous head
+                t_meter flowHeight;
+                t_meter bottomOfFlowInZone;
+                t_meter flowHeightInZone;
+                t_dim flowFractionOfZone;
+                t_vol_t recharge = 0 * si::cubic_meter / day;
+                try {
+                    recharge = getExternalFlowByName(RECHARGE).getRecharge();
+                } catch (const std::out_of_range &e) {//ignore me cell has no special_flow
+                }
+                t_vol_t eqFlow = getEqFlow();
+                for (const auto &[flowType, extFlow] : externalFlows) {
+                    flow = extFlow.getQ(eq_head, head_t0, recharge, eqFlow) * get<t_dim, StepSize>();
+                    if (is(flowType).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                        // if this is zone 0
+                        if (densityZone == 0) {
+                            out += flow;
+                        }
+
+                        /*if (getZetaTZero(localZetaID) < extFlow.getBottom()){
+                            // only freshwater is exchanged -> no need to take into account for zeta interfaces
+                            continue;
+                        }
+                        flow = extFlow.getQ(eq_head, head_t0, recharge, eqFlow) * get<t_dim, StepSize>();
+
+                        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        // %%% compute flow fraction %%%%
+                        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        if (flow.value() < 0) { // if SWB flow is into node (here -)
+                            // head is below flow head -> height of flow is: flow head - flow bottom
+                            flowHeight = extFlow.getFlowHead() - extFlow.getBottom();
+                        } else if (flow.value() > 0) { // if SWB flow is out of node (here +)
+                            if (getZetaTZero(localZetaID) > extFlow.getBottom()) { // if zeta above flow bottom
+                                // head is above flow head -> height of flow is: GW head - flow bottom
+                                flowHeight = head_t0 - extFlow.getBottom();
+                            } else {
+                                // zeta is below flow bottom -> no saline water enters the SWB
+                                continue;
+                            }
+                        }
+                        if (flowHeight.value() < 0) {
+                            LOG(userinfo) << "getQ(int localZetaID): flowHeight is below 0. Should never happen!";
+                            continue;
+                        }
+
+                        if (getZetaTZero(localZetaID+1) > extFlow.getBottom()) {
+                            // the bottom of flow into/out of this zone is the lower zeta
+                            bottomOfFlowInZone = getZetaTZero(localZetaID+1);
+                        } else {
+                            // the bottom of flow into/out of this zone is the flow bottom
+                            bottomOfFlowInZone = extFlow.getBottom();
+                        }
+                        flowHeightInZone = getZetaTZero(localZetaID) - bottomOfFlowInZone;
+                        if (flowHeightInZone.value() < 0) {
+                            LOG(userinfo) << "getQ(int localZetaID): flowHeightInZone is below 0. Should never happen!";
+                            continue;
+                        }
+
+                        flowFractionOfZone = flowHeightInZone / flowHeight;
+                        out += flow * flowFractionOfZone;*/
+
+                    } else if (flowType == RECHARGE) {
+                        // if recharge is into node (here -) and this is zone 0
+                        if ((flow.value() < 0 and densityZone == 0)) {
+                            out += flow;
+                        }
+
+                    } else if (flowType == GENERAL_HEAD_BOUNDARY) {
+                        // if GHB flow is into node (here -) and this is the zone of GHB inflow
+                        // or
+                        // if GHB flow is out of node (here +) and this is the zone of GHB outflow
+                        if ((flow.value() < 0 and densityZone == getSourceZoneGHB())
+                            or
+                            (flow.value() > 0 and densityZone == getSinkZoneGHB())) {
+                            out += flow;
+                        }
+                    }
                 }
                 return out;
             }
@@ -2152,7 +2164,7 @@ Calculate
             t_s_meter_t getEffectivePorosityTerm(){ // computed independent of steady or transient flow (see SWI2 doc "Using the SWI2 Package")
                 t_s_meter_t out = (getEffectivePorosity() * get<t_s_meter, Area>()) /
                                   day;
-                                  //(day * get<t_dim, StepModifier>());
+                                  //(day * get<t_dim, StepSize>());
                 NANChecker(out.value(), "getEffectivePorosityTerm");
                 return out;
             }
@@ -2195,10 +2207,9 @@ Calculate
              * @brief Checking if zeta surface is at node top or at head
              * @param localZetaID
              * @return bool
-             * @note using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
              */
             bool isZetaAtTop(int localZetaID){
-                return (getZetaTZero(localZetaID) >= getZetasTZero().front());
+                return (getZeta(localZetaID) >= getZetas().front());
             }
 
             /**
@@ -2208,7 +2219,7 @@ Calculate
              * @note using ZetasTZero since they are the zetas from the beginning of the current iterative equation solving process
              */
             bool isZetaAtBottom(int localZetaID){
-                return (getZetaTZero(localZetaID) <= getZetasTZero().back() or
+                return (getZeta(localZetaID) <= getZetas().back() or
                         getHead() < getBottom());
             }
 
@@ -2242,6 +2253,27 @@ Calculate
             }
 
             /**
+             * @brief Checking if zeta surface is the highest active zeta
+             * @param localZetaID
+             * @return bool
+             */
+            bool isThisTheHighestActiveZeta(int localZetaID){
+                if (isZetaActive(localZetaID)) {
+                    // if this zeta is active -> localZetaID >= 1
+                    for (int i = localZetaID-1; i > 0; --i) {
+                        if (isZetaActive(i)) { // if a higher zeta interface is active
+                            return false;
+                        }
+                    }
+                    // no higher active zeta interface exists
+                    return true;
+                } else {
+                    // this zeta interface is not even active
+                    return false;
+                }
+            }
+
+            /**
              * @brief The source flow below a zeta surface (for the right hand side in the zeta equation)
              * @param localZetaID zeta surface id in this node
              * @return volume per time
@@ -2249,40 +2281,26 @@ Calculate
              * G = RHS (of flow, for constant density) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
              */
             t_vol_t getSources(int localZetaID){
+                // We use the following sink/source concept:
+                //  - the source/sink zones of GHB are specified in config and/or in data file (for nodes individually)
+                //  - the source/sink zone of SWBs depend on interface heights
+                //  - the source zone recharge is the freshwater zone
                 // todo: compute BUFF with SSWI2_BDCH for constant head cells
                 t_vol_t sources = 0.0 * (si::cubic_meter / day);
 
                 // if the new groundwater head is above or equal to the node bottom
-                if (get<t_meter, Head>() >= getBottom()) { // lines 3532-3536
-                    // get RHS of flow equation without VDF terms (pseudo source term and flux correction)
-                    auto RHSConstantDensity = get<t_vol_t, RHSConstantDensity_TZero>(); // in SWI2 code: RHSPRESWI
+                if (getHead() >= getBottom()) { // lines 3532-3536
+                    // get internal sources of constant density flow equation (without variable density terms)
+                    auto internalSources = get<t_vol_t, InternalSources>(); // in SWI2 code: RHSPRESWI
+                    t_vol_t externalSources = - getQ(localZetaID); // only head dependent flows
+                    // (not head dependent flows would add only freshwater)
 
                     // get HCOF (= P-((SS_i,j,k * DELR_j * DELC_i)/(t^m - t^m-1))) of NEW time step
-                    t_s_meter_t hcof = mechanics.getHCOF(steadyState,
-                                                         get<t_dim, StepModifier>(),
-                                                         getStorageCapacity(),
-                                                         getP());
+                    t_s_meter_t hcof = - (getP(localZetaID) - (getStorageCapacity() / (day * get<t_dim, StepSize>())));
                     // calculate the boundary flux
-                    sources = RHSConstantDensity - hcof * get<t_meter, Head>(); // see line 3535-3536
+                    sources = externalSources + internalSources + hcof * getHead(); // see line 3535-3536
                 }
-
-                large_num zoneToUse = zoneOfSources; // zone of flow sources in node
-                if (zoneOfSources > zoneOfSinks and // if we intend to simulate submarine groundwater discharge
-                    sources > 0 * (si::cubic_meter / day)) { // and boundary flux is positive (-> out of node)
-                    zoneToUse = zoneOfSinks; // use the zone of sinks (= top of aquifer = fresh water)
-                }
-
-                // Question: add 3539-3540 with "if (ibound < 0){q=-BUFF}"?
-                t_dim factor = 1 * si::si_dimensionless;
-                if (localZetaID <= zoneToUse) {
-                    if (zoneToUse > 100){ // lines 3548-3553
-                        if (sources > 0 * (si::cubic_meter / day) and
-                            (getZetas().front() - getZetas().back()) > 0 * si::meter) {
-                            factor = (getZeta(localZetaID) - getZetas().back()) / (getZetas().front() - getZetas().back());
-                        }
-                    }
-                }
-                return sources * factor;
+                return sources;
             }
 
             /**
@@ -2661,7 +2679,7 @@ Calculate
                                 // if vertical flux through the top of the node is positive...
                                 if (fluxCorrectionTop.value() > 0 and at(topNodeID)->getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(topNodeID)); // * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getAt<t_dim, EffectivePorosity>(topNodeID)); // * get<t_dim, StepSize>()
                                     // ...lift zeta height of the lowest zeta surface in top node
                                     t_meter zeta_back_top = at(topNodeID)->getZetas().back();
                                     at(topNodeID)->setZeta(localZetaID, zeta_back_top + deltaZeta);
@@ -2669,7 +2687,7 @@ Calculate
                                     // if vertical flux through the top of the node is negative...
                                 } else if (fluxCorrectionTop.value() < 0 and getEffectivePorosity().value() > 0) {
                                     deltaZeta = (fluxCorrectionTop * (day)) /
-                                                (get<t_s_meter, Area>() * getEffectivePorosity()); // * get<t_dim, StepModifier>()
+                                                (get<t_s_meter, Area>() * getEffectivePorosity()); // * get<t_dim, StepSize>()
                                     //LOG(debug) << "deltaZeta: " << deltaZeta.value() << std::endl;
                                     // ...lower zeta height of this zeta surface by delta zeta
                                     setZeta(localZetaID, getZetas().front() + deltaZeta);
@@ -2995,11 +3013,106 @@ Calculate
                 t_vol_t eqFlow = getEqFlow();
                 for (const auto &flow : externalFlows) {
                     if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
-                        if (flow.second.flowIsHeadDependent(head)) {
-                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
+                        // if flow depends on head
+                        if (flow.second.isFlowHeadDependent(head)) {
+                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
                         }
-                    } else { // RECHARGE, ...
-                        out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>();
+                    } else { // RECHARGE, GENERAL_HEAD_BOUNDARY
+                        out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
+                    }
+                }
+                return out;
+            }
+
+            /**
+             * @brief Get P part of source part of RHS of current density zone
+             * @return volume over time
+             */
+            t_s_meter_t getP(int localZetaID) noexcept {
+                int densityZone = localZetaID; // the denity zone has the same ID as the zeta interface
+                t_s_meter_t out = 0.0 * (si::square_meter / day);
+                t_s_meter_t flow = 0.0 * (si::square_meter / day);
+
+                t_meter eq_head = get<t_meter, EQHead>();
+                t_meter head = get<t_meter, Head>(); // need the current head
+                t_meter flowHeight;
+                t_meter bottomOfFlowInZone;
+                t_meter flowHeightInZone;
+                t_dim flowFractionOfZone;
+                t_vol_t recharge = 0 * si::cubic_meter / day;
+                try {
+                    recharge = getExternalFlowByName(RECHARGE).getRecharge();
+                } catch (const std::out_of_range &e) {//ignore me
+                }
+                t_vol_t eqFlow = getEqFlow();
+                for (const auto &[flowType, extFlow] : externalFlows) { // todo at all loops through external flows
+                    if (is(flowType).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
+                        if (extFlow.isFlowHeadDependent(head)) {
+                            flow = extFlow.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
+                            // if this is zone 0
+                            if (densityZone == 0) {
+                                out += flow;
+                            }
+
+                            /*if (getZetaTZero(localZetaID) < extFlow.getBottom()){
+                                // only freshwater is exchanged -> no need to take into account for zeta interfaces
+                                continue;
+                            }
+                            flow = extFlow.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
+
+                            // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            // %%% compute flow fraction %%%%
+                            // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            if (flow.value() < 0) { // if SWB flow is into node (here -)
+                                // head is below flow head -> height of flow is: flow head - flow bottom
+                                flowHeight = extFlow.getFlowHead() - extFlow.getBottom();
+                            } else if (flow.value() > 0) { // if SWB flow is out of node (here +)
+                                if (getZetaTZero(localZetaID) > extFlow.getBottom()) { // if zeta above flow bottom
+                                    // head is above flow head -> height of flow is: GW head - flow bottom
+                                    flowHeight = head - extFlow.getBottom();
+                                } else {
+                                    // zeta is below flow bottom -> no saline water enters the SWB
+                                    continue;
+                                }
+                            }
+                            if (flowHeight.value() < 0) {
+                                LOG(userinfo) << "getP(int localZetaID): flowHeight is below 0. Should never happen!";
+                                continue;
+                            }
+
+                            if (getZetaTZero(localZetaID+1) > extFlow.getBottom()) {
+                                // the bottom of flow into/out of this zone is the lower zeta
+                                bottomOfFlowInZone = getZetaTZero(localZetaID+1);
+                            } else {
+                                // the bottom of flow into/out of this zone is the flow bottom
+                                bottomOfFlowInZone = extFlow.getBottom();
+                            }
+                            flowHeightInZone = getZetaTZero(localZetaID) - bottomOfFlowInZone;
+                            if (flowHeightInZone.value() < 0) {
+                                LOG(userinfo) << "getP(int localZetaID): flowHeightInZone is below 0. Should never happen!";
+                                continue;
+                            }
+
+                            flowFractionOfZone = flowHeightInZone / flowHeight;
+                            out += flow * flowFractionOfZone;*/
+                        }
+                    } else {
+                        flow = extFlow.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>();
+                        if (flowType == RECHARGE) {
+                            // if recharge is into node (here -) and this is zone 0
+                            if ((flow.value() < 0 and densityZone == 0)) {
+                                out += flow;
+                            }
+                        } else if (flowType == GENERAL_HEAD_BOUNDARY) {
+                            // if GHB flow is into node (here -) and this is the zone of GHB inflow
+                            // or
+                            // if GHB flow is out of node (here +) and this is the zone of GHB outflow
+                            if ((flow.value() < 0 and densityZone == getSourceZoneGHB())
+                                or
+                                (flow.value() > 0 and densityZone == getSinkZoneGHB())) {
+                                out += flow;
+                            }
+                        }
                     }
                 }
                 return out;
@@ -3023,9 +3136,9 @@ Calculate
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 //Q part is already subtracted in RHS
                 for (const auto &flow : externalFlows) {
-                    if (is(flow.second.getType()).in(RIVER, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND, DRAIN)) { // Question: GLOBAL_LAKE?
-                        if (not flow.second.flowIsHeadDependent(head)) {
-                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepModifier>() *
+                    if (is(flow.second.getType()).in(RIVER, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND, DRAIN)) {
+                        if (not flow.second.isFlowHeadDependent(head)) {
+                            out += flow.second.getP(eq_head, head, recharge, eqFlow) * get<t_dim, StepSize>() *
                                    flow.second.getBottom();
                         }
                     }
@@ -3078,10 +3191,7 @@ Calculate
                 // subtract the conductances to neighbours (which were calculated above)
                 for (const auto &[neigNodeID, conductNeig]: out) { conductNode -= conductNeig; }
                 // add HCOF
-                t_s_meter_t hcof = mechanics.getHCOF(steadyState,
-                                                     get<t_dim, StepModifier>(),
-                                                     getStorageCapacity(),
-                                                     getP());
+                t_s_meter_t hcof = getP() - (getStorageCapacity() / (day * get<t_dim, StepSize>()));
                 conductNode += hcof;
                 //LOG(debug) << "conductNode: " << conductNode.value();
                 NANChecker(conductNode.value(), "conductNode");
@@ -3104,18 +3214,20 @@ Calculate
                 t_s_meter_t zoneConductanceCum;
                 t_s_meter_t zetaMovementConductance;
 
+                // if this zeta interface is not active: return directly
+                if (!isZetaActive(localZetaID)){ return out; }
+
                 for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     zetaMovementConductance = 0 * (si::square_meter / day);
-                    if ((isZetaActive(localZetaID) and
-                         at(neigNodeID)->isZetaActive(localZetaID))) {
+                    if (at(neigNodeID)->isZetaActive(localZetaID)) {
                         zoneConductances = getZoneConductances(neigPos, neigNodeID);
                         zoneConductanceCum = getZoneConductanceCum(localZetaID, zoneConductances);
                         zetaMovementConductance += delnus[localZetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                         //LOG(debug) << "zoneConductanceCum = " << zoneConductanceCum.value() << std::endl;
+                        NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
+                        // add conductance to out, the key in the unordered map is the ID of the neighbouring node
+                        out[neigNodeID] = zetaMovementConductance;
                     }
-                    NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
-                    // add conductance to out, the key in the unordered map is the ID of the neighbouring node
-                    out[neigNodeID] = zetaMovementConductance;
                 }
 
                 // To solve for zeta in this node, the conductances to neighbours and porosity term are used
@@ -3136,46 +3248,32 @@ Calculate
              * @return volume per time
              */
             t_vol_t getRHS() {
-                t_vol_t extFlows = getQ(); // e.g., recharge, river, lakes, wetlands
-                //LOG(debug) << "extFlows: " << extFlows.value() << std::endl;
+                t_vol_t externalSources = - getQ() - calculateNotHeadDependentFlows(); // e.g., recharge, river, lakes, wetlands
+                //LOG(debug) << "externalSources: " << externalSources.value() << std::endl;
                 t_vol_t dewateredFlow = calculateDewateredFlow(); // only if node has bottom neighbour
                 //LOG(debug) << "dewateredFlow: " << dewateredFlow.value() << std::endl;
-                t_vol_t notHeadDependentFlows = calculateNotHeadDependentFlows(); // e.g., rivers, lakes, wetlands //
-                //LOG(debug) << "notHeadDependentFlows: " << notHeadDependentFlows.value() << std::endl;
-                t_vol_t storageFlow =
-                        getStorageCapacity() * (get<t_meter, Head_TZero>() / (day * get<t_dim, StepModifier>()));
-                if (steadyState) {
-                    storageFlow = 0 * (si::cubic_meter / day);
-                }
+                t_vol_t storageFlow = -getStorageCapacity() * getHead_TZero() / (day * get<t_dim, StepSize>());
                 //LOG(debug) << "storageFlow: " << storageFlow.value() << std::endl;
-
-                t_vol_t gncFromNodes = 0 * (si::cubic_meter / day);
-                gncFromNodes = getGNCFromNodes();
+                t_vol_t gncFromNodes = getGNCFromNodes();
                 //LOG(debug) << "gncFromNodes: " << gncFromNodes.value() << std::endl;
-
-                t_vol_t gncToRefined = 0 * (si::cubic_meter / day);
-                gncToRefined = getGNCToRefinedNode();
+                t_vol_t gncToRefined = getGNCToRefinedNode();
                 //LOG(debug) << "gncToRefined: " << gncToRefined.value() << std::endl;
-
-                t_vol_t out = - extFlows + dewateredFlow - notHeadDependentFlows - storageFlow + gncFromNodes +
-                              gncToRefined;
+                t_vol_t internalSources = dewateredFlow + storageFlow + gncFromNodes + gncToRefined;
+                t_vol_t out = externalSources + internalSources;
                 //LOG(debug) << "RHS constant density: " << out.value() << std::endl;
                 NANChecker(out.value(), "RHS constant density");
 
-                if (get<bool, DensityVariable>()) {
+                if (get<bool, IsDensityVariable>()) {
                     // save constant density RHS (without variable density terms) for calculation of zeta movement
-                    set<t_vol_t, RHSConstantDensity_TZero>(out);
+                    set<t_vol_t, InternalSources>(internalSources);
 
                     // calculate Pseudo-Source Flow
                     t_vol_t pseudoSourceNode = getPseudoSourceNode();
-
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
-
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
                 //LOG(debug) << "getRHS (nodeID: " << getID() << "): " << out.value() << std::endl;
-
                 NANChecker(out.value(), "RHS");
                 return out;
             }
@@ -3189,7 +3287,7 @@ Calculate
                 t_vol_t porosityTerm = 0 * (si::cubic_meter / day);
                 t_vol_t pseudoSourceBelowZeta = 0 * (si::cubic_meter / day);
                 if (isZetaActive(localZetaID)) { // if IPLPOS == 0 (line 3571)
-                    porosityTerm = getEffectivePorosityTerm() * getZeta(localZetaID);
+                    porosityTerm = -getEffectivePorosityTerm() * getZeta(localZetaID);
                     //LOG(debug) << "porosityTerm: " << porosityTerm.value() << std::endl;
 
                     pseudoSourceBelowZeta = getPseudoSourceBelowZeta(localZetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
@@ -3200,7 +3298,7 @@ Calculate
                 t_vol_t tipToeFlow = getTipToeFlow(localZetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
                 //LOG(debug) << "tipToeFlow: " << tipToeFlow.value() << std::endl;
 
-                t_vol_t out = - porosityTerm - sources + tipToeFlow + pseudoSourceBelowZeta;
+                t_vol_t out = porosityTerm + sources + tipToeFlow + pseudoSourceBelowZeta;
                 //if (out.value() == 0) {
                 //    LOG(debug) << "getRHS(localZetaID) is 0 at " << get<large_num,ID>();
                 //}
@@ -3316,7 +3414,8 @@ Calculate
                          bool confined,
                          large_num refID,
                          large_num maxRefinement,
-                         bool densityVariable,
+                         bool isSteadyState,
+                         bool isDensityVariable,
                          std::vector<t_dim> delnus,
                          std::vector<t_dim> nusInZones,
                          double effPorosity,
@@ -3324,12 +3423,14 @@ Calculate
                          double maxToeSlope,
                          double minDepthFactor,
                          double slopeAdjFactor,
-                         t_meter vdfLock)
+                         t_meter vdfLock,
+                         int sinkZoneGHB,
+                         int sourceZoneGHB)
                     : NodeInterface(nodes, lat, lon, area, edgeLengthLeftRight, edgeLengthFrontBack, SpatID, ID, K,
                                     headActive, head, aquiferDepth, anisotropy, specificYield, specificStorage,
-                                    useEfolding, confined, refID, maxRefinement, densityVariable, delnus,
+                                    useEfolding, confined, refID, maxRefinement, isSteadyState, isDensityVariable, delnus,
                                     nusInZones, effPorosity, maxTipSlope, maxToeSlope, minDepthFactor, slopeAdjFactor,
-                                    vdfLock) {}
+                                    vdfLock, sinkZoneGHB, sourceZoneGHB) {}
         private:
             // implementation
             friend class NodeInterface;
@@ -3362,7 +3463,6 @@ Calculate
                 ar & numOfExternalFlows;
                 ar & initial_head;
                 ar & simpleDistance;
-                ar & steadyState;
                 ar & fields;
                 ar & cached;
                 ar & eq_flow;
@@ -3392,8 +3492,8 @@ Calculate
                     ID,
                     ID,
                     0.3 * (si::meter / day), true, 1 * si::meter, 100, 10, 0.15,
-                    0.000015, false, true, 0, 1, false,{0.0, 0.1}, {0.0, 0.1},
-                    0.2, 0.2, 0.2, 0.1, 0.1,0.001 * si::meter) {}
+                    0.000015, false, true, 0, 1, true, false,{0.0, 0.1}, {0.0, 0.1},
+                    0.2, 0.2, 0.2, 0.1, 0.1,0.001 * si::meter, 0, 0) {}
 
         private:
             friend class NodeInterface;
@@ -3419,7 +3519,6 @@ Calculate
                 ar & numOfExternalFlows;
                 ar & initial_head;
                 ar & simpleDistance;
-                ar & steadyState;
                 ar & fields;
                 ar & cached;
                 ar & eq_flow;

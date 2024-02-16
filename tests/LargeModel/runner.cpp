@@ -3,62 +3,55 @@
 namespace GlobalFlow {
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736, filtered: 381205
+        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736
+        // densityZones: removed 1001.1,
         op = Simulation::Options();
         op.load(pathToConfig);
     }
 
     void Runner::setupSimulation() {
-        reader = new DataProcessing::GlobalDataReader();
-        sim = Simulation::Simulation(op, reader);
+        reader = new DataProcessing::GlobalDataReader(); // sets data reader
+        sim = Simulation::Simulation(op, reader); // calls data reader initializing nodes
         _eq = sim.getEquation();
     }
 
     void Runner::simulate() {
-        std::vector<int> steadyStateStressPeriodSteps = op.getSteadyStateStressPeriodSteps();
-        std::vector<int> transientStressPeriodSteps = op.getTransientStressPeriodSteps();
-        std::vector<std::string> steadyStateStressPeriodStepsizes = op.getSteadyStateStressPeriodStepsizes();
-        std::vector<std::string> transientStressPeriodStepsizes = op.getTransientStressPeriodStepsizes();
+        std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
+        std::vector<int> numberOfSteps = op.getStressPeriodSteps();
+        std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
+        std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
         int stepNumber{1};
         boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
         std::stringstream ss;
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
-
         std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
-        for (int i = 0; i < steadyStateStressPeriodSteps.size(); ++i) {
-            if (steadyStateStressPeriodSteps[i] == 0) { continue; }
-            LOG(userinfo) << "Steady state stress period " << i+1 << ": " <<
-                          steadyStateStressPeriodSteps[i] << " step(s), with stepsize " <<
-                          steadyStateStressPeriodStepsizes[i];
-            Simulation::Stepper steadyStepper = Simulation::Stepper(_eq, steadyStateStressPeriodStepsizes[i],
-                                                                    steadyStateStressPeriodSteps[i]);
-            for (Simulation::step step : steadyStepper) {
-                step.first->setSteadyState();
-                step.first->solve();
-                LOG(userinfo) << "Solved step " << stepNumber << " (steady state) with " << step.first->getItter()
-                              << " iteration(s)";
-                sim.printMassBalances(debug);
-                sim.saveStepResults(pathToOutput, stepNumber);
-                step.first->setTransient();
-                ++stepNumber;
-            }
-        }
+        std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
 
-        for (int i = 0; i < transientStressPeriodSteps.size(); ++i) {
-            if (transientStressPeriodSteps[i] == 0) { continue; }
-            LOG(userinfo) << "Transient stress period " << i+1 << ": " <<
-                          transientStressPeriodSteps[i] << " step(s), with stepsize " <<
-                          transientStressPeriodStepsizes[i];
-            Simulation::Stepper transientStepper = Simulation::Stepper(_eq, transientStressPeriodStepsizes[i],
-                                                                       transientStressPeriodSteps[i]);
-            for (Simulation::step step: transientStepper) {
+        for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
+            LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
+            stepSizes[strssPrd];
+            // set zetas if previous stress period had no variable density simulation
+            if (strssPrd > 0) {
+                if (isDensityVariable[strssPrd] and !isDensityVariable[strssPrd-1]) {
+                    LOG(userinfo) << "Setting initial zetas using Ghyben-Herzberg";
+                    reader->setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, // todo add to config
+                                                   op.getDensityZones());
+                }
+            }
+
+            Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
+                                                              isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+            for (Simulation::step step : stepper) {
                 step.first->solve();
-                LOG(userinfo) << "Solved step " << stepNumber << " (transient) with " << step.first->getItter()
-                              << " iteration(s)";
-                sim.printMassBalances(debug);
-                sim.saveStepResults(pathToOutput, stepNumber);
+                sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+                sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
+                LOG(userinfo) << "Step " << stepNumber << ": ";
+                LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
+                if (isDensityVariable[strssPrd]) {
+                    LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
+                }
                 ++stepNumber;
             }
         }

@@ -45,10 +45,10 @@ namespace GlobalFlow {
             tree = tree.get_child("config");
 
             pt::ptree config = tree.get_child("model_config");
-            STEADY_STATE_STRESS_PERIOD_STEPS = getTypeArray<int>("steady_state_stress_period_steps", config);
-            TRANSIENT_STRESS_PERIOD_STEPS = getTypeArray<int>("transient_stress_period_steps", config);
-            STEADY_STATE_STRESS_PERIOD_STEPSIZES = getTypeArray<std::string>("steady_state_stress_period_stepsizes", config);
-            TRANSIENT_STRESS_PERIOD_STEPSIZES = getTypeArray<std::string>("transient_stress_period_stepsizes", config);
+            STRESS_PERIOD_STEADY_STATE = getTypeArray<bool>("stress_period_steady_state", config);
+            STRESS_PERIOD_STEPS = getTypeArray<int>("stress_period_time_steps", config);
+            STRESS_PERIOD_STEP_SIZES = getTypeArray<std::string>("stress_period_time_step_sizes", config);
+            STRESS_PERIOD_VARIABLE_DENSITY = getTypeArray<bool>("stress_period_variable_density", config);
             NODES = config.get<std::string>("nodes");
             NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
             Y_RANGE = config.get<long>("y_range");
@@ -110,10 +110,10 @@ namespace GlobalFlow {
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
-            ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
+            SINK_ZONE_GHB = default_data.get<int>("sink_zone_ghb");
+            SOURCE_ZONE_GHB = default_data.get<int>("source_zone_ghb");
 
             pt::ptree vdf = tree.get_child("vdf_config");
-            DENSITY_VARIABLE = vdf.get<bool>("density_variable");
             DENSITY_ZONES = getTypeArray<double>("density_zones", vdf);
             MAX_TIP_SLOPE = vdf.get<double>("max_tip_slope");
             MAX_TOE_SLOPE = vdf.get<double>("max_toe_slope");

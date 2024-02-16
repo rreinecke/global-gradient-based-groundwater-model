@@ -1,17 +1,21 @@
 {
   "config": {
     "model_config": {
-      "steady_state_stress_period_steps": [
-        0
+      "stress_period_steady_state": [
+        "true",
+        "true"
       ],
-      "transient_stress_period_steps": [
-        1
+      "stress_period_time_steps": [
+        1,
+        10000
       ],
-      "steady_state_stress_period_stepsizes": [
-        ""
-      ],
-      "transient_stress_period_stepsizes": [
+      "stress_period_time_step_sizes": [
+        "MONTH",
         "MONTH"
+      ],
+      "stress_period_variable_density": [
+        "false",
+        "true"
       ],
       "nodes": "grid_simple.csv",
       "number_of_nodes_per_layer": 100,
@@ -32,7 +36,6 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "false",
       "density_zones": [
         1000
       ],
@@ -90,10 +93,8 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
-        "zones_sources_sinks": [
-          0,
-          1
-        ]
+        "sink_zone_ghb": 0,
+        "source_zone_ghb": 1
       },
       "data": {
         "recharge": "recharge_simple.csv",

@@ -80,10 +80,10 @@ namespace GlobalFlow {
             double RCLOSE_ZETA{0.1};
 
             std::string SOLVER{"PCG"};
-            std::vector<int> STEADY_STATE_STRESS_PERIOD_STEPS{0};
-            std::vector<int> TRANSIENT_STRESS_PERIOD_STEPS{0};
-            std::vector<std::string> STEADY_STATE_STRESS_PERIOD_STEPSIZES{""};
-            std::vector<std::string> TRANSIENT_STRESS_PERIOD_STEPSIZES{""};
+            std::vector<bool> STRESS_PERIOD_STEADY_STATE{true};
+            std::vector<int> STRESS_PERIOD_STEPS{0};
+            std::vector<std::string> STRESS_PERIOD_STEP_SIZES{""};
+            std::vector<bool> STRESS_PERIOD_VARIABLE_DENSITY{false};
             std::string NODES{""};
             int THREADS{0};
             bool CACHE{false};
@@ -112,7 +112,8 @@ namespace GlobalFlow {
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
-            std::vector<int> ZONES_SOURCES_SINKS{0};
+            int SINK_ZONE_GHB{0};
+            int SOURCE_ZONE_GHB{0};
 
             bool k_from_file{false};
             bool k_ghb_from_file{false};
@@ -142,22 +143,17 @@ namespace GlobalFlow {
                 NONE
             };
 
-            std::vector<int> getSteadyStateStressPeriodSteps() { return STEADY_STATE_STRESS_PERIOD_STEPS; }
+            std::vector<bool> getStressPeriodSteadyState() { return STRESS_PERIOD_STEADY_STATE; }
 
-            std::vector<int> getTransientStressPeriodSteps() { return TRANSIENT_STRESS_PERIOD_STEPS; }
+            std::vector<int> getStressPeriodSteps() { return STRESS_PERIOD_STEPS; }
 
-            std::vector<std::string> getSteadyStateStressPeriodStepsizes() {
-                return STEADY_STATE_STRESS_PERIOD_STEPSIZES;
-            }
+            std::vector<std::string> getStressPeriodStepSizes() { return STRESS_PERIOD_STEP_SIZES; }
 
-            std::vector<std::string> getTransientStressPeriodStepsizes() {
-                return TRANSIENT_STRESS_PERIOD_STEPSIZES;
-            }
+            std::vector<bool> getStressPeriodVariableDensity() {return STRESS_PERIOD_VARIABLE_DENSITY; }
 
             void setClosingCritHead(double crit_head) { RCLOSE_HEAD = crit_head; }
 
             void setClosingCritZeta(double crit_zeta) { RCLOSE_ZETA = crit_zeta; }
-
 
             void setDamping(bool set) { DAMPING = set; }
 
@@ -281,25 +277,13 @@ namespace GlobalFlow {
                 return DENSITY_ZONES;
             }
 
-            double
-            getEffectivePorosity() {
-                return EFFECTIVE_POROSITY;
-            }
+            double getEffectivePorosity() { return EFFECTIVE_POROSITY; }
 
-            double
-            getMaxTipSlope() {
-                return MAX_TIP_SLOPE;
-            }
+            double getMaxTipSlope() { return MAX_TIP_SLOPE; }
 
-            double
-            getMaxToeSlope() {
-                return MAX_TOE_SLOPE;
-            }
+            double getMaxToeSlope() { return MAX_TOE_SLOPE; }
 
-            double
-            getMinDepthFactor() {
-                return MIN_DEPTH_FACTOR;
-            }
+            double getMinDepthFactor() { return MIN_DEPTH_FACTOR; }
 
             double
             getSlopeAdjFactor() {
@@ -310,6 +294,10 @@ namespace GlobalFlow {
             getVDFLock() {
                 return VDF_LOCK;
             }
+
+            int getSourceZoneGHB() { return SOURCE_ZONE_GHB; }
+
+            int getSinkZoneGHB() { return SINK_ZONE_GHB; }
 
             int
             getMaxIterations() {
@@ -499,7 +487,6 @@ namespace GlobalFlow {
             void
             save(const std::string &filename);
         };
-
-    }
+}
 }//ns
 #endif //COVERAGE_OPTIONS_H

@@ -42,31 +42,31 @@ void StandaloneRunner::writeNodeInfosToCSV(){
     }
 
 void StandaloneRunner::simulate() {
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::TWO_DAYS, 200);
-    int stepNumber = 1;
+    std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
+    std::vector<int> numberOfSteps = op.getStressPeriodSteps();
+    std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
+    std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
-    // for saving zetas in a csv
-    std::ofstream myfile("swi2_ex1_timesteps.csv");
-    myfile << "timestep,nodeID,zeta1,head" << std::endl;
+    int stepNumber{1};
 
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running steady state step " << stepNumber;
-        step.first->setSteadyState();
-        step.first->solve();
-        sim.printMassBalances(debug);
+    for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
+        LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
+                      stepSizes[strssPrd];
 
-        // for saving zetas in a csv
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            myfile << stepNumber
-            << "," << sim.getNodes()->at(j)->getID()
-            << "," << sim.getNodes()->at(j)->getZeta(1).value()
-            << "," << sim.getNodes()->at(j)->getHead().value()
-            << std::endl;
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
+                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+        for (Simulation::step step : stepper) {
+            step.first->solve();
+            LOG(userinfo) << "Step " << stepNumber << ": ";
+            LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
+            if (isDensityVariable[strssPrd]) {
+                LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
+            }
+            sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+            ++stepNumber;
         }
-        step.first->setTransient();
-        stepNumber++;
     }
-    myfile.close(); // for saving zetas in a csv
+    sim.saveNodeState();
 }
 
 void StandaloneRunner::getResults() {}

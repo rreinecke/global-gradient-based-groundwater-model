@@ -381,7 +381,8 @@ void buildBottomLayers(NodeVector nodes,
     bool useEfolding;
     large_num refID;
     large_num maxRefinement;
-    bool densityVariable;
+    bool isSteadyState;
+    bool isDensityVariable;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
     std::vector<Model::quantity<Model::Dimensionless>> nusInZones;
     double effPorosity;
@@ -390,6 +391,8 @@ void buildBottomLayers(NodeVector nodes,
     double minDepthFactor;
     double slopeAdjFactor;
     Model::quantity<Model::Meter> vdfLock;
+    int sinkZoneGHB;
+    int sourceZoneGHB;
 
     for (int layer = 0; layer < numberOfLayers - 1; ++layer) {
         //1) Add a Model::similar node in z direction for each layer
@@ -416,7 +419,8 @@ void buildBottomLayers(NodeVector nodes,
             useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
             refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
             maxRefinement = nodes->at(i)->getProperties().get<large_num, Model::MaxRefinement>();
-            densityVariable = nodes->at(i)->getProperties().get<bool, Model::DensityVariable>();
+            isSteadyState = nodes->at(i)->getProperties().get<bool, Model::IsSteadyState>();
+            isDensityVariable = nodes->at(i)->getProperties().get<bool, Model::IsDensityVariable>();
             delnus = nodes->at(i)->getProperties().
                     get<std::vector<Model::quantity<Model::Dimensionless>>, Model::Delnus>();
             nusInZones = nodes->at(i)->getProperties().
@@ -431,8 +435,9 @@ void buildBottomLayers(NodeVector nodes,
                     get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
             slopeAdjFactor = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::SlopeAdjFactor>();
-            vdfLock = nodes->at(i)->getProperties().
-                    get<Model::quantity<Model::Meter>, Model::VDFLock>();
+            vdfLock = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::VDFLock>();
+            sinkZoneGHB = nodes->at(i)->getProperties().get<int, Model::SinkZoneGHB>();
+            sourceZoneGHB = nodes->at(i)->getProperties().get<int, Model::SourceZoneGHB>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
@@ -457,7 +462,8 @@ void buildBottomLayers(NodeVector nodes,
                                                             confined[layer + 1],
                                                             refID,
                                                             maxRefinement,
-                                                            densityVariable,
+                                                            isSteadyState,
+                                                            isDensityVariable,
                                                             delnus,
                                                             nusInZones,
                                                             effPorosity,
@@ -465,7 +471,9 @@ void buildBottomLayers(NodeVector nodes,
                                                             maxToeSlope,
                                                             minDepthFactor,
                                                             slopeAdjFactor,
-                                                            vdfLock));
+                                                            vdfLock,
+                                                            sinkZoneGHB,
+                                                            sourceZoneGHB));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(layer + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()

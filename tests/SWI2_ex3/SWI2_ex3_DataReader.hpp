@@ -18,9 +18,10 @@ namespace GlobalFlow {
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(), op.isDensityVariable(),
+                             op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
-                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones());
+                             op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
 
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,

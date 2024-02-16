@@ -140,7 +140,7 @@ namespace GlobalFlow {
         struct Lat;
         struct Lon;
         struct Layer;
-        struct StepModifier;
+        struct StepSize;
         struct Area;
         struct EdgeLengthLeftRight;//EdgeLengthLeftRight * EdgeLengthFrontBack = SurfaceArea of Cell
         struct EdgeLengthFrontBack;//EdgeLengthLeftRight * EdgeLengthFrontBack = SurfaceArea of Cell
@@ -170,20 +170,23 @@ namespace GlobalFlow {
         struct SurfaceLeftRight;//SurfaceLeftRight = EdgeLengthLeftRight * VerticalDepth
         struct SurfaceFrontBack;//SurfaceFrontBack = EdgeLengthLeftRight * VerticalDepth
         struct VolumeOfCell;
+        struct IsSteadyState;
         // properties for variable density flow
-        struct DensityVariable;
+        struct IsDensityVariable;
         struct MaxTipSlope;
         struct MaxToeSlope;
         struct MinDepthFactor;
         struct SlopeAdjFactor;
         struct VDFLock;
-        struct RHSConstantDensity_TZero;
+        struct InternalSources;
         struct EffectivePorosity;
         struct Zetas;
         struct Zetas_TZero;
         struct ZetasChange;
         struct Delnus;
         struct NusInZones;
+        struct SinkZoneGHB;
+        struct SourceZoneGHB;
         // propperties for ghost node correction
         struct RefID;
         struct RefinedInto;
@@ -198,7 +201,7 @@ namespace GlobalFlow {
             PhysicalProperty<double, Lat>, //TODO use boost unit (maybe degree? or arcmin, arcsec)
             PhysicalProperty<double, Lon>,
             PhysicalProperty<int, Layer>,
-            PhysicalProperty<t_dim, StepModifier>,
+            PhysicalProperty<t_dim, StepSize>,
             PhysicalProperty<t_s_meter, Area>,
             PhysicalProperty<t_meter, VerticalSize>,
             PhysicalProperty<t_meter, Elevation>, // elevation of upper cell boundary
@@ -232,18 +235,21 @@ namespace GlobalFlow {
             PhysicalProperty<large_num, RefID>,
             PhysicalProperty<large_num, MaxRefinement>,
             PhysicalProperty<large_num, RefinedInto>,
-            PhysicalProperty<bool, DensityVariable>,
+            PhysicalProperty<bool, IsSteadyState>,
+            PhysicalProperty<bool, IsDensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
             PhysicalProperty<std::vector<t_meter>, ZetasChange>,
             PhysicalProperty<std::vector<t_dim>, Delnus>,
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
+            PhysicalProperty<int, SinkZoneGHB>,
+            PhysicalProperty<int, SourceZoneGHB>,
             PhysicalProperty<t_dim, MaxTipSlope>,
             PhysicalProperty<t_dim, MaxToeSlope>,
             PhysicalProperty<t_dim, MinDepthFactor>,
             PhysicalProperty<t_dim, SlopeAdjFactor>,
             PhysicalProperty<t_meter, VDFLock>,
-            PhysicalProperty<t_vol_t, RHSConstantDensity_TZero>
+            PhysicalProperty<t_vol_t, InternalSources>
         >;
     }
 }//ns

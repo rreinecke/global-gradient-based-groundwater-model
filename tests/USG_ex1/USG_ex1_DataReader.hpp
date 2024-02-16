@@ -28,14 +28,15 @@ class USG_ex1_DataReader : public DataReader {
                             op.useEfolding(),
                             op.isConfined(0),
                             op.getMaxRefinement(),
-                            op.isDensityVariable(),
                             op.getEffectivePorosity(),
                             op.getMaxTipSlope(),
                             op.getMaxToeSlope(),
                             op.getMinDepthFactor(),
                             op.getSlopeAdjFactor(),
                             op.getVDFLock(),
-                            op.getDensityZones());
+                            op.getDensityZones(),
+                            op.getSinkZoneGHB(),
+                            op.getSourceZoneGHB());
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";
@@ -69,7 +70,7 @@ class USG_ex1_DataReader : public DataReader {
 
             if(op.isKGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition";
-                readGHB_conductance(buildDir(op.getKGHBDir()));
+                readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
             }
         }
 
@@ -91,7 +92,7 @@ class USG_ex1_DataReader : public DataReader {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                nodes->at(nodeID)->setElevation(data * Model::si::meter);
+                nodes->at(nodeID)->setElevation_allLayers(data * Model::si::meter);
             }
         };
 
@@ -162,7 +163,9 @@ class USG_ex1_DataReader : public DataReader {
                 //if Node does not exist ignore entry
                 continue;
             }
-            nodes->at(nodeID)->setHead_direct(data);
+            nodes->at(nodeID)->setHead_allLayers(data * Model::si::meter);
+            nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
+
         }
     }
 };

@@ -1,17 +1,17 @@
 {
   "config": {
     "model_config": {
-      "steady_state_stress_period_steps": [
-        200
+      "stress_period_steady_state": [
+        "true"
       ],
-      "transient_stress_period_steps": [
-        0
+      "stress_period_time_steps": [
+        400
       ],
-      "steady_state_stress_period_stepsizes": [
+      "stress_period_time_step_sizes": [
         "TWO_DAYS"
       ],
-      "transient_stress_period_stepsizes": [
-        ""
+      "stress_period_variable_density": [
+        "true"
       ],
       "nodes": "grid_swi2_ex1.csv",
       "number_of_nodes_per_layer": 50,
@@ -32,7 +32,6 @@
       "sensitivity": "false"
     },
     "vdf_config": {
-      "density_variable": "true",
       "density_zones": [
         1000.0,
         1025.0
@@ -88,10 +87,8 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
-        "zones_sources_sinks": [
-          0,
-          0
-        ]
+        "sink_zone_ghb": 0,
+        "source_zone_ghb": 1
       },
       "data": {
         "effective_porosity": "effective_porosity_swi2_ex1.csv",

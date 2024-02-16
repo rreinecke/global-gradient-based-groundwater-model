@@ -19,7 +19,7 @@ PhysicalProperties initProperties() {
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
-    fields.emplace<quantity<Dimensionless>, StepModifier>(1 * si::si_dimensionless);
+    fields.emplace<quantity<Dimensionless>, StepSize>(1 * si::si_dimensionless);
     fields.emplace<quantity<SquareMeter>, Area>(0 * si::square_meter);
     fields.emplace<quantity<Meter>, Elevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, TopElevation>(5 * si::meter);
@@ -60,7 +60,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              bool confined,
                              large_num refID,
                              large_num maxRefinement,
-                             bool densityVariable,
+                             bool isSteadyState,
+                             bool isDensityVariable,
                              std::vector<quantity<Dimensionless>> delnus,
                              std::vector<quantity<Dimensionless>> nusInZones,
                              double effPorosity,
@@ -68,7 +69,9 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double maxToeSlope,
                              double minDepthFactor,
                              double slopeAdjFactor,
-                             quantity<Meter> vdfLock): nodes(nodes) {
+                             quantity<Meter> vdfLock,
+                             int sinkZoneGHB,
+                             int sourceZoneGHB): nodes(nodes) {
     fields = initProperties();
     fields.set<double, Lat>(lat);
     fields.set<double, Lon>(lon);
@@ -94,7 +97,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<large_num, RefID> (refID);
     fields.set<large_num, MaxRefinement> (maxRefinement);
-    fields.set<bool, DensityVariable> (densityVariable);
+    fields.set<bool, IsSteadyState> (isSteadyState);
+    fields.set<bool, IsDensityVariable> (isDensityVariable);
     fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
     fields.set<std::vector<quantity<Dimensionless>>, NusInZones> (nusInZones);
     fields.set<quantity<Dimensionless>, EffectivePorosity> (effPorosity * si::si_dimensionless);
@@ -103,6 +107,8 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
     fields.emplace<quantity<Meter>, VDFLock> (vdfLock);
+    fields.emplace<int, SinkZoneGHB> (sinkZoneGHB);
+    fields.emplace<int, SourceZoneGHB> (sourceZoneGHB);
 }
 }
 }//ns
