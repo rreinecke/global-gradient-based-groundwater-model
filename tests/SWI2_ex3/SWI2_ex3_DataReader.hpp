@@ -21,7 +21,7 @@ namespace GlobalFlow {
                              op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                             op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
                 LOG(userinfo) << "Building the model layer(s) below";
                 DataProcessing::buildBottomLayers(nodes,
@@ -63,18 +63,14 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the boundary condition";
                 readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
 
-                if (op.isDensityVariable()) {
+                if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
                     readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a()); // requires elevation to be set
-                    if (op.isEffectivePorosityFromFile()){
-                        LOG(userinfo) << "Reading effective porosity";
-                        readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    }
-                    if (op.isZonesSourcesSinksFromFile()){
-                        LOG(userinfo) << "Reading zones of sinks and sources";
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
-                    }
+                }
+                if (op.isEffectivePorosityFromFile()){
+                    LOG(userinfo) << "Reading effective porosity";
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                 }
             }
 

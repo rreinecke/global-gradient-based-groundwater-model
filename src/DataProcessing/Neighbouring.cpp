@@ -372,7 +372,6 @@ void buildBottomLayers(NodeVector nodes,
     Model::quantity<Model::Meter> edgeLengthLeftRight;
     Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
-    bool headActive;
     Model::quantity<Model::Meter> head;
     double aquiferDepth;
     double anisotropy;
@@ -391,8 +390,8 @@ void buildBottomLayers(NodeVector nodes,
     double minDepthFactor;
     double slopeAdjFactor;
     Model::quantity<Model::Meter> vdfLock;
-    int sinkZoneGHB;
     int sourceZoneGHB;
+    int sourceZoneRecharge;
 
     for (int layer = 0; layer < numberOfLayers - 1; ++layer) {
         //1) Add a Model::similar node in z direction for each layer
@@ -408,7 +407,6 @@ void buildBottomLayers(NodeVector nodes,
             edgeLengthFrontBack = nodes->at(
                     i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = conductances[layer + 1] * Model::si::meter / Model::day; // or: nodes->at(i)->getK__pure();
-            headActive = nodes->at(i)->getProperties().get<bool, Model::HeadActive>();
             head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
             aquiferDepth = aquifer_thickness[layer + 1];
             anisotropy = anisotropies[layer + 1]; // or nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>, Model::Anisotropy>().value();
@@ -436,8 +434,8 @@ void buildBottomLayers(NodeVector nodes,
             slopeAdjFactor = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::SlopeAdjFactor>();
             vdfLock = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::VDFLock>();
-            sinkZoneGHB = nodes->at(i)->getProperties().get<int, Model::SinkZoneGHB>();
             sourceZoneGHB = nodes->at(i)->getProperties().get<int, Model::SourceZoneGHB>();
+            sourceZoneRecharge = nodes->at(i)->getProperties().get<int, Model::SourceZoneRecharge>();
 
             if (nodes->at(i)->isStaticNode()) {
                 //is taken care of by neighbouring algorithm
@@ -452,7 +450,6 @@ void buildBottomLayers(NodeVector nodes,
                                                             spatID,
                                                             id,
                                                             K,
-                                                            headActive,
                                                             head,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -472,8 +469,8 @@ void buildBottomLayers(NodeVector nodes,
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock,
-                                                            sinkZoneGHB,
-                                                            sourceZoneGHB));
+                                                            sourceZoneGHB,
+                                                            sourceZoneRecharge));
                 nodes->at(id)->getProperties().set<int, Model::Layer>(layer + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()

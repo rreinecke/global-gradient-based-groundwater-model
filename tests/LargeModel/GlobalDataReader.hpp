@@ -66,7 +66,7 @@ class GlobalDataReader : public DataReader {
                                     op.isConfined(0), op.getMaxRefinement(),
                                     op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                                     op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(),
-                                    op.getDensityZones(), op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                                    op.getDensityZones(), op.getSourceZoneGHB(), op.getSourceZoneRecharge());
             } else {
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
@@ -75,7 +75,7 @@ class GlobalDataReader : public DataReader {
                              op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                             op.getSourceZoneGHB(), op.getSourceZoneRecharge());
             }
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";
@@ -185,12 +185,6 @@ class GlobalDataReader : public DataReader {
             if (op.isEffectivePorosityFromFile()) {
                 LOG(userinfo) << "Reading effective porosity";
                 readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-            }
-
-            if (op.isZonesSourcesSinksFromFile()) {
-                LOG(userinfo) << "Reading zones of sources and sinks";
-                readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()),
-                                      op.getDensityZones());
             }
         }
     };

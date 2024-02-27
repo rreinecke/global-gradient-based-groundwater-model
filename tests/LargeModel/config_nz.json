@@ -74,7 +74,7 @@
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
-        "zones_sources_sinks_from_file": "false"
+        "zones_sources_from_file": "false"
       },
       "default_data": {
         "effective_porosity": 0.002,
@@ -96,8 +96,8 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
-        "sink_zone_ghb": 0,
-        "source_zone_ghb": 1
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
       },
       "data": {
         "elevation": "elevation.csv",

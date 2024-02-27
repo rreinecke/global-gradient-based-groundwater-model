@@ -187,6 +187,7 @@ namespace GlobalFlow {
         struct NusInZones;
         struct SinkZoneGHB;
         struct SourceZoneGHB;
+        struct SourceZoneRecharge;
         // propperties for ghost node correction
         struct RefID;
         struct RefinedInto;
@@ -244,6 +245,7 @@ namespace GlobalFlow {
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
             PhysicalProperty<int, SinkZoneGHB>,
             PhysicalProperty<int, SourceZoneGHB>,
+            PhysicalProperty<int, SourceZoneRecharge>,
             PhysicalProperty<t_dim, MaxTipSlope>,
             PhysicalProperty<t_dim, MaxToeSlope>,
             PhysicalProperty<t_dim, MinDepthFactor>,

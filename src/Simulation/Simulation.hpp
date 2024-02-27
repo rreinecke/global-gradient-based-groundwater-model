@@ -114,7 +114,7 @@ namespace GlobalFlow {
 
             void saveStepResults(std::string pathToOutput, int stepNumber, std::vector<std::string> variables,
                                  bool isDensityVariable) {
-                // nodeID,0,1,2
+                // spatID,0,1,2
                 // step 1,0.8,0.9,0.95
                 // step 2,... appending at bottom of file
 
@@ -124,6 +124,9 @@ namespace GlobalFlow {
                     boost::filesystem::create_directory(path);
                 }
 
+                int layerToSave{0};
+                const auto default_precision = (int) std::cout.precision();
+
                 for (auto & variable : variables) {
                     std::string filename = pathToOutput + variable + ".csv";
                     if (stepNumber == 1) {
@@ -131,10 +134,13 @@ namespace GlobalFlow {
                         std::ofstream newFile(filename);
                         // at top of file: add nodeIDs
                         for (int j = 0; j < nodes->size(); ++j) {
+                            if (nodes->at(j)->getLayer() != layerToSave) { continue; }
                             if (j == 0) {
-                                newFile << "nodeID";
+                                newFile << "spatID";
                             }
-                            newFile << "," << nodes->at(j)->getID();
+                            newFile << "," << std::setprecision(7) << nodes->at(j)->getSpatID()
+                                           << std::setprecision(default_precision);
+
                         }
                         newFile << std::endl;
                         newFile.close();
@@ -144,6 +150,9 @@ namespace GlobalFlow {
                     std::stringstream newLine;
                     newLine << "step " << stepNumber;
                     for (int j = 0; j < nodes->size(); ++j) {
+                        // for now: only extract top layer
+                        if (nodes->at(j)->getLayer() != layerToSave) { continue; }
+
                         double value{0};
                         if(variable == "head") {
                             value = nodes->at(j)->getHead().value();

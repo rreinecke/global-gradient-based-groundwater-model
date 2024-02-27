@@ -21,7 +21,7 @@ namespace GlobalFlow {
                              op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                             op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
                 LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
@@ -38,34 +38,28 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading elevation";
                 readElevation(buildDir(op.getElevation()));
 
+                if (op.isInitialHeadFromFile()){
+                    LOG(userinfo) << "Initializing head";
+                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                }
+
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
                     readConductivity(buildDir(op.getLithology()));
                 }
 
-                //LOG(userinfo) << "Reading the groundwater recharge";
-                //readGWRecharge(buildDir(op.getRecharge()));
-
                 LOG(userinfo) << "Reading the boundary condition";
                 readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
 
-                if (op.isDensityVariable()) {
+                if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
                     readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
-                    if (op.isEffectivePorosityFromFile()){
-                        LOG(userinfo) << "Reading effective porosity";
-                        readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    }
-                    if (op.isZonesSourcesSinksFromFile()){
-                        LOG(userinfo) << "Reading zones of sinks and sources";
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
-                    }
                 }
 
-                if (op.isInitialHeadFromFile()){
-                    LOG(userinfo) << "Initializing head";
-                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                if (op.isEffectivePorosityFromFile()){
+                    LOG(userinfo) << "Reading effective porosity";
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                 }
             }
 

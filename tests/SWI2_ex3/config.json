@@ -10,8 +10,8 @@
         500
       ],
       "stress_period_time_step_sizes": [
-        "TWO_DAYS",
-        "TWO_DAYS"
+        "TWO_YEARS",
+        "TWO_YEARS"
       ],
       "stress_period_variable_density": [
         "true",
@@ -49,7 +49,7 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 50,
+      "threads": 80,
       "solver": "PCG",
       "iterations": 1000,
       "inner_itter": 30,
@@ -74,11 +74,11 @@
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
-        "zones_sources_sinks_from_file": "true"
+        "zones_sources_from_file": "false"
       },
       "default_data": {
         "effective_porosity": 0.2,
-        "initial_head": 1,
+        "initial_head": -9,
         "K": [
           2,
           1,
@@ -99,14 +99,13 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
-        "sink_zone_ghb": 0,
-        "source_zone_ghb": 1
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
       },
       "data": {
         "effective_porosity": "effective_porosity_swi2_ex3.csv",
         "elevation": "elevation_swi2_ex3.csv",
         "ghb_conductance": "ghb_conductance_swi2_ex3.csv",
-        "zones_sources_sinks": "zones_sources_sinks_swi2_ex3.csv",
         "recharge": "recharge_swi2_ex3.csv",
         "zetas": {
           "Zetas": [

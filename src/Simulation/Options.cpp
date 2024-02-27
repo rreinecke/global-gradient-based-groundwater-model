@@ -95,7 +95,7 @@ namespace GlobalFlow {
             eq_wtd_from_file = data_config.get<bool>("eq_wtd_from_file");
             initial_head_from_file = data_config.get<bool>("initial_head_from_file");
             effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
-            zones_sources_sinks_from_file = data_config.get<bool>("zones_sources_sinks_from_file");
+            zones_sources_from_file = data_config.get<bool>("zones_sources_from_file");
 
             pt::ptree default_data = input.get_child("default_data");
             K = getTypeArray<double>("K", default_data);
@@ -110,8 +110,8 @@ namespace GlobalFlow {
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
-            SINK_ZONE_GHB = default_data.get<int>("sink_zone_ghb");
             SOURCE_ZONE_GHB = default_data.get<int>("source_zone_ghb");
+            SOURCE_ZONE_RECHARGE = default_data.get<int>("source_zone_recharge");
 
             pt::ptree vdf = tree.get_child("vdf_config");
             DENSITY_ZONES = getTypeArray<double>("density_zones", vdf);
@@ -141,7 +141,7 @@ namespace GlobalFlow {
 
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
-            ZONES_SOURCES_SINKS_FILE = getOptional("zones_sources_sinks", data);
+            ZONES_SOURCES_FILE = getOptional("zones_sources", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVER = getOptional("river_extent", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);

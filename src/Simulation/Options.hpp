@@ -43,7 +43,7 @@ namespace GlobalFlow {
             std::string INITIAL_ZETAS{""};
 
             std::string RECHARGE{""};
-            std::string ZONES_SOURCES_SINKS_FILE{""};
+            std::string ZONES_SOURCES_FILE{""};
             std::string PSEUDO_SOURCE_FLOW{""};
             std::string LITHOLOGY{""};
             std::string RIVER{""};
@@ -114,6 +114,7 @@ namespace GlobalFlow {
             double VDF_LOCK{0.001};
             int SINK_ZONE_GHB{0};
             int SOURCE_ZONE_GHB{0};
+            int SOURCE_ZONE_RECHARGE{0};
 
             bool k_from_file{false};
             bool k_ghb_from_file{false};
@@ -125,7 +126,7 @@ namespace GlobalFlow {
             bool eq_wtd_from_file{false};
             bool initial_head_from_file{false};
             bool effective_porosity_from_file{false};
-            bool zones_sources_sinks_from_file{false};
+            bool zones_sources_from_file{false};
 
             bool IS_GLOBAL{false};
             double MAX_HEAD_CHANGE{0.01};
@@ -207,7 +208,7 @@ namespace GlobalFlow {
 
             bool isEffectivePorosityFromFile() { return effective_porosity_from_file;}
 
-            bool isZonesSourcesSinksFromFile() { return zones_sources_sinks_from_file;}
+            bool isZonesSourcesFromFile() { return zones_sources_from_file;}
 
             bool isInitialZetasAsArray(){ return INITIAL_ZETAS_AS_ARRAY; }
 
@@ -299,6 +300,8 @@ namespace GlobalFlow {
 
             int getSinkZoneGHB() { return SINK_ZONE_GHB; }
 
+            int getSourceZoneRecharge() { return SOURCE_ZONE_RECHARGE; }
+
             int
             getMaxIterations() {
                 return IITER;
@@ -379,8 +382,8 @@ namespace GlobalFlow {
             }
 
             std::string
-            getZonesOfSourcesAndSinksDir() {
-                return ZONES_SOURCES_SINKS_FILE;
+            getZonesOfSourcesDir() {
+                return ZONES_SOURCES_FILE;
             }
 
             std::string

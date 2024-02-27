@@ -64,7 +64,7 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,headActive,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
                << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
@@ -80,7 +80,6 @@ namespace GlobalFlow {
                    << "," << sim.getNodes()->at(j)->getArea().value()
                    << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
                    << "," << sim.getNodes()->at(j)->getK().value()
-                   << "," << sim.getNodes()->at(j)->getHeadActive()
                    << "," << sim.getNodes()->at(j)->hasGHB()
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)

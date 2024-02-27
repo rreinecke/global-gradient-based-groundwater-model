@@ -3,19 +3,23 @@
     "model_config": {
       "stress_period_steady_state": [
         "true",
-        "true"
+        "false",
+        "false"
       ],
       "stress_period_time_steps": [
         1,
-        10000
+        10,
+        10
       ],
       "stress_period_time_step_sizes": [
-        "MONTH",
-        "MONTH"
+        "DAY",
+        "DAY",
+        "DAY"
       ],
       "stress_period_variable_density": [
         "false",
-        "true"
+        "false",
+        "false"
       ],
       "nodes": "grid_simpleRefined.csv",
       "number_of_nodes_per_layer": 124,
@@ -95,7 +99,8 @@
       "specific_yield": 0.15,
       "specific_storage": 0.000015,
       "sink_zone_ghb": 0,
-      "source_zone_ghb": 1
+      "source_zone_ghb": 1,
+      "source_zone_recharge": 0
     },
     "data": {
       "recharge": "recharge_simpleRefined.csv",

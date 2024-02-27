@@ -62,7 +62,7 @@ class TransientDataReader : public DataReader {
                              op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB(), op.getSourceZoneRecharge());
             } else {
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
@@ -71,7 +71,7 @@ class TransientDataReader : public DataReader {
                              op.isConfined(0), op.getMaxRefinement(),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                             op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                             op.getSinkZoneGHB(), op.getSourceZoneGHB(), op.getSourceZoneRecharge());
             }
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the model layer(s) below";

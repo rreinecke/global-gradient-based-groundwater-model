@@ -47,6 +47,8 @@ void StandaloneRunner::simulate() {
     std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
+    std::ofstream myfile("swi2_ex1_timesteps.csv");
+    myfile << "timestep,nodeID,zeta1,head" << std::endl;
     int stepNumber{1};
 
     for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
@@ -63,9 +65,19 @@ void StandaloneRunner::simulate() {
                 LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
             }
             sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+
+            // for saving zetas in a csv
+            for (int j = 0; j < sim.getNodes()->size(); ++j) {
+                myfile << stepNumber
+                       << "," << sim.getNodes()->at(j)->getID()
+                       << "," << sim.getNodes()->at(j)->getZeta(1).value()
+                       << "," << sim.getNodes()->at(j)->getHead().value()
+                       << std::endl;
+            }
             ++stepNumber;
         }
     }
+    myfile.close(); // for saving zetas in a csv
     sim.saveNodeState();
 }
 

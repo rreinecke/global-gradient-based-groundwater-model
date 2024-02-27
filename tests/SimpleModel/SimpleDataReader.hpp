@@ -36,7 +36,8 @@ class SimpleDataReader : public DataReader {
                          op.getVDFLock(),
                          op.getDensityZones(),
                          op.getSinkZoneGHB(),
-                         op.getSourceZoneGHB());
+                         op.getSourceZoneGHB(),
+                         op.getSourceZoneRecharge());
 
             if (op.getNumberOfLayers() > 1) {
                 LOG(userinfo) << "Building the bottom layers";

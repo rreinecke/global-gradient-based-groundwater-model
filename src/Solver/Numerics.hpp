@@ -19,11 +19,10 @@ namespace Solver {
 
 using pr_t = double;
 using vector = Eigen::Matrix<pr_t, Eigen::Dynamic, 1>;
-using r_vector = Eigen::Matrix<pr_t, 1, Eigen::Dynamic>;
 
 /**
  * @class AdaptiveDamping
- * Can be used to dampen the head change per iteration
+ * Can be used to dampen the change per iteration
  */
 class AdaptiveDamping {
 
@@ -56,7 +55,7 @@ class AdaptiveDamping {
 
         vector x_t0;
         pr_t norm_t0;
-        pr_t max_headChange_t0;
+        pr_t max_change_t0;
         pr_t Sigma_t0;
 
         pr_t Sigma_MIN;
@@ -81,7 +80,7 @@ class AdaptiveDamping {
         }
 
 
-        pr_t applyAdaptiveDamping(pr_t max_headChange, pr_t norm) {
+        pr_t applyAdaptiveDamping(pr_t max_change, pr_t norm) {
             pr_t PHI{0.01};
             pr_t sigma{0};
 
@@ -90,11 +89,11 @@ class AdaptiveDamping {
 
             if (first) {
                 p_n = norm;
-                p_h = max_headChange;
+                p_h = max_change;
 		first = false;
             } else {
                 p_n = norm / norm_t0;
-                p_h = max_headChange / max_headChange_t0;
+                p_h = max_change / max_change_t0;
             }
 
             if (p_n < 1 and p_h < 1) {
@@ -117,8 +116,8 @@ class AdaptiveDamping {
 
             pr_t sig_t{sqrt(sigma * Sigma_t0)};
 
-            if (std::abs(max_headChange) > Change_MAX and sig_t > (Change_MAX / std::abs(max_headChange))) {
-                sig_t = Change_MAX / std::abs(max_headChange);
+            if (std::abs(max_change) > Change_MAX and sig_t > (Change_MAX / std::abs(max_change))) {
+                sig_t = Change_MAX / std::abs(max_change);
             }
             if (sig_t < Sigma_MIN) {
                 sig_t = Sigma_MIN;
@@ -130,7 +129,7 @@ class AdaptiveDamping {
 
             Sigma_t0 = sig_t;
             norm_t0 = norm;
-            max_headChange_t0 = max_headChange;
+            max_change_t0 = max_change;
             return sig_t;
         }
 

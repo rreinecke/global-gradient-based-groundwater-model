@@ -254,14 +254,13 @@ namespace GlobalFlow {
                      double slopeAdjFactor,
                      double vdfLock,
                      std::vector<double> densityZones,
-                     int sinkZoneGHB,
-                     int sourceZoneGHB) {
+                     int sourceZoneGHB,
+                     int sourceZoneRecharge) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area");
             double lon{0};
             double lat{0};
             double area{0};
-            bool headActive{true};
             large_num spatID{0};
             large_num nodeID{0};
             large_num refID{0};
@@ -287,7 +286,6 @@ namespace GlobalFlow {
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
-                                                            headActive,
                                                             initialHead * Model::si::meter,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -307,8 +305,8 @@ namespace GlobalFlow {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter,
-                                                            sinkZoneGHB,
-                                                            sourceZoneGHB));
+                                                            sourceZoneGHB,
+                                                            sourceZoneRecharge));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
@@ -357,14 +355,13 @@ namespace GlobalFlow {
                             double slopeAdjFactor,
                             double vdfLock,
                             std::vector<double> densityZones,
-                            int sinkZoneGHB,
-                            int sourceZoneGHB) {
+                            int sourceZoneGHB,
+                            int sourceZoneRecharge) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
             double lon{0};
             double lat{0};
             double area{0};
-            bool headActive{true};
             bool isSteadyState{true};
             bool isDensityVariable{false};
             large_num refID{0};
@@ -390,7 +387,6 @@ namespace GlobalFlow {
                                                             spatID,
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
-                                                            headActive,
                                                             initialHead * Model::si::meter,
                                                             aquiferDepth,
                                                             anisotropy,
@@ -410,8 +406,8 @@ namespace GlobalFlow {
                                                             minDepthFactor,
                                                             slopeAdjFactor,
                                                             vdfLock * Model::si::meter,
-                                                            sinkZoneGHB,
-                                                            sourceZoneGHB));
+                                                            sourceZoneGHB,
+                                                            sourceZoneRecharge));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
                     lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
                 }
@@ -786,13 +782,8 @@ namespace GlobalFlow {
                 nodes->at(nodeID)->setK_allLayers(conductivity * (Model::si::meter / Model::day));
 
                 i++;
-                /*if (conductivity < threshold){
-                    nodes->at(nodeID)->setHeadActive_allLayers(false);
-                    j++;
-                }*/
             }
             LOG(debug) << "    ... for " << i << " nodes";
-            //LOG(debug) << "    ... < " << threshold << " at " << j << " nodes";
         };
 
         /**
@@ -1123,13 +1114,13 @@ namespace GlobalFlow {
          * @param path Path to files
          * @param files Vector of file names
          */
-        void readInitialZetas(int numberOfLayers, large_num numberOfNodesPerLayer,
+        void readInitialZetas(large_num numberOfLayers, large_num numberOfNodesPerLayer,
                               const std::string& path, std::vector<std::string> files) {
 
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
             // initialize zeta surface at top and bottom
-            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
-                nodes->at(nodeIter)->initializeZetas();
+            for (int nodeID = 0; nodeID < numberOfNodes; ++nodeID) {
+                nodes->at(nodeID)->initializeZetas();
             }
 
             // read initial data for density surfaces
@@ -1172,40 +1163,6 @@ namespace GlobalFlow {
             readTwoColumns(path, [this](double data, int nodeID) {
                 nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
             });
-        };
-
-        void readZonesSourcesSinks(std::string path, std::vector<double> densityZones) {
-            /**
-             * Here we use zoneOfSinks and zoneOfSources (containing values between 0 and number of density zones).
-             * Thus, sources and sinks are associated to the respective zone. Rule: zoneOfSinks <= zoneOfSources
-             * For simulation of submarine groundwater discharge:
-             * - zoneOfSources: an integer between 1 and the number of zones (brackish/saline water)
-             * - zoneOfSinks: 0 (fresh water)
-             */
-
-            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "zoneOfSinks", "zoneOfSources");
-            large_num spatID{0};
-            int sinkZoneGHB{0};
-            int sourceZoneGHB{0};
-            std::unordered_map<int, std::unordered_map<large_num, large_num>> layers_to_refIDs_to_nodeIDs;
-
-            while (in.read_row(spatID, sinkZoneGHB, sourceZoneGHB)) {
-                try {
-                    layers_to_refIDs_to_nodeIDs = lookupSpatIDtoNodeIDs.at(spatID);
-                }
-                catch (const std::out_of_range &ex) {
-                    //if Node does not exist ignore entry
-                    continue;
-                }
-                // loop through layers
-                for (const auto &[layer, refIDs_to_nodeIDs] : layers_to_refIDs_to_nodeIDs) {
-                    // loop through refIDs
-                    for (const auto &[refID, nodeID] : refIDs_to_nodeIDs) { // apply to all layers and refIDs at this spatID
-                        nodes->at(nodeID)->setSinkAndSourceZonesGHB(sinkZoneGHB, sourceZoneGHB, densityZones.size());
-                    }
-                }
-            }
         };
     };
 }

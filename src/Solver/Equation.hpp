@@ -202,12 +202,14 @@ namespace GlobalFlow {
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
+        AdaptiveDamping adaptiveDamping_zetas;
 
         long MAX_OUTER_ITERATIONS{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
 
         long max_inner_iterations{0};
+        long max_inner_iterations_zetas{0};
 
         //From current run
         long __itter{0};
@@ -238,19 +240,13 @@ namespace GlobalFlow {
         int maxRefinement{1};
 
         /**
-         * Helper for updating the matrix
-         * @param
-         */
-
-        void addToA(large_num &nodeID);
-        void addToA_zeta(large_num nodeIter, large_num iterOffset);
-
-        /**
          * Update the matrix for the current iteration
          */
         void inline updateEquation();
 
-        void inline updateEquation_zetas(large_num layer);
+        void inline updateEquation_zetas(int layer);
+
+        void inline fill_nodeID_and_zetaID_to_rowID(int layer);
 
         /**
          * Reallocate matrix and vectors based on dried nodes
@@ -278,16 +274,12 @@ namespace GlobalFlow {
         /**
          * Update heads in inner iteration
          */
-        void inline updateHeads();
-
-        void inline updateHeadChange();
+        void inline updateHeadAndHeadChange();
 
         /**
          * Update zetas in inner iteration
          */
-        void inline updateZetas(large_num iterOffset);
-
-        void inline updateZetaChange(large_num iterOffset);
+        void inline updateZetaAndZetaChange(int layer);
 
         /**
          * Update zone change
@@ -326,7 +318,7 @@ namespace GlobalFlow {
 
         void inline checkAllZetaSlopes();
 
-        void inline updateZetas_TZero();
+        void inline updateZetasTZero();
 
         void inline adjustZetaHeights();
 

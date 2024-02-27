@@ -22,7 +22,7 @@ namespace GlobalFlow {
                 op.isConfined(0), op.getMaxRefinement(),
                 op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                 op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                op.getSinkZoneGHB(), op.getSourceZoneGHB());
+                op.getSinkZoneGHB(), op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
 
                 LOG(userinfo) << "Building grid by spatial ID"; // todo continue here

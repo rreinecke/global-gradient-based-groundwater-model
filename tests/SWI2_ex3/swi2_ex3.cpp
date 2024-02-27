@@ -53,26 +53,22 @@ void StandaloneRunner::simulate() {
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
     int stepNumber{1};
-    boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
-    std::stringstream ss;
-    ss << date.day() << date.month() << date.year();
-    std::string simDate = ss.str();
-    std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
-    std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
+
+    std::ofstream myfile("swi2_ex3_timesteps.csv");
+    myfile << "timestep,nodeID,zeta1,head" << std::endl;
 
     for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
         LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
                       stepSizes[strssPrd];
         // set zetas if previous stress period had no variable density simulation
         if (strssPrd == 1) {
-            //Changing recharge at nodes 199 and 599
-            std::unordered_map<int, double> recharge_new = {{199, 0.00025},{599, 0.0005}}; // new recharge (per unit area [m^2])
-            for (int j = 0; j < sim.getNodes()->size(); ++j) {
-                if(recharge_new.find(j) != recharge_new.end()) {
-                    // multiply new recharge with area (here: 20 m^2), then update recharge
-                    double recharge = recharge_new.at(j) * sim.getNodes()->at(j)->getProperties().get<Model::quantity<Model::SquareMeter>,Model::Area>().value();
-                    sim.getNodes()->at(j)->updateUniqueFlow(recharge, Model::RECHARGE, false);
-                }
+            // Updating recharge at nodes 199 and 599
+            std::unordered_map<large_num, double> nodeID_to_newRecharge = {{199, 0.00025},{599, 0.0005}}; // new recharge (per unit area [m^2])
+            for (const auto &[nodeID, newRecharge]: nodeID_to_newRecharge ) {
+                sim.getNodes()->at(nodeID)->addExternalFlow(Model::RECHARGE,
+                                                            0 * Model::si::meter,
+                                                            newRecharge * sim.getNodes()->at(nodeID)->getArea().value(),
+                                                            0 * Model::si::meter);
             }
         }
 
@@ -86,10 +82,18 @@ void StandaloneRunner::simulate() {
                 LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
             }
             sim.printMassBalances(debug, isDensityVariable[strssPrd]);
-            sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
+            // for saving zetas in a csv
+            for (int j = 0; j < sim.getNodes()->size(); ++j) {
+                myfile << stepNumber
+                       << "," << sim.getNodes()->at(j)->getID()
+                       << "," << sim.getNodes()->at(j)->getZeta(1).value()
+                       << "," << sim.getNodes()->at(j)->getHead().value()
+                       << std::endl;
+            }
             ++stepNumber;
         }
     }
+    myfile.close();
     sim.saveNodeState();
 }
 

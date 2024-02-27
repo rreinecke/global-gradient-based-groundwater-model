@@ -92,7 +92,8 @@
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
         "sink_zone_ghb": 0,
-        "source_zone_ghb": 1
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
       },
       "data": {
         "elevation": "elevation_simpleVDF.csv",
