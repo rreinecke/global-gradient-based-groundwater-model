@@ -14,7 +14,6 @@ configure_file(data/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevati
 configure_file(data/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_swi2_ex1.csv COPYONLY)
 configure_file(data/initial_zetas.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/initial_zetas_swi2_ex1.csv COPYONLY)
 configure_file(data/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/effective_porosity_swi2_ex1.csv COPYONLY)
-configure_file(data/zones_sources_sinks.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/zones_sources_sinks_swi2_ex1.csv COPYONLY)
 configure_file(data/recharge.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge_swi2_ex1.csv COPYONLY)
 configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_swi2_ex1.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out_swi2_ex1.json COPYONLY)

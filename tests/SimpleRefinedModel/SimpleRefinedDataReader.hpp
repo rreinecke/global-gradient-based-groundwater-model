@@ -35,7 +35,6 @@ class SimpleRefinedDataReader : public DataReader {
                             op.getSlopeAdjFactor(),
                             op.getVDFLock(),
                             op.getDensityZones(),
-                            op.getSinkZoneGHB(),
                             op.getSourceZoneGHB(),
                             op.getSourceZoneRecharge());
 

@@ -18,26 +18,26 @@ public:
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
 
         nodes->at(0)->setNeighbour(1, RIGHT);
@@ -57,15 +57,10 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
-TEST_F(EquationFixture, toggleSteadyState) {
-    ASSERT_TRUE(eq->toggleSteadyState());
-    ASSERT_FALSE(eq->toggleSteadyState());
-}
-
-TEST_F(EquationFixture, updateStepModifier) {
-    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 1);
+TEST_F(EquationFixture, updateStepSize) {
+    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 1);
     eq->updateStepSize(10);
-    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 10);
+    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 10);
 }
 
 /**

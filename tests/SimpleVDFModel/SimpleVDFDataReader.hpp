@@ -22,7 +22,7 @@ namespace GlobalFlow {
                 op.isConfined(0), op.getMaxRefinement(),
                 op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                 op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
-                op.getSinkZoneGHB(), op.getSourceZoneGHB(), op.getSourceZoneRecharge());
+                op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
 
                 LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
@@ -55,7 +55,7 @@ namespace GlobalFlow {
 
                 if (op.isKGHBFromFile()){
                     LOG(userinfo) << "Reading the boundary condition";
-                    readGHB_conductance(buildDir(op.getKGHBDir()));
+                    readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
                 }
 
                 if (op.isInitialHeadFromFile()){
@@ -79,10 +79,6 @@ namespace GlobalFlow {
                     if (op.isEffectivePorosityFromFile()){
                         LOG(userinfo) << "Reading effective porosity";
                         readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    }
-                    if (op.isZonesSourcesSinksFromFile()){
-                        LOG(userinfo) << "Reading zones of sinks and sources";
-                        readZonesSourcesSinks(buildDir(op.getZonesOfSourcesAndSinksDir()), op.getDensityZones());
                     }
                 }
             }

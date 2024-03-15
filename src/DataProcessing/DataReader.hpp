@@ -115,22 +115,22 @@ namespace GlobalFlow {
             int layer{0};
             large_num refID{0};
             double data = 0;
-            std::unordered_map<large_num,large_num> nodeIDs;
+            std::unordered_map<large_num,large_num> refID_to_nodeID;
 
             int i{0};
             while (in.read_row(spatID, data)) {
                 try {
-                    nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                    refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                for (auto nodeID : nodeIDs){
-                    if (nodes->at(nodeID.second)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                for (const auto &[refID, nodeID]: refID_to_nodeID){
+                    if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
                         throw "Error in reading spatID";
                     }
-                    processData(data, nodeID.second);
+                    processData(data, nodeID);
                     i++;
                 }
             }
@@ -477,8 +477,8 @@ namespace GlobalFlow {
                 }
                 ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value();
 
-                if (conductivity < 0.00001) {
-                    conductivity = 0.00001; // set conductivity to a min of 0.00001 m/day
+                if (conductivity < 1e-11) {
+                    conductivity = 1e-11; // set conductivity to a min of 1e-11 m/day
                 }
                 conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance; // m/day to m^2/day
 
@@ -1000,28 +1000,28 @@ namespace GlobalFlow {
             large_num spatID{0};
 
             int i = 0;
-            for (int nodeID = 0; nodeID < nodes->size(); ++nodeID) {
+            for (const auto &node : *nodes) {
                 // if river/lake/wetland exists in node: move on to next node
-                if (nodes->at(nodeID)->hasTypeOfExternalFlow(Model::RIVER_MM) or
-                    nodes->at(nodeID)->hasTypeOfExternalFlow(Model::LAKE) or
-                    nodes->at(nodeID)->hasTypeOfExternalFlow(Model::WETLAND) or
-                    nodes->at(nodeID)->hasTypeOfExternalFlow(Model::GLOBAL_LAKE) or
-                    nodes->at(nodeID)->hasTypeOfExternalFlow(Model::GLOBAL_WETLAND)){
+                if (node->hasTypeOfExternalFlow(Model::RIVER_MM) or
+                    node->hasTypeOfExternalFlow(Model::LAKE) or
+                    node->hasTypeOfExternalFlow(Model::WETLAND) or
+                    node->hasTypeOfExternalFlow(Model::GLOBAL_LAKE) or
+                    node->hasTypeOfExternalFlow(Model::GLOBAL_WETLAND)){
                     continue;
                 } else { // no river in node
-                    spatID = nodes->at(nodeID)->getSpatID();
+                    spatID = node->getSpatID();
                     layer = 0;
-                    refID = nodes->at(nodeID)->getRefID();
+                    refID = node->getRefID();
                     // if we are on the top layer
-                    if (nodeID == lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID)){
+                    if (node->getID() == lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID)){
                         riverWidth = 25.7; // based on mean of global data
                         riverLength = 10.9 * 1000; // based on mean of global data
-                        riverElevation = swbElevationFactor * nodes->at(nodeID)->getElevation().value();
+                        riverElevation = swbElevationFactor * node->getElevation().value();
                         riverDepth = 2.1; // based on mean of Q_bankfull (=204); depth = 0.349 * std::pow(204, 0.341)
                         riverBottom = riverElevation - riverDepth;
                         // Conductance estimation following Harbaugh (2005)
                         riverConductance = riverConductivity * riverLength * riverWidth / (riverElevation - riverBottom);
-                        nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
+                        node->addExternalFlow(Model::RIVER_MM,
                                                            riverElevation * Model::si::meter,
                                                            riverConductance,
                                                            riverBottom * Model::si::meter);
@@ -1038,7 +1038,7 @@ namespace GlobalFlow {
          */
         void addEvapo() {
             int i{0};
-            for (const std::unique_ptr<Model::NodeInterface> &node : *nodes.get()) {
+            for (const auto &node : *nodes.get()) {
                 if (node->getProperties().get<int, Model::Layer>() == 0 and
                     node->getProperties().get<Model::quantity<Model::Meter>,
                             Model::Elevation>().value() <= 600) {
@@ -1063,47 +1063,46 @@ namespace GlobalFlow {
          * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
          */
         void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
-                             std::vector<double> densityZones) {
-            double initial_head{0.0};
-            double zetaGhybenHerzberg{0.0};
+                                    std::vector<double> densityZones) {
+            double ghybenHerzberg{0.0};
             double minDensity = densityZones.front();
             double maxDensity = densityZones.back();
             double meanDensity = (maxDensity + minDensity) * 0.5;
             double maxDifDensity = (maxDensity - minDensity) * 0.5; // calculate maximum difference from mean to min/max
             double zeta{0.0};
             std::vector<double> zetaDeltas;
-
+            double ghbElevation;
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
-            // initialize zeta surface at top and bottom
-            for (int nodeIter = 0; nodeIter < numberOfNodes; ++nodeIter) {
-                nodes->at(nodeIter)->initializeZetas();
-            }
+
             for (int localZetaID = 0; localZetaID < densityZones.size(); ++localZetaID) {
                 zetaDeltas.push_back( ((meanDensity - densityZones[localZetaID]) / maxDifDensity) * maxDistance );
                 //LOG(debug) << "zetaDeltas[localZetaID = " << localZetaID << "]: " << zetaDeltas[localZetaID];
             }
+
             // loop through nodes
-            for (large_num nodeID = 0; nodeID < numberOfNodes; ++nodeID) {
-                initial_head = nodes->at(nodeID)->getHead().value();
-                // use Ghyben-Herzberg relation to derive zeta surface elevation
-                zetaGhybenHerzberg = - (minDensity / (maxDensity - minDensity)) * initial_head;
+            for (const auto &node : *nodes) {
+                // 1. initialize zeta surface at top and bottom
+                node->initializeZetas();
+
+                // 2. use Ghyben-Herzberg relation to derive 50% interface elevation
+                ghybenHerzberg = - (minDensity / (maxDensity - minDensity)) * node->getHead().value();
                 //LOG(debug) << "zetaGhybenHerzberg: " << zetaGhybenHerzberg << ", head: " << initial_head;
 
+                // 3. set zeta surfaces (potentially between top and bottom)
                 for (int localZetaID = 1; localZetaID < densityZones.size(); ++localZetaID){
-                    zeta = zetaGhybenHerzberg + zetaDeltas[localZetaID];
                     // if node has a GHB
-                    if (nodes->at(nodeID)->hasGHB()){
-                        double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    if (node->hasGHB()){
+                        zeta = ghybenHerzberg + zetaDeltas[localZetaID];
+                        // if zeta above GHB: set to GHB elevation
+                        ghbElevation = node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                        if (zeta > ghbElevation) { zeta = ghbElevation; }
 
-                        if (zeta > ghbElevation) { zeta = ghbElevation; } // if zeta above GHB: set to GHB elevation
-                    // if node has no GHB
+                    // if node has no GHB: set to node bottom
                     } else {
-                        if (zeta > 0) { zeta = 0; } // if zeta above 0: set zto 0
+                        zeta = node->getBottom().value();
                     }
-                    if (zeta > 1) {
-                        LOG(debug) << "nodeID: " << nodeID << ", zeta[localZetaID = " << localZetaID << "]: " << zeta;
-                    }
-                    nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
+
+                    node->addZeta(localZetaID, zeta * Model::si::meter);
                 }
             }
         }
@@ -1119,8 +1118,8 @@ namespace GlobalFlow {
 
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
             // initialize zeta surface at top and bottom
-            for (int nodeID = 0; nodeID < numberOfNodes; ++nodeID) {
-                nodes->at(nodeID)->initializeZetas();
+            for (const auto &node : *nodes) {
+                node->initializeZetas();
             }
 
             // read initial data for density surfaces
@@ -1161,6 +1160,8 @@ namespace GlobalFlow {
 
         void readEffectivePorosity(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
+                // snap very low porosity values to 0
+                if (data < 1e-3){ data = 0; }
                 nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
             });
         };

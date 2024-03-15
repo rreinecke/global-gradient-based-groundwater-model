@@ -178,14 +178,13 @@ namespace GlobalFlow {
         struct MinDepthFactor;
         struct SlopeAdjFactor;
         struct VDFLock;
-        struct InternalSources;
         struct EffectivePorosity;
         struct Zetas;
         struct Zetas_TZero;
+        struct Zetas_Iter;
         struct ZetasChange;
         struct Delnus;
         struct NusInZones;
-        struct SinkZoneGHB;
         struct SourceZoneGHB;
         struct SourceZoneRecharge;
         // propperties for ghost node correction
@@ -240,19 +239,18 @@ namespace GlobalFlow {
             PhysicalProperty<bool, IsDensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
+            PhysicalProperty<std::vector<t_meter>, Zetas_Iter>,
             PhysicalProperty<std::vector<t_meter>, ZetasChange>,
             PhysicalProperty<std::vector<t_dim>, Delnus>,
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
-            PhysicalProperty<int, SinkZoneGHB>,
             PhysicalProperty<int, SourceZoneGHB>,
             PhysicalProperty<int, SourceZoneRecharge>,
             PhysicalProperty<t_dim, MaxTipSlope>,
             PhysicalProperty<t_dim, MaxToeSlope>,
             PhysicalProperty<t_dim, MinDepthFactor>,
             PhysicalProperty<t_dim, SlopeAdjFactor>,
-            PhysicalProperty<t_meter, VDFLock>,
-            PhysicalProperty<t_vol_t, InternalSources>
-        >;
+            PhysicalProperty<t_meter, VDFLock>
+            >;
     }
 }//ns
 #endif

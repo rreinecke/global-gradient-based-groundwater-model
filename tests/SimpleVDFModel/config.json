@@ -6,12 +6,12 @@
         "true"
       ],
       "stress_period_time_steps": [
-        1,
-        10000
+        100,
+        2
       ],
       "stress_period_time_step_sizes": [
-        "MONTH",
-        "MONTH"
+        "YEAR",
+        "YEAR"
       ],
       "stress_period_variable_density": [
         "false",
@@ -72,7 +72,7 @@
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
-        "zones_sources_sinks_from_file": "true"
+        "zones_sources_from_file": "true"
       },
       "default_data": {
         "effective_porosity": 0.2,
@@ -91,7 +91,6 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
-        "sink_zone_ghb": 0,
         "source_zone_ghb": 1,
         "source_zone_recharge": 0
       },
@@ -99,7 +98,6 @@
         "elevation": "elevation_simpleVDF.csv",
         "ghb_conductance": "ghb_conductance_simpleVDF.csv",
         "initial_zetas": "initial_zetas_simpleVDF.csv",
-        "zones_sources_sinks": "zones_sources_sinks_simpleVDF.csv",
         "recharge": "recharge_simpleVDF.csv",
         "initial_heads": "heads_simpleVDF.csv",
         "river_conductance": "rivers_simpleVDF.csv",

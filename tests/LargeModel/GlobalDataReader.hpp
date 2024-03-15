@@ -103,6 +103,11 @@ class GlobalDataReader : public DataReader {
                 LOG(userinfo) << "Copying neighbours to bottom layer(s)";
                 DataProcessing::copyNeighboursToBottomLayers(nodes,
                                                              op.getNumberOfLayers()); // todo is it possible to include this in buildBySpatID
+
+                if (op.useEfolding()) {
+                    LOG(userinfo) << "Reading e-folding";
+                    readEfold(buildDir(op.getEfolding()), op.getEfolding_a());
+                }
             }
 
             /*
@@ -175,17 +180,19 @@ class GlobalDataReader : public DataReader {
              * %%% read data for variable density %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            if (op.isInitialZetasAsArray()) {
+            if (op.isEffectivePorosityFromFile()) { // needs to be placed before reading zetas
+                LOG(userinfo) << "Reading effective porosity";
+                readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+            }
+
+            if (op.isInitialZetasAsArray()) { // needs to be placed after reading effective porosity
                 LOG(userinfo) << "Reading initial heights of " << op.getDensityZones().size()-1 <<
                                  " active zeta surfaces from file"; // requires elevation to be set
                 readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
                                  buildDir(op.getInitialZetas()), op.getInitialZetas_a());
             }
 
-            if (op.isEffectivePorosityFromFile()) {
-                LOG(userinfo) << "Reading effective porosity";
-                readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-            }
+
         }
     };
 }

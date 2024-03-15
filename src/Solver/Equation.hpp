@@ -198,16 +198,19 @@ namespace GlobalFlow {
         long_vector b_zetas;
         SparseMatrix<pr_t> A_zetas;
 
+        long_vector x_zetas_t0;
+        long_vector zetaChanges;
+        long_vector oldZetaChanges;
+
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
-        AdaptiveDamping adaptiveDamping_zetas;
 
         long MAX_OUTER_ITERATIONS{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
-
+        Index threads;
         long max_inner_iterations{0};
         long max_inner_iterations_zetas{0};
 
@@ -216,14 +219,16 @@ namespace GlobalFlow {
         long __itter_zetas{0};
         double __error{0};
 
-        double maxCurrentHeadChange{0};
+        double currentMaxHeadChange{0};
         double maxAllowedHeadChange{0.01};
-        double maxCurrentZetaChange{0};
+
+        double currentMaxZetaChange{0};
         double maxAllowedZetaChange{0.01};
+
         double dampMin{0.01};
         double dampMax{0.01};
 
-        std::unordered_map<large_num, std::unordered_map<large_num, long long>> nodeID_and_zetaID_to_rowID;
+        std::unordered_map<large_num, std::unordered_map<large_num,long long>> nodeID_to_zetaID_to_rowID;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -242,34 +247,20 @@ namespace GlobalFlow {
         /**
          * Update the matrix for the current iteration
          */
+
         void inline updateEquation();
+
+        void inline preconditionA();
 
         void inline updateEquation_zetas(int layer);
 
-        void inline fill_nodeID_and_zetaID_to_rowID(int layer);
+        void inline addToA(std::unique_ptr<Model::NodeInterface> const &node);
 
-        /**
-         * Reallocate matrix and vectors based on dried nodes
-         * @bug This is currently missing re-enabling of deactivated nodes!
-         * Re-enable if:
-         * 1) head in cell below needs to be higher than threshold
-         * 2) head in one of 4 neighbours higher than threshold
-         */
-        void inline reallocateMatrix();
+        void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID);
 
-        /**
-         * Run the preconditioner for heads
-         */
-        void inline preconditionMatrix();
-
-        /**
-         * Run the preconditioner for zetas
-         */
-        void inline preconditionMatrix_zetas();
+        void inline prepareEquation_zetas(int layer);
 
         bool inline isHeadChangeGreater();
-
-        bool inline isZetaChangeGreater(large_num layer);
 
         /**
          * Update heads in inner iteration
@@ -279,7 +270,7 @@ namespace GlobalFlow {
         /**
          * Update zetas in inner iteration
          */
-        void inline updateZetaAndZetaChange(int layer);
+        void inline updateZetaIter(int layer);
 
         /**
          * Update zone change
@@ -309,18 +300,22 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateZetaChanges();
+        void inline updateZetas(int layer);
 
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateTopZetasToHeads();
+        void inline prepareZetasAndZetasTZero();
 
         void inline checkAllZetaSlopes();
+
+        void inline resetZetasIter(int layer);
 
         void inline updateZetasTZero();
 
         void inline adjustZetaHeights();
+
+        bool inline allOutOfBounds(int layer);
 
         };
 }

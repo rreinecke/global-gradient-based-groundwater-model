@@ -10,8 +10,8 @@
         9999
       ],
       "stress_period_time_step_sizes": [
-        "MONTH",
-        "MONTH"
+        "YEAR",
+        "YEAR"
       ],
       "stress_period_variable_density": [
         "false",
@@ -25,10 +25,9 @@
       "resolution_in_degree": 0.08333,
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
-      "layers": 2,
+      "layers": 1,
       "use_efolding": "true",
       "confinement": [
-        "true",
         "true"
       ],
       "grid_refined": "false",
@@ -42,21 +41,21 @@
         1001.1,
         1026.6
       ],
-      "max_tip_slope": 0.2,
-      "max_toe_slope": 0.2,
+      "max_tip_slope": 0.0005,
+      "max_toe_slope": 0.0005,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 80,
+      "threads": 40,
       "solver": "PCG",
-      "iterations": 200,
+      "iterations": 20,
       "inner_itter": 10,
       "closing_crit_head": 1e-180,
-      "closing_crit_zeta": 1e-7,
-      "head_change": 0.1,
-      "zeta_change": 0.1,
+      "closing_crit_zeta": 1e-50,
+      "head_change": 1,
+      "zeta_change": 1,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.95
@@ -80,16 +79,13 @@
         "effective_porosity": 0.002,
         "initial_head": 0,
         "K": [
-          2,
           2
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
-          100,
-          100
+          50
         ],
         "anisotropy": [
-          10,
           10
         ],
         "river_conductivity": 10,

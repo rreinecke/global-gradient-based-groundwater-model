@@ -36,45 +36,48 @@ void StandaloneRunner::writeNodeInfosToCSV() {
 
 
 void StandaloneRunner::simulate() {
-    LOG(userinfo) << "Running stress period 1";
-    Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::YEAR, 100);
-    int stepNumber = 1;
-    LOG(debug) << sim.getNodes()->at(0); // printing node properties in debug file
+    std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
+    std::vector<int> numberOfSteps = op.getStressPeriodSteps();
+    std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
+    std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
-    for (Simulation::step step : stepper) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->toggleSteadyState();
-        step.first->solve();
-        sim.printMassBalances(debug);
-        step.first->toggleSteadyState();
-        stepNumber++;
+    int stepNumber{1};
+    boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
+    std::stringstream ss;
+    ss << date.day() << date.month() << date.year();
+    std::string simDate = ss.str();
+    std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
+    std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
+
+    for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
+        LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
+                      stepSizes[strssPrd];
+        // set zetas if previous stress period had no variable density simulation
+        if (strssPrd == 2) {
+            //Changing recharge
+            for (int j = 0; j < sim.getNodes()->size(); ++j) {
+                if (sim.getNodes()->at(j)->hasTypeOfExternalFlow(Model::RECHARGE)){
+                    sim.getNodes()->at(j)->updateUniqueFlow(0.5, Model::RECHARGE, false);
+                }
+            }
+        }
+
+        Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
+                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+        for (Simulation::step step : stepper) {
+            step.first->solve();
+            sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+            sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
+            LOG(userinfo) << "Step " << stepNumber << ": ";
+            LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
+            if (isDensityVariable[strssPrd]) {
+                LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
+            }
+            ++stepNumber;
+        }
     }
-
-    // saving zetas in a csv
-    std::ofstream myfile;
-    myfile.open ("zetas.csv");
-    myfile << "nodeID,zetaID,lat,lon,zeta" << std::endl;
-    int zetaID = 1;
-    for (int nodeID = 0; nodeID < sim.getNodes()->size(); ++nodeID) {
-        myfile << nodeID << "," <<
-               zetaID << "," <<
-               sim.getNodes()->at(nodeID)->getLat() << "," <<
-               sim.getNodes()->at(nodeID)->getLon() << "," <<
-               sim.getNodes()->at(nodeID)->getZeta(zetaID).value() <<
-               std::endl;
-    }
-
-    LOG(userinfo) << "Running stress period 2";
-    Simulation::Stepper stepper2 = Simulation::Stepper(_eq, Simulation::YEAR, 2);
-    for (Simulation::step step : stepper2) {
-        LOG(userinfo) << "Running steady state step " + std::to_string(stepNumber);
-        step.first->solve();
-        sim.printMassBalances(debug);
-
-        stepNumber++;
-    }
-
-    //sim.save();
+    sim.saveNodeState();
+    delete reader;
 }
 
 void StandaloneRunner::getResults() {}

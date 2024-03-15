@@ -24,16 +24,16 @@ public:
 };
 
 TEST_F(NumericsFixture, ConstructorDeath) {
-    ASSERT_DEATH(adp.getDamping(residuals, x, false);, "Damping hasn't been properly initialized");
+    ASSERT_DEATH(adp.getChanges(residuals, x, false);, "Damping hasn't been properly initialized");
 }
 
 TEST_F(NumericsFixture, ComplexConstructor) {
     adp = AdaptiveDamping(0, 0, 0, x);
-    dvector ret = adp.getDamping(residuals, x, false);
+    dvector ret = adp.getChanges(residuals, x, false);
     ASSERT_TRUE(x.isApprox(x + ret));
 }
 
-/*TEST_F(NumericsFixture, getDamping) {
+/*TEST_F(NumericsFixture, getChanges) {
     FAIL();
 }*/
 

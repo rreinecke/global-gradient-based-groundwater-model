@@ -5,7 +5,7 @@ namespace GlobalFlow {
     //int sim_id{0};
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_nz.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
+        pathToConfig = "data/config_na_transient.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -23,12 +23,7 @@ namespace GlobalFlow {
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
 
-        std::string pathToOutput;
-        if (pathToConfig == "data/config_nz.json") {
-            pathToOutput = "output/";
-        } else {
-            pathToOutput = "/mnt/storage/output_transient_" + simDate + "/";
-        }
+        std::string pathToOutput = "/mnt/storage/output_transient_" + simDate + "/";
 
         std::vector<std::string> rechargeFiles = {"recharge/recharge_WaterGAP_1901-1.csv", // todo try to read netCDF: https://gerasimosmichalitsianos.wordpress.com/2017/12/13/usingcppwithnetcdf/
                                                   "recharge/recharge_WaterGAP_1901-2.csv",
@@ -65,6 +60,8 @@ namespace GlobalFlow {
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
+                LOG(debug) << "Reading current GW recharge data...";
+                reader->readGWRecharge("data/" + rechargeFiles[stepNumber-1]); // todo add readNewGWRecharge removing and then adding recharge
                 step.first->solve();
                 sim.printMassBalances(debug, isDensityVariable[strssPrd]);
                 sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
@@ -85,10 +82,9 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         // For node infos:
-        std::ofstream myfile("node_attributes_large.csv");
+        std::ofstream myfile("node_attributes_transient.csv");
         myfile << "nodeID,spatID,lon,lat,area,neighbour_count,neighbours,K,hasGHB,ghb,ghb_conductance,ghb_elevation,"
-               << "effPor,elevation,recharge,Qriver,river_conductance,river_elevation,initial_head,"
-               << "zeta0,zeta1active,zeta1,zeta2active,zeta2,zeta3" << std::endl;
+               << "effPor,elevation,Qriver,river_conductance,river_elevation,initial_head" << std::endl;
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
             const auto default_precision = (int) std::cout.precision();
             std::string neighboursStr;
@@ -109,17 +105,10 @@ namespace GlobalFlow {
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << sim.getNodes()->at(j)->getEffectivePorosity()
                    << "," << sim.getNodes()->at(j)->getElevation().value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value()
                    << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM)
                    << "," << sim.getNodes()->at(j)->getHead().value()
-                   << "," << sim.getNodes()->at(j)->getZeta(0).value()
-                   << "," << sim.getNodes()->at(j)->isZetaActive(1)
-                   << "," << sim.getNodes()->at(j)->getZeta(1).value()
-                   << "," << sim.getNodes()->at(j)->isZetaActive(2)
-                   << "," << sim.getNodes()->at(j)->getZeta(2).value()
-                   << "," << sim.getNodes()->at(j)->getZeta(3).value()
                    << std::endl;
         }
         myfile.close();

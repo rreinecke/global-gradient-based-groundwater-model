@@ -4,7 +4,6 @@ namespace GlobalFlow {
 
     void Runner::loadSettings() {
         pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736
-        // densityZones: removed 1001.1,
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -30,8 +29,8 @@ namespace GlobalFlow {
         std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
 
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
-            LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
-            stepSizes[strssPrd];
+            LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd]
+                          << " step(s), with stepsize " << stepSizes[strssPrd];
             // set zetas if previous stress period had no variable density simulation
             if (strssPrd > 0) {
                 if (isDensityVariable[strssPrd] and !isDensityVariable[strssPrd-1]) {

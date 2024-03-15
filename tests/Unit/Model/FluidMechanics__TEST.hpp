@@ -50,18 +50,6 @@ TEST(FluidMechanics, calculateHarmonicMeanConductance) {
     ASSERT_DOUBLE_EQ(m.calculateHarmonicMeanConductance(t).value(), 0.1);
 }
 
-TEST(FluidMechanics, getHCOF) {
-    FluidMechanics m = FluidMechanics();
-    bool steadyState = true;
-    quantity<Dimensionless> stepModifier = 1 * si::si_dimensionless;
-    quantity<SquareMeter> storageCapacity = 1 * si::square_meter;
-    quantity<MeterSquaredPerTime> P = 2 * si::square_meter / day;
-
-    ASSERT_DOUBLE_EQ((m.getHCOF(steadyState, stepModifier, storageCapacity, P).value()), 2);
-    steadyState = false;
-    ASSERT_DOUBLE_EQ((m.getHCOF(steadyState, stepModifier, storageCapacity, P).value()), 1);
-}
-
 TEST(FluidMechanics, calculateVerticalConductance) {
     FluidMechanics m = FluidMechanics();
     quantity<Velocity> k_vert_neig = 0.1 * si::meter / day;

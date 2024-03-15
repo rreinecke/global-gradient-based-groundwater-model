@@ -17,26 +17,26 @@ public:
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, true, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, true, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, true, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, true, 0, 1, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
-                0.001, 0.4, 0.001 * si::meter
+                0.2, 0.1, true, true, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
 
         nodes->at(0)->setNeighbour(1,RIGHT);
@@ -66,7 +66,7 @@ public:
     void IwillCrash(){
         MockEquation equation(nodes, op);
 
-        Stepper stepper = Stepper(&equation, MONTH, 1,true);
+        Stepper stepper = Stepper(&equation, MONTH, true, false, 1, true);
         for (step step : stepper) {writeMe = static_cast<int>(10);}
     }
 
@@ -75,7 +75,7 @@ public:
 //FIXME currently boost log causes a free(): invalid pointer
 TEST_F(StepperFixture,DayLoop){
     MockEquation equation(nodes, op);
-    Stepper stepper = Stepper(&equation, DAY, 2);
+    Stepper stepper = Stepper(&equation, DAY, true, false, 2);
     int p{0};
     double a{0};
     for (step step : stepper) {
@@ -89,7 +89,7 @@ TEST_F(StepperFixture,DayLoop){
 
 TEST_F(StepperFixture,MonthLoop){
     MockEquation equation(nodes, op);
-    Stepper stepper = Stepper(&equation, MONTH, 10);
+    Stepper stepper = Stepper(&equation, MONTH, true, false, 10);
     ASSERT_EQ(stepper.getStepSize(),MONTH);
     int p{0};
     double a{0};
@@ -112,7 +112,7 @@ TEST_F(StepperFixture,DynmicStepsRand){
     MockEquation equation(nodes, op);
 
     for(int p : make_rnd()){
-        Stepper stepper = Stepper(&equation, MONTH, p, true);
+        Stepper stepper = Stepper(&equation, MONTH, true, false, p, true);
         ASSERT_EQ(stepper.getStepSize(),MONTH);
         int i{0};
         double a{0};
