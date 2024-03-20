@@ -143,9 +143,9 @@ Equation::updateZetaIter(int layer) {
                 nodes->at(nodeID)->setZetaIter(zetaID, zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]] * si::meter);
                 if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange) {
                     ++numAboveMaxZetaChange;
-                    LOG(numerics) << "zetaChange (" << nodeID << ", zetaID: " << zetaID << "): " << zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]];
-                    LOG(numerics) << "x_zetas (" << nodeID << ", " << zetaID << "): " << x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]);
-                    LOG(numerics) << "zetaIter (" << nodeID << ", " << zetaID+1 << "): " << nodes->at(nodeID)->getZetaIter(zetaID+1).value();
+                    //LOG(numerics) << "zetaChange (" << nodeID << ", zetaID: " << zetaID << "): " << zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]];
+                    //LOG(numerics) << "x_zetas (" << nodeID << ", " << zetaID << "): " << x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]);
+                    //LOG(numerics) << "zetaIter (" << nodeID << ", " << zetaID+1 << "): " << nodes->at(nodeID)->getZetaIter(zetaID+1).value();
                 }
             }
         }
@@ -190,12 +190,28 @@ Equation::updateHeadTZero() {
     }
 
 void inline
-Equation::prepareZetasAndZetasTZero() {
+Equation::clipZetas() {
 #pragma omp parallel for default(none)
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->prepareZetasAndSetZetasTZero();
+            nodes->at(k)->clipZetas();
         }
 }
+
+void inline
+Equation::setZetasTZero() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->setZetas_TZero();
+        }
+    }
+
+void inline
+Equation::setZetasIter() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->setZetas_Iter();
+        }
+    }
 
 void inline
 Equation::adjustZetaHeights() {
@@ -420,7 +436,9 @@ void
 Equation::solve_zetas(){
     __itter_zetas = 0;
     // If unconfined: clipping top zeta to current groundwater level
-    prepareZetasAndZetasTZero();
+    clipZetas();
+    setZetasTZero();
+    setZetasIter();
     for (int layer = 0; layer < numberOfLayers; layer++) {
         LOG(numerics) << "Finding zeta surface heights in layer " << layer;
         prepareEquation_zetas(layer);
@@ -453,10 +471,10 @@ Equation::solve_zetas(){
             }
             updateZetaIter(layer); // needs to be called between the two surrounding if-clauses
             innerIteration = cg_zetas.iterations();
-            if (innerIteration == 0 and outerIteration == 0) {
+            /*if (innerIteration == 0 and outerIteration == 0) {
                 LOG(numerics) << "Convergence criterion for zeta (=" << RCLOSE_ZETA << ") too small - no iterations";
                 break;
-            }
+            }*/
 
             /**
              * @brief zeta change convergence // todo make function of this

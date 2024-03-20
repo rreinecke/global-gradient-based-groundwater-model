@@ -112,7 +112,8 @@ namespace GlobalFlow {
 
             Solver::Equation *getEquation() { return eq.get(); };
 
-            void saveStepResults(std::string pathToOutput, int stepNumber, std::vector<std::string> variables,
+            void saveStepResults(const std::string& pathToOutput, int stepNumber,
+                                 const std::vector<std::string>& variables,
                                  bool isDensityVariable) {
                 // spatID,0,1,2
                 // step 1,0.8,0.9,0.95

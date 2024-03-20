@@ -1074,9 +1074,9 @@ namespace GlobalFlow {
             double ghbElevation;
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
 
-            for (int localZetaID = 0; localZetaID < densityZones.size(); ++localZetaID) {
-                zetaDeltas.push_back( ((meanDensity - densityZones[localZetaID]) / maxDifDensity) * maxDistance );
-                //LOG(debug) << "zetaDeltas[localZetaID = " << localZetaID << "]: " << zetaDeltas[localZetaID];
+            for (int zetaID = 0; zetaID < densityZones.size(); ++zetaID) {
+                zetaDeltas.push_back( ((meanDensity - densityZones[zetaID]) / maxDifDensity) * maxDistance );
+                //LOG(debug) << "zetaDeltas[zetaID = " << zetaID << "]: " << zetaDeltas[zetaID];
             }
 
             // loop through nodes
@@ -1089,10 +1089,10 @@ namespace GlobalFlow {
                 //LOG(debug) << "zetaGhybenHerzberg: " << zetaGhybenHerzberg << ", head: " << initial_head;
 
                 // 3. set zeta surfaces (potentially between top and bottom)
-                for (int localZetaID = 1; localZetaID < densityZones.size(); ++localZetaID){
+                for (int zetaID = 1; zetaID < densityZones.size(); ++zetaID){
                     // if node has a GHB
                     if (node->hasGHB()){
-                        zeta = ghybenHerzberg + zetaDeltas[localZetaID];
+                        zeta = ghybenHerzberg + zetaDeltas[zetaID];
                         // if zeta above GHB: set to GHB elevation
                         ghbElevation = node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
                         if (zeta > ghbElevation) { zeta = ghbElevation; }
@@ -1102,7 +1102,7 @@ namespace GlobalFlow {
                         zeta = node->getBottom().value();
                     }
 
-                    node->addZeta(localZetaID, zeta * Model::si::meter);
+                    node->addZeta(zetaID, zeta * Model::si::meter);
                 }
             }
         }
@@ -1120,11 +1120,15 @@ namespace GlobalFlow {
             // initialize zeta surface at top and bottom
             for (const auto &node : *nodes) {
                 node->initializeZetas();
+                for (int zetaID = 1; zetaID <= files.size(); ++zetaID) {
+                    // set all additional zetas to bottom (to make sure all nodes have the same number of interfaces)
+                    node->addZeta(zetaID, node->getBottom());
+                }
             }
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
-                int localZetaID{0};
+                int zetaID{0};
                 large_num spatID{0};
                 std::unordered_map<large_num, large_num> refID_to_nodeID;
                 double zeta{0};
@@ -1132,9 +1136,9 @@ namespace GlobalFlow {
                 // loop through layers
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(path);
-                    inZetas.read_header(io::ignore_no_column, "spatID", "localZetaID", "zeta");
+                    inZetas.read_header(io::ignore_no_column, "spatID", "zetaID", "zeta");
 
-                    while (inZetas.read_row(spatID, localZetaID, zeta)) {
+                    while (inZetas.read_row(spatID, zetaID, zeta)) {
                         try {
                             refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
                         }
@@ -1142,15 +1146,10 @@ namespace GlobalFlow {
                             continue;
                         }
                         for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-                            // if zeta above GHB elevation: set to GHB elevation
-                            if (nodes->at(nodeID)->hasGHB()){
-                                double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                                if (zeta > ghbElevation) {
-                                    zeta = ghbElevation;
-                                }
-                            }
+                            nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
+                            //LOG(debug) << "node(" << nodes->at(nodeID)->getID() << "): zeta(" << zetaID << "): " <<
+                            //           nodes->at(nodeID)->getZeta(zetaID).value();
 
-                            nodes->at(nodeID)->addZeta(localZetaID, zeta * Model::si::meter);
                         }
                     }
                 }

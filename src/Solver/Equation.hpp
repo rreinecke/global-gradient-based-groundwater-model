@@ -305,13 +305,13 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline prepareZetasAndZetasTZero();
+        void inline clipZetas();
+
+        void inline setZetasIter();
+
+        void inline setZetasTZero();
 
         void inline checkAllZetaSlopes();
-
-        void inline resetZetasIter(int layer);
-
-        void inline updateZetasTZero();
 
         void inline adjustZetaHeights();
 

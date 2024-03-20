@@ -1772,7 +1772,7 @@ Calculate
             }
 
 
-            void setZetasIter(){ set < std::vector<t_meter>, Zetas_Iter > (getZetasTZero()); }
+            void setZetas_Iter(){ set < std::vector<t_meter>, Zetas_Iter > (getZetas()); }
 
             std::vector<t_meter> getZetasIter() { return get<std::vector<t_meter>, Zetas_Iter>();}
 
@@ -2682,10 +2682,10 @@ Calculate
             }
 
             /**
-             * @brief Updating top zeta height after the head solution is found, set Zetas_TZero and Zetas_Iter
+             * @brief Updating top zeta height after the head solution is found
              * @note Top zeta surface height is set to the new groundwater head. In SWI2: SSWI2_UPZ1
              */
-            void prepareZetasAndSetZetasTZero(){
+            void clipZetas(){
                 t_meter newTopZeta = applyZetaLimits(0);
                 // update the first zeta surface
                 setZeta(0, newTopZeta);
@@ -2695,8 +2695,12 @@ Calculate
                         setZeta(zetaID, newTopZeta);
                     }
                 }
-                set < std::vector<t_meter>, Zetas_TZero > (getZetas());// setZetasTZero: Zetas_TZero = Zetas
+
             }
+
+            void setZetas_TZero() {
+                set < std::vector<t_meter>, Zetas_TZero > (getZetas());// setZetasTZero: Zetas_TZero = Zetas
+            };
 
             /**
              * @brief Vertical movement of zeta surfaces through top of this node. This function is required to move a

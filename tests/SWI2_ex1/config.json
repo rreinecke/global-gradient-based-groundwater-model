@@ -43,7 +43,7 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 40,
+      "threads": 1,
       "solver": "PCG",
       "iterations": 100,
       "inner_itter": 10,

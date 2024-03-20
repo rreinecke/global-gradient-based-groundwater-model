@@ -13,9 +13,10 @@ configure_file(config.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config.json CO
 configure_file(config_nz.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_nz.json COPYONLY)
 configure_file(config_gnc.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_gnc.json COPYONLY)
 configure_file(config_na.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_na.json COPYONLY)
+configure_file(config_na_continued.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_na_continued.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY)
 
-# read the NewZealand grid and initial head
+# read the grid and initial head
 configure_file(data_5min/grid_sa.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_sa.csv COPYONLY)
 configure_file(data_5min/grid_nz.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz.csv COPYONLY)
 configure_file(data_5min/grid_nz_refined.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined.csv COPYONLY)
@@ -23,6 +24,10 @@ configure_file(data_5min/grid_nz_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../.
 configure_file(data_5min/grid_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na.csv COPYONLY)
 configure_file(data_5min/grid_na_dk.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na_dk.csv COPYONLY)
 configure_file(data_5min/head_t_1.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_t_1.csv COPYONLY)
+configure_file(data_5min/head_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_t_10000.csv COPYONLY)
+configure_file(data_5min/zeta1_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta1_t_10000.csv COPYONLY)
+configure_file(data_5min/zeta2_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta2_t_10000.csv COPYONLY)
+
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
 configure_file(../../data_5min/grid_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_refined_16.csv COPYONLY)
 configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)

@@ -55,15 +55,15 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading the boundary condition";
                 readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
 
+                if (op.isEffectivePorosityFromFile()){
+                    LOG(userinfo) << "Reading effective porosity";
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+                }
+
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
                     readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
-                }
-
-                if (op.isEffectivePorosityFromFile()){
-                    LOG(userinfo) << "Reading effective porosity";
-                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                 }
             }
 
