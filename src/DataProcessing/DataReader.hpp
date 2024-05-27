@@ -859,13 +859,13 @@ namespace GlobalFlow {
                     if (nodes->at(nodeID)->hasGHB()){
                         double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
                         if (riverElevation < ghbElevation){
-                            riverElevation = ghbElevation; // river elevation is at least GHB elevation
+                            riverElevation = ghbElevation; // river elevation cannot be below GHB elevation
                         }
                     }
                     riverBottom = riverElevation - bankfull_depth;
                     double K = nodes->at(nodeID)->getK().value();
                     // Conductance estimation following Harbaugh (2005)
-                    riverConductance = K * riverLength * riverWidth / (riverElevation - riverBottom);
+                    riverConductance = K * riverLength * riverWidth / bankfull_depth;
                     if (riverConductance <= 1) { riverConductance = 1; } // river conductance is at least 1
 
                     nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
@@ -1062,7 +1062,7 @@ namespace GlobalFlow {
          * @param densityZones Density in density zones (from fresh to saline)
          * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
          */
-        void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer, double maxDistance,
+        void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer,
                                     std::vector<double> densityZones) {
             double ghybenHerzberg{0.0};
             double minDensity = densityZones.front();
@@ -1074,8 +1074,9 @@ namespace GlobalFlow {
             double ghbElevation;
             large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
 
-            for (int zetaID = 0; zetaID < densityZones.size(); ++zetaID) {
-                zetaDeltas.push_back( ((meanDensity - densityZones[zetaID]) / maxDifDensity) * maxDistance );
+            double maxDistance = 10;
+            for (double densityZone : densityZones) {
+                zetaDeltas.push_back( ((meanDensity - densityZone) / maxDifDensity) * maxDistance );
                 //LOG(debug) << "zetaDeltas[zetaID = " << zetaID << "]: " << zetaDeltas[zetaID];
             }
 
@@ -1107,6 +1108,25 @@ namespace GlobalFlow {
             }
         }
 
+        void setInitialZetas(int numberOfZetas) {
+            double zeta;
+            for (const auto &node : *nodes) {
+                // initialize zeta surface at top and bottom
+                node->initializeZetas();
+                // set all additional zetas to...
+                for (int zetaID = 1; zetaID <= numberOfZetas; ++zetaID) {
+                    /*if (node->hasGHB()){
+                        // ... GHB elevation if they have one
+                        zeta = node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    } else {*/
+                        // ... bottom
+                        zeta = node->getBottom().value();
+                    //}
+                    node->addZeta(zetaID, zeta * Model::si::meter);
+                }
+            }
+        }
+
         /**
          * @brief Read initial data for density surface height ("zeta") from files
          * @param numberOfLayers Number of layers in model
@@ -1116,15 +1136,7 @@ namespace GlobalFlow {
         void readInitialZetas(large_num numberOfLayers, large_num numberOfNodesPerLayer,
                               const std::string& path, std::vector<std::string> files) {
 
-            large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
-            // initialize zeta surface at top and bottom
-            for (const auto &node : *nodes) {
-                node->initializeZetas();
-                for (int zetaID = 1; zetaID <= files.size(); ++zetaID) {
-                    // set all additional zetas to bottom (to make sure all nodes have the same number of interfaces)
-                    node->addZeta(zetaID, node->getBottom());
-                }
-            }
+            setInitialZetas(files.size());
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
@@ -1146,10 +1158,8 @@ namespace GlobalFlow {
                             continue;
                         }
                         for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-                            nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
-                            //LOG(debug) << "node(" << nodes->at(nodeID)->getID() << "): zeta(" << zetaID << "): " <<
-                            //           nodes->at(nodeID)->getZeta(zetaID).value();
 
+                            nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
                         }
                     }
                 }

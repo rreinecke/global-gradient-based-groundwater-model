@@ -153,7 +153,6 @@ namespace GlobalFlow {
         struct K;
         struct HeadActive;
         struct Anisotropy;
-        struct StepSize;
         struct OUT;
         struct IN;
         struct ZCHG_OUT;
@@ -212,7 +211,6 @@ namespace GlobalFlow {
             PhysicalProperty<t_vel, K>,
             PhysicalProperty<bool, HeadActive>,
             PhysicalProperty<t_dim, Anisotropy>,
-            PhysicalProperty<quantity < d_time>, StepSize>,
             PhysicalProperty<t_c_meter, OUT>,
             PhysicalProperty<t_c_meter, IN>,
             PhysicalProperty<t_c_meter, ZCHG_OUT>,

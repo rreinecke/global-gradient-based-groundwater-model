@@ -174,7 +174,7 @@ namespace GlobalFlow {
 
         private:
             Solver::Equation *_equation;
-            const int _stepSize;
+            int _stepSize;
             const bool _isSteadyState;
             const bool _isDensityVariable;
             const size_t _steps;

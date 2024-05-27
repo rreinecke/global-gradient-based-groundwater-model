@@ -3,7 +3,7 @@
 namespace GlobalFlow {
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_na_continued.json"; // nodes per layer: grid_na_dk: 452736
+        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -26,7 +26,7 @@ namespace GlobalFlow {
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
         std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
-        std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
+        std::vector<std::string> variablesToSave = {"head", "zeta1"};
 
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
             LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd]
@@ -34,9 +34,7 @@ namespace GlobalFlow {
             // set zetas if previous stress period had no variable density simulation
             if (strssPrd > 0) {
                 if (isDensityVariable[strssPrd] and !isDensityVariable[strssPrd-1]) {
-                    LOG(userinfo) << "Setting initial zetas using Ghyben-Herzberg";
-                    reader->setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, // todo add to config
-                                                   op.getDensityZones());
+                    reader->setInitialZetas(1);
                 }
             }
 
@@ -51,6 +49,7 @@ namespace GlobalFlow {
                 if (isDensityVariable[strssPrd]) {
                     LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
                 }
+
                 ++stepNumber;
             }
         }
@@ -63,31 +62,38 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,layer,lon,lat,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+        myfile << "nodeID,spatID,layer,lon,lat,front,back,left,right,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
                << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        int front;
+        int back;
+        int left;
+        int right;
+
+        for (auto & node : *sim.getNodes()) {
+            try { front = node->getNeighbour(Model::FRONT)->getSpatID(); } catch (...) { front = -1;}
+            try { back = node->getNeighbour(Model::BACK)->getSpatID(); } catch (...) { back = -1;}
+            try { left = node->getNeighbour(Model::LEFT)->getSpatID(); } catch (...) { left = -1;}
+            try { right = node->getNeighbour(Model::RIGHT)->getSpatID(); } catch (...) { right = -1;}
+
             const auto default_precision = (int) std::cout.precision();
-            /*std::string neighboursStr;
-            for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
-                neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
-            }*/ // keeping this for debug
-            myfile << sim.getNodes()->at(j)->getID()
-                   << "," << std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision)
-                   << "," << sim.getNodes()->at(j)->getLayer()
-                   << "," << sim.getNodes()->at(j)->getLon()
-                   << "," << sim.getNodes()->at(j)->getLat()
-                   << "," << sim.getNodes()->at(j)->getArea().value()
-                   << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
-                   << "," << sim.getNodes()->at(j)->getK().value()
-                   << "," << sim.getNodes()->at(j)->hasGHB()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
-                   << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
-                   << "," << sim.getNodes()->at(j)->getEffectivePorosity()
-                   << "," << sim.getNodes()->at(j)->getElevation().value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM)
-                   << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM)
-                   << "," << sim.getNodes()->at(j)->getHead().value()
+            myfile << node->getID()
+                   << "," << std::setprecision(7) << node->getSpatID() << std::setprecision(default_precision)
+                   << "," << node->getLayer()
+                   << "," << node->getLon()
+                   << "," << node->getLat()
+                   << "," << front << "," << back << "," << left << "," << right
+                   << "," << node->getArea().value()
+                   << "," << node->getListOfNeighbours().size()
+                   << "," << node->getK().value()
+                   << "," << node->hasGHB()
+                   << "," << node->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getEffectivePorosity()
+                   << "," << node->getElevation().value()
+                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value()
+                   << "," << node->getExternalFlowConductance(Model::RIVER_MM)
+                   << "," << node->getExternalFlowElevation(Model::RIVER_MM)
+                   << "," << node->getHead().value()
                    << std::endl;
         }
         myfile.close();

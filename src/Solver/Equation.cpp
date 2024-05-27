@@ -96,7 +96,7 @@ Equation::updateEquation_zetas(const int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
 
 #pragma omp parallel for schedule(dynamic, (numberOfNodesPerLayer/threads)) default(none) shared(offset)
-    for (int zetaID = 0; zetaID < numberOfZones; ++zetaID) {
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
                 addToA_zetas(nodes->at(nodeID), zetaID);
@@ -136,13 +136,15 @@ void inline
 Equation::updateZetaIter(int layer) {
     int numAboveMaxZetaChange{0};
     auto offset = layer * numberOfNodesPerLayer;
+    large_num spatID;
 // no parallel here
-    for (int zetaID = 0; zetaID < numberOfZones; ++zetaID) {
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
                 nodes->at(nodeID)->setZetaIter(zetaID, zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]] * si::meter);
                 if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange) {
                     ++numAboveMaxZetaChange;
+                    spatID = nodes->at(nodeID)->getSpatID();
                     //LOG(numerics) << "zetaChange (" << nodeID << ", zetaID: " << zetaID << "): " << zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]];
                     //LOG(numerics) << "x_zetas (" << nodeID << ", " << zetaID << "): " << x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]);
                     //LOG(numerics) << "zetaIter (" << nodeID << ", " << zetaID+1 << "): " << nodes->at(nodeID)->getZetaIter(zetaID+1).value();
@@ -158,6 +160,9 @@ Equation::updateZetaIter(int layer) {
     }
     LOG(numerics) << "Zeta Change larger than allowed value: " << numAboveMaxZetaChange
                   << " times. MAX Zeta Change: " << currentMaxZetaChange;
+    if (numAboveMaxZetaChange == 1) {
+        LOG(numerics) << "SpatID of that one node with too high zeta change:" << spatID;
+    }
 }
 
 
@@ -165,7 +170,7 @@ void inline
 Equation::updateZetas(int layer) {
     auto offset = layer * numberOfNodesPerLayer;
 # pragma omp parallel for default(none) shared(offset)
-    for (int zetaID = 0; zetaID < numberOfZones; ++ zetaID) {
+    for (int zetaID = 1; zetaID < numberOfZones; ++ zetaID) {
         for (large_num k = offset; k < numberOfNodesPerLayer + offset; ++k) {
             nodes->at(k)->setZeta(zetaID, nodes->at(k)->getZetaIter(zetaID));
         }
@@ -412,11 +417,11 @@ Equation::isHeadChangeGreater(){
     return currentMaxHeadChange > maxAllowedHeadChange;
 }
 
-bool inline
+/*bool inline
 Equation::allOutOfBounds(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
 
-    for (int zetaID = 0; zetaID < numberOfZones; ++zetaID) {
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
                 if (nodes->at(nodeID)->getZeta(zetaID).value() ==
@@ -427,6 +432,22 @@ Equation::allOutOfBounds(int layer) {
         }
     }
     return true;
+}*/
+
+void inline
+Equation::setUnconvergedZetasToZetas_TZero(int layer) {
+    large_num offset = layer * numberOfNodesPerLayer;
+    double zetaTZero{0.0};
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
+        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
+            if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
+                if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange){
+                    zetaTZero = nodes->at(nodeID)->getZetaTZero(zetaID).value();
+                    nodes->at(nodeID)->setZetaIter(zetaID, zetaTZero * si::meter);
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -459,15 +480,15 @@ Equation::solve_zetas(){
             zetaChanges = x_zetas - x_zetas_t0;
             if (zetaChanges.isApprox(oldZetaChanges * -1, 0.001)) {
                 // check if all zetas are out of bounds anyway
-                if (allOutOfBounds(layer)) {
+                /*if (allOutOfBounds(layer)) {
                     ++outOfBoundsCount;
                 } else {
                     outOfBoundsCount = 0;
                 }
                 if (outOfBoundsCount == 2) {
-                    LOG(numerics) << "Conditional convergence: zetas iterated out of bounds";
+                    LOG(numerics) << "Conditional convergence: zetas iterated ouside min and max potential zeta values";
                     break;
-                }
+                }*/
             }
             updateZetaIter(layer); // needs to be called between the two surrounding if-clauses
             innerIteration = cg_zetas.iterations();
@@ -505,9 +526,8 @@ Equation::solve_zetas(){
 
         if (outerIteration == MAX_OUTER_ITERATIONS) {
             LOG(userinfo) << "Fail in solving zeta matrix with max iteration (layer: " << layer << ")";
-            LOG(numerics) << "|Residual|_inf / |RHS|_inf (zetas): " << cg_zetas.error_inf();
-            LOG(numerics) << "|Residual|_l2 (zetas): " << cg_zetas.error();
-
+            LOG(userinfo) << "Setting unconverged zetas to their value before iteration (layer: " << layer << ")";
+            setUnconvergedZetasToZetas_TZero(layer);
         }
         // %%%%%%%%%%%%%%%%%%%%%%
         // % Update final zetas %
@@ -528,7 +548,7 @@ Equation::prepareEquation_zetas(int layer) {
     long numberOfActiveZetas{0};
     long rowID{0};
     // finding nodes with active/inactive interfaces
-    for (int zetaID = 0; zetaID < numberOfZones; ++zetaID) {
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
             if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
                 nodeID_to_zetaID_to_rowID[nodeID][zetaID] = rowID;

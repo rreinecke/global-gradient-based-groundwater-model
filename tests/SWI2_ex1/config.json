@@ -5,10 +5,10 @@
         "true"
       ],
       "stress_period_time_steps": [
-        200
+        400
       ],
       "stress_period_time_step_sizes": [
-        "TWO_DAYS"
+        "DAY"
       ],
       "stress_period_variable_density": [
         "true"

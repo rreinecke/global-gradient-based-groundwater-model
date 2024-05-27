@@ -150,41 +150,41 @@ namespace GlobalFlow {
                     // in all other lines: add step number followed be the variable values
                     std::stringstream newLine;
                     newLine << "step " << stepNumber;
-                    for (int j = 0; j < nodes->size(); ++j) {
+                    for (auto & node : *nodes) {
                         // for now: only extract top layer
-                        if (nodes->at(j)->getLayer() != layerToSave) { continue; }
+                        if (node->getLayer() != layerToSave) { continue; }
 
                         double value{0};
                         if(variable == "head") {
-                            value = nodes->at(j)->getHead().value();
+                            value = node->getHead().value();
                         } else if(variable ==  "zeta0") {
                             if (isDensityVariable) {
-                                value = nodes->at(j)->getZeta(0).value();
+                                value = node->getZeta(0).value();
                             } else {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "zeta1") {
-                            if (isDensityVariable and !nodes->at(j)->isZetaAtBottom(1)) {
-                                value = nodes->at(j)->getZeta(1).value();
+                            if (isDensityVariable and node->isZetaActive(1)) {
+                                value = node->getZeta(1).value();
                             } else {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "zeta2") {
-                            if (isDensityVariable and !nodes->at(j)->isZetaAtBottom(2)) {
-                                value = nodes->at(j)->getZeta(2).value();
+                            if (isDensityVariable and (node->getZeta(2) > (node->getBottom() + node->getVDFLock()))) {
+                                value = node->getZeta(2).value();
                             } else {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "zeta3") {
                             if (isDensityVariable) {
-                                value = nodes->at(j)->getZeta(3).value();
+                                value = node->getZeta(3).value();
                             } else {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "ghb") {
-                            value = nodes->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            value = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
                         } else if(variable ==  "sum_neig") {
-                            auto flowMap = nodes->at(j)->getFlowToOrFromNeighbours();
+                            auto flowMap = node->getFlowToOrFromNeighbours();
                             for (auto it=flowMap.begin(); it != flowMap.end(); ++it) {
                                 double flow = flowMap[it->first];
                                 if (!std::isnan(flow)){ // if flow from/to neighbours is nan, do not add it to "value"
@@ -245,26 +245,19 @@ namespace GlobalFlow {
                 out += "\nOUT: ";
                 out += to_string(nodeInterface->getCurrentOUT().value());
                 out += "\nElevation: ";
-                out += to_string(nodeInterface->getProperties().get<quantity<Model::Meter>,
-                                Model::Elevation>().value());
+                out += to_string(nodeInterface->getProperties().get<quantity<Model::Meter>, Model::Elevation>().value());
                 out += "\nRHS: ";
                 out += to_string(nodeInterface->getRHS().value());
                 out += "\nHEAD: ";
                 out += to_string(nodeInterface->getProperties().get<quantity<Model::Meter>, Model::Head>().value());
                 out += "\nArea: ";
-                out +=
-                        to_string(nodeInterface->getProperties().get<quantity<Model::SquareMeter>,
-                                Model::Area>().value());
+                out += to_string(nodeInterface->getProperties().get<quantity<Model::SquareMeter>, Model::Area>().value());
                 out += "\nStorageFlow: ";
                 out += to_string(nodeInterface->getStorageFlow().value());
                 out += "\nNONStorageFlowIN: ";
-                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {
-                    return a > 0;
-                }).value());
+                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {return a > 0; }).value());
                 out += "\nNONStorageFlowOUT: ";
-                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {
-                    return a < 0;
-                }).value());
+                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool { return a < 0; }).value());
                 out += "\n";
                 std::ostringstream strs;
                 strs << nodeInterface;

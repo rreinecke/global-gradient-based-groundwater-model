@@ -317,6 +317,8 @@ namespace GlobalFlow {
 
         bool inline allOutOfBounds(int layer);
 
+        void inline setUnconvergedZetasToZetas_TZero(int layer);
+
         };
 }
 }
