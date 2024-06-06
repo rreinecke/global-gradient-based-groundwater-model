@@ -95,9 +95,9 @@ void inline
 Equation::updateEquation_zetas(const int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
 
-#pragma omp parallel for schedule(dynamic, (numberOfNodesPerLayer/threads)) default(none) shared(offset)
-    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
-        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
+#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) default(none) shared(offset)
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
                 addToA_zetas(nodes->at(nodeID), zetaID);
                 x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]) = nodes->at(nodeID)->getZetaIter(zetaID).value();
@@ -106,8 +106,9 @@ Equation::updateEquation_zetas(const int layer) {
         }
     }
 
-    //LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,8,8); // startRow, startCol, numRows, numCol
-    //LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,8,1); // startRow, startCol, numRows, numCol
+    LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
+    LOG(debug) << "b_zetas.block:\n" << b_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+    LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
 
     //LOG(numerics) << "Preconditioning matrix before iteration (zetas)";
     if (A_zetas.size() != 0) {
@@ -138,10 +139,11 @@ Equation::updateZetaIter(int layer) {
     auto offset = layer * numberOfNodesPerLayer;
     large_num spatID;
 // no parallel here
-    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
-        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
-                nodes->at(nodeID)->setZetaIter(zetaID, zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]] * si::meter);
+                nodes->at(nodeID)->setZetaIter(zetaID,
+                                               zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]] * si::meter);
                 if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange) {
                     ++numAboveMaxZetaChange;
                     spatID = nodes->at(nodeID)->getSpatID();
@@ -167,12 +169,13 @@ Equation::updateZetaIter(int layer) {
 
 
 void inline
-Equation::updateZetas(int layer) {
+Equation::updateZetas(const int layer) {
     auto offset = layer * numberOfNodesPerLayer;
 # pragma omp parallel for default(none) shared(offset)
-    for (int zetaID = 1; zetaID < numberOfZones; ++ zetaID) {
-        for (large_num k = offset; k < numberOfNodesPerLayer + offset; ++k) {
-            nodes->at(k)->setZeta(zetaID, nodes->at(k)->getZetaIter(zetaID));
+    for (large_num k = offset; k < numberOfNodesPerLayer + offset; ++k) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+            auto zeta = nodes->at(k)->getZetaIter(zetaID);
+            nodes->at(k)->setZeta(zetaID, zeta);
         }
     }
 }
@@ -214,7 +217,8 @@ void inline
 Equation::setZetasIter() {
 #pragma omp parallel for default(none)
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->setZetas_Iter();
+            auto zetas = nodes->at(k)->getZetas_TZero();
+            nodes->at(k)->setZetas_Iter(zetas);
         }
     }
 
@@ -294,17 +298,19 @@ Equation::solve() {
 
     double oldMaxHeadChange{0};
     int innerIterAddon{0};
-    long outerIterations{0};
+    long outerIteration{0};
     long innerIterations{0};
     bool headFail{false};
     char smallHeadChangeCounter{0};
     bool headConverged{false};
-    while (outerIterations < MAX_OUTER_ITERATIONS) {
-        LOG(numerics) << "Outer iteration: " << outerIterations;
+    while (outerIteration < MAX_OUTER_ITERATIONS) {
+        //LOG(debug) << "A.block:\n" << A.block(0,0,50,50); // startRow, startCol, numRows, numCol
+        //LOG(debug) << "b.block:\n" << b.block(0,0,50,1); // startRow, startCol, numRows, numCol
+        //LOG(debug) << "x.block:\n" << x.block(0,0,50,1); // startRow, startCol, numRows, numCol
         x = cg.solveWithGuess(b, x); // solving inner iterations
         innerIterations = cg.iterations();
         //LOG(numerics) << "Inner iterations: " << innerIterations;
-        if (innerIterations == 0 and outerIterations == 0) {
+        if (innerIterations == 0 and outerIteration == 0) {
             LOG(numerics) << "Convergence criterion met without iterations.";
             break;
         }
@@ -332,7 +338,7 @@ Equation::solve() {
         /**
          * @brief residual norm convergence
          */
-        if (cg.info() == Success and outerIterations != 0) {
+        if (cg.info() == Success and outerIteration != 0) {
             LOG(numerics) << "cg solver success";
             break;
         }
@@ -347,16 +353,16 @@ Equation::solve() {
         updateEquation();
         //LOG(debug) << "Updated A, x and b";
         preconditionA();
-        outerIterations++;
+        outerIteration++;
     }
 
-    if (outerIterations == MAX_OUTER_ITERATIONS) {
+    if (outerIteration == MAX_OUTER_ITERATIONS) {
         std::cerr << "Fail in solving matrix with max iterations\n";
         LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
         LOG(numerics) << "|Residual|_l2: " << cg.error();
     }
 
-    __itter = outerIterations;
+    __itter = outerIteration;
     __error = cg.error_inf();
 
     /**
@@ -417,23 +423,6 @@ Equation::isHeadChangeGreater(){
     return currentMaxHeadChange > maxAllowedHeadChange;
 }
 
-/*bool inline
-Equation::allOutOfBounds(int layer) {
-    large_num offset = layer * numberOfNodesPerLayer;
-
-    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
-        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
-            if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
-                if (nodes->at(nodeID)->getZeta(zetaID).value() ==
-                    nodes->at(nodeID)->applyZetaLimits(zetaID, nodes->at(nodeID)->getZeta(zetaID)).value()) {
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}*/
-
 void inline
 Equation::setUnconvergedZetasToZetas_TZero(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
@@ -462,9 +451,10 @@ Equation::solve_zetas(){
     setZetasIter();
     for (int layer = 0; layer < numberOfLayers; layer++) {
         LOG(numerics) << "Finding zeta surface heights in layer " << layer;
+
         prepareEquation_zetas(layer);
 
-        if (A_zetas.size() == 0){ continue; } // if matrix empty continue with next iteration
+        if (A_zetas.size() == 0) { continue; } // if matrix empty continue with next iteration
 
         int outerIteration{0};
         long innerIteration{0};
@@ -478,24 +468,22 @@ Equation::solve_zetas(){
             //Solve inner iterations
             x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
             zetaChanges = x_zetas - x_zetas_t0;
-            if (zetaChanges.isApprox(oldZetaChanges * -1, 0.001)) {
-                // check if all zetas are out of bounds anyway
-                /*if (allOutOfBounds(layer)) {
-                    ++outOfBoundsCount;
-                } else {
-                    outOfBoundsCount = 0;
-                }
-                if (outOfBoundsCount == 2) {
-                    LOG(numerics) << "Conditional convergence: zetas iterated ouside min and max potential zeta values";
-                    break;
-                }*/
-            }
-            updateZetaIter(layer); // needs to be called between the two surrounding if-clauses
+
+            updateZetaIter(layer);
             innerIteration = cg_zetas.iterations();
             /*if (innerIteration == 0 and outerIteration == 0) {
                 LOG(numerics) << "Convergence criterion for zeta (=" << RCLOSE_ZETA << ") too small - no iterations";
                 break;
             }*/
+
+            /**
+         * @brief residual norm convergence
+         */
+            if (cg_zetas.info() == Success and outerIteration != 0) {
+                LOG(numerics) << "cg_zetas solver success";
+                break;
+            }
+
 
             /**
              * @brief zeta change convergence // todo make function of this
@@ -520,7 +508,6 @@ Equation::solve_zetas(){
             }
 
             updateEquation_zetas(layer);
-            //oldZetaChanges = zetaChanges;
             outerIteration++;
         } // end of outer iteration loop
 
@@ -529,12 +516,15 @@ Equation::solve_zetas(){
             LOG(userinfo) << "Setting unconverged zetas to their value before iteration (layer: " << layer << ")";
             setUnconvergedZetasToZetas_TZero(layer);
         }
+
+        __itter_zetas += outerIteration;
         // %%%%%%%%%%%%%%%%%%%%%%
         // % Update final zetas %
         // %%%%%%%%%%%%%%%%%%%%%%
         updateZetas(layer);
-        __itter_zetas += outerIteration;
     } // end of layer loop
+
+
 
     updateZoneChange();
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
@@ -542,14 +532,14 @@ Equation::solve_zetas(){
 }
 
 void inline
-Equation::prepareEquation_zetas(int layer) {
+Equation::prepareEquation_zetas(const int layer) {
     nodeID_to_zetaID_to_rowID.clear();
     large_num offset = layer * numberOfNodesPerLayer;
-    long numberOfActiveZetas{0};
+    numberOfActiveZetas = 0;
     long rowID{0};
     // finding nodes with active/inactive interfaces
-    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
-        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
             if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
                 nodeID_to_zetaID_to_rowID[nodeID][zetaID] = rowID;
                 ++rowID;
@@ -559,6 +549,7 @@ Equation::prepareEquation_zetas(int layer) {
             }
         }
     }
+
     Eigen::SparseMatrix<pr_t> __A_zetas(numberOfActiveZetas, numberOfActiveZetas);
     A_zetas = std::move(__A_zetas);
     int numberOfEntries = (int) (std::sqrt(maxRefinement) * 4) + 1; // + 1 for this node

@@ -44,12 +44,12 @@
       "vdf_lock": 0.001
     },
     "numerics": {
-      "threads": 10,
+      "threads": 1,
       "solver": "PCG",
       "iterations": 50,
-      "inner_itter": 20,
+      "inner_itter": 5,
       "closing_crit_head": 1E-80,
-      "closing_crit_zeta": 1E-7,
+      "closing_crit_zeta": 1E-50,
       "head_change": 0.001,
       "zeta_change": 0.00001,
       "damping": "false",

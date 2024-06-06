@@ -1062,7 +1062,7 @@ namespace GlobalFlow {
          * @param densityZones Density in density zones (from fresh to saline)
          * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
          */
-        void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer,
+        /*void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer,
                                     std::vector<double> densityZones) {
             double ghybenHerzberg{0.0};
             double minDensity = densityZones.front();
@@ -1106,26 +1106,8 @@ namespace GlobalFlow {
                     node->addZeta(zetaID, zeta * Model::si::meter);
                 }
             }
-        }
+        }*/
 
-        void setInitialZetas(int numberOfZetas) {
-            double zeta;
-            for (const auto &node : *nodes) {
-                // initialize zeta surface at top and bottom
-                node->initializeZetas();
-                // set all additional zetas to...
-                for (int zetaID = 1; zetaID <= numberOfZetas; ++zetaID) {
-                    /*if (node->hasGHB()){
-                        // ... GHB elevation if they have one
-                        zeta = node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                    } else {*/
-                        // ... bottom
-                        zeta = node->getBottom().value();
-                    //}
-                    node->addZeta(zetaID, zeta * Model::si::meter);
-                }
-            }
-        }
 
         /**
          * @brief Read initial data for density surface height ("zeta") from files
@@ -1136,7 +1118,10 @@ namespace GlobalFlow {
         void readInitialZetas(large_num numberOfLayers, large_num numberOfNodesPerLayer,
                               const std::string& path, std::vector<std::string> files) {
 
-            setInitialZetas(files.size());
+            for (const auto &node : *nodes) {
+                // initialize zeta surface at top and bottom
+                node->initializeZetas();
+            }
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
@@ -1158,8 +1143,7 @@ namespace GlobalFlow {
                             continue;
                         }
                         for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-
-                            nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
+                            nodes->at(nodeID)->addZeta(zetaID, zeta * Model::si::meter);
                         }
                     }
                 }

@@ -5,10 +5,10 @@
         "true"
       ],
       "stress_period_time_steps": [
-        400
+        200
       ],
       "stress_period_time_step_sizes": [
-        "DAY"
+        "TWO_DAYS"
       ],
       "stress_period_variable_density": [
         "true"
@@ -48,9 +48,9 @@
       "iterations": 100,
       "inner_itter": 10,
       "closing_crit_head": 1E-80,
-      "closing_crit_zeta": 1E-7,
+      "closing_crit_zeta": 1E-20,
       "head_change": 0.0001,
-      "zeta_change": 0.00001,
+      "zeta_change": 0.0001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5

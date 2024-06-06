@@ -185,6 +185,8 @@ namespace GlobalFlow {
 
         long numberOfNodesTotal;
 
+        long numberOfActiveZetas;
+
         /**
          * _var_ only used if disabling of cells is required
          */
@@ -252,13 +254,13 @@ namespace GlobalFlow {
 
         void inline preconditionA();
 
-        void inline updateEquation_zetas(int layer);
+        void inline updateEquation_zetas(const int layer);
 
         void inline addToA(std::unique_ptr<Model::NodeInterface> const &node);
 
         void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID);
 
-        void inline prepareEquation_zetas(int layer);
+        void inline prepareEquation_zetas(const int layer);
 
         bool inline isHeadChangeGreater();
 
@@ -300,7 +302,7 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateZetas(int layer);
+        void inline updateZetas(const int layer);
 
         /**
          * Write the final zeta surface heights to the nodes
@@ -314,8 +316,6 @@ namespace GlobalFlow {
         void inline checkAllZetaSlopes();
 
         void inline adjustZetaHeights();
-
-        bool inline allOutOfBounds(int layer);
 
         void inline setUnconvergedZetasToZetas_TZero(int layer);
 

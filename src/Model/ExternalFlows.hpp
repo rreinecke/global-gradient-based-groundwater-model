@@ -88,14 +88,14 @@ namespace GlobalFlow {
              * @param type
              * @param flowHead
              * @param cond
-             * @param bottom
+             * @param bottomElev
              */
             ExternalFlow(int id,
                          FlowType type,
                          t_meter flowHead,
                          t_s_meter_t cond,
-                         t_meter bottom)
-                    : ID(id), type(type), flowHead(flowHead), conductance(cond), bottom(bottom) {}
+                         t_meter bottomElev)
+                    : ID(id), type(type), flowHead(flowHead), conductance(cond), bottomElev(bottomElev) {}
 
             /**
              * @brief Constructor for RECHARGE, FAST_SURFACE_RUNOFF and NET_ABSTRACTION
@@ -104,18 +104,18 @@ namespace GlobalFlow {
              * @param type
              */
             ExternalFlow(int id, t_vol_t flow, FlowType type)
-                    : ID(id), type(type), flowHead(0), conductance(0), bottom(0), special_flow(flow) {}
+                    : ID(id), type(type), flowHead(0), conductance(0), bottomElev(0), special_flow(flow) {}
 
             /**
              * @brief Constructor for Evapotranspiration
              * @param id
              * @param flowHead
-             * @param bottom
+             * @param bottomElev
              * @param evapotrans
              * @return
              */
-            ExternalFlow(int id, t_meter flowHead, t_meter bottom, t_vol_t evapotrans)
-                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottom(0),
+            ExternalFlow(int id, t_meter flowHead, t_meter bottomElev, t_vol_t evapotrans)
+                    : ID(id), type(EVAPOTRANSPIRATION), flowHead(0), conductance(0), bottomElev(0),
                       special_flow(evapotrans) {}
 
             /**
@@ -124,7 +124,7 @@ namespace GlobalFlow {
              * @return Bool
              */
             bool isFlowHeadDependent(t_meter gw_head) const noexcept {
-                return (gw_head > bottom);
+                return (gw_head > bottomElev);
             }
 
             /**
@@ -158,7 +158,7 @@ namespace GlobalFlow {
 
             FlowType getType() const noexcept { return type; }
 
-            t_meter getBottom() const noexcept { return bottom; }
+            t_meter getBottomElev() const noexcept { return bottomElev; }
 
             t_vol_t getRecharge() const noexcept { return special_flow; }
 
@@ -215,7 +215,7 @@ namespace GlobalFlow {
             const t_meter flowHead;
             const t_s_meter_t conductance; //for special_flow same as q
             const t_vol_t special_flow;
-            const t_meter bottom;
+            const t_meter bottomElev;
             t_dim mult{1 * si::si_dimensionless}; //Multiplier only used for SA
             t_s_meter_t initConductance = 0. * (si::square_meter / day);
             double RiverDepthSteadyState = -99.;

@@ -57,17 +57,6 @@ namespace GlobalFlow {
             t_s_meter_t calculateHarmonicMeanConductance(FlowInputHor const& flow) noexcept;
 
             /**
-             * Get the coefficients for storage and P components
-             * @param steadyState
-             * @param stepModifier
-             * @param storageCapacity
-             * @param P
-             * @return HCOF
-             */
-            t_s_meter_t getHCOF(bool steadyState, quantity<Dimensionless> stepModifier,
-                                t_s_meter storageCapacity, t_s_meter_t P) noexcept;
-
-            /**
              * Calculates the vertical flow between two nodes
              * @param flow a tuple of inputs about the aquifer
              * @return the vertical conductance

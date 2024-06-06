@@ -40,7 +40,7 @@ namespace GlobalFlow {
             t_vel k_self;
             t_meter nodeLength_neig; // node length in flow direction (of neighbour)
             t_meter nodeLength_self; // node length in flow direction (of this node)
-            t_meter nodeWidth_self; // node length perpendicular to flow direction (of this node)
+            t_meter nodeWidth; // node length perpendicular to flow direction (of this node)
             t_meter head_neig;
             t_meter head_self;
             t_meter ele_neig;
@@ -48,7 +48,7 @@ namespace GlobalFlow {
             t_meter deltaV_neig;
             t_meter deltaV_self;
             bool confined;
-            std::tie(k_neig, k_self, nodeLength_neig, nodeLength_self, nodeWidth_self, head_neig,
+            std::tie(k_neig, k_self, nodeLength_neig, nodeLength_self, nodeWidth, head_neig,
                      head_self, ele_neig, ele_self,deltaV_neig, deltaV_self, confined) = flow;
             quantity<MeterSquaredPerTime> out = 0 * si::square_meter / day;
 
@@ -59,9 +59,9 @@ namespace GlobalFlow {
 
             if (transmissivity_neig != 0 * si::square_meter / day and
                 transmissivity_self != 0 * si::square_meter / day) {
-                out = (2.0 * nodeWidth_self) * ((transmissivity_self * transmissivity_neig)
-                                                / (transmissivity_self * nodeLength_neig +
-                                                   transmissivity_neig * nodeLength_self));
+                out = nodeWidth * ((transmissivity_self * transmissivity_neig)
+                                                / (transmissivity_self * nodeLength_neig * 0.5 +
+                                                   transmissivity_neig * nodeLength_self * 0.5));
             }
             NANChecker(out.value(), "E-folding based Harmonic Mean Conductance");
             return out;
@@ -137,16 +137,8 @@ namespace GlobalFlow {
             t_s_meter area_self;
             bool confined;
 
-            std::tie(k_vert_neig,
-                     k_vert_self,
-                     verticalSize_self,
-                     verticalSize_neig,
-                     head_self,
-                     head_neig,
-                     elevation_self,
-                     elevation_neig,
-                     area_self,
-                     confined) = flowInputVer;
+            std::tie(k_vert_neig, k_vert_self, verticalSize_self, verticalSize_neig, head_self, head_neig,
+                     elevation_self, elevation_neig, area_self, confined) = flowInputVer;
 
             quantity<MeterSquaredPerTime> out = 0.0 * si::square_meter / day;
             t_meter deltaV_self = verticalSize_self;
@@ -175,7 +167,7 @@ namespace GlobalFlow {
             }
 
             if (deltaV_self != 0.0 * si::meter and deltaV_neig != 0.0 * si::meter) {
-                out = area_self / (((deltaV_self * 0.5) / k_vert_self) + ((deltaV_neig * 0.5) / k_vert_neig));
+                out = (area_self) / (((deltaV_self * 0.5) / k_vert_self) + ((deltaV_neig * 0.5) / k_vert_neig));
             }
             //LOG(debug) << "area_self: " << area_self.value() << ". deltaV_self: " << deltaV_self.value() << ". k_vert_self:" << k_vert_self.value();
             //LOG(debug) << "deltaV_neig: " << deltaV_neig.value() << ". k_vert_neig:" << k_vert_neig.value();

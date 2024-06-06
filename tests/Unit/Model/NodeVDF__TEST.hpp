@@ -83,11 +83,11 @@ public:
         at(2)->setHead(0 * si::meter);
         at(3)->setHead(0 * si::meter);
 
-        // zeta surface 0 (all at top of nodes)
-        nodes->at(0)->addZeta(0, 10.0 * si::meter);
-        nodes->at(1)->addZeta(0, 10.0 * si::meter);
-        nodes->at(2)->addZeta(0, 0.0 * si::meter);
-        nodes->at(3)->addZeta(0, 0.0 * si::meter);
+        // zeta surfaces at top of nodes and bottom of nodes (will have zetaIDs 0 and 4)
+        nodes->at(0)->initializeZetas();
+        nodes->at(1)->initializeZetas();
+        nodes->at(2)->initializeZetas();
+        nodes->at(3)->initializeZetas();
 
         // zeta surface 1 (in nodes 0 & 1 between, in nodes 2 & 3 at top)
         nodes->at(0)->addZeta(1, 9 * si::meter);
@@ -106,13 +106,6 @@ public:
         nodes->at(1)->addZeta(3, 0.0 * si::meter);
         nodes->at(2)->addZeta(3, -2.5 * si::meter);
         nodes->at(3)->addZeta(3, -7.5 * si::meter);
-
-        // zeta surface 4 (all at bottom of nodes)
-        nodes->at(0)->addZeta(4, 0.0 * si::meter);
-        nodes->at(1)->addZeta(4, 0.0 * si::meter);
-        nodes->at(2)->addZeta(4, -10.0 * si::meter);
-        nodes->at(3)->addZeta(4, -10.0 * si::meter);
-
     }
 
     using p_node = std::unique_ptr<GlobalFlow::Model::NodeInterface>;
@@ -139,7 +132,6 @@ TEST_F(StandardNodeVDFFixture, setZeta) {
 TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
     // for confined node nothing should be done
     at(0)->setZeta(0, 20 * si::meter);
-    at(0)->prepareZetas();
     ASSERT_EQ(at(0)->getZeta(0).value(),20);
 
     // add and test unconfined node
@@ -151,20 +143,13 @@ TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
     at(4)->setElevation_allLayers(10 * si::meter);
     at(4)->setHead(10 * si::meter);
 
-    // - zeta height ABOVE head (should be reset to head)
-    nodes->at(4)->addZeta(0, 20.0 * si::meter);
-    at(4)->prepareZetas();
+    // - trying to set zeta 0 to height ABOVE head (we expect it to be corrected to head)
+    nodes->at(4)->setZeta(0, 20.0 * si::meter);
     ASSERT_EQ(at(4)->getZeta(0).value(),10);
 
-    // - zeta height BELOW head (should be set to head)
+    // - trying set zeta 0 height BELOW head (we expect it to be corrected to head)
     at(4)->setZeta(0, 5 * si::meter);
-    at(4)->prepareZetas();
     ASSERT_EQ(at(4)->getZeta(0).value(),10);
-}
-
-TEST_F(StandardNodeVDFFixture, setZetaChange) {
-    at(0)->setZetaChange(0, 9 * si::meter);
-    ASSERT_EQ(at(0)->getZetaChange(0).value(),-1);
 }
 
 TEST_F(StandardNodeVDFFixture, getNusTop) {

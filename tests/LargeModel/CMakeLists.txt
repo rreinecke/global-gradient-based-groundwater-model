@@ -23,10 +23,8 @@ configure_file(data_5min/grid_nz_refined.csv ${CMAKE_CURRENT_BINARY_DIR}/../../d
 configure_file(data_5min/grid_nz_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_nz_refined_16.csv COPYONLY)
 configure_file(data_5min/grid_na.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na.csv COPYONLY)
 configure_file(data_5min/grid_na_dk.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na_dk.csv COPYONLY)
-configure_file(data_5min/head_t_1.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_t_1.csv COPYONLY)
-configure_file(data_5min/head_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_t_10000.csv COPYONLY)
-configure_file(data_5min/zeta1_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta1_t_10000.csv COPYONLY)
-configure_file(data_5min/zeta2_t_10000.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta2_t_10000.csv COPYONLY)
+configure_file(data_5min/head_t_100.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_t_100.csv COPYONLY)
+configure_file(data_5min/zeta1_t_100.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta1_t_100.csv COPYONLY)
 
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
 configure_file(../../data_5min/grid_refined_16.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_refined_16.csv COPYONLY)
