@@ -2,15 +2,27 @@
   "config": {
     "model_config": {
       "stress_period_steady_state": [
+        "true",
+        "true",
+        "true",
         "true"
       ],
       "stress_period_time_steps": [
+        100,
+        100,
+        100,
         100000
       ],
       "stress_period_time_step_sizes": [
+        "THOUSAND_YEARS",
+        "HUNDRED_YEARS",
+        "TEN_YEARS",
         "YEAR"
       ],
       "stress_period_variable_density": [
+        "true",
+        "true",
+        "true",
         "true"
       ],
       "nodes": "grid.csv",

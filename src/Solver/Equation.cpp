@@ -106,9 +106,9 @@ Equation::updateEquation_zetas(const int layer) {
         }
     }
 
-    LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
-    LOG(debug) << "b_zetas.block:\n" << b_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
-    LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+    //LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
+    //LOG(debug) << "b_zetas.block:\n" << b_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+    //LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
 
     //LOG(numerics) << "Preconditioning matrix before iteration (zetas)";
     if (A_zetas.size() != 0) {
@@ -224,13 +224,13 @@ Equation::setZetasIter() {
 
 void inline
 Equation::adjustZetaHeights() {
-    LOG(debug) << "Calculating vertical zeta movement";
+    LOG(debug) << "Vertical zeta movement";
 #pragma omp parallel for default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->zetaMovementBetweenLayers();
     }
 
-    LOG(debug) << "Calculating horizontal zeta movement";
+    LOG(debug) << "Horizontal zeta movement";
 #pragma omp parallel for default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->horizontalZetaMovement();
@@ -248,7 +248,7 @@ Equation::adjustZetaHeights() {
         nodes->at(k)->preventZetaLocking();
     }
 
-    LOG(debug) << "Correct corssing zetas";
+    LOG(debug) << "Correct crossing zetas";
 # pragma omp parallel for default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->correctCrossingZetas();
@@ -431,7 +431,7 @@ Equation::setUnconvergedZetasToZetas_TZero(int layer) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
             if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
                 if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange){
-                    zetaTZero = nodes->at(nodeID)->getZetaTZero(zetaID).value();
+                    zetaTZero = nodes->at(nodeID)->getZeta_TZero(zetaID).value();
                     nodes->at(nodeID)->setZetaIter(zetaID, zetaTZero * si::meter);
                 }
             }
@@ -469,7 +469,7 @@ Equation::solve_zetas(){
             x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
             zetaChanges = x_zetas - x_zetas_t0;
 
-            updateZetaIter(layer);
+            updateZetaIter(layer);  // set Zetas_Iter and currentMaxZetaChange
             innerIteration = cg_zetas.iterations();
             /*if (innerIteration == 0 and outerIteration == 0) {
                 LOG(numerics) << "Convergence criterion for zeta (=" << RCLOSE_ZETA << ") too small - no iterations";
@@ -477,8 +477,8 @@ Equation::solve_zetas(){
             }*/
 
             /**
-         * @brief residual norm convergence
-         */
+           * @brief residual norm convergence
+           */
             if (cg_zetas.info() == Success and outerIteration != 0) {
                 LOG(numerics) << "cg_zetas solver success";
                 break;
@@ -524,9 +524,7 @@ Equation::solve_zetas(){
         updateZetas(layer);
     } // end of layer loop
 
-
-
-    updateZoneChange();
+    updateZoneChange(); // needs to be before adjustZetaHeights to get zone change without horizontal tip/toe movement
     LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
     adjustZetaHeights();
 }

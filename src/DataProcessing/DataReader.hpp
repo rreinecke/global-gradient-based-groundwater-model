@@ -1109,6 +1109,16 @@ namespace GlobalFlow {
         }*/
 
 
+        void setDefaultZetas(int numberOfZones) {
+            for (const auto &node : *nodes) {
+                // initialize zeta surface at top and bottom
+                node->initializeZetas();
+                for (int zetaID = 1; zetaID < numberOfZones; ++zetaID){
+                    node->addZeta(zetaID, node->getBottom()); // add additional zetas at bottom
+                }
+            }
+        }
+
         /**
          * @brief Read initial data for density surface height ("zeta") from files
          * @param numberOfLayers Number of layers in model

@@ -31,12 +31,6 @@ namespace GlobalFlow {
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
             LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd]
                           << " step(s), with stepsize " << stepSizes[strssPrd];
-            // set zetas if previous stress period had no variable density simulation
-            if (strssPrd > 0) {
-                if (isDensityVariable[strssPrd] and !isDensityVariable[strssPrd-1]) {
-                    reader->setInitialZetas(1);
-                }
-            }
 
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
@@ -90,7 +84,7 @@ namespace GlobalFlow {
                    << "," << node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << node->getEffectivePorosity()
                    << "," << node->getElevation().value()
-                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value()
+                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value() / node->getArea().value()
                    << "," << node->getExternalFlowConductance(Model::RIVER_MM)
                    << "," << node->getExternalFlowElevation(Model::RIVER_MM)
                    << "," << node->getHead().value()

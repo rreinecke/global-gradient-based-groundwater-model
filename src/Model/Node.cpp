@@ -28,10 +28,10 @@ PhysicalProperties initProperties() {
     fields.emplace<bool, Confinement>(true);
     fields.emplace<quantity<Velocity>, K>(0.03 * (si::meter / day));
     fields.emplace<quantity<Dimensionless>, Anisotropy>(10 * si::si_dimensionless);
-    fields.emplace<quantity<CubicMeter>, OUT>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, IN>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, GNC_OUT>(0.0 * si::cubic_meter);
-    fields.emplace<quantity<CubicMeter>, GNC_IN>(0.0 * si::cubic_meter);
+    fields.emplace<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, GNC_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, GNC_IN>(0.0 * si::cubic_meter/day);
     fields.emplace<quantity<Meter>, Head>(1 * si::meter);
     fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);

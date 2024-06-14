@@ -193,7 +193,7 @@ class GlobalDataReader : public DataReader {
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 } else {
                     LOG(userinfo) << "Set initial zetas to default (bottom of nodes)";
-                    setInitialZetas(op.getDensityZones().size()-1);
+                    setDefaultZetas(op.getDensityZones().size());
                 }
             }
         }
