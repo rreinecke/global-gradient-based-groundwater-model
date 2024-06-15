@@ -1,0 +1,112 @@
+{
+  "config": {
+    "model_config": {
+      "stress_period_steady_state": [
+        "true",
+        "true"
+      ],
+      "stress_period_time_steps": [
+        100,
+        2
+      ],
+      "stress_period_time_step_sizes": [
+        "YEAR",
+        "YEAR"
+      ],
+      "stress_period_variable_density": [
+        "false",
+        "true"
+      ],
+      "nodes": "grid_simpleVDF.csv",
+      "number_of_nodes_per_layer": 100,
+      "layers": 1,
+      "x_range": 10,
+      "y_range": 10,
+      "is_global": "false",
+      "resolution_in_degree": 1,
+      "edge_length_left_right": 0,
+      "edge_length_front_back": 0,
+      "use_efolding": "false",
+      "confinement": [
+        "true"
+      ],
+      "grid_refined": "false",
+      "max_refinement": 1,
+      "boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
+      "density_zones": [
+        1000,
+        1025
+      ],
+      "max_tip_slope": 0.04,
+      "max_toe_slope": 0.01,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.001
+    },
+    "numerics": {
+      "threads": 1,
+      "solver": "PCG",
+      "iterations": 50,
+      "inner_itter": 30,
+      "closing_crit_head": 1e-80,
+      "closing_crit_zeta": 1e-20,
+      "head_change": 0.000000001,
+      "zeta_change": 0.000000001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5
+    },
+    "input": {
+      "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "false",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "false",
+        "initial_head_from_file": "false",
+        "initial_zetas_as_array": "true",
+        "k_from_file": "false",
+        "k_ghb_from_file": "true",
+        "k_river_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
+        "zones_sources_from_file": "true"
+      },
+      "default_data": {
+        "effective_porosity": 0.2,
+        "initial_head": 1,
+        "K": [
+          1
+        ],
+        "ghb_K": 1000000,
+        "aquifer_thickness": [
+          10
+        ],
+        "anisotropy": [
+          10
+        ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
+        "specific_yield": 0.2,
+        "specific_storage": 0.000015,
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
+      },
+      "data": {
+        "elevation": "elevation_simpleVDF.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
+        "initial_zetas": "initial_zetas_simpleVDF.csv",
+        "recharge": "recharge_simpleVDF.csv",
+        "initial_heads": "heads_simpleVDF.csv",
+        "river_conductance": "rivers_simpleVDF.csv",
+        "zetas": {
+          "Zetas": [
+            "initial_zetas_swi2_ex2.csv"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -2,83 +2,98 @@
 
 namespace GlobalFlow {
 
-    //int sim_id{0};
-
     void Runner::loadSettings() {
+        pathToConfig = "data/config_na.json"; // nodes per layer: grid_na_dk: 452736
         op = Simulation::Options();
-        op.load("data/config.json");
+        op.load(pathToConfig);
     }
 
     void Runner::setupSimulation() {
-        reader = new DataProcessing::GlobalDataReader();
-        sim = Simulation::Simulation(op, reader);
-
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
-            sim.getNodes()->at(j)->setSimpleK();
-        }
-        LOG(debug) << "simple k set for all nodes" << std::endl;
+        reader = new DataProcessing::GlobalDataReader(); // sets data reader
+        sim = Simulation::Simulation(op, reader); // calls data reader initializing nodes
         _eq = sim.getEquation();
     }
 
     void Runner::simulate() {
-        Simulation::Stepper stepper = Simulation::Stepper(_eq, Simulation::MONTH, 1);
-        //LOG(debug) << "NodeID 1: " << sim.getNodes()->at(1);
+        std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
+        std::vector<int> numberOfSteps = op.getStressPeriodSteps();
+        std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
+        std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
         int stepNumber{1};
-        for (Simulation::step step : stepper) {
-            step.first->toggleSteadyState();
-            step.first->solve();
-            LOG(userinfo) << "Step " << stepNumber << ":\n";
-            LOG(userinfo) << "- Solved head with " << step.first->getItter() << " iterations and error of: " << step.first->getError() << std::endl;
-            sim.printMassBalances(debug);
-            step.first->toggleSteadyState();
-            ++stepNumber;
+        boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
+        std::stringstream ss;
+        ss << date.day() << date.month() << date.year();
+        std::string simDate = ss.str();
+        std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
+        std::vector<std::string> variablesToSave = {"head", "zeta1"};
+
+        for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
+            LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd]
+                          << " step(s), with stepsize " << stepSizes[strssPrd];
+
+            Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
+                                                              isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+            for (Simulation::step step : stepper) {
+                step.first->solve();
+                sim.printMassBalances(debug, isDensityVariable[strssPrd]);
+                sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
+                LOG(userinfo) << "Step " << stepNumber << ": ";
+                LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
+                if (isDensityVariable[strssPrd]) {
+                    LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
+                }
+
+                ++stepNumber;
+            }
         }
-        sim.save();
+        sim.saveNodeState();
     }
 
     void Runner::writeData() {
-	DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
+	    DataProcessing::DataOutput::OutputManager("data/out.json", sim).write();
     }
 
     void Runner::writeNodeInfosToCSV(){
-        // For node infos:
-        std::ofstream myfile;
-        myfile.open ("node_attributes_output.csv");
-        myfile << "nodeID,spatID,lon,lat,hyd_cond,hasGHB,elevation,initial_head,zeta1" << std::endl;
-        // spatID,area,neighbour_count,lake,global_lake,wetland,global_wetland,recharge
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        std::ofstream myfile("node_attributes_large.csv");
+        myfile << "nodeID,spatID,layer,lon,lat,front,back,left,right,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+               << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
+        int front;
+        int back;
+        int left;
+        int right;
+
+        for (auto & node : *sim.getNodes()) {
+            try { front = node->getNeighbour(Model::FRONT)->getSpatID(); } catch (...) { front = -1;}
+            try { back = node->getNeighbour(Model::BACK)->getSpatID(); } catch (...) { back = -1;}
+            try { left = node->getNeighbour(Model::LEFT)->getSpatID(); } catch (...) { left = -1;}
+            try { right = node->getNeighbour(Model::RIGHT)->getSpatID(); } catch (...) { right = -1;}
+
             const auto default_precision = (int) std::cout.precision();
-            myfile <<
-                   sim.getNodes()->at(j)->getID() << "," <<
-                   std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision) << "," <<
-                   sim.getNodes()->at(j)->getLon() << "," <<
-                   sim.getNodes()->at(j)->getLat() << "," <<
-                   //sim.getNodes()->at(j)->getArea().value() << "," <<
-                   //sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<
-                   sim.getNodes()->at(j)->getK().value() << "," <<
-                   sim.getNodes()->at(j)->hasGHB() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RECHARGE).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::LAKE).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::WETLAND).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getConductance().value() << "," <<
-                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getBottom().value() << "," <<
-                   sim.getNodes()->at(j)->getElevation().value() << "," <<
-                   sim.getNodes()->at(j)->getHead().value() <<
-                   //sim.getNodes()->at(j)->getExternalFlowByName(Model::RIVER_MM).getFlowHead().value() << "," <<
-                   //sim.getNodes()->at(j)->getZeta(1).value() <<
-                   std::endl;
+            myfile << node->getID()
+                   << "," << std::setprecision(7) << node->getSpatID() << std::setprecision(default_precision)
+                   << "," << node->getLayer()
+                   << "," << node->getLon()
+                   << "," << node->getLat()
+                   << "," << front << "," << back << "," << left << "," << right
+                   << "," << node->getArea().value()
+                   << "," << node->getListOfNeighbours().size()
+                   << "," << node->getK().value()
+                   << "," << node->hasGHB()
+                   << "," << node->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getEffectivePorosity()
+                   << "," << node->getElevation().value()
+                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value() / node->getArea().value()
+                   << "," << node->getExternalFlowConductance(Model::RIVER_MM)
+                   << "," << node->getExternalFlowElevation(Model::RIVER_MM)
+                   << "," << node->getHead().value()
+                   << std::endl;
         }
         myfile.close();
     }
-
-    Runner::Runner() {}
-
-}//ns
-
+    Runner::Runner() = default;
+}
 
 
 int main() {

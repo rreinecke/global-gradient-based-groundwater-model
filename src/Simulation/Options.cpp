@@ -45,27 +45,33 @@ namespace GlobalFlow {
             tree = tree.get_child("config");
 
             pt::ptree config = tree.get_child("model_config");
+            STRESS_PERIOD_STEADY_STATE = getTypeArray<bool>("stress_period_steady_state", config);
+            STRESS_PERIOD_STEPS = getTypeArray<int>("stress_period_time_steps", config);
+            STRESS_PERIOD_STEP_SIZES = getTypeArray<std::string>("stress_period_time_step_sizes", config);
+            STRESS_PERIOD_VARIABLE_DENSITY = getTypeArray<bool>("stress_period_variable_density", config);
             NODES = config.get<std::string>("nodes");
-            ROW_COLS = config.get<bool>("row_cols");
-            NUMBER_OF_NODES_PER_LAYER = config.get<long>("number_of_nodes_per_layer");
-            NUMBER_OF_ROWS = config.get<long>("number_of_rows");
-            NUMBER_OF_COLS = config.get<long>("number_of_cols");
-            EDGE_LENGTH_ROWS = config.get<double>("edge_length_rows");
-            EDGE_LENGTH_COLS = config.get<double>("edge_length_cols");
-            THREADS = config.get<int>("threads");
+            NUMBER_OF_NODES_PER_LAYER = config.get<unsigned long int>("number_of_nodes_per_layer");
+            Y_RANGE = config.get<long>("y_range");
+            X_RANGE = config.get<long>("x_range");
+            IS_GLOBAL = config.get<bool>("is_global");
+            RESOLUTION_IN_DEGREE = config.get<double>("resolution_in_degree");
+            EDGE_LENGTH_LEFT_RIGHT = config.get<double>("edge_length_left_right");
+            EDGE_LENGTH_FRONT_BACK = config.get<double>("edge_length_front_back");
             LAYERS = config.get<int>("layers");
+            USE_EFOLDING = config.get<bool>("use_efolding");
+            GRID_REFINED = config.get<bool>("grid_refined");
+            MAX_REFINEMENT = config.get<int>("max_refinement");
             CONFINED = getTypeArray<bool>("confinement", config);
             if (LAYERS != CONFINED.size()) {
                 LOG(critical) << "mismatching layers";
                 exit(3);
             }
 
-            CACHE = config.get<bool>("cache");
-            ADAPTIVE_STEP_SIZE = config.get<bool>("adaptive_step_size");
-            BOUNDARY_CONDITION = config.get<std::string>("boundary_condition");
+            DEFAULT_BOUNDARY_CONDITION = config.get<std::string>("default_boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
             pt::ptree numerics = tree.get_child("numerics");
+            THREADS = numerics.get<int>("threads");
             SOLVER = numerics.get<std::string>("solver");
             IITER = numerics.get<int>("iterations");
             I_ITTER = numerics.get<int>("inner_itter");
@@ -79,8 +85,6 @@ namespace GlobalFlow {
 
             pt::ptree input = tree.get_child("input");
 
-//BASE_PATH = input.get<std::string>("base_path");
-
             pt::ptree data_config = input.get_child("data_config");
             k_from_file = data_config.get<bool>("k_from_file");
             k_ghb_from_file = data_config.get<bool>("k_ghb_from_file");
@@ -91,36 +95,45 @@ namespace GlobalFlow {
             eq_wtd_from_file = data_config.get<bool>("eq_wtd_from_file");
             initial_head_from_file = data_config.get<bool>("initial_head_from_file");
             effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
-            zones_sources_sinks_from_file = data_config.get<bool>("zones_sources_sinks_from_file");
+            zones_sources_from_file = data_config.get<bool>("zones_sources_from_file");
 
             pt::ptree default_data = input.get_child("default_data");
             K = getTypeArray<double>("K", default_data);
             INITIAL_HEAD = default_data.get<double>("initial_head");
             GHB_K = default_data.get<double>("ghb_K");
+            RIVER_CONDUCTIVITY = default_data.get<double>("river_conductivity");
+            SWB_ELEVATION_FACTOR = default_data.get<double>("swb_elevation_factor");
             AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
 
             ANISOTROPY = getTypeArray<double>("anisotropy", default_data);
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
 
-            DENSITY_VARIABLE = config.get<bool>("density_variable");
-            DENSITY_ZONES = getTypeArray<double>("density_zones", config);
-            MAX_TIP_SLOPE = config.get<double>("max_tip_slope");
-            MAX_TOE_SLOPE = config.get<double>("max_toe_slope");
-            MIN_DEPTH_FACTOR = config.get<double>("min_depth_factor");
-            SLOPE_ADJ_FACTOR = config.get<double>("slope_adj_factor");
-            VDF_LOCK = config.get<double>("vdf_lock");
-
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
-            ZONES_SOURCES_SINKS = getTypeArray<int>("zones_sources_sinks", default_data);
+            SOURCE_ZONE_GHB = default_data.get<int>("source_zone_ghb");
+            SOURCE_ZONE_RECHARGE = default_data.get<int>("source_zone_recharge");
 
-            bool efoldAsArray = data_config.get<bool>("efold_as_array");
+            pt::ptree vdf = tree.get_child("vdf_config");
+            DENSITY_ZONES = getTypeArray<double>("density_zones", vdf);
+            MAX_TIP_SLOPE = vdf.get<double>("max_tip_slope");
+            MAX_TOE_SLOPE = vdf.get<double>("max_toe_slope");
+            MIN_DEPTH_FACTOR = vdf.get<double>("min_depth_factor");
+            SLOPE_ADJ_FACTOR = vdf.get<double>("slope_adj_factor");
+            VDF_LOCK = vdf.get<double>("vdf_lock");
+
             pt::ptree data = input.get_child("data");
 
+            bool efoldAsArray = data_config.get<bool>("efold_as_array");
             if (efoldAsArray){
                 EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));
             }
             EFOLDING = getOptional("e-folding", data);
+
+            INITIAL_ZETAS_AS_ARRAY = data_config.get<bool>("initial_zetas_as_array");
+            if (INITIAL_ZETAS_AS_ARRAY){
+                INITIAL_ZETAS_a = getArray("Zetas", data.get_child("zetas"));
+            }
+            INITIAL_ZETAS = getOptional("zetas", data);
 
             ELEVATION = getOptional("elevation", data);
             EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
@@ -128,7 +141,7 @@ namespace GlobalFlow {
 
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
-            ZONES_SOURCES_SINKS_FILE = getOptional("zones_sources_sinks", data);
+            ZONES_SOURCES_FILE = getOptional("zones_sources", data);
             PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVER = getOptional("river_extent", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);
@@ -145,8 +158,6 @@ namespace GlobalFlow {
             AQ_DEPTH = getOptional("aquifer_depth", data);
 
             INITIAL_HEAD_FILE = getOptional("initial_head", data);
-
-            INITIAL_ZETAS_FILE = getOptional("initial_zetas", data);
 
             INITIAL_ZONES = getOptional("initial_zones", data);
 

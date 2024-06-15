@@ -35,7 +35,6 @@ namespace DataProcessing
 template<class T>
 using Matrix = std::vector<std::vector<T>>;
 using large_num = unsigned long int;
-using n_array = std::array<large_num,4>;
 
 /**
  * Modflow like grid file
@@ -43,20 +42,48 @@ using n_array = std::array<large_num,4>;
  * @param grid
  * @param layers
  */
-void buildByGrid(NodeVector nodes, Matrix<int> grid, int nodesPerLayer, int layers);
+void buildByGrid(NodeVector nodes, Matrix<int> grid, large_num nodesPerLayer, int layers);
+
 /**
 * Builds a map of neighbouring nodes based spatial Id's and resolution
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
-void buildBySpatID(NodeVector nodes, std::unordered_map<large_num, std::vector<large_num>> spatIDtoNodeIDs, large_num resolution,
-                   int numberOfLayers, double oceanCoduct, Simulation::Options::BoundaryCondition boundaryCondition);
+void buildBySpatID(NodeVector nodes,
+                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                   double resolution,
+                   large_num xRange, large_num yRange, bool isGlobal,
+                   int layers, large_num numberOfNodesPerLayer,
+                   double boundaryConduct,
+                   Simulation::Options::BoundaryCondition boundaryCondition);
 
 void copyNeighboursToBottomLayers(NodeVector nodes, int layers);
 
-int getNeighbourSpatID(int spatID, int j, int res);
+int getNeighbourSpatID(int spatID, Model::NeighbourPosition neigPos, double res, large_num xRange, large_num yRange,
+                       bool isGlobal);
 
+int addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
+                 large_num nodeID, int layer, bool isGlobal, int sumBoundaries);
 
-/**
+int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+                          large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
+                          std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                          double boundaryConduct,
+                          Simulation::Options::BoundaryCondition boundaryCondition, int sumBoundaries);
+
+std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
+defineMapOutside(large_num refinedInto);
+
+std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
+defineMapInside(large_num refinedInto);
+
+int setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
+                                    large_num xRange, large_num yRange, bool isGlobal, large_num nodeID, int layer,
+                                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                                    double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
+                                    large_num ref_id_neig, Model::NeighbourPosition neighbourPosition,
+                                    int sumBoundaries);
+
+    /**
 * Builds a map of neighbouring nodes based on x and y coordinates
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
@@ -70,7 +97,7 @@ int buildNeighbourMap(NodeVector nodes, int numberOfTOPNodes, int layers, double
 void
 buildBottomLayers(NodeVector nodes,
                   int layers,
-                  std::vector<bool> conf,
+                  std::vector<bool> confined,
                   std::vector<int> aquifer_depth,
                   std::vector<double> conductances,
                   std::vector<double> anisotropies);

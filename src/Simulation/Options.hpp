@@ -34,14 +34,16 @@ namespace GlobalFlow {
             std::vector<std::string> EFOLDING_a;
             std::vector<std::string> EQUAL_WATER_TABLE_DEPTH_a;
             std::vector<std::string> RIVER_ELEVATION_a;
+            std::vector<std::string> INITIAL_ZETAS_a;
 
             std::string ELEVATION{""};
             std::string EFOLDING{""};
             std::string EQUAL_WATER_TABLE_DEPTH{""};
             std::string RIVER_ELEVATION{""};
+            std::string INITIAL_ZETAS{""};
 
             std::string RECHARGE{""};
-            std::string ZONES_SOURCES_SINKS_FILE{""};
+            std::string ZONES_SOURCES_FILE{""};
             std::string PSEUDO_SOURCE_FLOW{""};
             std::string LITHOLOGY{""};
             std::string RIVER{""};
@@ -64,18 +66,24 @@ namespace GlobalFlow {
             std::string SPATID_ARCID{""};
 
             //++General configuration++//
-            long NUMBER_OF_NODES_PER_LAYER{0};
-            long NUMBER_OF_ROWS{0};
-            long NUMBER_OF_COLS{0};
-            double EDGE_LENGTH_ROWS{0.0};
-            double EDGE_LENGTH_COLS{0.0};
+            unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
+            long Y_RANGE{0};
+            long X_RANGE{0};
+            double RESOLUTION_IN_DEGREE{0.0};
+            double EDGE_LENGTH_LEFT_RIGHT{0.0};
+            double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
+            bool USE_EFOLDING{false};
             int IITER{0};
             int I_ITTER{0};
             double RCLOSE_HEAD{0.1};
             double RCLOSE_ZETA{0.1};
 
             std::string SOLVER{"PCG"};
+            std::vector<bool> STRESS_PERIOD_STEADY_STATE{true};
+            std::vector<int> STRESS_PERIOD_STEPS{0};
+            std::vector<std::string> STRESS_PERIOD_STEP_SIZES{""};
+            std::vector<bool> STRESS_PERIOD_VARIABLE_DENSITY{false};
             std::string NODES{""};
             int THREADS{0};
             bool CACHE{false};
@@ -83,13 +91,18 @@ namespace GlobalFlow {
             double INITIAL_HEAD{0.0};
             std::vector<double> K{0.001};
             double GHB_K{0.1};
+            double RIVER_CONDUCTIVITY{10.0};
+            double SWB_ELEVATION_FACTOR{0.8};
             std::vector<int> AQUIFER_DEPTH{100};
             std::vector<double> ANISOTROPY{10};
             double SPECIFIC_YIELD{0.15};
             double SPECIFIC_STORAGE{0.000015};
-            std::string BOUNDARY_CONDITION{"GeneralHeadBoundary"};
+            std::string DEFAULT_BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
             std::vector<bool> CONFINED{};
+            // refinement information
+            bool GRID_REFINED{false};
+            int MAX_REFINEMENT{1};
             // density information
             bool DENSITY_VARIABLE{false};
             std::vector<double> DENSITY_ZONES{1000.0};
@@ -99,21 +112,23 @@ namespace GlobalFlow {
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
-            std::vector<int> ZONES_SOURCES_SINKS{0};
+            int SINK_ZONE_GHB{0};
+            int SOURCE_ZONE_GHB{0};
+            int SOURCE_ZONE_RECHARGE{0};
 
-            std::string BASE_PATH{"data"};
             bool k_from_file{false};
             bool k_ghb_from_file{false};
             bool specificstorage_from_file{false};
             bool specificyield_from_file{false};
+            bool INITIAL_ZETAS_AS_ARRAY{false};
             bool k_river_from_file{false};
             bool aquifer_depth_from_file{false};
             bool eq_wtd_from_file{false};
             bool initial_head_from_file{false};
             bool effective_porosity_from_file{false};
-            bool zones_sources_sinks_from_file{false};
+            bool zones_sources_from_file{false};
 
-            bool ROW_COLS{false};
+            bool IS_GLOBAL{false};
             double MAX_HEAD_CHANGE{0.01};
             double MAX_ZETA_CHANGE{0.01};
             bool DAMPING{false};
@@ -125,17 +140,27 @@ namespace GlobalFlow {
             enum BoundaryCondition {
                 GENERAL_HEAD_BOUNDARY,
                 GENERAL_HEAD_NEIGHBOUR,
-                STATIC_HEAD_SEA_LEVEL
+                STATIC_HEAD_SEA_LEVEL,
+                NONE
             };
+
+            std::vector<bool> getStressPeriodSteadyState() { return STRESS_PERIOD_STEADY_STATE; }
+
+            std::vector<int> getStressPeriodSteps() { return STRESS_PERIOD_STEPS; }
+
+            std::vector<std::string> getStressPeriodStepSizes() { return STRESS_PERIOD_STEP_SIZES; }
+
+            std::vector<bool> getStressPeriodVariableDensity() {return STRESS_PERIOD_VARIABLE_DENSITY; }
 
             void setClosingCritHead(double crit_head) { RCLOSE_HEAD = crit_head; }
 
             void setClosingCritZeta(double crit_zeta) { RCLOSE_ZETA = crit_zeta; }
 
-
             void setDamping(bool set) { DAMPING = set; }
 
             bool isDampingEnabled() { return DAMPING; }
+
+            bool useEfolding() { return USE_EFOLDING; }
 
             double getMinDamp() { return MIN_DAMP; }
 
@@ -151,13 +176,16 @@ namespace GlobalFlow {
             std::vector<bool> getConfinements() { return CONFINED; }
 
             BoundaryCondition getBoundaryCondition() {
-                if (BOUNDARY_CONDITION == "GeneralHeadBoundary") {
+                if (DEFAULT_BOUNDARY_CONDITION == "GeneralHeadBoundary") {
                     return BoundaryCondition::GENERAL_HEAD_BOUNDARY;
                 }
-                if (BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
+                if (DEFAULT_BOUNDARY_CONDITION == "GeneralHeadNeighbour") {
                     return BoundaryCondition::GENERAL_HEAD_NEIGHBOUR;
                 }
-                return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
+                if (DEFAULT_BOUNDARY_CONDITION == "StaticSeaLevel"){
+                    return BoundaryCondition::STATIC_HEAD_SEA_LEVEL;
+                }
+                return BoundaryCondition::NONE;
             }
 
             bool isSensitivity() { return SENSITIVITY; }
@@ -180,7 +208,9 @@ namespace GlobalFlow {
 
             bool isEffectivePorosityFromFile() { return effective_porosity_from_file;}
 
-            bool isZonesSourcesSinksFromFile() { return zones_sources_sinks_from_file;}
+            bool isZonesSourcesFromFile() { return zones_sources_from_file;}
+
+            bool isInitialZetasAsArray(){ return INITIAL_ZETAS_AS_ARRAY; }
 
             std::string getKDir() { return K_DIR; }
 
@@ -196,43 +226,50 @@ namespace GlobalFlow {
 
             std::string getInitialHeadsDir() {return INITIAL_HEAD_FILE;}
 
-            std::string getInitialZetasDir() {return INITIAL_ZETAS_FILE;}
-
             std::string getEffectivePorosityDir() {return EFFECTIVE_POROSITY_FILE;}
 
-            bool isRowCol() { return ROW_COLS; }
+            bool isGlobal() { return IS_GLOBAL; }
 
             int getInnerItter() { return I_ITTER; }
 
-            long
+            unsigned long int
             getNumberOfNodesPerLayer() {
                 return NUMBER_OF_NODES_PER_LAYER;
             };
 
             long
-            getNumberOfRows() {
-                return NUMBER_OF_ROWS;
+            getYRange() {
+                return Y_RANGE;
             };
 
             long
-            getNumberOfCols() {
-                return NUMBER_OF_COLS;
+            getXRange() {
+                return X_RANGE;
             };
 
             double
+            getResolution() {
+                return RESOLUTION_IN_DEGREE;
+            }
+
+            double
             getEdgeLengthLeftRight() {
-                return EDGE_LENGTH_ROWS;
+                return EDGE_LENGTH_LEFT_RIGHT;
             };
 
             double
             getEdgeLengthFrontBack() {
-                return EDGE_LENGTH_COLS;
+                return EDGE_LENGTH_FRONT_BACK;
             };
 
             int
             getNumberOfLayers() {
                 return LAYERS;
             }
+
+            bool isGridRefined() { return GRID_REFINED; }  // todo could be removed
+
+            int getMaxRefinement() { return MAX_REFINEMENT; }
 
             bool isDensityVariable() { return DENSITY_VARIABLE; }
 
@@ -241,25 +278,13 @@ namespace GlobalFlow {
                 return DENSITY_ZONES;
             }
 
-            double
-            getEffectivePorosity() {
-                return EFFECTIVE_POROSITY;
-            }
+            double getEffectivePorosity() { return EFFECTIVE_POROSITY; }
 
-            double
-            getMaxTipSlope() {
-                return MAX_TIP_SLOPE;
-            }
+            double getMaxTipSlope() { return MAX_TIP_SLOPE; }
 
-            double
-            getMaxToeSlope() {
-                return MAX_TOE_SLOPE;
-            }
+            double getMaxToeSlope() { return MAX_TOE_SLOPE; }
 
-            double
-            getMinDepthFactor() {
-                return MIN_DEPTH_FACTOR;
-            }
+            double getMinDepthFactor() { return MIN_DEPTH_FACTOR; }
 
             double
             getSlopeAdjFactor() {
@@ -270,6 +295,12 @@ namespace GlobalFlow {
             getVDFLock() {
                 return VDF_LOCK;
             }
+
+            int getSourceZoneGHB() { return SOURCE_ZONE_GHB; }
+
+            int getSinkZoneGHB() { return SINK_ZONE_GHB; }
+
+            int getSourceZoneRecharge() { return SOURCE_ZONE_RECHARGE; }
 
             int
             getMaxIterations() {
@@ -291,10 +322,6 @@ namespace GlobalFlow {
                 return SOLVER;
             }
 
-            //std::string getBasePath() {
-            //    return BASE_PATH;
-            //}
-
             std::string
             getNodesDir() {
                 return NODES;
@@ -313,6 +340,11 @@ namespace GlobalFlow {
             std::string
             getEqWTD() {
                 return EQUAL_WATER_TABLE_DEPTH;
+            }
+
+            std::string
+            getInitialZetas() {
+                return INITIAL_ZETAS;
             }
 
             std::string getRiverElevation() {
@@ -339,14 +371,19 @@ namespace GlobalFlow {
                 return RIVER_ELEVATION_a;
             }
 
+            std::vector<std::string>
+            getInitialZetas_a() {
+                return INITIAL_ZETAS_a;
+            }
+
             std::string
             getRecharge() {
                 return RECHARGE;
             }
 
             std::string
-            getZonesOfSourcesAndSinksDir() {
-                return ZONES_SOURCES_SINKS_FILE;
+            getZonesOfSourcesDir() {
+                return ZONES_SOURCES_FILE;
             }
 
             std::string
@@ -419,6 +456,13 @@ namespace GlobalFlow {
                 return GHB_K;
             }
 
+            double
+            getRiverConductivity() {
+                return RIVER_CONDUCTIVITY;
+            }
+
+            double getSWBElevationFactor() { return SWB_ELEVATION_FACTOR; }
+
             std::vector<int>
             getAquiferDepth() {
                 return AQUIFER_DEPTH;
@@ -446,7 +490,6 @@ namespace GlobalFlow {
             void
             save(const std::string &filename);
         };
-
-    }
+}
 }//ns
 #endif //COVERAGE_OPTIONS_H

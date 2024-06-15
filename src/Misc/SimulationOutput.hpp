@@ -45,8 +45,8 @@ class SimulationOutput {
 
         const int field_count;
 
-        vector<int> nodeIDs;
-        vector <string> field_names;
+        std::vector<int> nodeIDs;
+        std::vector <std::string> field_names;
         NodeVector nodes;
 
         template<class ...Names>

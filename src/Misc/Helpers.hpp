@@ -23,7 +23,7 @@
 #ifndef GLOBAL_FLOW_HELPERS_HPP
 #define GLOBAL_FLOW_HELPERS_HPP
 
-#include <boost/timer/timer.hpp>
+#include <boost/timer/progress_display.hpp>
 
 #include "colors.hpp"
 
@@ -62,11 +62,11 @@ class InfInSolutionException : public std::exception {
 
 inline void NANChecker(const double &value, std::string message) {
     if (std::isnan(value)) {
-	    LOG(GlobalFlow::critical) << "NAN value! :((" << message << "\n";
+	    LOG(GlobalFlow::critical) << "NAN value! :(( " << message << "\n";
         throw new NANInSolutionException();
     }
     if (std::isinf(value)) {
-	    LOG(GlobalFlow::critical) << "INF value! :((" << message << "\n";
+	    LOG(GlobalFlow::critical) << "INF value! :(( " << message << "\n";
         throw new InfInSolutionException();
     }
 }
@@ -80,7 +80,7 @@ T const pi = std::acos(-T(1));
 inline double
 roundValue(double valueToRound)
 {
-	return ceil(valueToRound * 100) / 100;
+    return ceil(valueToRound * 100) / 100;
 }
 
 /** http://stackoverflow.com/questions/15181579 **/
@@ -144,9 +144,7 @@ template<typename C> C *Singleton<C>::_instance = 0;
 //Usage:
 /*class LoggerInterface : public Singleton<LoggerInterface> {
     friend class Singleton<LoggerInterface>;
-
 private:
-
 public:
     virtual ~LoggerInterface() {};
 };*/

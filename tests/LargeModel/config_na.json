@@ -1,0 +1,135 @@
+{
+  "config": {
+    "model_config": {
+      "stress_period_steady_state": [
+        "true",
+        "true",
+        "true",
+        "true"
+      ],
+      "stress_period_time_steps": [
+        100,
+        100,
+        100,
+        100000
+      ],
+      "stress_period_time_step_sizes": [
+        "THOUSAND_YEARS",
+        "HUNDRED_YEARS",
+        "TEN_YEARS",
+        "YEAR"
+      ],
+      "stress_period_variable_density": [
+        "true",
+        "true",
+        "true",
+        "true"
+      ],
+      "nodes": "grid_na_dk.csv",
+      "number_of_nodes_per_layer": 452736,
+      "x_range": 360,
+      "y_range": 180,
+      "is_global": "true",
+      "resolution_in_degree": 0.08333,
+      "edge_length_left_right": -0,
+      "edge_length_front_back": -0,
+      "layers": 1,
+      "use_efolding": "true",
+      "confinement": [
+        "true"
+      ],
+      "grid_refined": "false",
+      "max_refinement": 1,
+      "default_boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
+      "density_zones": [
+        999.5,
+        1026.6
+      ],
+      "max_tip_slope": 0.0005,
+      "max_toe_slope": 0.0001,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.01
+    },
+    "numerics": {
+      "threads": 80,
+      "solver": "PCG",
+      "iterations": 10,
+      "inner_itter": 10,
+      "closing_crit_head": 1e-180,
+      "closing_crit_zeta": 1e-20,
+      "head_change": 1,
+      "zeta_change": 1,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.95
+    },
+    "input": {
+      "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "true",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "true",
+        "initial_head_from_file": "false",
+        "initial_zetas_as_array": "false",
+        "k_from_file": "true",
+        "k_ghb_from_file": "true",
+        "k_river_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
+        "zones_sources_from_file": "false"
+      },
+      "default_data": {
+        "effective_porosity": 0.002,
+        "initial_head": 0,
+        "K": [
+          2
+        ],
+        "ghb_K": 10,
+        "aquifer_thickness": [
+          50
+        ],
+        "anisotropy": [
+          20
+        ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
+        "specific_yield": 0.15,
+        "specific_storage": 0.000015,
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
+      },
+      "data": {
+        "elevation": "elevation.csv",
+        "effective_porosity": "effective_porosity.csv",
+        "equal_water_table_depth": "mean_wtd.csv",
+        "global_lakes": "G_GLOLAK.csv",
+        "global_wetlands": "G_GLOWET.csv",
+        "ghb_conductance": "ghb_conductivity_continuous.csv",
+        "lithology": "conductivity_continuous.csv",
+        "local_lakes": "G_LOCLAK.csv",
+        "local_wetlands": "G_LOCWET.csv",
+        "recharge": "recharge_mean.csv",
+        "river_extent": "river_extent.csv",
+        "river_elevation": "surface_water_elevation.csv",
+        "e-folding": {
+          "E-Folding": [
+            "Africa_F.csv",
+            "Australia_F.csv",
+            "Eurasia_F.csv",
+            "N_America_F.csv",
+            "S_America_F.csv"
+          ]
+        },
+        "zetas": {
+          "Zetas": [
+            "zeta1_t_100.csv"
+          ]
+        }
+      }
+    }
+  } 
+}

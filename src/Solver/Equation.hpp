@@ -27,6 +27,7 @@
 #include <unordered_set>
 
 #include "../../lib/Eigen/Sparse"
+
 #include "../../lib/Eigen/Core"
 //#include "../../lib/Eigen/PardisoSupport"
 #include "../Model/Node.hpp"
@@ -49,7 +50,7 @@ namespace GlobalFlow {
  */
         class Equation {
         public:
-            Equation(large_num numberOfNodesPerLayer, NodeVector nodes, Simulation::Options options);
+            Equation(NodeVector nodes, Simulation::Options options);
 
             ~Equation();
 
@@ -64,9 +65,14 @@ namespace GlobalFlow {
             void solve_zetas();
 
             /**
-             * @return The number of iterations
+             * @return The number of iterations groundwater flow solution
              */
             int getItter();
+
+            /**
+             * @return The number of iterations for variable density solution
+             */
+            int getItter_zetas();
 
             /**
              * @return The current residual error
@@ -109,29 +115,35 @@ namespace GlobalFlow {
             }
 
             /**
-             * Toogle the steady-state in all nodes
-             * @return
+             * Set simulation step settings
              */
-            bool toggleSteadyState() {
-                SteadyState = !SteadyState;
-                bool state = SteadyState;
+            void updateIsSteadyState(bool is_steadyState) {
+                isSteadyState = is_steadyState;
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [state](std::unique_ptr<Model::NodeInterface> const &node) {
-                                  node->toggleSteadyState(state);
+                              [is_steadyState](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->updateIsSteadyState(is_steadyState);
                               });
-                return SteadyState;
+            }
+
+            void updateIsDensityVariable(bool is_densityVariable) {
+                isDensityVariable = is_densityVariable;
+                std::for_each(nodes->begin(),
+                              nodes->end(),
+                              [is_densityVariable](std::unique_ptr<Model::NodeInterface> const &node) {
+                                  node->updateIsDensityVariable(is_densityVariable);
+                              });
             }
 
             /**
-             * Set the correct stepsize (default is DAY) // todo remove if not needed
+             * Set the correct stepsize (default is DAY) //
              * @param mod
              */
-            void updateStepModifier(double mod) {
+            void updateStepSize(double stepSize) {
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [mod](std::unique_ptr<Model::NodeInterface> const &node) {
-                    node->updateStepModifier(mod);
+                              [stepSize](std::unique_ptr<Model::NodeInterface> const &node) {
+                    node->updateStepSize(stepSize);
                 });
             }
 
@@ -148,6 +160,15 @@ namespace GlobalFlow {
 
             void updateClosingCrit(double crit) { cg.setTolerance(crit); }
 
+            //void updateAllowedMaxHeadChange(double head){
+            //    maxAllowedHeadChange = head;
+            //}
+
+            void updateMaxInnerItter(int iter){
+                max_inner_iterations = iter;
+                cg.setMaxIterations(iter);
+            }
+
             /**
              * @note resests dampening object and counters
              */
@@ -162,9 +183,9 @@ namespace GlobalFlow {
 
         large_num numberOfLayers;
 
-        large_num numberOfNodesTotal;
+        long numberOfNodesTotal;
 
-        int initialHead;
+        long numberOfActiveZetas;
 
         /**
          * _var_ only used if disabling of cells is required
@@ -179,84 +200,89 @@ namespace GlobalFlow {
         long_vector b_zetas;
         SparseMatrix<pr_t> A_zetas;
 
+        long_vector x_zetas_t0;
+        long_vector zetaChanges;
+        long_vector oldZetaChanges;
+
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
-        AdaptiveDamping adaptiveDamping_zetas;
 
-        int IITER{0};//FIXME this is used as outer iterations
+        long MAX_OUTER_ITERATIONS{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
-
-        int inner_iterations{0};
+        Index threads;
+        long max_inner_iterations{0};
+        long max_inner_iterations_zetas{0};
 
         //From current run
-        int __itter{0};
+        long __itter{0};
+        long __itter_zetas{0};
         double __error{0};
 
-        bool isCached{false};
-        bool isCached_zetas{false};
+        double currentMaxHeadChange{0};
+        double maxAllowedHeadChange{0.01};
 
-        double maxHeadChange{0.01};
-        double maxZetaChange{0.01};
+        double currentMaxZetaChange{0};
+        double maxAllowedZetaChange{0.01};
+
         double dampMin{0.01};
         double dampMax{0.01};
 
-        //Real -> Current
-        std::unordered_map<large_num, long long> index_mapping;
+        std::unordered_map<large_num, std::unordered_map<large_num,long long>> nodeID_to_zetaID_to_rowID;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
 
-        bool vdf{false};
+        bool isSteadyState = false;
+
+        bool isGNC{false};
+
+        bool isDensityVariable{false};
 
         int numberOfZones{0};
-        /**
-         * Helper for updating the matrix
-         * @param node
-         * @param cached
-         */
-        void addToA(std::unique_ptr<Model::NodeInterface> const &node);
 
-        void addToA_zeta(large_num nodeIter, large_num iterOffset, int localZetaID);
+        int maxRefinement{1};
 
         /**
          * Update the matrix for the current iteration
          */
-        void inline updateMatrix();
 
-        void inline updateMatrix_zetas(large_num iterOffset, int localZetaID);
+        void inline updateEquation();
 
-        /**
-         * Reallocate matrix and vectors based on dried nodes
-         * @bug This is currently missing re-enabling of deactivated nodes!
-         * Re-enable if:
-         * 1) head in cell below needs to be higher than threshold
-         * 2) head in one of 4 neighbours higher than threshold
-         */
-        void inline reallocateMatrix();
+        void inline preconditionA();
 
-        /**
-         * Run the preconditioner for heads
-         */
-        void inline preconditioner();
+        void inline updateEquation_zetas(const int layer);
 
-        /**
-         * Run the preconditioner for zetas
-         */
-        void inline preconditioner_zetas();
+        void inline addToA(std::unique_ptr<Model::NodeInterface> const &node);
+
+        void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID);
+
+        void inline prepareEquation_zetas(const int layer);
+
+        bool inline isHeadChangeGreater();
 
         /**
          * Update heads in inner iteration
          */
-        void inline updateIntermediateHeads();
+        void inline updateHeadAndHeadChange();
 
         /**
          * Update zetas in inner iteration
          */
-        void inline updateIntermediateZetas(large_num iterOffset, int localZetaID);
+        void inline updateZetaIter(int layer);
+
+        /**
+         * Update zone change
+         */
+        void inline updateZoneChange();
+
+        /**
+        * Calculate the ghost node correction flow budget
+        */
+        void inline updateGNCBudget();
 
         /**
          * Calculate the final budget
@@ -264,29 +290,34 @@ namespace GlobalFlow {
         void inline updateBudget();
 
         /**
-         * Write the final head to the nodes
+         * Update head change of previous time step
          */
-        void inline updateFinalHeads();
+        void inline updateHeadChangeTZero();
+
+        /**
+         * Update head of previous time step
+         */
+        void inline updateHeadTZero();
 
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateZetaChanges(int localZetaID);
+        void inline updateZetas(const int layer);
 
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateTopZetasToHeads();
+        void inline clipZetas();
 
-        void inline checkAllZetaSlopes(int localZetaID);
+        void inline setZetasIter();
 
-        void inline updateZetasAfterEquation();
+        void inline setZetasTZero();
+
+        void inline checkAllZetaSlopes();
 
         void inline adjustZetaHeights();
 
-        bool SteadyState = false;
-        //Only for testing purposes
-        bool simpleHead = true;
+        void inline setUnconvergedZetasToZetas_TZero(int layer);
 
         };
 }

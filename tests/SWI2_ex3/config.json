@@ -1,0 +1,118 @@
+{
+  "config": {
+    "model_config": {
+      "stress_period_steady_state": [
+        "true",
+        "true"
+      ],
+      "stress_period_time_steps": [
+        500,
+        500
+      ],
+      "stress_period_time_step_sizes": [
+        "TWO_YEARS",
+        "TWO_YEARS"
+      ],
+      "stress_period_variable_density": [
+        "true",
+        "true"
+      ],
+      "nodes": "grid_swi2_ex3.csv",
+      "number_of_nodes_per_layer": 200,
+      "x_range": 1,
+      "y_range": 200,
+      "is_global": "false",
+      "resolution_in_degree": 1,
+      "edge_length_left_right": 1,
+      "edge_length_front_back": 20,
+      "layers": 3,
+      "use_efolding": "false",
+      "confinement": [
+        "true",
+        "true",
+        "true"
+      ],
+      "grid_refined": "false",
+      "max_refinement": 1,
+      "default_boundary_condition": "GeneralHeadBoundary",
+      "sensitivity": "false"
+    },
+    "vdf_config": {
+      "density_zones": [
+        1000,
+        1025
+      ],
+      "max_tip_slope": 0.04,
+      "max_toe_slope": 0.02,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.001
+    },
+    "numerics": {
+      "threads": 40,
+      "solver": "PCG",
+      "iterations": 1000,
+      "inner_itter": 30,
+      "closing_crit_head": 1E-80,
+      "closing_crit_zeta": 1E-3,
+      "head_change": 0.001,
+      "zeta_change": 0.001,
+      "damping": "false",
+      "min_damp": 0.01,
+      "max_damp": 0.5
+    },
+    "input": {
+      "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "true",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "false",
+        "initial_head_from_file": "false",
+        "initial_zetas_as_array": "true",
+        "k_from_file": "false",
+        "k_ghb_from_file": "true",
+        "k_river_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
+        "zones_sources_from_file": "false"
+      },
+      "default_data": {
+        "effective_porosity": 0.2,
+        "initial_head": -9,
+        "K": [
+          2,
+          1,
+          4
+        ],
+        "ghb_K": 800,
+        "aquifer_thickness": [
+          20,
+          1,
+          20
+        ],
+        "anisotropy": [
+          30,
+          100,
+          60
+        ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
+        "specific_yield": 0.2,
+        "specific_storage": 0.000015,
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
+      },
+      "data": {
+        "effective_porosity": "effective_porosity_swi2_ex3.csv",
+        "elevation": "elevation_swi2_ex3.csv",
+        "ghb_conductance": "ghb_conductance_swi2_ex3.csv",
+        "recharge": "recharge_swi2_ex3.csv",
+        "zetas": {
+          "Zetas": [
+            "initial_zetas_swi2_ex3.csv"
+          ]
+        }
+      }
+    }
+  }
+}
