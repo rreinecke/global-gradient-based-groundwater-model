@@ -49,7 +49,7 @@ void buildByGrid(NodeVector nodes, Matrix<int> grid, large_num nodesPerLayer, in
 * Missing neighbours or empty spaces lead to adding of a General Head Boundary Flow addition
 */
 void buildBySpatID(NodeVector nodes,
-                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                   std::unordered_map<large_num, std::unordered_map<int, large_num>> spatIDtoNodeID,
                    double resolution,
                    large_num xRange, large_num yRange, bool isGlobal,
                    int layers, large_num numberOfNodesPerLayer,
@@ -65,7 +65,7 @@ int addBoundary(NodeVector const& nodes, double boundaryConduct, Simulation::Opt
                  large_num nodeID, int layer, bool isGlobal, int sumBoundaries);
 
 int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
-                          large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
+                          large_num xRange, large_num yRange, bool isGlobal, large_num nodeID, int layer,
                           std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
                           double boundaryConduct,
                           Simulation::Options::BoundaryCondition boundaryCondition, int sumBoundaries);

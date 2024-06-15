@@ -19,7 +19,7 @@ namespace GlobalFlow {
                 op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                 op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                 op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                op.isConfined(0), op.getMaxRefinement(),
+                op.isConfined(0),
                 op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                 op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
                 op.getSourceZoneGHB(), op.getSourceZoneRecharge());
@@ -27,7 +27,7 @@ namespace GlobalFlow {
 
                 LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
                 DataProcessing::buildBySpatID(nodes,
-                                              this->getMappingSpatIDtoNodeIDs(),
+                                              this->getMappingSpatIDtoNodeID(),
                                               op.getResolution(),
                                               op.getXRange(),
                                               op.getYRange(),
@@ -88,14 +88,13 @@ namespace GlobalFlow {
                 io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
                 in.read_header(io::ignore_no_column, "spatID", "layer", "recharge");
                 large_num spatID{0};
-                int refID{0};
                 int layer{0};
                 double recharge{0};
                 large_num nodeID{0};
 
                 while (in.read_row(spatID, layer, recharge)) {
                     try {
-                        nodeID = this->lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                        nodeID = this->lookupSpatIDtoNodeID.at(spatID).at(layer);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry

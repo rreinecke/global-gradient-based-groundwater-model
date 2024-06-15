@@ -51,8 +51,8 @@ namespace GlobalFlow {
          */
         std::string basePath{"data"};
         fs::path data_dir{basePath};
-        /** @var lookupSpatIDtoNodeIDs <SpatID, Layer, RefID, NodeID>*/
-        std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> lookupSpatIDtoNodeIDs;
+        /** @var lookupSpatIDtoNodeIDs <SpatID, Layer, NodeID>*/
+        std::unordered_map<large_num, std::unordered_map<int, large_num>> lookupSpatIDtoNodeID;
         /** @var lookupArcIDtoSpatIDs <ArcID(0.5°), vector<SpatID(5')>>*/
         std::unordered_map<large_num, std::vector<large_num>> lookupArcIDtoSpatIDs;
     public:
@@ -113,26 +113,23 @@ namespace GlobalFlow {
             in.read_header(io::ignore_no_column, "spatID", "data");
             large_num spatID{0};
             int layer{0};
-            large_num refID{0};
             double data = 0;
-            std::unordered_map<large_num,large_num> refID_to_nodeID;
+            large_num nodeID;
 
             int i{0};
             while (in.read_row(spatID, data)) {
                 try {
-                    refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                for (const auto &[refID, nodeID]: refID_to_nodeID){
-                    if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
-                        throw "Error in reading spatID";
-                    }
-                    processData(data, nodeID);
-                    i++;
+                if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                    throw "Error in reading spatID";
                 }
+                processData(data, nodeID);
+                i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";
         }
@@ -165,17 +162,17 @@ namespace GlobalFlow {
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        void addMappingSpatIDtoNodeIDs(large_num spatID, int layer, large_num refID, large_num nodeID) {
-            lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID;
+        void addMappingSpatIDtoNodeID(large_num spatID, int layer, large_num nodeID) {
+            lookupSpatIDtoNodeID[spatID][layer] = nodeID;
         };
 
         /**
          * @brief provides access to mapping of data ids to position in node vector
          * @return <SpatID, vector<NodeID> (internal array id)>
          */
-        const std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>>&
-        getMappingSpatIDtoNodeIDs() {
-            return lookupSpatIDtoNodeIDs;
+        const std::unordered_map<large_num, std::unordered_map<int, large_num>>&
+        getMappingSpatIDtoNodeID() {
+            return lookupSpatIDtoNodeID;
         };
 
         /**
@@ -246,7 +243,6 @@ namespace GlobalFlow {
                      double specificStorage,
                      bool useEfolding,
                      bool confined,
-                     large_num maxRefinement,
                      double effPorosity,
                      double maxTipSlope,
                      double maxToeSlope,
@@ -263,11 +259,10 @@ namespace GlobalFlow {
             double area{0};
             large_num spatID{0};
             large_num nodeID{0};
-            large_num refID{0};
             bool isSteadyState{true};
             bool isDensityVariable{false};
 
-            lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
+            lookupSpatIDtoNodeID.reserve(numberOfNodesPerLayer);
             std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
             std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
 
@@ -293,8 +288,6 @@ namespace GlobalFlow {
                                                             specificStorage,
                                                             useEfolding,
                                                             confined,
-                                                            refID,
-                                                            maxRefinement,
                                                             isSteadyState,
                                                             isDensityVariable,
                                                             delnus,
@@ -308,113 +301,11 @@ namespace GlobalFlow {
                                                             sourceZoneGHB,
                                                             sourceZoneRecharge));
                 for (int layer = 0; layer < numberOfLayers; layer++) {
-                    lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
+                    lookupSpatIDtoNodeID[spatID][layer] = nodeID + (numberOfNodesPerLayer * layer);
                 }
                 nodeID++;
             }
             LOG(debug) << "    Added " << nodeID << " nodes";
-            //Return number of total top nodes
-            return nodeID - 1;
-        };
-
-        /**
-         * @brief Initial reading of node definitions - without col and row
-         * @note Without col and row
-         * Reads a csv file with x and y coordinates for predefined grid of cells
-         * @param nodes Vector of nodes
-         * @param path Path to read definitions from
-         * @param numberOfNodesPerLayer The number of expected computation nodes
-         * @param defaultK The default conductivity
-         * @param aquiferDepth The default depth per cell
-         * @param anisotropy The default relation of vertical and horizontal conductivity
-         * @param specificYield The default specific yield
-         * @param specificStorage The default specific storage
-         * @param confined If node is part of a confined layer?
-         * @return number of total top nodes
-         */
-        int
-        readLandMaskRefined(NodeVector nodes,
-                            std::string path,
-                            large_num numberOfNodesPerLayer,
-                            double edgeLengthLeftRight,
-                            double edgeLengthFrontBack,
-                            int numberOfLayers,
-                            double defaultK,
-                            double initialHead,
-                            double aquiferDepth,
-                            double anisotropy,
-                            double specificYield,
-                            double specificStorage,
-                            bool useEfolding,
-                            bool confined,
-                            large_num maxRefinement,
-                            double effPorosity,
-                            double maxTipSlope,
-                            double maxToeSlope,
-                            double minDepthFactor,
-                            double slopeAdjFactor,
-                            double vdfLock,
-                            std::vector<double> densityZones,
-                            int sourceZoneGHB,
-                            int sourceZoneRecharge) {
-            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "lon", "lat", "area", "refID"); // todo use new refIDs (1, 11, 111 for deeper levels) only for reading
-            double lon{0};
-            double lat{0};
-            double area{0};
-            bool isSteadyState{true};
-            bool isDensityVariable{false};
-            large_num refID{0};
-            large_num nodeID{0};
-            large_num spatID{0};
-
-            lookupSpatIDtoNodeIDs.reserve(numberOfNodesPerLayer);
-            std::vector<Model::quantity<Model::Dimensionless>> delnus = calcDelnus(densityZones);
-            std::vector<Model::quantity<Model::Dimensionless>> nusInZones = calcNusInZones(densityZones);
-
-            while (in.read_row(spatID, lon, lat, area, refID)) {
-
-                if (edgeLengthLeftRight == edgeLengthFrontBack) {
-                    edgeLengthLeftRight = edgeLengthFrontBack = std::sqrt(area);
-                }
-
-                nodes->emplace_back(new Model::StandardNode(nodes,
-                                                            lat,
-                                                            lon,
-                                                            area * Model::si::square_meter,
-                                                            edgeLengthLeftRight * Model::si::meter,
-                                                            edgeLengthFrontBack * Model::si::meter,
-                                                            spatID,
-                                                            nodeID,
-                                                            defaultK * (Model::si::meter / Model::day),
-                                                            initialHead * Model::si::meter,
-                                                            aquiferDepth,
-                                                            anisotropy,
-                                                            specificYield,
-                                                            specificStorage,
-                                                            useEfolding,
-                                                            confined,
-                                                            refID,
-                                                            maxRefinement,
-                                                            isSteadyState,
-                                                            isDensityVariable,
-                                                            delnus,
-                                                            nusInZones,
-                                                            effPorosity,
-                                                            maxTipSlope,
-                                                            maxToeSlope,
-                                                            minDepthFactor,
-                                                            slopeAdjFactor,
-                                                            vdfLock * Model::si::meter,
-                                                            sourceZoneGHB,
-                                                            sourceZoneRecharge));
-                for (int layer = 0; layer < numberOfLayers; layer++) {
-                    lookupSpatIDtoNodeIDs[spatID][layer][refID] = nodeID + (numberOfNodesPerLayer * layer);
-                }
-                nodeID++;
-            }
-            LOG(debug) << "    Added " << nodeID << " nodes";
-
             //Return number of total top nodes
             return nodeID - 1;
         };
@@ -426,11 +317,10 @@ namespace GlobalFlow {
          * @note transforms hydraulic conductivity [m/day] to conductance [m^2/day]
          */
         virtual void readGHB_elevation_conductivity(std::string path) {
-            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductivity", "elevation");
+            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity", "elevation");
             large_num spatID{0};
             int layer{0};
-            large_num refID{0};
             double elevation{0};
             double conductivity{0};
             large_num nodeID;
@@ -443,9 +333,9 @@ namespace GlobalFlow {
             std::unordered_map<Model::NeighbourPosition, large_num> horizontal_neighbours;
 
             int i{0};
-            while (in.read_row(spatID, layer, refID, conductivity, elevation)) {
+            while (in.read_row(spatID, layer, conductivity, elevation)) {
                 try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
@@ -496,19 +386,18 @@ namespace GlobalFlow {
          * @param path Where to read from
          */
         virtual void readGHB_elevation_conductance(std::string path) {
-            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductance", "elevation");
+            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "conductance", "elevation");
             large_num spatID{0};
             double elevation{0};
             double conductance{0};
             large_num nodeID;
             int layer{0};
-            large_num refID{0};
 
             int i{0};
-            while (in.read_row(spatID, layer, refID, conductance, elevation)) {
+            while (in.read_row(spatID, layer, conductance, elevation)) {
                 try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
@@ -553,24 +442,22 @@ namespace GlobalFlow {
             double head{0};
             double conduct{0};
             double bottom{0};
-            std::unordered_map<large_num, large_num> nodeIDs;
+            large_num nodeID;
             int layer{0};
 
             int i{0};
             while (in.read_row(spatID, head, bottom, conduct)) {
                 try {
-                    nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                for (auto nodeID : nodeIDs) { // in case the grid is refined: loop over all nodes at refIDs
-                    nodes->at(nodeID.second)->addExternalFlow(Model::RIVER,
-                                                       head * Model::si::meter,
-                                                       conduct,
-                                                       bottom * Model::si::meter);
-                }
+                nodes->at(nodeID)->addExternalFlow(Model::RIVER,
+                                                   head * Model::si::meter,
+                                                   conduct,
+                                                   bottom * Model::si::meter);
                 i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";
@@ -599,18 +486,17 @@ namespace GlobalFlow {
          */
         void readElevation(std::string path, std::vector<std::string> files) {
             loopFiles(path, files, [this](std::string path) {
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-                in.read_header(io::ignore_no_column, "spatID", "refID", "elevation");
+                io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "elevation");
                 large_num spatID{0};
                 int layer{0};
-                int refID{0};
                 double elevation{0};
                 large_num nodeID;
 
                 int i{0};
-                while (in.read_row(spatID, refID, elevation)) {
+                while (in.read_row(spatID, elevation)) {
                     try {
-                        nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
@@ -630,18 +516,17 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          */
         virtual void readElevation(std::string path) {
-            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "refID", "elevation");
+            io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "elevation");
             large_num spatID{0};
             int layer{0};
-            int refID{0};
             double elevation{0};
             large_num nodeID{0};
 
             int i{0};
-            while (in.read_row(spatID, refID, elevation)) {
+            while (in.read_row(spatID, elevation)) {
                 try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
@@ -699,10 +584,9 @@ namespace GlobalFlow {
 
             int arcID = -1;
             std::vector<large_num> spatIDs;
-            std::unordered_map<large_num, large_num> nodeIDs;
+            large_num nodeID;
             double recharge{0};
             int layer{0};
-            large_num refID{0};
 
             int i{0};
             while (in.read_row(arcID, recharge)) {
@@ -717,36 +601,31 @@ namespace GlobalFlow {
 
                 for (large_num spatID : spatIDs) {
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                     }
                     catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                         continue;
                     }
+                    /**
+                    * GW Recharge is head independent
+                    * -> p = 0
+                    * Bottom is undefined and c is same as q for recharge flows
+                    */
+                    //double K = nodes->at(i)->getProperties().get<quantity<Model::Velocity>, Model::K>().value();
+                    //double size = nodes->at(
+                    //        i)->getProperties().get<quantity<Model::SquareMeter>, Model::SideSurface>().value();
+                    //double QMax = K * size;
+                    NANChecker(recharge, "Broken recharge value");
+                    double q_rech = convertToRate(recharge,
+                                                  nodes->at(nodeID)->getArea().value());
+                    //NANChecker(QMax, "QMax Problem");
+                    NANChecker(q_rech, "Recharge-init Problem");
 
-                    for (auto nodeID : nodeIDs) { // in case the grid is refined: loop over all nodes at refIDs
-
-                        //LOG(debug) << nodeID << "," << spatID << "," << arcID;
-                        /**
-                        * GW Recharge is head independent
-                        * -> p = 0
-                        * Bottom is undefined and c is same as q for recharge flows
-                        */
-                        //double K = nodes->at(i)->getProperties().get<quantity<Model::Velocity>, Model::K>().value();
-                        //double size = nodes->at(
-                        //        i)->getProperties().get<quantity<Model::SquareMeter>, Model::SideSurface>().value();
-                        //double QMax = K * size;
-                        NANChecker(recharge, "Broken recharge value");
-                        double q_rech = convertToRate(recharge,
-                                                      nodes->at(nodeID.second)->getArea().value());
-                        //NANChecker(QMax, "QMax Problem");
-                        NANChecker(q_rech, "Recharge-init Problem");
-
-                        nodes->at(nodeID.second)->addExternalFlow(Model::RECHARGE,
-                                                                  0 * Model::si::meter,
-                                                                  q_rech,
-                                                                  0 * Model::si::meter);
-                        i++;
-                    }
+                    nodes->at(nodeID)->addExternalFlow(Model::RECHARGE,
+                                                       0 * Model::si::meter,
+                                                       q_rech,
+                                                       0 * Model::si::meter);
+                    i++;
                 }
                 spatIDs.clear();
             }
@@ -758,19 +637,18 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          */
         virtual void readConductivity(std::string path) {
-            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "refID", "conductivity");
+            io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity");
             large_num spatID{0};
             int layer{0};
-            int refID{0};
             double conductivity{0};
             large_num nodeID{0};
             //double threshold{1e-11}; // todo debug Equation: make preconditioner run with threshold (or delete such nodes)
             int i{0};
             int j{0};
-            while (in.read_row(spatID, layer, refID, conductivity)) {
+            while (in.read_row(spatID, layer, conductivity)) {
                 try {
-                    nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) {
                     //if Node does not exist ignore entry
@@ -791,7 +669,7 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          * @return a map of bankfull depth, stream width, and length
          */
-        std::unordered_map<large_num, std::array<double, 3>> calculateRiverStage(std::string path) {
+        std::array<double, 3> calculateRiverStage(std::string path) {
             io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "length", "width", "bankfull");
 
@@ -799,22 +677,20 @@ namespace GlobalFlow {
             double riverLength{0};
             double riverWidth{0};
             double Q_bankfull{0};
-            std::unordered_map<large_num, large_num> refID_to_nodeID;
             int layer{0};
-            std::unordered_map<large_num, std::array<double, 3>> out;
+            large_num nodeID;
+            std::array<double, 3> out;
 
             while (in.read_row(spatID, riverLength, riverWidth, Q_bankfull)) {
                 try {
-                    refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer); // layer is 0 since rivers are at surface
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer); // layer is 0 since rivers are at surface
                 }
                 catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                     continue;
                 }
                 double bankfull_depth = 0.349 * std::pow(Q_bankfull, 0.341);
 
-                for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-                    out[nodeID] = {{bankfull_depth, riverWidth, riverLength * 1000}};
-                }
+                out = {{bankfull_depth, riverWidth, riverLength * 1000}};
             }
             return out;
         };
@@ -824,7 +700,7 @@ namespace GlobalFlow {
          * @param file to read from
          * @param riverStage A map with additional information @see calculateRiverStage
          */
-        void readBlueCells(std::string file, std::unordered_map<large_num, std::array<double, 3>> riverStage) {
+        void readBlueCells(std::string file, std::array<double, 3> riverStage) {
             io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(file);
             in.read_header(io::ignore_no_column, "spatID", "data");
             large_num spatID{0};
@@ -835,49 +711,47 @@ namespace GlobalFlow {
             double riverConductance{0};
             double riverDepth{0};
             double riverBottom{0};
-            std::unordered_map<large_num, large_num> refID_to_nodeID;
+            large_num nodeID;
             int layer{0};
 
             int i{0};
             while (in.read_row(spatID, riverElevation)) {
                 try {
-                    refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
                 catch (const std::out_of_range &ex) { //if Node does not exist ignore entry
                     continue;
                 }
 
-                for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-                    bankfull_depth = riverStage[nodeID][0];
-                    riverWidth = riverStage[nodeID][1];
-                    riverLength = riverStage[nodeID][2];
+                bankfull_depth = riverStage[0];
+                riverWidth = riverStage[1];
+                riverLength = riverStage[2];
 
-                    if (bankfull_depth <= 1) {
-                        bankfull_depth = 1; // river depth is at least 1 meter
-                    }
-
-                    if (nodes->at(nodeID)->hasGHB()){
-                        double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                        if (riverElevation < ghbElevation){
-                            riverElevation = ghbElevation; // river elevation cannot be below GHB elevation
-                        }
-                    }
-                    riverBottom = riverElevation - bankfull_depth;
-                    double K = nodes->at(nodeID)->getK().value();
-                    // Conductance estimation following Harbaugh (2005)
-                    riverConductance = K * riverLength * riverWidth / bankfull_depth;
-                    if (riverConductance <= 1) { riverConductance = 1; } // river conductance is at least 1
-
-                    nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
-                                                              riverElevation * Model::si::meter,
-                                                              riverConductance,
-                                                              riverBottom * Model::si::meter);
-                    //LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
-                    //              riverBottom << ", riverElevation = " << riverElevation;
-                    //LOG(debug) << "K = " << K << ", length = " << length << ", width = " << width << ", bankfull_depth = "
-                    //           << bankfull_depth;
-                    i++;
+                if (bankfull_depth <= 1) {
+                    bankfull_depth = 1; // river depth is at least 1 meter
                 }
+
+                if (nodes->at(nodeID)->hasGHB()){
+                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    if (riverElevation < ghbElevation){
+                        riverElevation = ghbElevation; // river elevation cannot be below GHB elevation
+                    }
+                }
+                riverBottom = riverElevation - bankfull_depth;
+                double K = nodes->at(nodeID)->getK().value();
+                // Conductance estimation following Harbaugh (2005)
+                riverConductance = K * riverLength * riverWidth / bankfull_depth;
+                if (riverConductance <= 1) { riverConductance = 1; } // river conductance is at least 1
+
+                nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
+                                                          riverElevation * Model::si::meter,
+                                                          riverConductance,
+                                                          riverBottom * Model::si::meter);
+                //LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
+                //              riverBottom << ", riverElevation = " << riverElevation;
+                //LOG(debug) << "K = " << K << ", length = " << length << ", width = " << width << ", bankfull_depth = "
+                //           << bankfull_depth;
+                i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";
         };
@@ -905,9 +779,8 @@ namespace GlobalFlow {
 
                 double percentage{0};
                 large_num spatID{0};
-                std::unordered_map<large_num, large_num> nodeIDs;
+                large_num nodeID;
                 int layer{0};
-                large_num refID{0};
 
                 while (in.read_row(spatID, percentage)) {
                     if (percentage == 0) {
@@ -916,71 +789,69 @@ namespace GlobalFlow {
                     percentage = percentage / 100;
 
                     try {
-                        nodeIDs = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                        nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                     }
                     catch (const std::out_of_range &ex) {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    for (auto nodeID: nodeIDs) {
 
-                        if (nodes->at(nodeID.second)->getSpatID() != (int) spatID) {
-                            throw "Error in reading spatID";
-                        }
+                    if (nodes->at(nodeID)->getSpatID() != (int) spatID) {
+                        throw "Error in reading spatID";
+                    }
 
-                        double elevation = nodes->at(nodeID.second)->getExternalFlowElevation(Model::RIVER_MM);
-                        if (std::isnan(elevation)){
-                            elevation = nodes->at(nodeID.second)->getElevation().value();
-                        }
+                    double elevation = nodes->at(nodeID)->getExternalFlowElevation(Model::RIVER_MM);
+                    if (std::isnan(elevation)){
+                        elevation = nodes->at(nodeID)->getElevation().value();
+                    }
 
-                        double flowElevation = elevation;
-                        double bottom = elevation;
-                        double K_s = nodes->at(nodeID.second)->getK().value();
-                        if (itter == 1) {
-                            //global wetlands
-                            percentage = percentage * 0.8;
-                        }
-                        double A_s = nodes->at(nodeID.second)->getArea().value() * percentage;
-                        double M = 5;
-                        //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
-                        double conduct = (K_s * A_s) / M;
-                        //if(conduct > 1e6){
-                        //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
-                        //}
+                    double flowElevation = elevation;
+                    double bottom = elevation;
+                    double K_s = nodes->at(nodeID)->getK().value();
+                    if (itter == 1) {
+                        //global wetlands
+                        percentage = percentage * 0.8;
+                    }
+                    double A_s = nodes->at(nodeID)->getArea().value() * percentage;
+                    double M = 5;
+                    //Simple_ Criv=KLW/M, M is the thickness of the riverbed and K is the hydraulic conductivity of the riverbed
+                    double conduct = (K_s * A_s) / M;
+                    //if(conduct > 1e6){
+                    //    std::cout << "To high K:" << K_s << "area: " << A_s << "at: " << spatID <<"\n";
+                    //}
 
-                        //LOG(debug) << "itter = " << itter << ", conduct = " << conduct;
-                        if (itter == 0) {
-                            //Global LAKE
-                            //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
-                            //flowElevation -= 10;
-                            bottom -= 100;
-                            nodes->at(nodeID.second)->addExternalFlow(Model::GLOBAL_LAKE,
-                                                               flowElevation * Model::si::meter,
-                                                               conduct,
-                                                               bottom * Model::si::meter);
-                        } else if (itter == 1) {
-                            //Global WETLANDS
-                            bottom -= 2;
-                            nodes->at(nodeID.second)->addExternalFlow(Model::GLOBAL_WETLAND,
-                                                               flowElevation * Model::si::meter,
-                                                               conduct,
-                                                               bottom * Model::si::meter);
-                        } else if (itter == 2) {
-                            //Local LAKE
-                            //flowElevation -= 10;
-                            bottom -= 10;
-                            nodes->at(nodeID.second)->addExternalFlow(Model::LAKE,
-                                                               flowElevation * Model::si::meter,
-                                                               conduct,
-                                                               bottom * Model::si::meter);
-                        } else {
-                            //Local WETLANDS
-                            bottom -= 2;
-                            nodes->at(nodeID.second)->addExternalFlow(Model::WETLAND,
-                                                               flowElevation * Model::si::meter,
-                                                               conduct,
-                                                               bottom * Model::si::meter);
-                        }
+                    //LOG(debug) << "itter = " << itter << ", conduct = " << conduct;
+                    if (itter == 0) {
+                        //Global LAKE
+                        //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
+                        //flowElevation -= 10;
+                        bottom -= 100;
+                        nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE,
+                                                           flowElevation * Model::si::meter,
+                                                           conduct,
+                                                           bottom * Model::si::meter);
+                    } else if (itter == 1) {
+                        //Global WETLANDS
+                        bottom -= 2;
+                        nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_WETLAND,
+                                                           flowElevation * Model::si::meter,
+                                                           conduct,
+                                                           bottom * Model::si::meter);
+                    } else if (itter == 2) {
+                        //Local LAKE
+                        //flowElevation -= 10;
+                        bottom -= 10;
+                        nodes->at(nodeID)->addExternalFlow(Model::LAKE,
+                                                           flowElevation * Model::si::meter,
+                                                           conduct,
+                                                           bottom * Model::si::meter);
+                    } else {
+                        //Local WETLANDS
+                        bottom -= 2;
+                        nodes->at(nodeID)->addExternalFlow(Model::WETLAND,
+                                                           flowElevation * Model::si::meter,
+                                                           conduct,
+                                                           bottom * Model::si::meter);
                     }
                 }
                 itter++;
@@ -996,7 +867,6 @@ namespace GlobalFlow {
             double riverDepth{0};
             double riverBottom{0};
             int layer{0};
-            large_num refID{0};
             large_num spatID{0};
 
             int i = 0;
@@ -1011,9 +881,8 @@ namespace GlobalFlow {
                 } else { // no river in node
                     spatID = node->getSpatID();
                     layer = 0;
-                    refID = node->getRefID();
                     // if we are on the top layer
-                    if (node->getID() == lookupSpatIDtoNodeIDs.at(spatID).at(layer).at(refID)){
+                    if (node->getID() == lookupSpatIDtoNodeID.at(spatID).at(layer)){
                         riverWidth = 25.7; // based on mean of global data
                         riverLength = 10.9 * 1000; // based on mean of global data
                         riverElevation = swbElevationFactor * node->getElevation().value();
@@ -1137,7 +1006,7 @@ namespace GlobalFlow {
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
                 int zetaID{0};
                 large_num spatID{0};
-                std::unordered_map<large_num, large_num> refID_to_nodeID;
+                large_num nodeID;
                 double zeta{0};
 
                 // loop through layers
@@ -1147,14 +1016,12 @@ namespace GlobalFlow {
 
                     while (inZetas.read_row(spatID, zetaID, zeta)) {
                         try {
-                            refID_to_nodeID = lookupSpatIDtoNodeIDs.at(spatID).at(layer);
+                            nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                         }
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        for (const auto &[refID, nodeID] : refID_to_nodeID) { // in case the grid is refined: loop over all nodes at refIDs
-                            nodes->at(nodeID)->addZeta(zetaID, zeta * Model::si::meter);
-                        }
+                        nodes->at(nodeID)->addZeta(zetaID, zeta * Model::si::meter);
                     }
                 }
             });

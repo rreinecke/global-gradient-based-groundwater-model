@@ -17,10 +17,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     this->isAdaptiveDamping = options.isDampingEnabled();
     this->dampMin = options.getMinDamp();
     this->dampMax = options.getMaxDamp();
-    this->isGNC = options.isGridRefined(); // gnc = Ghost Node Correction
     this->threads = options.getThreads();
     this->max_inner_iterations = options.getInnerItter();
-    this->maxRefinement = options.getMaxRefinement();
     this->nodes = std::move(nodes);
 
     this->numberOfZones = options.getDensityZones().size();
@@ -35,7 +33,7 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
 
     Eigen::SparseMatrix<pr_t> sparseMatrix(numberOfNodesTotal, numberOfNodesTotal);
     A = std::move(sparseMatrix);
-    int numberOfEntries = (int) (std::sqrt(maxRefinement) * 4) + 2 + 1; // +2 for top/down, + 1 for this node
+    int numberOfEntries = (int) 4 + 2 + 1; // +2 for top/down, + 1 for this node
     A.reserve(long_vector::Constant(numberOfNodesTotal, numberOfEntries));
     long_vector __b(numberOfNodesTotal);
     b = std::move(__b);
@@ -270,14 +268,6 @@ Equation::updateZoneChange() {
 }
 
 void inline
-Equation::updateGNCBudget() {
-#pragma omp parallel for default(none)
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->saveGNCMassBalance();
-        }
-    }
-
-void inline
 Equation::updateBudget() {
 #pragma omp parallel for default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -379,9 +369,6 @@ Equation::solve() {
     * # Update budgets #
     * ###############################
     */
-    if(isGNC) {
-        updateGNCBudget();
-    }
 
     LOG(numerics) << "Updating head change and head of previous time step";
     updateHeadChangeTZero();
@@ -553,7 +540,7 @@ Equation::prepareEquation_zetas(const int layer) {
 
     Eigen::SparseMatrix<pr_t> __A_zetas(numberOfActiveZetas, numberOfActiveZetas);
     A_zetas = std::move(__A_zetas);
-    int numberOfEntries = (int) (std::sqrt(maxRefinement) * 4) + 1; // + 1 for this node
+    int numberOfEntries = (int) 4 + 1; // + 1 for this node
     A_zetas.reserve(long_vector::Constant(numberOfActiveZetas, numberOfEntries));
     long_vector __b_zetas(numberOfActiveZetas);
     b_zetas = std::move(__b_zetas);

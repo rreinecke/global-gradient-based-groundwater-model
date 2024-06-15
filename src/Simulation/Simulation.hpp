@@ -417,15 +417,6 @@ namespace GlobalFlow {
             }
 
             /**
-             * Get the mass balance for the current step
-             * @return
-             */
-            MassError getGNCMassError() {
-                return calculateError([this](int pos) { return nodes->at(pos)->getGNC_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getGNC_IN().value(); } );
-            }
-
-            /**
              * Get the flow lost to external flows
              * @return
              */
@@ -576,11 +567,6 @@ namespace GlobalFlow {
                         //LOG(GlobalFlow::critical) << "VDF step mass error > 1 --> quitting";
                         //throw new MassErrorTooBig();
                     }
-                }
-                if (op.isGridRefined()){
-                    MassError gncErr = getGNCMassError();
-                    LOG(level) << "Total GNC mass error: " << gncErr.ERR <<
-                               "  In: " << gncErr.IN << "  Out: " << gncErr.OUT;
                 }
             }
 

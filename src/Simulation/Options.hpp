@@ -100,9 +100,6 @@ namespace GlobalFlow {
             std::string DEFAULT_BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
             std::vector<bool> CONFINED{};
-            // refinement information
-            bool GRID_REFINED{false};
-            int MAX_REFINEMENT{1};
             // density information
             bool DENSITY_VARIABLE{false};
             std::vector<double> DENSITY_ZONES{1000.0};
@@ -266,10 +263,6 @@ namespace GlobalFlow {
             getNumberOfLayers() {
                 return LAYERS;
             }
-
-            bool isGridRefined() { return GRID_REFINED; }  // todo could be removed
-
-            int getMaxRefinement() { return MAX_REFINEMENT; }
 
             bool isDensityVariable() { return DENSITY_VARIABLE; }
 

@@ -48,7 +48,7 @@ int addBoundary(NodeVector const& nodes,
  * @param boundaryCondition
  */
 void buildBySpatID(NodeVector nodes,
-                   std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
+                   std::unordered_map<large_num, std::unordered_map<int, large_num>> spatIDtoNodeID,
                    double resolution, large_num xRange, large_num yRange, bool isGlobal, int layers,
                    large_num numberOfNodesPerLayer, double boundaryConduct,
                    Simulation::Options::BoundaryCondition boundaryCondition) {
@@ -59,217 +59,33 @@ void buildBySpatID(NodeVector nodes,
     neigPositions[2] = Model::RIGHT;
     neigPositions[3] = Model::LEFT;
 
-    std::unordered_map<large_num, large_num> nodeIDs_neig;
+    large_num nodeID_neig;
     large_num spatID;
     large_num spatID_neig;
-    large_num refID;
     large_num nodeID;
     Model::NeighbourPosition neigPos;
     int sumBoundaries{0};
 
     for (large_num nodeIDTopLayer = 0; nodeIDTopLayer < numberOfNodesPerLayer; ++nodeIDTopLayer) {
         spatID = nodes->at(nodeIDTopLayer)->getSpatID();
-        refID = nodes->at(nodeIDTopLayer)->getRefID();
         for (int layer = 0; layer < layers; ++layer) {
             nodeID = nodeIDTopLayer + (numberOfNodesPerLayer * layer);
-            large_num refinedInto = spatIDtoNodeIDs.at(spatID).at(layer).size();
-            nodes->at(nodeID)->getProperties().set<large_num, Model::RefinedInto>(refinedInto);
-            //LOG(debug) << "nodeID:" << nodeID << ", refinedInto: " << refinedInto;
             for (int neigPosID = 0; neigPosID < neigPositions.size(); ++neigPosID) {
                 neigPos = neigPositions[neigPosID];
-                if (refID == 0) { // #### set neighbour(s) of unrefined node
-                    spatID_neig = getNeighbourSpatID((int) spatID, neigPos, resolution, xRange, yRange, isGlobal);
-                    if (spatIDtoNodeIDs.contains(spatID_neig)) {
-                        nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer);
-                        nodes->at(nodeID)->setNeighbours(nodeIDs_neig, neigPositions[neigPosID]);
-                    } else {
-                        sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal,
-                                                        sumBoundaries);
-                    }
-                } else { // ####  set neighbour of refined node ####
-                    sumBoundaries = setNeigOfRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal,
-                                                         refID, nodeID, layer,spatIDtoNodeIDs, boundaryConduct,
-                                                         boundaryCondition, sumBoundaries);
+                // #### set neighbour of node
+                spatID_neig = getNeighbourSpatID((int) spatID, neigPos, resolution, xRange, yRange, isGlobal);
+                if (spatIDtoNodeID.contains(spatID_neig)) {
+                    nodeID_neig = spatIDtoNodeID.at(spatID_neig).at(layer);
+                    nodes->at(nodeID)->setNeighbour(nodeID_neig, neigPositions[neigPosID]);
+                } else {
+                    sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal,
+                                                    sumBoundaries);
                 }
             }
         }
     }
     LOG(debug) << "    Added " << sumBoundaries << " boundaries";
 }
-
-
-int setNeigOfRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
-                         large_num xRange, large_num yRange, bool isGlobal, large_num refID, large_num nodeID, int layer,
-                         std::unordered_map<large_num, std::unordered_map<int,
-                         std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                         double boundaryConduct,
-                         Simulation::Options::BoundaryCondition boundaryCondition, int sumBoundaries) {
-    large_num refID_neig{};
-    std::unordered_map<large_num, large_num> nodeIDs = spatIDtoNodeIDs.at(spatID).at(layer);
-    // define map to set neighbour OUTSIDE refined node: neigPos >maps to> refID >maps to> refID_neig
-    auto mapOutside = defineMapOutside(nodeIDs.size());
-
-    // set neighbour OUTSIDE refined node (need to find spatID and find out whether that node is refined or not)
-    try {
-        refID_neig = mapOutside.at(neigPos).at(refID);
-        setNeighbourOutsideRefinedNode(nodes, spatID, neigPos, resolution, xRange, yRange, isGlobal, nodeID, layer,
-                                       spatIDtoNodeIDs, boundaryConduct, boundaryCondition, refID_neig, neigPos,
-                                       sumBoundaries);
-    } catch (const std::out_of_range &ex) {}
-
-    // define map to set neighbour WITHIN refined node: neigPos >maps to> refID >maps to> refID_neig
-    auto mapInside = defineMapInside(nodeIDs.size());
-
-    // set neighbour WITHIN refined node (same spatID, thus we can just set the neighbour)
-    try {
-        refID_neig = mapInside.at(neigPos).at(refID);
-        large_num nodeID_ref_neig = spatIDtoNodeIDs.at(spatID).at(layer).at(refID_neig); // layer = 0
-        nodes->at(nodeID)->setNeighbour(nodeID_ref_neig, neigPos);
-    } catch (const std::out_of_range &ex) {}
-    return sumBoundaries;
-}
-
-/**
- * @brief Define map to set neighbour OUTSIDE refined node: neigPos >maps to> refID >maps to> refID_neig
- * @param refinedInto Number of refined nodes the original grid's node size (at spatID) is refined to
- * @return
- */
-std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
-defineMapOutside(large_num refinedInto) {
-    std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>> mapOutside;
-    if (refinedInto == 4) {
-        /*
-         *                  FRONT (neig)
-         *                   3   4
-         *                  /\  /\
-         *                  ||  ||
-         *             2 <=  1   2  => 1
-         * RIGHT (neig)     (this)     RIGHT (neig)
-         *             4 <=  3   4  => 3
-         *                  ||  ||
-         *                  \/  \/
-         *                   1   2
-         *                  BACK (neig)
-         *
-         */
-        mapOutside = { { Model::FRONT, { {1, 3}, {2, 4} } },
-                       { Model::BACK,  { {3, 1}, {4, 2} } },
-                       { Model::RIGHT, { {2, 1}, {4, 3} } },
-                       { Model::LEFT,  { {1, 2}, {3, 4} } } };
-    } else if (refinedInto == 9) {
-        /*
-         *                   7  8  9  FRONT (neig)
-         *                   /\ /\ /\
-         *                   || || ||
-         *              3 <=  1  2  3  => 1
-         * LEFT (neig)  6 <=  4  5  6  => 2  RIGHT (neig)
-         *                     (this)
-         *              9 <=  7  8  9  => 3
-         *                   || || ||
-         *                   \/ \/ \/
-         *                   1  2  3  BACK (neig)
-         *
-         */
-        mapOutside = { { Model::FRONT, { {1, 7}, {2, 8}, {3, 9}} },
-                       { Model::BACK,  { {7, 1}, {8, 2}, {9, 3} } },
-                       { Model::RIGHT, { {3, 1}, {6, 4}, {9, 7}} },
-                       { Model::LEFT,  { {1, 3}, {4, 6}, {7, 9}} } };
-    } else if (refinedInto == 16) {
-        /*
-         *                   13 14 15 16 FRONT (neig)
-         *                   /\ /\ /\ /\
-         *                   || || || ||
-         *              4 <=  1  2  3  4 =>  1
-         * LEFT (neig)  8 <=  5  6  7  8 =>  5  RIGHT (neig)
-         *                     (this)
-         *             12 <=  9 10 11 12 =>  9
-         *             16 <= 13 14 15 16 => 13
-         *                   || || || ||
-         *                   \/ \/ \/ \/
-         *                    1  2  3  4 BACK (neig)
-         *
-         */
-        mapOutside = { { Model::FRONT, { {1, 13}, {2, 14}, {3, 15}, {4, 16}  } },
-                       { Model::BACK,  { {13, 1}, {14, 2}, {15, 3}, {16, 4}  } },
-                       { Model::RIGHT, { {4, 1},  {8, 5},  {12, 9}, {16, 13} } },
-                       { Model::LEFT,  { {1, 4},  {5, 8},  {9, 12}, {13, 16} } } };
-    }
-    return mapOutside;
-}
-
-
-/**
- * @brief Define map to set neighbour OUTSIDE refined node: neigPos >maps to> refID >maps to> refID_neig
- * @param refinedInto Number of refined nodes the original grid's node size (at spatID) is refined to
- * @return
- */
-std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>>
-defineMapInside(large_num refinedInto) {
-    std::unordered_map<Model::NeighbourPosition, std::unordered_map<large_num, large_num>> mapInside;
-    if (refinedInto == 4) {
-        /*
-         *   1 - 2
-         *   |   |
-         *   3 - 4
-         */
-        mapInside = { {Model::FRONT, { {3, 1}, {4, 2} } },
-                      {Model::BACK,  { {1, 3}, {2, 4} } },
-                      {Model::RIGHT, { {1, 2}, {3, 4} } },
-                      {Model::LEFT,  { {2, 1}, {4, 3} } } };
-    } else if (refinedInto == 9) {
-        /*
-         *   1 - 2 - 3
-         *   |   |   |
-         *   4 - 5 - 6
-         *   |   |   |
-         *   7 - 8 - 9
-         */
-        mapInside = { {Model::FRONT, { {4, 1}, {5, 2}, {6, 3}, {7, 4}, {8, 5}, {9, 6} } },
-                      {Model::BACK,  { {1, 4}, {2, 5}, {3, 6}, {4, 7}, {5, 8}, {6, 9} } },
-                      {Model::RIGHT, { {1, 2}, {2, 3}, {4, 5}, {5, 6}, {7, 8}, {8, 9} } },
-                      {Model::LEFT,  { {2, 1}, {3, 2}, {5, 4}, {6, 5}, {8, 7}, {9, 8} } } };
-    } else if (refinedInto == 16) {
-        /*
-         *   1 -  2 -  3 -  4
-         *   |    |    |    |
-         *   5 -  6 -  7 -  8
-         *   |    |    |    |
-         *   9 - 10 - 11 - 12
-         *   |    |    |    |
-         *  13 - 14 - 15 - 16
-         */
-        mapInside = { {Model::FRONT, { {5, 1},  {6, 2},   {7, 3},   {8, 4},   {9, 5},   {10, 6},
-                                       {11, 7}, {12, 8},  {13, 9},  {14, 10}, {15, 11}, {16, 12}} },
-                      {Model::BACK,  { {1, 5},  {2, 6},   {3, 7},   {4, 8},   {5, 9},   {6, 10},
-                                       {7, 11}, {8, 12},  {9, 13},  {10, 14}, {11, 15}, {12, 16}} },
-                      {Model::RIGHT, { {1, 2},  {2, 3},   {3, 4},   {5, 6},   {6, 7},   {7, 8},
-                                       {9, 10}, {10, 11}, {11, 12}, {13, 14}, {14, 15}, {15, 16} } },
-                      {Model::LEFT,  { {2, 1},  {3, 2},   {4, 3},   {6, 5},   {7, 6},   {8, 7},
-                                       {10, 9}, {11, 10}, {12, 11}, {14, 13}, {15, 14}, {16, 15}} } };
-    }
-    return mapInside;
-}
-
-int setNeighbourOutsideRefinedNode(NodeVector nodes, large_num spatID, Model::NeighbourPosition neigPos, double resolution,
-                                    large_num xRange, large_num yRange, bool isGlobal, large_num nodeID, int layer,
-                                    std::unordered_map<large_num, std::unordered_map<int, std::unordered_map<large_num, large_num>>> spatIDtoNodeIDs,
-                                    double boundaryConduct, Simulation::Options::BoundaryCondition boundaryCondition,
-                                    large_num ref_id_neig, Model::NeighbourPosition neighbourPosition,
-                                    int sumBoundaries) {
-    int spatID_neig = getNeighbourSpatID((int) spatID, neigPos, resolution, xRange, yRange, isGlobal);
-    if (spatIDtoNodeIDs.contains(spatID_neig)) {
-        std::unordered_map<large_num, large_num> nodeIDs_neig = spatIDtoNodeIDs.at(spatID_neig).at(layer); // layer = 0
-        if (nodeIDs_neig.size() == 1) {
-            nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(0), neighbourPosition); // refID = 0
-        } else {
-            nodes->at(nodeID)->setNeighbour(nodeIDs_neig.at(ref_id_neig), neighbourPosition);
-        }
-    } else {
-        sumBoundaries = addBoundary(nodes, boundaryConduct, boundaryCondition, nodeID, layer, isGlobal, sumBoundaries); // layer = 0
-    }
-    return sumBoundaries;
-};
-
 
 
 /**
@@ -378,8 +194,6 @@ void buildBottomLayers(NodeVector nodes,
     double specificYield;
     double specificStorage;
     bool useEfolding;
-    large_num refID;
-    large_num maxRefinement;
     bool isSteadyState;
     bool isDensityVariable;
     std::vector<Model::quantity<Model::Dimensionless>> delnus;
@@ -415,8 +229,6 @@ void buildBottomLayers(NodeVector nodes,
             specificStorage = nodes->at(i)->getProperties().get<Model::quantity<Model::perUnit>,
                             Model::SpecificStorage>().value();
             useEfolding = nodes->at(i)->getProperties().get<bool, Model::UseEfolding>();
-            refID = nodes->at(i)->getProperties().get<large_num, Model::RefID>();
-            maxRefinement = nodes->at(i)->getProperties().get<large_num, Model::MaxRefinement>();
             isSteadyState = nodes->at(i)->getProperties().get<bool, Model::IsSteadyState>();
             isDensityVariable = nodes->at(i)->getProperties().get<bool, Model::IsDensityVariable>();
             delnus = nodes->at(i)->getProperties().
@@ -457,8 +269,6 @@ void buildBottomLayers(NodeVector nodes,
                                                             specificStorage,
                                                             useEfolding,
                                                             confined[layer + 1],
-                                                            refID,
-                                                            maxRefinement,
                                                             isSteadyState,
                                                             isDensityVariable,
                                                             delnus,

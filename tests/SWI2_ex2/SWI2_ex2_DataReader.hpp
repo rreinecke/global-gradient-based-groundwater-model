@@ -18,14 +18,14 @@ namespace GlobalFlow {
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
                              op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
-                             op.isConfined(0), op.getMaxRefinement(),
+                             op.isConfined(0),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
                              op.getMinDepthFactor(), op.getSlopeAdjFactor(), op.getVDFLock(), op.getDensityZones(),
                              op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
                 LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
-                                              this->getMappingSpatIDtoNodeIDs(),
+                                              this->getMappingSpatIDtoNodeID(),
                                               op.getResolution(),
                                               op.getXRange(),
                                               op.getYRange(),

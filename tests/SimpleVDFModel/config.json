@@ -30,7 +30,6 @@
       "confinement": [
         "true"
       ],
-      "grid_refined": "false",
       "max_refinement": 1,
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"

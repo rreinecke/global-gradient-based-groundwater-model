@@ -31,7 +31,6 @@
         "true"
       ],
       "use_efolding": "false",
-      "grid_refined": "false",
       "boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },

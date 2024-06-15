@@ -59,8 +59,6 @@ namespace GlobalFlow {
             EDGE_LENGTH_FRONT_BACK = config.get<double>("edge_length_front_back");
             LAYERS = config.get<int>("layers");
             USE_EFOLDING = config.get<bool>("use_efolding");
-            GRID_REFINED = config.get<bool>("grid_refined");
-            MAX_REFINEMENT = config.get<int>("max_refinement");
             CONFINED = getTypeArray<bool>("confinement", config);
             if (LAYERS != CONFINED.size()) {
                 LOG(critical) << "mismatching layers";

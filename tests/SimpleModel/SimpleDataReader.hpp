@@ -50,7 +50,7 @@ class SimpleDataReader : public DataReader {
 
             LOG(userinfo) << "Building grid by spatial ID";
             DataProcessing::buildBySpatID(nodes,
-                                          this->getMappingSpatIDtoNodeIDs(),
+                                          this->getMappingSpatIDtoNodeID(),
                                           op.getResolution(),
                                           op.getXRange(),
                                           op.getYRange(),

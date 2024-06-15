@@ -32,7 +32,6 @@
         "true",
         "true"
       ],
-      "grid_refined": "false",
       "max_refinement": 1,
       "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"

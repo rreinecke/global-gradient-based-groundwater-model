@@ -14,8 +14,6 @@ PhysicalProperties initProperties() {
     PhysicalProperties fields;
     fields.emplace < large_num, ID > (0);
     fields.emplace < large_num, SpatID > (0);
-    fields.emplace < large_num, RefID > (0);
-    fields.emplace < large_num, MaxRefinement > (0);
     fields.emplace<double, Lat>(0);
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
@@ -56,8 +54,6 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              double specificStorage,
                              bool useEfolding,
                              bool confined,
-                             large_num refID,
-                             large_num maxRefinement,
                              bool isSteadyState,
                              bool isDensityVariable,
                              std::vector<quantity<Dimensionless>> delnus,
@@ -92,8 +88,6 @@ NodeInterface::NodeInterface(NodeVector nodes,
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.set<large_num, RefID> (refID);
-    fields.set<large_num, MaxRefinement> (maxRefinement);
     fields.set<bool, IsSteadyState> (isSteadyState);
     fields.set<bool, IsDensityVariable> (isDensityVariable);
     fields.set<std::vector<quantity<Dimensionless>>, Delnus> (delnus);
