@@ -5,7 +5,7 @@ namespace GlobalFlow {
     //int sim_id{0};
 
     void Runner::loadSettings() {
-        pathToConfig = "data/config_na_transient.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
+        pathToConfig = "data/config_transient.json"; // nodes per layer: grid_na: 396787, grid_na_dk: 452736
         op = Simulation::Options();
         op.load(pathToConfig);
     }
@@ -48,20 +48,12 @@ namespace GlobalFlow {
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
             LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
                           stepSizes[strssPrd];
-            // set zetas if previous stress period had no variable density simulation
-            if (strssPrd > 0) {
-                if (isDensityVariable[strssPrd] and !isDensityVariable[strssPrd-1]) {
-                    LOG(userinfo) << "Setting initial zetas using Ghyben-Herzberg";
-                    reader->setZetasGhybenHerzberg(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(), 10, // todo add to config
-                                                   op.getDensityZones());
-                }
-            }
 
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
-                LOG(debug) << "Reading current GW recharge data...";
-                reader->readGWRecharge("data/" + rechargeFiles[stepNumber-1]); // todo add readNewGWRecharge removing and then adding recharge
+                //LOG(debug) << "Reading current GW recharge data...";
+                //reader->readGWRecharge("data/" + rechargeFiles[stepNumber-1]); // todo add readNewGWRecharge removing and then adding recharge
                 step.first->solve();
                 sim.printMassBalances(debug, isDensityVariable[strssPrd]);
                 sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);

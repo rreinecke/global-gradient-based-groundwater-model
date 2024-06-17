@@ -25,7 +25,7 @@ namespace GlobalFlow {
                 op.getSourceZoneGHB(), op.getSourceZoneRecharge());
 
 
-                LOG(userinfo) << "Building grid by spatial ID"; // todo continue here
+                LOG(userinfo) << "Building grid by spatial ID";
                 DataProcessing::buildBySpatID(nodes,
                                               this->getMappingSpatIDtoNodeID(),
                                               op.getResolution(),
@@ -69,18 +69,17 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading rivers";
                 readRiverConductance(buildDir(op.getKRiver()));
 
-                if (op.isDensityVariable()) {
-                    LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
-                    if (op.isInitialZetasAsArray()) {
-                        LOG(userinfo) << "    reading from file(s)";
-                        readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
-                                         buildDir(op.getInitialZetas()), op.getInitialZetas_a());
-                    }
-                    if (op.isEffectivePorosityFromFile()){
-                        LOG(userinfo) << "Reading effective porosity";
-                        readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
-                    }
+                LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
+                if (op.isInitialZetasAsArray()) {
+                    LOG(userinfo) << "    reading from file(s)";
+                    readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                                     buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 }
+                if (op.isEffectivePorosityFromFile()){
+                    LOG(userinfo) << "Reading effective porosity";
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+                }
+
             }
 
         private:

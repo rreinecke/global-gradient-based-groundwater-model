@@ -42,11 +42,6 @@ class TransientDataReader : public DataReader {
          */
         TransientDataReader() = default;
 
-        void readNewRecharge(std::string path) {
-            LOG(userinfo) << "Updating groundwater recharge (" << path << ")";
-            readGWRecharge(std::move(path));
-        }
-
         /**
          * @brief overriding read data for the large model
          * @param op
@@ -136,6 +131,9 @@ class TransientDataReader : public DataReader {
             * %%% read recharge, rivers, lakes, wetlands %%%
             * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             */
+            LOG(userinfo) << "Reading groundwater recharge";
+            readGWRecharge(buildDir(op.getRecharge()));
+
             if (op.isKRiverFromFile()) {
                 LOG(userinfo) << "Reading river conductance";
                 readRiverConductance(buildDir(op.getKRiver()));

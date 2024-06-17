@@ -141,7 +141,7 @@ class GlobalDataReader : public DataReader {
              * %%% read recharge, rivers, lakes, wetlands %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            LOG(userinfo) << "Reading groundwater recharge"; // todo make possible to set default recharge in config
+            LOG(userinfo) << "Reading groundwater recharge";
             readGWRecharge(buildDir(op.getRecharge()));
 
             if (op.isKRiverFromFile()) {

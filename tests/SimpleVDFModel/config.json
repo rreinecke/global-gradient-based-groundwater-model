@@ -14,8 +14,8 @@
         "DAY"
       ],
       "stress_period_variable_density": [
-        "false",
-        "false"
+        "true",
+        "true"
       ],
       "nodes": "grid_simpleVDF.csv",
       "number_of_nodes_per_layer": 100,
@@ -65,7 +65,7 @@
         "eq_wtd_from_file": "false",
         "initial_head_from_file": "false",
         "initial_zetas_as_array": "true",
-        "k_from_file": "false",
+        "k_from_file": "true",
         "k_ghb_from_file": "true",
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
@@ -96,12 +96,13 @@
         "elevation": "elevation_simpleVDF.csv",
         "ghb_conductance": "ghb_conductance_simpleVDF.csv",
         "initial_zetas": "initial_zetas_simpleVDF.csv",
+        "lithology": "lithology_simpleVDF.csv",
         "recharge": "recharge_simpleVDF.csv",
         "initial_heads": "heads_simpleVDF.csv",
         "river_conductance": "rivers_simpleVDF.csv",
         "zetas": {
           "Zetas": [
-            "initial_zetas_swi2_ex2.csv"
+            "initial_zetas_simpleVDF.csv"
           ]
         }
       }
