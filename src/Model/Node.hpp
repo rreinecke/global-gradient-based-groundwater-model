@@ -767,7 +767,7 @@ Calculate
              * while water released from storage is treated as inflow (+), that is a source of water to the flow system
              */
             t_vol_t getStorageFlow() noexcept {
-                return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / day; // FIXME: rename "day" to "step"?
+                return -getStorageCapacity() * get<t_meter, HeadChange_TZero>() / day; // FIXME: rename "day" to "time"?
             }
 
             /**

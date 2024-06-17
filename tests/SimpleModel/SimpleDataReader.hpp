@@ -27,7 +27,6 @@ class SimpleDataReader : public DataReader {
                          op.getSpecificStorage(),
                          op.useEfolding(),
                          op.isConfined(0),
-                         op.getMaxRefinement(),
                          op.getEffectivePorosity(),
                          op.getMaxTipSlope(),
                          op.getMaxToeSlope(),

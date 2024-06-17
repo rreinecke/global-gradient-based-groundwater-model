@@ -3,35 +3,34 @@
     "model_config": {
       "stress_period_steady_state": [
         "true",
-        "true"
+        "false"
       ],
       "stress_period_time_steps": [
-        100,
-        2
+        1,
+        10
       ],
       "stress_period_time_step_sizes": [
-        "YEAR",
-        "YEAR"
+        "DAY",
+        "DAY"
       ],
       "stress_period_variable_density": [
         "false",
-        "true"
+        "false"
       ],
       "nodes": "grid_simpleVDF.csv",
       "number_of_nodes_per_layer": 100,
-      "layers": 1,
       "x_range": 10,
       "y_range": 10,
       "is_global": "false",
       "resolution_in_degree": 1,
       "edge_length_left_right": 0,
       "edge_length_front_back": 0,
-      "use_efolding": "false",
+      "layers": 1,
       "confinement": [
         "true"
       ],
-      "max_refinement": 1,
-      "boundary_condition": "GeneralHeadBoundary",
+      "use_efolding": "false",
+      "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "vdf_config": {

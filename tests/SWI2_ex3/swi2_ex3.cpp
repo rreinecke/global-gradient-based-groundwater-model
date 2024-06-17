@@ -15,7 +15,7 @@ void StandaloneRunner::setupSimulation() {
 
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile("swi2_ex3_node_attributes.csv");
-    myfile << "nodeID,spatID,refID,lon,lat,area,edgeLR,edgeFB,neig_count,neighbours,EL,bottom,K,hasGHB,C_GHB,EL_GHB,Por_eff,zeta1_ini,GWR" << std::endl;
+    myfile << "nodeID,spatID,lon,lat,area,edgeLR,edgeFB,neig_count,neighbours,EL,bottom,K,hasGHB,C_GHB,EL_GHB,Por_eff,zeta1_ini,GWR" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         std::string neighbours;
@@ -24,7 +24,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
         }
         myfile << j << "," <<
                sim.getNodes()->at(j)->getSpatID() << "," <<
-               sim.getNodes()->at(j)->getRefID() << "," <<
                sim.getNodes()->at(j)->getLon() << "," <<
                sim.getNodes()->at(j)->getLat() << "," <<
                sim.getNodes()->at(j)->getArea().value() << "," <<

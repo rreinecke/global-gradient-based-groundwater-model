@@ -17,7 +17,7 @@ void StandaloneRunner::setupSimulation() {
 void StandaloneRunner::writeNodeInfosToCSV(){
     std::ofstream myfile;
     myfile.open ("node_attributes_simple.csv");
-    myfile << "nodeID,spatID,refID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge,initialHead" << std::endl;
+    myfile << "nodeID,spatID,lon,lat,neighbour_count,neighbours,elevation,bottom,hyd_cond,hasGHB,recharge,initialHead" << std::endl;
 
     for (int j = 0; j < sim.getNodes()->size(); ++j) {
         std::string neighbours;
@@ -26,7 +26,6 @@ void StandaloneRunner::writeNodeInfosToCSV(){
         }
         myfile << j << "," <<
                sim.getNodes()->at(j)->getSpatID() << "," <<
-               sim.getNodes()->at(j)->getRefID() << "," <<
                sim.getNodes()->at(j)->getLon() << "," <<
                sim.getNodes()->at(j)->getLat() << "," <<
                sim.getNodes()->at(j)->getListOfNeighbours().size() << "," <<

@@ -26,13 +26,12 @@
       "edge_length_left_right": -0,
       "edge_length_front_back": -0,
       "layers": 2,
-      "use_efolding": "true",
       "confinement": [
         "true",
         "true"
       ],
-      "max_refinement": 1,
-      "boundary_condition": "GeneralHeadBoundary",
+      "use_efolding": "true",
+      "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
     "vdf_config": {
@@ -95,7 +94,6 @@
         "swb_elevation_factor": 0.8,
         "specific_yield": 0.15,
         "specific_storage": 0.000015,
-        "sink_zone_ghb": 0,
         "source_zone_ghb": 1,
         "source_zone_recharge": 0
       },

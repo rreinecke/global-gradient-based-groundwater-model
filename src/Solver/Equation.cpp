@@ -281,6 +281,7 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
+    LOG(debug) << "solve";
     updateEquation();
     LOG(debug) << "Initialized A, x and b";
     preconditionA();

@@ -26,13 +26,12 @@
       "edge_length_left_right": 1,
       "edge_length_front_back": 20,
       "layers": 3,
-      "use_efolding": "false",
       "confinement": [
         "true",
         "true",
         "true"
       ],
-      "max_refinement": 1,
+      "use_efolding": "false",
       "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
