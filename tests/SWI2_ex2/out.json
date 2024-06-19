@@ -1,0 +1,34 @@
+{
+  "output": {
+    "StaticResult": [
+      {
+        "name": "swi2_ex2_head",
+        "type": "csv",
+        "field": "Head",
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
+      },
+      {
+        "name": "swi2_ex2_zeta1",
+        "type": "csv",
+        "field": "Zeta1",
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
+      },
+      {
+        "name": "swi2_ex2_zeta2",
+        "type": "csv",
+        "field": "Zeta2",
+        "ID": "true",
+        "position": "true",
+        "all_layers": "true"
+      }
+    ],
+    "InnerIteration": {
+    },
+    "OuterIteration": {
+    }
+  }
+}

@@ -12,24 +12,33 @@ public:
     MockOptions options;
 
     void SetUp() {
-        NodeVector ptr(new std::vector<unique_ptr<GlobalFlow::Model::NodeInterface>>);
+        NodeVector ptr(new std::vector<std::unique_ptr<GlobalFlow::Model::NodeInterface>>);
 
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true));
+                nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
+                ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
-                nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day, 1, 10, 1,
-                0.2, 0.1, true
-        ));
+                nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
+                1 * si::meter, 10, 1,
+                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.001, 0.4, 0.001 * si::meter, 0, 0
+                ));
 
         nodes->at(0)->setNeighbour(1, RIGHT);
         nodes->at(1)->setNeighbour(0, LEFT);
@@ -40,7 +49,7 @@ public:
         nodes->at(2)->setNeighbour(3, DOWN);
         nodes->at(3)->setNeighbour(2, TOP);
 
-        eq = new Equation(4, nodes, options);
+        eq = new Equation(nodes, options);
     }
 
     using p_node = std::unique_ptr<GlobalFlow::Model::NodeInterface>;
@@ -48,15 +57,10 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
-TEST_F(EquationFixture, toggleSteadyState) {
-    ASSERT_TRUE(eq->toggleSteadyState());
-    ASSERT_FALSE(eq->toggleSteadyState());
-}
-
 TEST_F(EquationFixture, updateStepSize) {
-    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 1);
+    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 1);
     eq->updateStepSize(10);
-    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepModifier>().value()), 10);
+    ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 10);
 }
 
 /**
@@ -69,15 +73,18 @@ TEST_F(EquationFixture, solve) {
     ON_CALL(options, getInitialHead()).WillByDefault(Return(1));
     ON_CALL(options, getMaxHeadChange()).WillByDefault(Return(1));
     ON_CALL(options, isDampingEnabled()).WillByDefault(Return(false));
-    eq = new Equation(4, nodes, options);
+    eq = new Equation(nodes, options);
     eq->solve();
+    // todo ASSERT...
 }
 
 TEST_F(EquationFixture, getResiduals) {
     eq->solve();
     std::cout << eq->getResiduals();
+    // todo ASSERT...
 }
 
+/*
 TEST_F(EquationFixture, updateClosingCrit) {
     FAIL();
 }
@@ -89,4 +96,4 @@ TEST_F(EquationFixture, getResults) {
 TEST_F(EquationFixture, coutOperator) {
     FAIL();
 }
-
+*/

@@ -3,10 +3,11 @@
 namespace GlobalFlow {
 namespace Model {
 
-t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
+t_s_meter_t ExternalFlow::getP(t_meter eq_gw_head,
+                               t_meter gw_head,
                                t_vol_t recharge,
-                               t_dim slope,
                                t_vol_t eqFlow) const noexcept {
+
     t_s_meter_t out = 0.0 * (si::square_meter / day);
     switch (type) {
         case RECHARGE:
@@ -16,26 +17,33 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
         case NET_ABSTRACTION:
             return out;
         case EVAPOTRANSPIRATION:
-            //flowHead = surface, bottom = extinction depth
-            if ((head < flowHead - bottom) xor (head > flowHead)) {
+            //flowHead = surface, bottomElev = extinction depth
+            if ((gw_head < flowHead - bottomElev) xor (gw_head > flowHead)) {
                 return out;
             } else {
-                return -special_flow / bottom;
+                return -special_flow / bottomElev;
             }
         case FLOODPLAIN_DRAIN:
             return out;
         case RIVER:
             return -conductance;
         case RIVER_MM:
-            //Can happen in transient coupling
-            //still allow gaining conditions!
-            if (head >= bottom) {
-                return -calcERC(recharge, eq_head, head, eqFlow);
+            // River head <= river bottomElev (may happen in transient coupling)
+            if (flowHead <= bottomElev){
+                // Groundwater head >= river bottomElev --> allow gaining conditions of river!
+                if(gw_head >= bottomElev) {
+                    return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
+                } else {
+                    return out;
+                }
+            } else {
+                // River head > river bottomElev
+                return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
             }
         case WETLAND:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return -conductance;
                 } else {
                     return out;
@@ -45,8 +53,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             }
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return -conductance;
                 } else {
 		            return out;
@@ -56,8 +64,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             }
         case LAKE:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return -conductance;
                 } else {
                     return out;
@@ -67,8 +75,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             }
         case GLOBAL_LAKE:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-                if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+                if (gw_head >= bottomElev) {
                     return -conductance;
                 } else {
                     return out;
@@ -77,8 +85,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
                 return -conductance;
             }
         case DRAIN:
-            if (head > flowHead) {
-                return -calcERC(recharge, eq_head, head, eqFlow);
+            if (gw_head > flowHead) {
+                return -calcERC(recharge, eq_gw_head, gw_head, eqFlow);
             } else {
                 return out;
             }
@@ -88,9 +96,8 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
     return out;
 }
 
-t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
+t_vol_t ExternalFlow::getQ(t_meter eq_gw_head, t_meter gw_head,
                            t_vol_t recharge,
-                           t_dim slope,
                            t_vol_t eqFlow) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     switch (type) {
@@ -101,28 +108,32 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
         case NET_ABSTRACTION:
             return this->special_flow;
         case EVAPOTRANSPIRATION:
-            if (head < flowHead - bottom) {
+            if (gw_head < flowHead - bottomElev) {
                 return out;
-            } else if (flowHead - bottom <= head and head <= flowHead) {
-                return -this->special_flow + (this->special_flow * flowHead) / bottom;
+            } else if (flowHead - bottomElev <= gw_head and gw_head <= flowHead) {
+                return -this->special_flow + (this->special_flow * flowHead) / bottomElev;
             } else {
                 return -this->special_flow;
             }
         case FLOODPLAIN_DRAIN:
-            return -calculateFloodplaindDrainage(head);
+            return -calculateFloodplainDrainage(gw_head);
         case RIVER:
             return conductance * flowHead;
         case RIVER_MM:
             //Can happen in transient coupling
-            if (head >= bottom) {
-                return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+            if (flowHead <= bottomElev) {
+                if (gw_head >= bottomElev) {
+                    return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
+                } else {
+                    return out;
+                }
             } else {
-                return out;
+                return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
             }
         case WETLAND:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -131,8 +142,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -141,8 +152,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case LAKE:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+		        if (gw_head >= bottomElev) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -151,8 +162,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             return conductance * flowHead;
         case GLOBAL_LAKE:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-                if (head >= bottom) {
+            if (flowHead <= bottomElev) {
+                if (gw_head >= bottomElev) {
                     return conductance * flowHead;
                 } else {
                     return out;
@@ -160,8 +171,8 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
             }
             return conductance * flowHead;
         case DRAIN:
-            if (head > flowHead) {
-                return calcERC(recharge, eq_head, head, eqFlow) * flowHead;
+            if (gw_head > flowHead) {
+                return calcERC(recharge, eq_gw_head, gw_head, eqFlow) * flowHead;
             } else {
                 return out;
             }
@@ -171,13 +182,13 @@ t_vol_t ExternalFlow::getQ(t_meter eq_head, t_meter head,
     return out;
 }
 
-t_vol_t ExternalFlow::calculateFloodplaindDrainage(t_meter head) const noexcept {
+t_vol_t ExternalFlow::calculateFloodplainDrainage(t_meter head) const noexcept {
     quantity<VolumePerTime, double> out = 0.0 * (si::cubic_meter / day);
     t_meter headAboveFloodplain = head - flowHead;
     if (headAboveFloodplain > 0 * si::meter) {
         const double PI = std::atan(1.0) * 4;
         double J = (PI * conductance.value()) / (4 * 0.15 * (500 * 500));
-        return bottom * bottom * headAboveFloodplain * (J * 1 / day);
+        return bottomElev * bottomElev * headAboveFloodplain * (J * 1 / day);
     }
     return out;
 }
@@ -202,74 +213,69 @@ double smoothstep(double edge0, double edge1, double x) {
     return x * x * (3 - 2 * x);
 }
 
+/**
+ * @brief Equilibrium river conductance (ERC) following Miguez-Macho et al. (2007):
+ * the idea is to set river conductance to let rivers take up the cells "drainage demand"
+ * (recharge and lateral flow at equilibrium groundwater head)
+ * @param current_recharge Groundwater recharge
+ * @param eq_head Equilibrium groundwater head
+ * @param current_head Current groundwater head
+ * @param eq_flow Equilibrium lateral groundwater flow
+ * @return
+ */
 t_s_meter_t ExternalFlow::calcERC(t_vol_t current_recharge,
                                   t_meter eq_head,
-                                  t_meter current_head,
+                                  t_meter gw_head,
                                   t_vol_t eq_flow) const noexcept {
-
-    //LOG(debug) << "recharge:" << current_recharge.value() << "head:" << eq_head.value() << "StreamStage: " << flowHead.value() << "Bottom" << bottom.value() << "EQFlow" << eq_flow.value() << "AltConduct" << conductance.value();
-
-    t_s_meter_t out = 0 * si::square_meter / day;
-
-    //Static MM
-    t_meter stage = eq_head - flowHead;
-    NANChecker(stage.value(), "ERC stage problem");
-
-    //Scale parameter not in use
-    double p = 1;
-    if (stage.value() <= 0) {
-        stage = .1 * si::meter;
-    }
-
     //possibility to lock conductance equation with former recharge e.g. from steady-state model
-    if (lock_recharge) {
-        current_recharge = locked_recharge;
-        return locked_conductance * mult;
-    }
+    if (lock_recharge) { return locked_conductance * mult; }
 
-    out = (current_recharge * (p * si::si_dimensionless) + eq_flow) / stage;
-    NANChecker(out.value(), "ERC Recharge Problem");
+    //LOG(debug) << "recharge:" << current_recharge.value() << "head:" << eq_head.value() << "StreamStage: " << flowHead.value() << "Bottom" << bottomElev.value() << "EQFlow" << eq_flow.value() << "AltConduct" << conductance.value();
+    t_s_meter_t out;
 
-    if (out < conductance) {
-        //Only happens if cell was loosing in eq and is now gaining
+    if (gw_head < flowHead - 1 * si::meter) { // for losing rivers: use conductance from input data
         out = conductance;
-    }
-
-    if (current_head < flowHead - 1 * si::meter) {
-        t_s_meter_t tmp_conduct = conductance;
-        if (tmp_conduct.value() > 1e+10) {
-            tmp_conduct = 1e+10 * si::square_meter / day;
-        }
-        NANChecker(tmp_conduct.value(), "ERC Problem low flow head");
-        if (tmp_conduct.value() <= 0) {
-            LOG(critical) << "conductance <= 0";
-        }
-        return tmp_conduct * mult;
-    } else if (current_head > flowHead + 1 * si::meter) {
-        if (out.value() > 1e+10) {
-            out = 1e+10 * si::square_meter / day;
-        }
-        NANChecker(out.value(), "ERC Problem high flow head");
-        if (out.value() <= 0) {
-            LOG(critical) << "conductance <= 0";
-        }
+        if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
+        NANChecker(out.value(), "ERC Problem low flow head");
+        if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
         return out * mult;
-    }
+    } else {
+        // River conductance of gaining rivers in steady state following Miguez-Macho et al. (2007)
+        // sets river conductance to let rivers take up the cells "drainage demand"
+        // (drainage demand = recharge + lateral flow at equilibrium groundwater head)
+        t_meter stage = eq_head - flowHead;
+        NANChecker(stage.value(), "ERC stage problem");
+        if (stage.value() <= 0) { stage = .1 * si::meter; }
+        // set scale parameter p (not in use)
+        t_dim p = 1 * si::si_dimensionless;
+        // calculate conductance
+        out = (current_recharge * p + eq_flow) / stage;
+        NANChecker(out.value(), "ERC Recharge Problem");
 
-    double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, current_head.value());
-    double range = std::abs(out.value() - conductance.value());
-    double lower_bound = out.value() > conductance.value() ? out.value() : conductance.value();
-    out = (lower_bound + range * delta) * si::square_meter / day;
+        if (out < conductance) {out = conductance;} //Only happens if cell was loosing in eq and is now gaining
 
-    NANChecker(out.value(), "ERC Problem");
+        if (gw_head > flowHead + 1 * si::meter) { // for gaining rivers: use approach by Miguez-Macho et al. (2007)
+            if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
+            NANChecker(out.value(), "ERC Problem high river head");
+            if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
+            return out * mult; // mult is only used for sensitivity analysis
 
-    if (out.value() > 1e+10) {
-        out = 1e+10 * si::square_meter / day;
+        } else { // when current GW head and river head are less than 1 meter apart
+
+            double delta = smoothstep(flowHead.value() - 1, flowHead.value() + 1, gw_head.value());
+            double range = std::abs(out.value() - conductance.value());
+            //double lower_bound = out.value() > conductance.value() ? out.value() : conductance.value();
+            out = (out.value() + range * delta) * si::square_meter / day;
+
+            NANChecker(out.value(), "ERC Problem");
+
+            if (out.value() > 1e+10) { out = 1e+10 * si::square_meter / day; }
+            if (out.value() <= 0) { LOG(critical) << "conductance <= 0"; }
+            //LOG(debug) << "calcERC out = " << out.value() << ", recharge = " << current_recharge.value() <<
+            //              ", equilibrium flow = " << eq_flow.value() << ", stage = " << stage.value();
+            return out * mult; // mult is only used for sensitivity analysis
+        }
     }
-    if (out.value() <= 0) {
-        LOG(critical) << "conductance <= 0";
-    }
-    return out * mult;
 }
 }
 }//ns

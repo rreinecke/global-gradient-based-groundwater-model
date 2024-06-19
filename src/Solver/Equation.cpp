@@ -1,280 +1,276 @@
 #include "Equation.hpp"
 
 namespace GlobalFlow {
-namespace Solver {
+    namespace Solver {
 
-Equation::Equation(large_num numberOfNodes, NodeVector nodes, Simulation::Options options) : options(options) {
-    LOG(userinfo) << "Setting up Equation for " << numberOfNodes;
+Equation::Equation(NodeVector nodes, Simulation::Options options) : options(options) {
+    this->numberOfNodesPerLayer = options.getNumberOfNodesPerLayer();
+    this->numberOfLayers = options.getNumberOfLayers();
+    this->numberOfNodesTotal = numberOfNodesPerLayer * numberOfLayers;
+    LOG(userinfo) << "Setting up Equation for " << numberOfNodesPerLayer << " nodes"
+                  << " on " << numberOfLayers << " layer(s) (in total " << numberOfNodesTotal << " nodes)";
 
-    this->numberOfNodes = numberOfNodes;
-    this->IITER = options.getMaxIterations();
-    this->RCLOSE = options.getConverganceCriteria();
-    this->initialHead = options.getInitialHead();
-    this->maxHeadChange = options.getMaxHeadChange();
+    this->MAX_OUTER_ITERATIONS = options.getMaxIterations();
+    this->RCLOSE_HEAD = options.getConverganceCriteriaHead();
+    this->RCLOSE_ZETA = options.getConverganceCriteriaZeta();
+    this->maxAllowedHeadChange = options.getMaxHeadChange();
     this->isAdaptiveDamping = options.isDampingEnabled();
     this->dampMin = options.getMinDamp();
     this->dampMax = options.getMaxDamp();
-    this->disable_dry_cells = options.disableDryCells();
-    this->nwt = (options.getSolverName().compare("NWT") == 0);
-    if (nwt)
-        LOG(userinfo) << "Running with NWT solver" << std::endl;
+    this->threads = options.getThreads();
+    this->max_inner_iterations = options.getInnerItter();
+    this->nodes = std::move(nodes);
 
-    inner_iterations = options.getInnerItter();
+    this->numberOfZones = options.getDensityZones().size();
+    this->maxAllowedZetaChange = options.getMaxZetaChange();
 
-    this->nodes = nodes;
+    //set inner iterations
+    cg.setMaxIterations(max_inner_iterations);
+    cg.setTolerance(RCLOSE_HEAD);
+    max_inner_iterations_zetas = max_inner_iterations * 2;
+    cg_zetas.setMaxIterations(max_inner_iterations_zetas);
+    cg_zetas.setTolerance(RCLOSE_ZETA);
 
-    long_vector __x(numberOfNodes);
-    long_vector __b(numberOfNodes);
-
-    x = std::move(__x);
+    Eigen::SparseMatrix<pr_t> sparseMatrix(numberOfNodesTotal, numberOfNodesTotal);
+    A = std::move(sparseMatrix);
+    int numberOfEntries = (int) 4 + 2 + 1; // +2 for top/down, + 1 for this node
+    A.reserve(long_vector::Constant(numberOfNodesTotal, numberOfEntries));
+    long_vector __b(numberOfNodesTotal);
     b = std::move(__b);
-
-    Eigen::SparseMatrix<pr_t> __A(numberOfNodes, numberOfNodes);
-
-    A = std::move(__A);
-    A.reserve(long_vector::Constant(numberOfNodes, 7));
-
-    //Init first result vector x by writing initial heads
-    //Initial head should be positive
-    //resulting head is the real hydraulic head
-    double tmp = 0;
-#pragma omp parallel for
-    for (int i = 0; i < numberOfNodes; ++i) {
-        if (nwt) {
-            nodes->at(i)->enableNWT();
-        }
-        if (not simpleHead) {
-            tmp = nodes->at(i)->calcInitialHead(initialHead * si::meter).value();
-            nodes->at(i)->setHead_direct(tmp);
-            NANChecker(tmp, "Initial Head");
-            x[nodes->at(i)->getProperties().get<large_num, Model::ID>()] = std::move(tmp);
-        } else {
-            x[nodes->at(i)->getProperties().get<large_num, Model::ID>()] =
-                    nodes->at(i)->getProperties().get<quantity<Model::Meter>, Model::Head>().value();
-            nodes->at(i)->initHead_t0();
-        }
-    }
-
-    if (nwt) {
-        bicgstab.setMaxIterations(inner_iterations);
-        bicgstab.setTolerance(RCLOSE);
-    } else {
-        //set inner iterrations
-        cg.setMaxIterations(inner_iterations);
-        cg.setTolerance(RCLOSE);
-        //cg.preconditioner().setInitialShift(1e-8);
-    }
+    long_vector __x(numberOfNodesTotal);
+    x = std::move(__x);
 }
 
 Equation::~Equation() {
-    LOG(debug) << "Destroying equation\n";
+    LOG(debug) << "Destroying equation\n" << std::endl;
 }
 
 void inline
-Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node, bool cached) {
-    std::unordered_map<large_num, quantity<Model::MeterSquaredPerTime>> map;
-    if (nwt) {
-        map = node->getJacobian();
-    } else {
-        map = node->getConductance();
-    }
-    auto nodeID = node->getProperties().get<large_num, Model::ID>();
-
-    if (disable_dry_cells) {
-        if (not map[nodeID].value()) {
-            disabled_nodes.insert(nodeID);
-        }
-    }
-
-    for (const auto &conductance : map) { 
-        if (cached) {
-            A.coeffRef(nodeID, conductance.first) = conductance.second.value();
-        } else {
-            A.insert(nodeID, conductance.first) = conductance.second.value();
-        }
-    }
-}
-
-void inline Equation::reallocateMatrix() {
-    if (not disable_dry_cells) {
-        return;
-    }
-
-    if (disabled_nodes.empty()) {
-        _A_ = A;
-        _b_ = b;
-        _x_ = x;
-        return;
-    }
-
-    large_num __missing{0};
-    long size = A.rows() - disabled_nodes.size();
-    Matrix<pr_t, 2, Dynamic> new_matrix(size, size);
-
-
-    if (dry_have_changed) {
-        index_mapping.clear();
-    }
-
-    for (large_num i = 0; i < A.rows(); i++) {
-        if (not dry_have_changed) {
-            auto m = index_mapping[i];
-            if (m != -1) {
-                new_matrix.row(i) = A.row(i);
-            }
-        } else {
-            const bool is_in = disabled_nodes.find(i) != disabled_nodes.end();
-            if (not is_in) {
-                //Save all non-zero
-                new_matrix.row(i) = A.row(i);
-                index_mapping[i] = i - __missing;
-            } else {
-                __missing++;
-                index_mapping[i] = -1;
-            }
-        }
-    }
-    _A_ = new_matrix.sparseView();
-
-    long_vector buffer_b;
-    long_vector buffer_x;
-    for (int j = 0; j < b.size(); ++j) {
-        auto m = index_mapping[j];
-        if (m != -1) {
-            buffer_b[m] = b[j];
-            if (dry_have_changed) {
-                buffer_x[m] = x[j];
-            }
-        }
-    }
-    _b_ = buffer_b;
-    if (dry_have_changed) {
-        _x_ = buffer_x;
+Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
+    large_num nodeID = node->getID();
+    for (const auto &[nodeID_neig, conductance] : node->getMatrixEntries()) {
+        A.coeffRef(long(nodeID), long(nodeID_neig)) = conductance.value();
     }
 }
 
 void inline
-Equation::updateMatrix() {
-    Index n = A.outerSize();
-    std::unordered_set<large_num> tmp_disabled_nodes = disabled_nodes;
-    disabled_nodes.clear();
+Equation::addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID) {
+    large_num nodeID = node->getID();
+    for (const auto &[nodeID_neig, zoneConductance]: nodes->at(nodeID)->getMatrixEntries(zetaID)) {
+        A_zetas.coeffRef(nodeID_to_zetaID_to_rowID[nodeID][zetaID],
+                         nodeID_to_zetaID_to_rowID[nodeID_neig][zetaID]) = zoneConductance.value();
+    }
+}
 
+void inline
+Equation::updateEquation() {
+    //LOG(debug) << "Updating equation";
 #ifdef EIGEN_HAS_OPENMP
     Eigen::initParallel();
-    Index threads = Eigen::nbThreads();
 #endif
-#pragma omp parallel for schedule(dynamic,(n+threads*4-1)/(threads*4)) num_threads(threads)
-    for (large_num j = 0; j < numberOfNodes; ++j) {
-        //---------------------Left
-        addToA(nodes->at(j), isCached);
-        //---------------------Right
-        double rhs{0.0};
-        if (nwt) {
-            rhs = nodes->at(j)->getRHS__NWT();
-            b[nodes->at(j)->getProperties().get<large_num, Model::ID>()] = std::move(rhs);
-            NANChecker(rhs, "Right hand side");
-        } else {
-            rhs = nodes->at(j)->getRHS().value();
-            b(nodes->at(j)->getProperties().get<large_num, Model::ID>()) = rhs;
-            NANChecker(rhs, "Right hand side");
-        }
-    }
-
-    if (not disable_dry_cells) {
-        dry_have_changed = not set_compare(tmp_disabled_nodes, disabled_nodes);
-    }
-
-    //some nodes are in dried condition
-    //reallocate matrix, and a,b
-    reallocateMatrix();
-
-    //A is up to date and b contains only rhs term
-    //Update with current heads
-    if (nwt) {
-        if (disable_dry_cells) {
-            _b_ = _b_ + _A_ * _x_;
-        } else {
-            b = b + A * x;
-        }
-    }
-
-    //Check if after iteration former 0 values turned to non-zero
-    if (disable_dry_cells) {
-        if ((not _A_.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix";
-            _A_.makeCompressed();
-        }
-    } else {
-        if ((not A.isCompressed()) and isCached) {
-            LOG(numerics) << "Recompressing Matrix";
-            A.makeCompressed();
-        }
+#pragma omp parallel for schedule(dynamic, (numberOfNodesTotal/(threads * 4))) num_threads(threads) default(none)
+    for (int nodeID = 0; nodeID < numberOfNodesTotal; ++nodeID) {
+        addToA(nodes->at(nodeID));
+        x(nodeID) = nodes->at(nodeID)->getHead().value(); // cannot just use x, since damping might alter head values
+        b(nodeID) = nodes->at(nodeID)->getRHS().value();
     }
 }
 
 void inline
-Equation::preconditioner() {
-    LOG(numerics) << "Decomposing Matrix";
-    if (nwt) {
-        if (disable_dry_cells) {
-            bicgstab.compute(_A_);
-        } else {
-            bicgstab.compute(A);
-        }
-        if (bicgstab.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix";
-            throw "Fail in decomposing matrix";
-        }
-    } else {
-        if (disable_dry_cells) {
-            cg.compute(_A_);
-        } else {
-            cg.compute(A);
-        }
-        if (cg.info() != Success) {
-            LOG(numerics) << "Fail in decomposing matrix";
-            throw "Fail in decomposing matrix";
-        }
+Equation::preconditionA() {
+    if (!A.isCompressed()) { A.makeCompressed(); }
+    //LOG(debug) << "Compressed A";
+    cg.compute(A);
+    //LOG(debug) << "Computed conjugate gradients for A";
+    if (cg.info() != Success) {
+        LOG(numerics) << "Fail in preconditioning matrix";
+        throw "Fail in preconditioning matrix";
     }
+    //LOG(debug) << "Equation is ready for solver";
 }
 
 void inline
-Equation::updateIntermediateHeads() {
-    long_vector changes;
-    if (disable_dry_cells) {
-        changes = adaptiveDamping.getDamping(getResiduals(), _x_, isAdaptiveDamping);
-    } else {
-        changes = adaptiveDamping.getDamping(getResiduals(), x, isAdaptiveDamping);
-    }
+Equation::updateEquation_zetas(const int layer) {
+    large_num offset = layer * numberOfNodesPerLayer;
 
-    bool reduced = disabled_nodes.empty();
-#pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
-        large_num id = nodes->at(k)->getProperties().get<large_num, Model::ID>();
-
-        if (reduced) {
-            nodes->at(k)->setHead((double) changes[id] * si::meter);
-        } else {
-            auto m = index_mapping[id];
-            if (m != -1) {
-                nodes->at(k)->setHead((double) changes[m] * si::meter);
+#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) default(none) shared(offset)
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+            if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
+                addToA_zetas(nodes->at(nodeID), zetaID);
+                x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]) = nodes->at(nodeID)->getZetaIter(zetaID).value();
+                b_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]) = nodes->at(nodeID)->getRHS(zetaID).value();
             }
         }
     }
+
+    //LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
+    //LOG(debug) << "b_zetas.block:\n" << b_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+    //LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+
+    //LOG(numerics) << "Preconditioning matrix before iteration (zetas)";
+    if (A_zetas.size() != 0) {
+        //LOG(numerics) << "Compressing Matrix (zetas)";
+        A_zetas.makeCompressed();
+
+        cg_zetas.compute(A_zetas);
+        if (cg_zetas.info() != Success) {
+            LOG(userinfo) << "Fail in preconditioning matrix (zetas)";
+            throw "Fail in preconditioning matrix (zetas)";
+        }
+    }
+    //LOG(debug) << "Equation is ready for solver (zetas)";
 }
 
 void inline
-Equation::updateFinalHeads() {
-#pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
-        nodes->at(k)->updateHeadChange();
+Equation::updateHeadAndHeadChange() {
+    long_vector changes = adaptiveDamping.getChanges(getResiduals(), x, isAdaptiveDamping);
+// no parallel here
+    for (long rowID = 0; rowID < numberOfNodesTotal; rowID++) {
+        nodes->at(rowID)->setHeadAndHeadChange(changes[rowID] * si::meter);
+    }
+}
+
+void inline
+Equation::updateZetaIter(int layer) {
+    int numAboveMaxZetaChange{0};
+    auto offset = layer * numberOfNodesPerLayer;
+    large_num spatID;
+// no parallel here
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+            if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
+                nodes->at(nodeID)->setZetaIter(zetaID,
+                                               zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]] * si::meter);
+                if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange) {
+                    ++numAboveMaxZetaChange;
+                    spatID = nodes->at(nodeID)->getSpatID();
+                    //LOG(numerics) << "zetaChange (" << nodeID << ", zetaID: " << zetaID << "): " << zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]];
+                    //LOG(numerics) << "x_zetas (" << nodeID << ", " << zetaID << "): " << x_zetas(nodeID_to_zetaID_to_rowID[nodeID][zetaID]);
+                    //LOG(numerics) << "zetaIter (" << nodeID << ", " << zetaID+1 << "): " << nodes->at(nodeID)->getZetaIter(zetaID+1).value();
+                }
+            }
+        }
+    }
+
+    if (std::abs(zetaChanges.maxCoeff()) > std::abs(zetaChanges.minCoeff())) {
+        currentMaxZetaChange = zetaChanges.maxCoeff();
+    } else {
+        currentMaxZetaChange = zetaChanges.minCoeff();
+    }
+    LOG(numerics) << "Zeta Change larger than allowed value: " << numAboveMaxZetaChange
+                  << " times. MAX Zeta Change: " << currentMaxZetaChange;
+    if (numAboveMaxZetaChange == 1) {
+        LOG(numerics) << "SpatID of that one node with too high zeta change:" << spatID;
+    }
+}
+
+
+void inline
+Equation::updateZetas(const int layer) {
+    auto offset = layer * numberOfNodesPerLayer;
+# pragma omp parallel for default(none) shared(offset)
+    for (large_num k = offset; k < numberOfNodesPerLayer + offset; ++k) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+            auto zeta = nodes->at(k)->getZetaIter(zetaID);
+            nodes->at(k)->setZeta(zetaID, zeta);
+        }
+    }
+}
+
+
+void inline
+Equation::updateHeadChangeTZero() {
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->updateHeadChange_TZero();
+    }
+}
+
+void inline
+Equation::updateHeadTZero() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->updateHead_TZero();
+        }
+    }
+
+void inline
+Equation::clipZetas() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->clipZetas();
+        }
+}
+
+void inline
+Equation::setZetasTZero() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            nodes->at(k)->setZetas_TZero();
+        }
+    }
+
+void inline
+Equation::setZetasIter() {
+#pragma omp parallel for default(none)
+        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+            auto zetas = nodes->at(k)->getZetas_TZero();
+            nodes->at(k)->setZetas_Iter(zetas);
+        }
+    }
+
+void inline
+Equation::adjustZetaHeights() {
+    LOG(debug) << "Vertical zeta movement";
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->zetaMovementBetweenLayers();
+    }
+
+    LOG(debug) << "Horizontal zeta movement";
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->horizontalZetaMovement();
+    }
+
+    LOG(debug) << "Clipping inner zetas";
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->clipInnerZetas();
+    }
+
+    LOG(debug) << "Preventing zeta locking";
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->preventZetaLocking();
+    }
+
+    LOG(debug) << "Correct crossing zetas";
+# pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->correctCrossingZetas();
+    }
+
+    LOG(debug) << "Check zeta order and whether front and back are in correct position";
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->checkZetas();
+    }
+}
+
+void inline
+Equation::updateZoneChange() {
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->saveZoneChange();
     }
 }
 
 void inline
 Equation::updateBudget() {
-#pragma omp parallel for
-    for (large_num k = 0; k < numberOfNodes; ++k) {
+#pragma omp parallel for default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->saveMassBalance();
     }
 }
@@ -285,171 +281,285 @@ Equation::updateBudget() {
  */
 void
 Equation::solve() {
+    LOG(debug) << "solve";
+    updateEquation();
+    LOG(debug) << "Initialized A, x and b";
+    preconditionA();
+    adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxAllowedHeadChange, x); // among other: set x_t0 = x (initial)
 
-
-    LOG(numerics) << "Updating Matrix";
-    updateMatrix();
-
-
-        if (!isCached) {
-        LOG(numerics) << "Compressing matrix";
-        if (disable_dry_cells) {
-            _A_.makeCompressed();
-        } else {
-            A.makeCompressed();
-        }
-        LOG(numerics) << "Cached Matrix";
-        isCached = true;
-    }
-
-    preconditioner();
-    if (disable_dry_cells) {
-        adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, _x_);
-    } else {
-        adaptiveDamping = AdaptiveDamping(dampMin, dampMax, maxHeadChange, x);
-    }
-
-    LOG(numerics) << "Running Time Step";
-    
-    double maxHead{0};
-    double oldMaxHead{0};
-    int itterScale{0};
-
-    // Returns true if max headchange is greater than defined val
-    auto isHeadChangeGreater = [this,&maxHead]() -> bool {
-        double lowerBound = maxHeadChange;
-        double changeMax = 0;
-#pragma omp parallel for
-        for (large_num k = 0; k < numberOfNodes; ++k) {
-            double
-                    val = std::abs(
-                    nodes->at(k)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
-            changeMax = (val > changeMax) ? val : changeMax;
-        }
-	    maxHead = changeMax;
-        LOG(numerics) << "MAX Head Change: " << changeMax;
-        return changeMax > lowerBound;
-    };
-
-    long iterations{0};
+    double oldMaxHeadChange{0};
+    int innerIterAddon{0};
+    long outerIteration{0};
+    long innerIterations{0};
     bool headFail{false};
-    char smallHeadChanges{0};
+    char smallHeadChangeCounter{0};
     bool headConverged{false};
-    while (iterations < IITER) {
-
-        LOG(numerics) << "Outer iteration: " << iterations;
-
-        //Solve inner iterations
-        if (nwt) {
-            if (disable_dry_cells) {
-                _x_ = bicgstab.solveWithGuess(_b_, _x_);
-            } else {
-                x = bicgstab.solveWithGuess(b, x);
-            }
-        } else {
-            if (disable_dry_cells) {
-                _x_ = cg.solveWithGuess(_b_, _x_);
-            } else {
-                x = cg.solveWithGuess(b, x);
-            }
-        }
-
-        updateIntermediateHeads();
-        int innerItter{0};
-        if (nwt) {
-            innerItter = bicgstab.iterations();
-        } else {
-            innerItter = cg.iterations();
-        }
-
-        if (innerItter == 0 and iterations == 0) {
-            LOG(numerics) << "convergence criterion to small - no iterations";
+    while (outerIteration < MAX_OUTER_ITERATIONS) {
+        //LOG(debug) << "A.block:\n" << A.block(0,0,50,50); // startRow, startCol, numRows, numCol
+        //LOG(debug) << "b.block:\n" << b.block(0,0,50,1); // startRow, startCol, numRows, numCol
+        //LOG(debug) << "x.block:\n" << x.block(0,0,50,1); // startRow, startCol, numRows, numCol
+        x = cg.solveWithGuess(b, x); // solving inner iterations
+        innerIterations = cg.iterations();
+        //LOG(numerics) << "Inner iterations: " << innerIterations;
+        if (innerIterations == 0 and outerIteration == 0) {
+            LOG(numerics) << "Convergence criterion met without iterations.";
             break;
         }
+        updateHeadAndHeadChange(); // needs to be before "head change convergence"
 
         /**
-         * @brief head change convergance
+         * @brief head change convergence
          */
-        headFail = isHeadChangeGreater();
-        if (headFail) {
-            //convergence is not reached
-            //reset counter
-            smallHeadChanges = 0;
-        } else {
-            //itter converged with head criterion
-            if (headConverged and smallHeadChanges == 0) {
+        if (isHeadChangeGreater()) { //convergence is not reached
+            smallHeadChangeCounter = 0; //reset counter
+        } else { //converged with head criterion
+            if (headConverged and smallHeadChangeCounter == 0) {
                 LOG(numerics) << "Conditional convergence - check mass balance";
                 break;
             } else {
                 headConverged = true;
-                smallHeadChanges++;
-
-                if (smallHeadChanges >= 2) {
+                smallHeadChangeCounter++;
+                if (smallHeadChangeCounter >= 2) {
                     LOG(numerics) << "Reached head change convergence";
                     break;
                 }
             }
         }
 
-	if(maxHead == oldMaxHead){
-		//The head change is really the same -> increase inner iterations
-		itterScale = itterScale + 10;
-	}else{
-		itterScale = 0;
-	}
-        cg.setMaxIterations(inner_iterations + itterScale);
-	oldMaxHead = maxHead;
-
         /**
-         * @brief residual norm convergance
+         * @brief residual norm convergence
          */
-        if (nwt) {
-            LOG(numerics) << "Inner iterations: " << innerItter;
-            if (bicgstab.info() == Success) {
-                break;
-            }
-        } else {
-            LOG(numerics) << "Inner iterations: " << innerItter;
-            if (cg.info() == Success and iterations != 0) {
-                break;
-            }
+        if (cg.info() == Success and outerIteration != 0) {
+            LOG(numerics) << "cg solver success";
+            break;
         }
 
-        if (nwt) {
-            LOG(numerics) << "Residual squared norm error " << bicgstab.error();
-            LOG(numerics) << "Head change bigger: " << headFail;
-        } else {
-            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-	        LOG(numerics) << "|Residual|_l2: " << cg.error();
-            LOG(numerics) << "Head change bigger: " << headFail;
+        if(currentMaxHeadChange == oldMaxHeadChange){
+            //The head change is really the same -> increase inner iterations
+            innerIterAddon += 10;
+            cg.setMaxIterations(max_inner_iterations + innerIterAddon);
         }
+        oldMaxHeadChange = currentMaxHeadChange;
 
-        updateMatrix();
-        preconditioner();
-
-        iterations++;
+        updateEquation();
+        //LOG(debug) << "Updated A, x and b";
+        preconditionA();
+        outerIteration++;
     }
 
-    if (iterations == IITER) {
-        std::cerr << "Fail in solving matrix with max iterations";
-        if (nwt) {
-            LOG(numerics) << "Residual squared norm error " << bicgstab.error();
-        } else {
-            LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
-            LOG(numerics) << "|Residual|_l2: " << cg.error();
-        }
+    if (outerIteration == MAX_OUTER_ITERATIONS) {
+        std::cerr << "Fail in solving matrix with max iterations\n";
+        LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
+        LOG(numerics) << "|Residual|_l2: " << cg.error();
     }
 
-    updateFinalHeads();
+    __itter = outerIteration;
+    __error = cg.error_inf();
+
+    /**
+     * ###############################
+     * # Solve Zeta Surface Equation #
+     * ###############################
+     */
+     if(isDensityVariable) {
+         solve_zetas();
+     }
+
+    /**
+    * ###############################
+    * # Update budgets #
+    * ###############################
+    */
+
+    LOG(numerics) << "Updating head change and head of previous time step";
+    updateHeadChangeTZero();
+    updateHeadTZero();
+    LOG(numerics) << "Updating budget";
     updateBudget();
-
-    __itter = iterations;
-    __error = nwt ? bicgstab.error() : cg.error_inf();
 }
+
+bool inline
+Equation::isHeadChangeGreater(){
+    currentMaxHeadChange = 0;
+    double absHeadMax{0.0};
+    double headSum{0.0};
+    double headMean{0.0};
+    double countAbsHeadAbove10k{0.0};
+    double changeAtNode{0.0};
+    double absHeadAtNode{0.0};
+    large_num nodeID_headMax{0};
+    large_num nodeID_changeMax{0};
+//#pragma omp parallel for
+    for (large_num nodeID = 0; nodeID < numberOfNodesTotal; nodeID++) {
+        changeAtNode = std::abs(
+                nodes->at(nodeID)->getProperties().get<quantity<Model::Meter>, Model::HeadChange>().value());
+        nodeID_changeMax = (changeAtNode > currentMaxHeadChange) ? nodeID : nodeID_changeMax;
+        currentMaxHeadChange = (changeAtNode > currentMaxHeadChange) ? changeAtNode : currentMaxHeadChange;
+        absHeadAtNode = std::abs(nodes->at(nodeID)->getHead().value());
+        nodeID_headMax = (absHeadAtNode > absHeadMax) ? nodeID : nodeID_headMax;
+        absHeadMax = (absHeadAtNode > absHeadMax) ? absHeadAtNode : absHeadMax;
+        headSum += nodes->at(nodeID)->getHead().value();
+        if (absHeadAtNode > 10000) {
+            //LOG(debug) << "nodeID: " << nodeID << "-> head = " << nodes->at(nodeID)->getHead().value() << ", x = " << x[nodeID];
+            countAbsHeadAbove10k++;}
+    }
+    headMean = headSum / numberOfNodesTotal;
+    //LOG(debug) << "MAX Absolute Head: " << absHeadMax << " (nodeID: " << nodeID_headMax << "), "
+    //              << "Absolute head > 10,000 at " << countAbsHeadAbove10k << " nodes";
+    //LOG(debug) << "MEAN Head: " << headMean;
+    LOG(numerics) << "MAX Absolute Head Change: " << currentMaxHeadChange << " (nodeID: " << nodeID_changeMax << ")";
+    return currentMaxHeadChange > maxAllowedHeadChange;
+}
+
+void inline
+Equation::setUnconvergedZetasToZetas_TZero(int layer) {
+    large_num offset = layer * numberOfNodesPerLayer;
+    double zetaTZero{0.0};
+    for (int zetaID = 1; zetaID < numberOfZones; ++zetaID) {
+        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
+            if (nodeID_to_zetaID_to_rowID[nodeID][zetaID] != -1) {
+                if (std::abs(zetaChanges[nodeID_to_zetaID_to_rowID[nodeID][zetaID]]) > maxAllowedZetaChange){
+                    zetaTZero = nodes->at(nodeID)->getZeta_TZero(zetaID).value();
+                    nodes->at(nodeID)->setZetaIter(zetaID, zetaTZero * si::meter);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Solve Zeta Surface Equation
+ */
+void
+Equation::solve_zetas(){
+    __itter_zetas = 0;
+    // If unconfined: clipping top zeta to current groundwater level
+    clipZetas();
+    setZetasTZero();
+    setZetasIter();
+    for (int layer = 0; layer < numberOfLayers; layer++) {
+        LOG(numerics) << "Finding zeta surface heights in layer " << layer;
+
+        prepareEquation_zetas(layer);
+
+        if (A_zetas.size() == 0) { continue; } // if matrix empty continue with next iteration
+
+        int outerIteration{0};
+        long innerIteration{0};
+        int innerIterAddon{0};
+        char smallZetaChanges{0};
+        bool zetaConverged{false};
+        int outOfBoundsCount{0};
+        while (outerIteration < MAX_OUTER_ITERATIONS) {
+            LOG(numerics) << "Outer iteration: " << outerIteration;
+            x_zetas_t0 = x_zetas;
+            //Solve inner iterations
+            x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas);
+            zetaChanges = x_zetas - x_zetas_t0;
+
+            updateZetaIter(layer);  // set Zetas_Iter and currentMaxZetaChange
+            innerIteration = cg_zetas.iterations();
+            /*if (innerIteration == 0 and outerIteration == 0) {
+                LOG(numerics) << "Convergence criterion for zeta (=" << RCLOSE_ZETA << ") too small - no iterations";
+                break;
+            }*/
+
+            /**
+           * @brief residual norm convergence
+           */
+            if (cg_zetas.info() == Success and outerIteration != 0) {
+                LOG(numerics) << "cg_zetas solver success";
+                break;
+            }
+
+
+            /**
+             * @brief zeta change convergence // todo make function of this
+             */
+            if (std::abs(currentMaxZetaChange) > maxAllowedZetaChange) {
+                //convergence is not reached -> reset counter
+                smallZetaChanges = 0;
+            } else {
+                //itter converged with zeta criterion
+                if (zetaConverged and smallZetaChanges == 0) {
+                    LOG(numerics) << "Conditional convergence - check mass balance (zetas)";
+                    break;
+                } else {
+                    zetaConverged = true;
+                    smallZetaChanges++;
+
+                    if (smallZetaChanges >= 2) {
+                        LOG(numerics) << "Reached zeta change convergence";
+                        break;
+                    }
+                }
+            }
+            //LOG(debug) << "A:\n" << A << std::endl;
+            //LOG(debug) << "x:\n" << x << std::endl;
+            //LOG(debug) << "b (= rhs):\n" << b << std::endl;
+
+            updateEquation_zetas(layer);
+            outerIteration++;
+        } // end of outer iteration loop
+
+        if (outerIteration == MAX_OUTER_ITERATIONS) {
+            LOG(userinfo) << "Fail in solving zeta matrix with max iteration (layer: " << layer << ")";
+            LOG(userinfo) << "Setting unconverged zetas to their value before iteration (layer: " << layer << ")";
+            setUnconvergedZetasToZetas_TZero(layer);
+        }
+
+        __itter_zetas += outerIteration;
+        // %%%%%%%%%%%%%%%%%%%%%%
+        // % Update final zetas %
+        // %%%%%%%%%%%%%%%%%%%%%%
+        updateZetas(layer);
+    } // end of layer loop
+
+    updateZoneChange(); // needs to be before adjustZetaHeights to get zone change without horizontal tip/toe movement
+    LOG(numerics) << "Adjusting zeta heights (after zeta height convergence)";
+    adjustZetaHeights();
+}
+
+void inline
+Equation::prepareEquation_zetas(const int layer) {
+    nodeID_to_zetaID_to_rowID.clear();
+    large_num offset = layer * numberOfNodesPerLayer;
+    numberOfActiveZetas = 0;
+    long rowID{0};
+    // finding nodes with active/inactive interfaces
+    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
+        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+            if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
+                nodeID_to_zetaID_to_rowID[nodeID][zetaID] = rowID;
+                ++rowID;
+                ++numberOfActiveZetas; // tracking how many have been set inactive at this zetaID
+            } else {
+                nodeID_to_zetaID_to_rowID[nodeID][zetaID] = -1; // these entries will be ignored ( e.g. in loop filling A_zeta, x_zeta and b_zeta)
+            }
+        }
+    }
+
+    Eigen::SparseMatrix<pr_t> __A_zetas(numberOfActiveZetas, numberOfActiveZetas);
+    A_zetas = std::move(__A_zetas);
+    int numberOfEntries = (int) 4 + 1; // + 1 for this node
+    A_zetas.reserve(long_vector::Constant(numberOfActiveZetas, numberOfEntries));
+    long_vector __b_zetas(numberOfActiveZetas);
+    b_zetas = std::move(__b_zetas);
+    long_vector __x_zetas(numberOfActiveZetas);
+    x_zetas = std::move(__x_zetas);
+
+    updateEquation_zetas(layer);
+    //oldZetaChanges = x_zetas * 0.0; // set to 0 at all nodes
+}
+
 
 int
 Equation::getItter() {
     return __itter;
+}
+
+int Equation::getItter_zetas(){
+    return __itter_zetas;
 }
 
 double

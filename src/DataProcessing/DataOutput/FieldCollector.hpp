@@ -40,19 +40,21 @@ namespace GlobalFlow {
             enum class FieldType {
                 ID, /*!< Internal position */
                 SPATID, /*!< Data ID */
+                REFID, /*!< Refinement ID */
                 AREA, /*!< Area of the node */
                 CONDUCT, /*!< Hydraulic conductivity of the node */
                 ELEVATION, /*!< Elevation of the node */
-                SLOPE, /*!< Slope in the node */
                 X, Y, /*!< Postion of the node in X and Y */
                 HEAD, /*!< Hydraulic head */
-                EQ_HEAD, /*!< The equilibrium head -> inital head */
+                EQ_HEAD, /*!< The equilibrium head -> initial head */
                 IN, OUT, /*!< All in and outflows */
                 EQ_FLOW, /*!< Lateral flows based on the equilibrium head */
                 LATERAL_FLOW, /*!< Sum of all lateral flows of node */
                 LATERAL_OUT_FLOW, /*!< Only lateral out flows */
                 WETLANDS, /*!< Is there a wetland? */
+                GL_WETLANDS, /*!< Is there a global wetland? */
                 LAKES, /*!< Is there a lake? */
+                GL_LAKES, /*!< Is there a global lake? */
                 FLOW_HEAD, /*!< Surface water body head */
                 RECHARGE, /*!< GW recharge rate */
                 DYN_RIVER, /*!< Is there a dynamic river? */
@@ -65,13 +67,18 @@ namespace GlobalFlow {
                 WETLAND_CONDUCT, /*!< Conductance of wetland */
                 GL_WETLAND_CONDUCT, /*!< Conductance of global wetland */
                 LAKE_CONDUCT, /*!< Conductance of lake */
+                GL_LAKE_CONDUCT, /*!< Conductance of global lake */
                 GHB_OUT, /*!< General Head Boundary condition outflow */
                 GL_WETLAND_OUT, /*!< Global wetland outflow */
                 WETLAND_OUT, /*!< Wetland outflow */
                 LAKE_OUT, /*!< Lake outflow */
+                GL_LAKE_OUT, /*!< Global lake outflow */
                 GL_WETLAND_IN, /*!< Global wetland inflow */
                 WETLAND_IN, /*!< Wetland inflow */
                 LAKE_IN, /*!< Lake inflow */
+                GL_LAKE_IN, /*!< Global lake inflow */
+                ZETA1, /*!< Zeta surface 1 */
+                ZETA2, /*!< Zeta surface 2 */
                 NON_VALID
             };
 
@@ -81,11 +88,11 @@ namespace GlobalFlow {
              */
             const std::unordered_map<std::string, FieldType> fieldMapping{
                     {"ID",                 FieldType::ID},
-                    {"SpatID",              FieldType::SPATID},
+                    {"SpatID",             FieldType::SPATID},
+                    {"RefID",              FieldType::REFID},
                     {"Area",               FieldType::AREA},
                     {"Conductivity",       FieldType::CONDUCT},
                     {"Elevation",          FieldType::ELEVATION},
-                    {"Slope",              FieldType::SLOPE},
                     {"X",                  FieldType::X},
                     {"Y",                  FieldType::Y},
                     {"Head",               FieldType::HEAD},
@@ -96,7 +103,9 @@ namespace GlobalFlow {
                     {"Lateral_Flow",       FieldType::LATERAL_FLOW},
                     {"Lateral_Out_Flow",   FieldType::LATERAL_OUT_FLOW},
                     {"Wetlands",           FieldType::WETLANDS},
+                    {"Gl_Wetlands",        FieldType::GL_WETLANDS},
                     {"Lakes",              FieldType::LAKES},
+                    {"Gl_Lakes",           FieldType::GL_LAKES},
                     {"FlowHead",           FieldType::FLOW_HEAD},
                     {"Recharge",           FieldType::RECHARGE},
                     {"Dyn_River",          FieldType::DYN_RIVER},
@@ -109,13 +118,18 @@ namespace GlobalFlow {
                     {"Wetland_Conduct",    FieldType::WETLAND_CONDUCT},
                     {"Gl_Wetland_Conduct", FieldType::GL_WETLAND_CONDUCT},
                     {"Lake_Conduct",       FieldType::LAKE_CONDUCT},
-                    {"GHB_Outflow",      FieldType::GHB_OUT},
+                    {"Gl_Lake_Conduct",    FieldType::GL_LAKE_CONDUCT},
+                    {"GHB_Outflow",        FieldType::GHB_OUT},
                     {"Gl_Wetland_Outflow", FieldType::GL_WETLAND_OUT},
                     {"Wetland_Outflow",    FieldType::WETLAND_OUT},
                     {"Lake_Outflow",       FieldType::LAKE_OUT},
+                    {"Gl_Lake_Outflow",    FieldType::GL_LAKE_OUT},
                     {"Gl_Wetland_Inflow",  FieldType::GL_WETLAND_IN},
                     {"Wetland_Inflow",     FieldType::WETLAND_IN},
-                    {"Lake_Inflow",        FieldType::LAKE_IN}
+                    {"Lake_Inflow",        FieldType::LAKE_IN},
+                    {"Gl_Lake_Inflow",     FieldType::GL_LAKE_IN},
+                    {"Zeta1",              FieldType::ZETA1},
+                    {"Zeta2",              FieldType::ZETA2}
             };
 
 
@@ -140,12 +154,17 @@ namespace GlobalFlow {
                  * @return a vector of data
                  */
                 template<typename T, class Fun>
-                data_vector<T> getData(Simulation::Simulation &simulation, Fun fun) {
+                data_vector<T> getData(Simulation::Simulation &simulation, bool allLayers, Fun fun) {
                     data_vector<T> data;
-                    for (int i = 0; i < simulation.getNodes()->size(); ++i) {
-                        if (simulation.getNodes()->at(i)->getProperties().get<int, Model::Layer>() == 0) {
-                        //FIXME make layer selectable
+                    if (allLayers){
+                        for (int i = 0; i < simulation.getNodes()->size(); ++i) {
                             data.push_back(static_cast<T>(fun(i)));
+                        }
+                    } else {
+                        for (int i = 0; i < simulation.getNodes()->size(); ++i) {
+                            if (simulation.getNodes()->at(i)->getProperties().get<int, Model::Layer>() == 0) {
+                                data.push_back(static_cast<T>(fun(i)));
+                            }
                         }
                     }
                     return data;
@@ -170,11 +189,11 @@ namespace GlobalFlow {
                  * @param simulation The simulation
                  * @return A vector of positions
                  */
-                pos_v getPositions(Simulation::Simulation &simulation) {
-                    return getData<std::pair<double, double>>(simulation, [&simulation](int i) {
-                        double x{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>()};
-                        double y{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>()};
-                        return make_pair(x, y);
+                pos_v getPositions(Simulation::Simulation &simulation, bool allLayers) {
+                    return getData<std::pair<double, double>>(simulation, allLayers, [&simulation](int i) {
+                        double lat{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>()};
+                        double lon{simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>()};
+                        return std::make_pair(lat, lon);
                     });
                 }
 
@@ -183,9 +202,9 @@ namespace GlobalFlow {
                  * @param simulation The simulation
                  * @return A vector of IDs
                  */
-                std::vector<large_num> getIds(Simulation::Simulation &simulation) {
-                    return getData<large_num>(simulation, [&simulation](int i) {
-                        return simulation.getNodes()->at(i)->getID();
+                std::vector<large_num> getIds(Simulation::Simulation &simulation, bool allLayers) {
+                    return getData<large_num>(simulation, allLayers, [&simulation](int i) {
+                        return simulation.getNodes()->at(i)->getSpatID();
                     });
                 }
 
@@ -196,188 +215,181 @@ namespace GlobalFlow {
                  * @return The collected data
                  */
                 template<typename T>
-                data_vector<T> get(Simulation::Simulation &simulation) {
+                data_vector<T> get(Simulation::Simulation &simulation, bool allLayers) {
 
                     switch (enumField) {
                         case FieldType::NON_VALID: {
                             throw std::bad_function_call();
                         }
                         case FieldType::ID : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties().get<large_num, Model::ID>());
                             });
                         }
                         case FieldType::SPATID : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<large_num, Model::SpatID>());
                             });
                         }
+                        case FieldType::REFID : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                return convert<T>(
+                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::RefID>());
+                            });
+                        }
                         case FieldType::AREA : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties()
                                                           .get<Model::quantity<Model::SquareMeter>,
                                                                   Model::Area>().value());
                             });
                         }
                         case FieldType::CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getK().value());
                             });
                         }
                         case FieldType::ELEVATION : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties()
                                                           .get<Model::quantity<Model::Meter>,
                                                                   Model::Elevation>().value());
                             });
                         }
-                        case FieldType::SLOPE : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
-                                return convert<T>(simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                        Model::Dimensionless>,
-                                        Model::Slope>().value());
-                            });
-                        }
                         case FieldType::X : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties().get<double, Model::Lat>());
                             });
                         }
                         case FieldType::Y : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties().get<double, Model::Lon>());
                             });
                         }
                         case FieldType::HEAD : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                Model::Head>
-                                                ().value());
+                                                Model::Head>().value());
                             });
                         }
                         case FieldType::EQ_HEAD : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                Model::EQHead>
-                                                ().value());
+                                                Model::EQHead>().value());
                             });
                         }
                         case FieldType::IN : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getIN().value());
                             });
                         }
                         case FieldType::OUT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getOUT().value());
                             });
                         }
                         case FieldType::EQ_FLOW : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getEqFlow().value());
                             });
                         }
                         case FieldType::LATERAL_FLOW : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>((simulation.getNodes()->at(i)->getLateralFlows().value() /
                                                    simulation.getNodes()->at(
                                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                                           Model::Area>().value()) * 1000);
                             });
                         }
                         case FieldType::LATERAL_OUT_FLOW : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>((simulation.getNodes()->at(i)->getLateralOutFlows().value() /
                                                    simulation.getNodes()->at(
                                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                                           Model::Area>().value()) *1000);
                             });
                         }
                         case FieldType::WETLANDS : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->hasTypeOfExternalFlow(Model::WETLAND));
                             });
                         }
+                        case FieldType::GL_WETLANDS : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                return convert<T>(simulation.getNodes()->at(i)->hasTypeOfExternalFlow(Model::GLOBAL_WETLAND));
+                            });
+                        }
                         case FieldType::LAKES : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->hasTypeOfExternalFlow(Model::LAKE));
                             });
                         }
+                        case FieldType::GL_LAKES : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                return convert<T>(simulation.getNodes()->at(i)->hasTypeOfExternalFlow(Model::GLOBAL_LAKE));
+                            });
+                        }
                         case FieldType::FLOW_HEAD: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(
-                                            Model::RIVER_MM).getFlowHead().value();
+                                    out = simulation.getNodes()->at(i)->getExternalFlowElevation(Model::RIVER_MM);
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::RECHARGE: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
                                     out = simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::DYN_RIVER: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>,
-                                                            Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()
                                             ).value();
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
 
                                 }
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::NODE_VELOCITY: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getVelocityVector());
                             });
                         }
-                        case FieldType::RIVER_IN: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                        case FieldType::RIVER_IN: { // flow from river into GW
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::RIVER_MM).value();
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 if (out < 0) {
                                     out = 0;
@@ -386,8 +398,8 @@ namespace GlobalFlow {
                                 return convert<T>(out);
                             });
                         }
-                        case FieldType::RIVER_OUT: {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                        case FieldType::RIVER_OUT: { // flow from GW into rivers
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
@@ -395,10 +407,9 @@ namespace GlobalFlow {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
-                                catch (exception &e) {
+                                catch ( std::exception &e) {
                                 }
                                 if (out > 0) {
                                     out = 0;
@@ -408,101 +419,97 @@ namespace GlobalFlow {
                             });
                         }
                         case FieldType::WTD : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(
                                         simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
                                                 Model::Elevation>().value() -
                                         simulation.getNodes()->at(i)->getProperties().get<
-                                                Model::quantity<Model::Meter>,
-                                                Model::Head>
-                                                ().value());
+                                                Model::quantity<Model::Meter>, Model::Head>().value());
                             });
                         }
                         case FieldType::RIVER_CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>, Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
-                                            ).value();
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::RIVER_MM).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()).value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::DRAIN_CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out =
-                                            simulation.getNodes()->at(i)->getExternalFlowByName(Model::DRAIN).getDyn(
-                                                    simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                                            Model::RECHARGE),
-                                                    simulation.getNodes()->at(i)->getProperties().get<Model::quantity<
-                                                            Model::Meter>, Model::EQHead>(),
-                                                    simulation.getNodes()->at(
-                                                            i)->getProperties().get<Model::quantity<Model::Meter>,
-                                                            Model::Head>(),
-                                                    simulation.getNodes()->at(i)->getEqFlow()
-                                            ).value();
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(Model::DRAIN).getDyn(
+                                            simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::EQHead>(),
+                                            simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,Model::Head>(),
+                                            simulation.getNodes()->at(i)->getEqFlow()).value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::WETLAND_CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::WETLAND).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::GL_WETLAND_CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::GLOBAL_WETLAND).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::LAKE_CONDUCT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
                                     out = simulation.getNodes()->at(i)->getExternalFlowByName(
                                             Model::LAKE).getConductance().value();
                                 }
-                                catch (exception &e) {}
+                                catch (std::exception &e) {}
+                                return convert<T>(out);
+                            });
+                        }
+                        case FieldType::GL_LAKE_CONDUCT : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                double out{NAN};
+                                try {
+                                    out = simulation.getNodes()->at(i)->getExternalFlowByName(
+                                            Model::GLOBAL_LAKE).getConductance().value();
+                                }
+                                catch (std::exception &e) {}
                                 return convert<T>(out);
                             });
                         }
                         case FieldType::GHB_OUT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
                                             Model::GENERAL_HEAD_BOUNDARY).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -510,17 +517,16 @@ namespace GlobalFlow {
                             });
                         }
                         case FieldType::GL_WETLAND_OUT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
                                             Model::GLOBAL_WETLAND).value();
                                     out = (out / simulation.getNodes()->at(
                                             i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            ().value()) * 1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -529,7 +535,7 @@ namespace GlobalFlow {
                         }
 
                         case FieldType::WETLAND_OUT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
@@ -538,7 +544,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -546,7 +552,7 @@ namespace GlobalFlow {
                             });
                         }
                         case FieldType::LAKE_OUT : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
@@ -555,7 +561,24 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch (std::exception &e) {}
+                                if (out > 0) {
+                                    out = 0;
+                                }
+                                return convert<T>(out);
+                            });
+                        }
+                        case FieldType::GL_LAKE_OUT : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                double out{0};
+                                try {
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                                    out = (out / simulation.getNodes()->at(
+                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+                                            ().value()) *
+                                          1000;
+                                }
+                                catch (std::exception &e) {}
                                 if (out > 0) {
                                     out = 0;
                                 }
@@ -563,7 +586,7 @@ namespace GlobalFlow {
                             });
                         }
                         case FieldType::GL_WETLAND_IN : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
@@ -573,7 +596,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }
@@ -582,7 +605,7 @@ namespace GlobalFlow {
                         }
 
                         case FieldType::WETLAND_IN : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
@@ -591,7 +614,7 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch ( std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }
@@ -599,7 +622,7 @@ namespace GlobalFlow {
                             });
                         }
                         case FieldType::LAKE_IN : {
-                            return getData<T>(simulation, [&simulation, this](int i) {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
@@ -608,11 +631,44 @@ namespace GlobalFlow {
                                             ().value()) *
                                           1000;
                                 }
-                                catch (exception &e) {}
+                                catch (std::exception &e) {}
                                 if (out < 0) {
                                     out = 0;
                                 }
                                 return convert<T>(out);
+                            });
+                        }
+                        case FieldType::GL_LAKE_IN : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                double out{0};
+                                try {
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                                    out = (out / simulation.getNodes()->at(
+                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+                                            ().value()) *
+                                          1000;
+                                }
+                                catch ( std::exception &e) {}
+                                if (out < 0) {
+                                    out = 0;
+                                }
+                                return convert<T>(out);
+                            });
+                        }
+
+                        case FieldType::ZETA1 : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                return convert<T>(
+                                        simulation.getNodes()->at(i)->getProperties().get<std::vector<Model::quantity<Model::Meter>>,
+                                                Model::Zetas>()[1].value()); // todo currently only zeta 1
+                            });
+                        }
+
+                        case FieldType::ZETA2 : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                return convert<T>(
+                                        simulation.getNodes()->at(i)->getProperties().get<std::vector<Model::quantity<Model::Meter>>,
+                                                Model::Zetas>()[2].value()); // todo currently only zeta 2
                             });
                         }
                         default:

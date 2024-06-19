@@ -19,50 +19,48 @@ namespace Solver {
 
 using pr_t = double;
 using vector = Eigen::Matrix<pr_t, Eigen::Dynamic, 1>;
-using r_vector = Eigen::Matrix<pr_t, 1, Eigen::Dynamic>;
 
 /**
  * @class AdaptiveDamping
- * Can be used to dampen the head change per iteration
+ * Can be used to dampen the change per iteration
  */
 class AdaptiveDamping {
 
     public:
 
-        AdaptiveDamping() : Sigma_MIN(0), Sigma_MAX(0), Change_MAX(0.01) {};
+        AdaptiveDamping() : min_damping(0), max_damping(0), max_allowed_change(0.01) {};
 
-        AdaptiveDamping(pr_t Sigma_Min, pr_t Sigma_Max, pr_t Change_Max, vector x_t0)
-                : Sigma_MIN(Sigma_Min), Sigma_MAX(Sigma_Max), Change_MAX(Change_Max), x_t0(x_t0) {
-            Sigma_t0 = sqrt(Sigma_Min * Sigma_Max);
+        AdaptiveDamping(pr_t min_damping, pr_t max_damping, pr_t max_allowed_change, vector x_t0)
+                : min_damping(min_damping), max_damping(max_damping), max_allowed_change(max_allowed_change), x_t0(x_t0) {
+            damping_t0 = sqrt(min_damping * max_damping);
         }
 
 
-        vector getDamping(vector &residuals, vector &x, bool apply) {
+        vector getChanges(vector &residuals, vector &x, bool isAdaptiveDamping) {
             assert(x.rows() == x_t0.rows() && "Damping hasn't been properly initialized");
             vector changes = x - x_t0;
-	    pr_t sigma;
-	    if(apply)
-		sigma = applyAdaptiveDamping(changes.maxCoeff(), getDampNorm(residuals, x));
+            pr_t damping{1.0};
+            if (isAdaptiveDamping) {
+                damping = getDamping(changes.maxCoeff(), getDampNorm(residuals, x));
+                LOG(numerics) << "Damping applied: " << damping;
+            }
             x_t0 = x;
-	    if (not apply)
-                return changes;
-            LOG(numerics) << "Damping applied: " << sigma;
-            return changes * sigma;
+            return changes * damping;
         }
 
         pr_t getNorm() { return norm_t0; }
 
     private:
-        bool first{true};
+        bool firstOuterIteration{true};
 
         vector x_t0;
         pr_t norm_t0;
-        pr_t max_headChange_t0;
-        pr_t Sigma_t0;
+        pr_t max_change_t0;
+        pr_t damping_t0;
 
-        pr_t Sigma_MIN;
-        pr_t Sigma_MAX;
-        pr_t Change_MAX;
+        pr_t min_damping;
+        pr_t max_damping;
+        pr_t max_allowed_change;
 
 
         int cnt{0};
@@ -82,57 +80,57 @@ class AdaptiveDamping {
         }
 
 
-        pr_t applyAdaptiveDamping(pr_t max_headChange, pr_t norm) {
+        pr_t getDamping(pr_t max_change, pr_t norm) {
             pr_t PHI{0.01};
             pr_t sigma{0};
 
             pr_t p_n;
             pr_t p_h;
 
-            if (first) {
+            if (firstOuterIteration) {
                 p_n = norm;
-                p_h = max_headChange;
-		first = false;
+                p_h = max_change;
+                firstOuterIteration = false;
             } else {
                 p_n = norm / norm_t0;
-                p_h = max_headChange / max_headChange_t0;
+                p_h = max_change / max_change_t0;
             }
 
             if (p_n < 1 and p_h < 1) {
                 auto lambda = log10(p_n) / log10(PHI);
                 if (lambda < 1) {
-                    sigma = Sigma_t0 + lambda * (Sigma_MAX - Sigma_t0);
+                    sigma = damping_t0 + lambda * (max_damping - damping_t0);
                 } else {
-                    sigma = Sigma_MAX;
+                    sigma = max_damping;
                 }
                 cnt = 0;
             }
 
             if (p_n > 1) {
-                sigma = Sigma_t0 / p_n;
+                sigma = damping_t0 / p_n;
             }
 
             if (p_h > 1) {
-                sigma = Sigma_t0 / p_h;
+                sigma = damping_t0 / p_h;
             }
 
-            pr_t sig_t{sqrt(sigma * Sigma_t0)};
+            pr_t damping_t{sqrt(sigma * damping_t0)};
 
-            if (std::abs(max_headChange) > Change_MAX and sig_t > (Change_MAX / std::abs(max_headChange))) {
-                sig_t = Change_MAX / std::abs(max_headChange);
+            if (std::abs(max_change) > max_allowed_change and damping_t > (max_allowed_change / std::abs(max_change))) {
+                damping_t = max_allowed_change / std::abs(max_change);
             }
-            if (sig_t < Sigma_MIN) {
-                sig_t = Sigma_MIN;
+            if (damping_t < min_damping) {
+                damping_t = min_damping;
                 cnt++;
                 if (cnt > 10) {
-                    sig_t = pow(pow(Sigma_MIN, 2) * Sigma_MAX, 1 / 3);
+                    damping_t = pow(pow(min_damping, 2) * max_damping, 1.0 / 3.0);
                 }
             }
 
-            Sigma_t0 = sig_t;
+            damping_t0 = damping_t;
             norm_t0 = norm;
-            max_headChange_t0 = max_headChange;
-            return sig_t;
+            max_change_t0 = max_change;
+            return damping_t;
         }
 
 };

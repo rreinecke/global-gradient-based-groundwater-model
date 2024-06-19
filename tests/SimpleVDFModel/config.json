@@ -1,66 +1,111 @@
 {
   "config": {
     "model_config": {
+      "stress_period_steady_state": [
+        "true",
+        "false"
+      ],
+      "stress_period_time_steps": [
+        1,
+        10
+      ],
+      "stress_period_time_step_sizes": [
+        "DAY",
+        "DAY"
+      ],
+      "stress_period_variable_density": [
+        "true",
+        "true"
+      ],
       "nodes": "grid_simpleVDF.csv",
-      "row_cols": "true",
-      "steadystate": "true",
-      "number_of_nodes": 50,
-      "number_of_rows": 50,
-      "number_of_cols": 1,
-      "edge_length_rows": 5,
-      "edge_length_cols": 1,
-      "threads": 1,
+      "number_of_nodes_per_layer": 100,
+      "x_range": 10,
+      "y_range": 10,
+      "is_global": "false",
+      "resolution_in_degree": 1,
+      "edge_length_left_right": 0,
+      "edge_length_front_back": 0,
       "layers": 1,
-      "one_layer_approach": "true",
       "confinement": [
         "true"
       ],
-      "cache": "false",
-      "adaptivestepsize": "false",
-      "boundarycondition": "GeneralHeadBoundary",
+      "use_efolding": "false",
+      "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
+    "vdf_config": {
+      "density_zones": [
+        1000,
+        1025
+      ],
+      "max_tip_slope": 0.04,
+      "max_toe_slope": 0.01,
+      "min_depth_factor": 0.1,
+      "slope_adj_factor": 0.1,
+      "vdf_lock": 0.001
+    },
     "numerics": {
+      "threads": 1,
       "solver": "PCG",
       "iterations": 50,
       "inner_itter": 30,
-      "closingcrit": 9.9999997E-6,
-      "headchange": 9.9999997E-6,
+      "closing_crit_head": 1e-80,
+      "closing_crit_zeta": 1e-20,
+      "head_change": 0.000000001,
+      "zeta_change": 0.000000001,
       "damping": "false",
       "min_damp": 0.01,
-      "max_damp": 0.5,
-      "stepsize": "daily",
-      "wetting_approach": "nwt"
+      "max_damp": 0.5
     },
-  "input": {
-    "data_config": {
-      "k_from_lith": "true",
-      "k_ghb_from_file": "true",
-      "specificstorage_from_file": "false",
-      "specificyield_from_file": "false",
-      "k_river_from_file": "true",
-      "aquifer_depth_from_file": "false",
-      "initial_head_from_file": "true",
-      "data_as_array": "false"
-    },
-    "default_data": {
-      "initial_head": 0,
-      "K": 2,
-      "ghb_K": 800,
-      "aquifer_thickness": [
-        40
-      ],
-      "anisotropy": 1,
-      "specificyield": 0.2,
-      "specificstorage": 0.000015
-    },
-    "data": {
-      "ghb_conductance": "ghb_conductance_simpleVDF.csv",
-      "recharge": "recharge_simpleVDF.csv",
-      "elevation": "elevation_simpleVDF.csv",
-      "lithology": "lithology_simpleVDF.csv",
-      "initial_head": "initial_head_simpleVDF.csv"
+    "input": {
+      "data_config": {
+        "aquifer_depth_from_file": "false",
+        "effective_porosity_from_file": "false",
+        "efold_as_array": "false",
+        "eq_wtd_from_file": "false",
+        "initial_head_from_file": "false",
+        "initial_zetas_as_array": "true",
+        "k_from_file": "true",
+        "k_ghb_from_file": "true",
+        "k_river_from_file": "false",
+        "specific_storage_from_file": "false",
+        "specific_yield_from_file": "false",
+        "zones_sources_from_file": "true"
+      },
+      "default_data": {
+        "effective_porosity": 0.2,
+        "initial_head": 1,
+        "K": [
+          1
+        ],
+        "ghb_K": 1000000,
+        "aquifer_thickness": [
+          10
+        ],
+        "anisotropy": [
+          10
+        ],
+        "river_conductivity": 10,
+        "swb_elevation_factor": 0.8,
+        "specific_yield": 0.2,
+        "specific_storage": 0.000015,
+        "source_zone_ghb": 1,
+        "source_zone_recharge": 0
+      },
+      "data": {
+        "elevation": "elevation_simpleVDF.csv",
+        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
+        "initial_zetas": "initial_zetas_simpleVDF.csv",
+        "lithology": "lithology_simpleVDF.csv",
+        "recharge": "recharge_simpleVDF.csv",
+        "initial_heads": "heads_simpleVDF.csv",
+        "river_conductance": "rivers_simpleVDF.csv",
+        "zetas": {
+          "Zetas": [
+            "initial_zetas_simpleVDF.csv"
+          ]
+        }
+      }
     }
-  }
   }
 }

@@ -19,27 +19,33 @@
 namespace GlobalFlow {
     namespace Simulation {
 
-        /** @class Enum for stepsizes
+        /** @class Enum for step-sizes
          *  @bug cannot use double value e.g. for week: 7.5 should be a struct instead
          */
         enum TimeFrame {
             DAY = 1,
-	          WEEK = 7,
+            TWO_DAYS = 2,
+            FOUR_DAYS = 4,
+            WEEK = 7,
+            TEN_DAYS = 10,
             FORTNIGHT = 15,
-	          MONTH = 30,
-	          YEAR = 360
+	        MONTH = 30,
+	        YEAR = 365,
+            TWO_YEARS = YEAR * 2,
+            TEN_YEARS = YEAR * 10,
+            HUNDRED_YEARS = YEAR * 100,
+            THOUSAND_YEARS = YEAR * 1000
         };
 
         typedef std::pair<Solver::Equation *, double> step;
 
         /**
          * @class AbstractStepper An iterator in order to iterate simply over simulation steps
-         * Holds a pointer to the equation and the choosen stepsize
+         * Holds a pointer to the equation and the chosen step-size
          */
         class AbstractStepper {
         public:
-            virtual Solver::Equation *
-            get(int col) const = 0;
+            virtual Solver::Equation *get(int col) const = 0;
         };
 
         /**
@@ -47,8 +53,9 @@ namespace GlobalFlow {
          */
         class Iterator {
         public:
-            Iterator(const AbstractStepper *stepper, TimeFrame time, int steps, double pos, bool dynStep = false)
-                    : _pos(pos), _stepper(stepper), _time(time), _dynStep(dynStep), _totalSteps(steps) {
+            //Iterator(const AbstractStepper *stepper, TimeFrame time, int steps, double pos, bool dynStep = false)
+            Iterator(const AbstractStepper *stepper, int step_size, int steps, double delta_t, bool dynStep = false)
+                    : _delta_t(delta_t), _stepper(stepper), _step_size(step_size), _dynStep(dynStep), _totalSteps(steps) {
                 assert( ((dynStep) ? steps>1 : true) && "Dynamic steps not valid for 1 step");
                 if(_dynStep){calcInit();}
             }
@@ -59,51 +66,51 @@ namespace GlobalFlow {
              */
             bool operator!=(const Iterator &other) const {
                 if (_dynStep) {
-                    return not((_pos - 1e-2) >= _totalSteps and other._pos >= _totalSteps);
+                    return not((_delta_t - 1e-2) >= _totalSteps and other._delta_t >= _totalSteps);
                 } else {
-                    return static_cast<int>(_pos) != static_cast<int>(other._pos);
+                    return static_cast<int>(_delta_t) != static_cast<int>(other._delta_t);
                 }
             }
 
             step operator*() const {
-                return {_stepper->get(0), _pos};
+                return {_stepper->get(0), _delta_t};
             };
 
             const Iterator &operator++() {
                 if (_dynStep) {
                     double __delta{0};
-                    __delta = _delta_t_n * _p;
-                    _delta_t_n = __delta;
+                    __delta = _delta_t0 * _p;
+                    _delta_t0 = __delta;
 
                     LOG(debug) << "Stepsize delta " << __delta;
-                    LOG(debug) << "Stepsize: " << _time *  __delta;
-                    _stepper->get(0)->updateStepSize(_time * __delta);
-                    _pos = _pos + __delta;
-                    LOG(debug) << "Current position " << _pos;
+                    LOG(debug) << "Stepsize: " << double(_step_size) *  __delta;
+                    _stepper->get(0)->updateStepSize(double(_step_size) * __delta);
+                    _delta_t = _delta_t + __delta;
+                    LOG(debug) << "Current position " << _delta_t;
 
                 } else {
-                    ++_pos;
+                    ++_delta_t;
                 }
                 return *this;
             }
 
-            const void calcInit() {
+            void calcInit() {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
-                _delta_t_n = __delta;
-                _stepper->get(0)->updateStepSize(_time * __delta);
-		            LOG(debug) << "Stepsize: " << _time * __delta;
-                _pos = _pos + __delta;
+                _delta_t0 = __delta;
+                _stepper->get(0)->updateStepSize(double(_step_size) * __delta);
+		            LOG(debug) << "Stepsize: " << double(_step_size) * __delta;
+                _delta_t = _delta_t + __delta;
             }
 
         private:
-            double _pos; //delta t
-            double _delta_t_n{0}; //last delta
+            double _delta_t{0}; //delta t
+            double _delta_t0{0}; //last delta t
             const double _p{1.2}; //The step multiplier
             const bool _dynStep{false};
             const int _totalSteps;
             const AbstractStepper *_stepper;
-            const TimeFrame _time;
+            const int _step_size;
         };
 
         /**
@@ -111,10 +118,23 @@ namespace GlobalFlow {
          */
         class Stepper : public AbstractStepper {
         public:
+            //Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
+            Stepper(Solver::Equation *eq, const int stepSize, bool isSteadyState, bool isDensityVariable,
+                    const size_t steps, bool dynStep = false)
+                    : _equation(eq), _stepSize(stepSize), _isSteadyState(isSteadyState),
+                      _isDensityVariable(isDensityVariable), _steps(steps), _dyn(dynStep) {
+                _equation->updateStepSize(_stepSize);
+                _equation->updateIsSteadyState(_isSteadyState);
+                _equation->updateIsDensityVariable(_isDensityVariable);
+            }
 
-            Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
-                    : _equation(eq), _timeFrame(time), _steps(steps), _dyn(dynStep) {
-                _equation->updateStepSize(_timeFrame);
+            Stepper(Solver::Equation *eq, const std::string& stepSize, bool isSteadyState,
+                    bool isDensityVariable, const size_t steps, bool dynStep = false)
+                    : _equation(eq), _stepSize(getStepSizeWithString(stepSize)), _isSteadyState(isSteadyState),
+                      _isDensityVariable(isDensityVariable), _steps(steps), _dyn(dynStep) {
+                _equation->updateStepSize(_stepSize);
+                _equation->updateIsSteadyState(_isSteadyState);
+                _equation->updateIsDensityVariable(_isDensityVariable);
             }
 
             virtual Solver::Equation *
@@ -124,22 +144,39 @@ namespace GlobalFlow {
 
             Iterator
             begin() const {
-                return Iterator(this, _timeFrame, this->_steps, 0, _dyn);
+                return Iterator(this, _stepSize, this->_steps, 0, _dyn);
             }
 
             Iterator
             end() const {
-                return Iterator(this, _timeFrame, this->_steps, this->_steps, _dyn);
+                return Iterator(this, _stepSize, this->_steps, this->_steps, _dyn);
             }
 
-            const TimeFrame
-            getStepSize() {
-                return _timeFrame;
+            const int getStepSize() {
+                return _stepSize;
             };
+
+            const int getStepSizeWithString(const std::string& stepSizeString){
+                if (stepSizeString == "DAY") { return DAY; }
+                else if (stepSizeString == "TWO_DAYS") { return TWO_DAYS; }
+                else if (stepSizeString == "FOUR_DAYS") { return FOUR_DAYS; }
+                else if (stepSizeString == "WEEK") { return WEEK; }
+                else if (stepSizeString == "TEN_DAYS") { return TEN_DAYS; }
+                else if (stepSizeString == "FORTNIGHT") { return FORTNIGHT; }
+                else if (stepSizeString == "MONTH") { return MONTH; }
+                else if (stepSizeString == "YEAR") { return YEAR; }
+                else if (stepSizeString == "TWO_YEARS") { return TWO_YEARS; }
+                else if (stepSizeString == "TEN_YEARS") { return TEN_YEARS; }
+                else if (stepSizeString == "HUNDRED_YEARS") { return HUNDRED_YEARS; }
+                else if (stepSizeString == "THOUSAND_YEARS") { return THOUSAND_YEARS; }
+                else {throw "Provided step size " + stepSizeString + " not availabe";}
+            }
 
         private:
             Solver::Equation *_equation;
-            const TimeFrame _timeFrame;
+            int _stepSize;
+            const bool _isSteadyState;
+            const bool _isDensityVariable;
             const size_t _steps;
             const bool _dyn;
         };

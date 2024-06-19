@@ -29,8 +29,6 @@
 
 namespace GlobalFlow {
 
-    using namespace std;
-
     /**
      * @interface GW_Interface
      * @class GW_Interface
@@ -53,17 +51,21 @@ namespace GlobalFlow {
         /**
          * Do additional work required for a running simulation
          */
-        virtual void setupSimulation() = 0;
+        virtual void setupSimulation() {};
+
+        virtual void setupSimulation(int numberOfGridCells) {};
 
         /**
          * Write data for specific year or month
          */
-        virtual void writeData(std::string) = 0;
+        virtual void writeData() = 0;
 
         /**
          * Simulate/Run the model
          */
-        virtual void simulate() = 0;
+        virtual void simulate() {};
+
+        virtual void simulate(bool *simulationDay) {};
 
         void initInterface(CouplingInterface<T> *intf_ptr) {
             interface = intf_ptr;

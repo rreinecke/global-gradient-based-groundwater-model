@@ -7,7 +7,7 @@ using namespace GlobalFlow::Solver;
 
 class MockEquation : public Equation{
 public:
-    MockEquation(large_num n, NodeVector nodes, GlobalFlow::Simulation::Options op) : Equation(n, nodes, op) {}
+    MockEquation(NodeVector nodes, GlobalFlow::Simulation::Options op) : Equation(nodes, op) {}
     MOCK_METHOD1(updateStepSize, void(double));
 };
 

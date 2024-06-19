@@ -73,6 +73,7 @@ namespace GlobalFlow {
                 const path filePath;
                 const bool printID;
                 const bool printXY;
+                const bool allLayers;
                 const OutputType outputType;
                 const std::vector<T> data;
                 const pos_v p;
@@ -81,17 +82,18 @@ namespace GlobalFlow {
 
 
             public:
-                OutputField(path filePath, bool printID, bool printXY, Simulation::Simulation &sim,
+                OutputField(path filePath, bool printID, bool printXY, bool allLayers, Simulation::Simulation &sim,
                             OutputType outputType,
                             FieldType fieldType)
-                        : filePath(filePath), printID(printID), printXY(printXY),
+                        : filePath(filePath), printID(printID), printXY(printXY), allLayers(allLayers),
                           outputType(outputType),
-                          data(FieldCollector(fieldType).get<T>(sim)), p(FieldCollector().getPositions(sim)),
-                          ids(FieldCollector().getIds(sim)) {}
+                          data(FieldCollector(fieldType).get<T>(sim, allLayers)),
+                          p(FieldCollector().getPositions(sim, allLayers)),
+                          ids(FieldCollector().getIds(sim, allLayers)) {}
 
                 void write() {
                     OutputInterface<T> *oi = OutputFactory<T>().getOutput(outputType);
-                    oi->write(filePath, printID, printXY, data, p, ids);
+                    oi->write(filePath, printID, printXY, allLayers, data, p, ids);
                     delete oi;
                 };
 
@@ -128,27 +130,29 @@ namespace GlobalFlow {
 
             const std::unordered_map<FieldType, InternalType, InternalTypeHash> typeMapping{
                     {FieldType::ID,                 InternalType::DOUBLE},
-                    {FieldType::SPATID,              InternalType::DOUBLE},
+                    {FieldType::SPATID,             InternalType::DOUBLE},
+                    {FieldType::REFID,              InternalType::DOUBLE},
                     {FieldType::AREA,               InternalType::DOUBLE},
                     {FieldType::CONDUCT,            InternalType::DOUBLE},
                     {FieldType::ELEVATION,          InternalType::DOUBLE},
-                    {FieldType::SLOPE,              InternalType::DOUBLE},
                     {FieldType::X,                  InternalType::DOUBLE},
-                    {FieldType::Y,                InternalType::DOUBLE},
-                    {FieldType::HEAD,             InternalType::DOUBLE},
-                    {FieldType::EQ_HEAD,          InternalType::DOUBLE},
-                    {FieldType::IN,               InternalType::DOUBLE},
-                    {FieldType::OUT,              InternalType::DOUBLE},
-                    {FieldType::EQ_FLOW,          InternalType::DOUBLE},
-                    {FieldType::LATERAL_FLOW,     InternalType::DOUBLE},
-                    {FieldType::LATERAL_OUT_FLOW, InternalType::DOUBLE},
-                    {FieldType::WETLANDS,         InternalType::DOUBLE},
-                    {FieldType::LAKES,            InternalType::DOUBLE},
-                    {FieldType::FLOW_HEAD,        InternalType::DOUBLE},
-                    {FieldType::RECHARGE,         InternalType::DOUBLE},
-                    {FieldType::DYN_RIVER,        InternalType::DOUBLE},
-                    {FieldType::NODE_VELOCITY,    InternalType::VECTOR},
-                    {FieldType::RIVER_OUT,        InternalType::DOUBLE},
+                    {FieldType::Y,                  InternalType::DOUBLE},
+                    {FieldType::HEAD,               InternalType::DOUBLE},
+                    {FieldType::EQ_HEAD,            InternalType::DOUBLE},
+                    {FieldType::IN,                 InternalType::DOUBLE},
+                    {FieldType::OUT,                InternalType::DOUBLE},
+                    {FieldType::EQ_FLOW,            InternalType::DOUBLE},
+                    {FieldType::LATERAL_FLOW,       InternalType::DOUBLE},
+                    {FieldType::LATERAL_OUT_FLOW,   InternalType::DOUBLE},
+                    {FieldType::WETLANDS,           InternalType::DOUBLE},
+                    {FieldType::GL_WETLANDS,        InternalType::DOUBLE},
+                    {FieldType::LAKES,              InternalType::DOUBLE},
+                    {FieldType::GL_LAKES,           InternalType::DOUBLE},
+                    {FieldType::FLOW_HEAD,          InternalType::DOUBLE},
+                    {FieldType::RECHARGE,           InternalType::DOUBLE},
+                    {FieldType::DYN_RIVER,          InternalType::DOUBLE},
+                    {FieldType::NODE_VELOCITY,      InternalType::VECTOR},
+                    {FieldType::RIVER_OUT,          InternalType::DOUBLE},
                     {FieldType::RIVER_IN,           InternalType::DOUBLE},
                     {FieldType::WTD,                InternalType::DOUBLE},
                     {FieldType::RIVER_CONDUCT,      InternalType::DOUBLE},
@@ -156,13 +160,18 @@ namespace GlobalFlow {
                     {FieldType::WETLAND_CONDUCT,    InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_CONDUCT, InternalType::DOUBLE},
                     {FieldType::LAKE_CONDUCT,       InternalType::DOUBLE},
-                    {FieldType::GHB_OUT,          InternalType::DOUBLE},
+                    {FieldType::GL_LAKE_CONDUCT,    InternalType::DOUBLE},
+                    {FieldType::GHB_OUT,            InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_OUT,     InternalType::DOUBLE},
                     {FieldType::WETLAND_OUT,        InternalType::DOUBLE},
                     {FieldType::LAKE_OUT,           InternalType::DOUBLE},
+                    {FieldType::GL_LAKE_OUT,        InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_IN,      InternalType::DOUBLE},
                     {FieldType::WETLAND_IN,         InternalType::DOUBLE},
-                    {FieldType::LAKE_IN,            InternalType::DOUBLE}
+                    {FieldType::LAKE_IN,            InternalType::DOUBLE},
+                    {FieldType::ZETA1,              InternalType::DOUBLE},
+                    {FieldType::ZETA2,              InternalType::DOUBLE},
+                    {FieldType::GL_LAKE_IN,         InternalType::DOUBLE}
             };
 
             class FieldFactory {
@@ -170,14 +179,14 @@ namespace GlobalFlow {
                 static FieldType getTemplateType(std::string type) {
                     FieldType fieldType{FieldType::NON_VALID};
                     try { fieldType = fieldMapping.at(type); }
-                    catch (exception &e) { LOG(error) << "No such field" << type; }
+                    catch ( std::exception &e) { LOG(error) << "No such field: " << type; }
                     return fieldType;
                 }
 
                 static OutputType getTemplateOutput(std::string field) {
                     OutputType outputType{OutputType::NON_VALID};
                     try { outputType = outputMapping.at(field); }
-                    catch (exception &e) { LOG(error) << "No such output type" << field; }
+                    catch ( std::exception &e) { LOG(error) << "No such output type: " << field; }
                     return outputType;
                 }
 
@@ -198,23 +207,24 @@ namespace GlobalFlow {
                                     std::string name = item.get<std::string>("name") + date;
                                     bool id = item.get<bool>("ID");
                                     bool pos = item.get<bool>("position");
+                                    bool allLay = item.get<bool>("all_layers");
                                     switch (typeMapping.at(field)) {
                                         case InternalType::DOUBLE : {
-                                            f.emplace_back(OutputField<double>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<double>(name, id, pos, allLay, sim, type, field));
                                             break;
                                         }
                                         case InternalType::STRING : {
-                                            f.emplace_back(OutputField<std::string>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<std::string>(name, id, pos, allLay, sim, type, field));
                                             break;
                                         }
                                         case InternalType::VECTOR : {
                                             f.emplace_back(
-                                                    OutputField<std::pair<double, double>>(name, id, pos, sim, type,
+                                                    OutputField<std::pair<double, double>>(name, id, pos, allLay, sim, type,
                                                                                            field));
                                             break;
                                         }
                                         case InternalType::BOOL :
-                                            f.emplace_back(OutputField<bool>(name, id, pos, sim, type, field));
+                                            f.emplace_back(OutputField<bool>(name, id, pos, allLay, sim, type, field));
                                             break;
                                     }
                                 }
@@ -256,8 +266,7 @@ namespace GlobalFlow {
                  */
                 void write() {
                     Outputvisitor visitor;
-                    std::for_each(
-                            fields.begin(), fields.end(), boost::apply_visitor(visitor)
+                    std::for_each(fields.begin(), fields.end(), boost::apply_visitor(visitor)
                     );
                 }
 
