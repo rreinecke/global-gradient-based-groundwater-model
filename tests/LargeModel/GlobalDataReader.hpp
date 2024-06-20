@@ -177,7 +177,7 @@ class GlobalDataReader : public DataReader {
                 if (op.isInitialZetasAsArray()) { // needs to be placed after reading effective porosity
                     LOG(userinfo) << "Reading initial heights of " << op.getDensityZones().size() - 1 <<
                                   " active zeta surfaces from file"; // requires elevation to be set
-                    readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                    readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 } else {
                     LOG(userinfo) << "Set initial zetas to default (bottom of nodes)";

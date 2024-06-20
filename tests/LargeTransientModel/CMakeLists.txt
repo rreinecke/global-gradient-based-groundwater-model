@@ -28,32 +28,6 @@ configure_file(../../data_5min/river_extent.csv ${CMAKE_CURRENT_BINARY_DIR}/../.
 configure_file(../../data_5min/surface_water_elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation.csv COPYONLY)
 configure_file(../../data_5min/surface_water_elevation_for_variable_sea_level.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/surface_water_elevation_for_variable_sea_level.csv COPYONLY)
 
-# recharge
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-1.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-1.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-2.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-2.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-3.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-3.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-4.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-4.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-5.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-5.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-6.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-6.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-7.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-7.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-8.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-8.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-9.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-9.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-10.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-10.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-11.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-11.csv COPYONLY)
-configure_file(../../data_5min/recharge/recharge_WaterGAP_1901-12.csv
-        ${CMAKE_CURRENT_BINARY_DIR}/../../data/recharge/recharge_WaterGAP_1901-12.csv COPYONLY)
-
 ## global and local wetlands
 configure_file(../../data_5min/G_LOCWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_LOCWET.csv COPYONLY)
 configure_file(../../data_5min/G_GLOWET.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/G_GLOWET.csv COPYONLY)

@@ -65,7 +65,7 @@ namespace GlobalFlow {
 
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
-                    readInitialZetas(op.getNumberOfNodesPerLayer(), op.getNumberOfLayers(),
+                    readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a()); // requires elevation to be set
                 }
                 if (op.isEffectivePorosityFromFile()){

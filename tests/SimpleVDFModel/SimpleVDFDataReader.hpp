@@ -72,7 +72,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Setting initial heights of " << op.getDensityZones().size()-1 << " active zeta surfaces"; // requires elevation to be set
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "    reading from file(s)";
-                    readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                    readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
                                      buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 }
                 if (op.isEffectivePorosityFromFile()){

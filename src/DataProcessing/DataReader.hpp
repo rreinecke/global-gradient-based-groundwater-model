@@ -978,7 +978,7 @@ namespace GlobalFlow {
         }*/
 
 
-        void setDefaultZetas(int numberOfZones) {
+        void setDefaultZetas(large_num numberOfZones) {
             for (const auto &node : *nodes) {
                 // initialize zeta surface at top and bottom
                 node->initializeZetas();
@@ -994,13 +994,10 @@ namespace GlobalFlow {
          * @param path Path to files
          * @param files Vector of file names
          */
-        void readInitialZetas(large_num numberOfLayers, large_num numberOfNodesPerLayer,
+        void readInitialZetas(large_num numberOfLayers, large_num numberOfZones,
                               const std::string& path, std::vector<std::string> files) {
 
-            for (const auto &node : *nodes) {
-                // initialize zeta surface at top and bottom
-                node->initializeZetas();
-            }
+            setDefaultZetas(numberOfZones);
 
             // read initial data for density surfaces
             loopFilesAndLayers(path, files, numberOfLayers, [this] (std::string path, int numberOfLayers) {
@@ -1021,7 +1018,7 @@ namespace GlobalFlow {
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        nodes->at(nodeID)->addZeta(zetaID, zeta * Model::si::meter);
+                        nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
                     }
                 }
             });

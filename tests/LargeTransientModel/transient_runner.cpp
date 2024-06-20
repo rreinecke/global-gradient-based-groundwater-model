@@ -24,26 +24,16 @@ namespace GlobalFlow {
         std::string simDate = ss.str();
 
         std::string pathToOutput = "/mnt/storage/output_transient_" + simDate + "/";
-
-        std::vector<std::string> rechargeFiles = {"recharge/recharge_WaterGAP_1901-1.csv", // todo try to read netCDF: https://gerasimosmichalitsianos.wordpress.com/2017/12/13/usingcppwithnetcdf/
-                                                  "recharge/recharge_WaterGAP_1901-2.csv",
-                                                  "recharge/recharge_WaterGAP_1901-3.csv",
-                                                  "recharge/recharge_WaterGAP_1901-4.csv",
-                                                  "recharge/recharge_WaterGAP_1901-5.csv",
-                                                  "recharge/recharge_WaterGAP_1901-6.csv",
-                                                  "recharge/recharge_WaterGAP_1901-7.csv",
-                                                  "recharge/recharge_WaterGAP_1901-8.csv",
-                                                  "recharge/recharge_WaterGAP_1901-9.csv",
-                                                  "recharge/recharge_WaterGAP_1901-10.csv",
-                                                  "recharge/recharge_WaterGAP_1901-11.csv",
-                                                  "recharge/recharge_WaterGAP_1901-12.csv"};
+        std::string pathToRecharge = "";
+        int year = 1900;
+        int month = 12;
 
         std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
         std::vector<int> numberOfSteps = op.getStressPeriodSteps();
         std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
         std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
-        std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
+        std::vector<std::string> variablesToSave = {"head", "zeta1"};
 
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
             LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
@@ -52,8 +42,16 @@ namespace GlobalFlow {
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
-                //LOG(debug) << "Reading current GW recharge data...";
-                //reader->readGWRecharge("data/" + rechargeFiles[stepNumber-1]); // todo add readNewGWRecharge removing and then adding recharge
+                if (month == 12) {
+                    year++;
+                    month = 1;
+                } else {
+                    month++;
+                }
+                pathToRecharge = "../../data/recharge/recharge_WaterGAP_" + std::to_string(year) +
+                               "-" + std::to_string(month) + ".csv";
+                LOG(debug) << "Reading current data: " << pathToRecharge;
+                reader->readGWRecharge(pathToRecharge);
                 step.first->solve();
                 sim.printMassBalances(debug, isDensityVariable[strssPrd]);
                 sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);

@@ -161,7 +161,7 @@ class TransientDataReader : public DataReader {
             if (op.isInitialZetasAsArray()) {
                 LOG(userinfo) << "Reading initial heights of " << op.getDensityZones().size()-1 <<
                               " active zeta surfaces from file"; // requires elevation to be set
-                readInitialZetas(op.getNumberOfLayers(), op.getNumberOfNodesPerLayer(),
+                readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
                                  buildDir(op.getInitialZetas()), op.getInitialZetas_a());
             }
 

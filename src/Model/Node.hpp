@@ -528,7 +528,7 @@ Calculate
                         if (flow.value() > 0) { lateral_flow -= flow; }
                     } else { lateral_flow -= flow; }
                 }
-                return lateral_flow;
+                return lateral_flow * get<t_dim, StepSize>();
             }
 
             /**
@@ -2177,7 +2177,6 @@ Calculate
             t_vol_t getPseudoSourceNode() {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
-
                 // pseudo-source calculation
                 for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     if (isAnyZetaActive() or at(neigNodeID)->isAnyZetaActive()) { // check if there are any active zeta surfaces
@@ -2883,6 +2882,7 @@ Calculate
                     //LOG(debug) << "nodeID: " << getID() << ", pseudoSourceNode: " << pseudoSourceNode.value();
                     // calculate Vertical Flux Correction (from top neighbour)
                     t_vol_t verticalFluxCorrections = getVerticalFluxCorrections();
+                    //LOG(debug) << "nodeID: " << getID() << ", verticalFluxCorrections: " << verticalFluxCorrections.value();
                     out += pseudoSourceNode + verticalFluxCorrections;
                 }
                 //LOG(debug) << "getRHS (nodeID: " << getID() << "): " << out.value() << std::endl;
