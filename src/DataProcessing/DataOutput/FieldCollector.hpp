@@ -232,12 +232,6 @@ namespace GlobalFlow {
                                         simulation.getNodes()->at(i)->getProperties().get<large_num, Model::SpatID>());
                             });
                         }
-                        case FieldType::REFID : {
-                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
-                                return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<large_num, Model::RefID>());
-                            });
-                        }
                         case FieldType::AREA : {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 return convert<T>(simulation.getNodes()->at(i)->getProperties()

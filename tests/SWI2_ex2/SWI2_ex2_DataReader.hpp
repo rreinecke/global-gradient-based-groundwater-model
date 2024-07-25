@@ -49,7 +49,7 @@ namespace GlobalFlow {
                 }
 
                 LOG(userinfo) << "Reading the boundary condition";
-                readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
+                readGHB_elevation_conductance(buildDir(op.getGHBDir()));
 
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";

@@ -53,9 +53,9 @@ namespace GlobalFlow {
                     readConductivity(buildDir(op.getLithology()));
                 }
 
-                if (op.isKGHBFromFile()){
+                if (op.isGHBFromFile()){
                     LOG(userinfo) << "Reading the boundary condition";
-                    readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
+                    readGHB_elevation_conductance(buildDir(op.getGHBDir()));
                 }
 
                 if (op.isInitialHeadFromFile()){

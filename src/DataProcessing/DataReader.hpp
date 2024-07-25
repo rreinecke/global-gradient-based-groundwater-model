@@ -317,10 +317,11 @@ namespace GlobalFlow {
          * @note transforms hydraulic conductivity [m/day] to conductance [m^2/day]
          */
         virtual void readGHB_elevation_conductivity(std::string path) {
-            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity", "elevation");
+            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity", "elevation", "source_zone");
             large_num spatID{0};
             int layer{0};
+            int source_zone{0};
             double elevation{0};
             double conductivity{0};
             large_num nodeID;
@@ -333,7 +334,7 @@ namespace GlobalFlow {
             std::unordered_map<Model::NeighbourPosition, large_num> horizontal_neighbours;
 
             int i{0};
-            while (in.read_row(spatID, layer, conductivity, elevation)) {
+            while (in.read_row(spatID, layer, conductivity, elevation, source_zone)) {
                 try {
                     nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
@@ -376,6 +377,7 @@ namespace GlobalFlow {
                                                    elevation * Model::si::meter,
                                                    conductance,
                                                    elevation * Model::si::meter);
+                nodes->at(nodeID)->setSourceZoneGHB(source_zone);
                 i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";
@@ -386,16 +388,17 @@ namespace GlobalFlow {
          * @param path Where to read from
          */
         virtual void readGHB_elevation_conductance(std::string path) {
-            io::CSVReader<4, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
-            in.read_header(io::ignore_no_column, "spatID", "layer", "conductance", "elevation");
+            io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "layer", "conductance", "elevation", "source_zone");
             large_num spatID{0};
+            int source_zone;
             double elevation{0};
             double conductance{0};
             large_num nodeID;
             int layer{0};
 
             int i{0};
-            while (in.read_row(spatID, layer, conductance, elevation)) {
+            while (in.read_row(spatID, layer, conductance, elevation, source_zone)) {
                 try {
                     nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
@@ -408,6 +411,7 @@ namespace GlobalFlow {
                                                    elevation * Model::si::meter,
                                                    conductance,
                                                    elevation * Model::si::meter);
+                nodes->at(nodeID)->setSourceZoneGHB(source_zone);
                 i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";

@@ -94,9 +94,9 @@ class TransientDataReader : public DataReader {
              * %%% General Head Boundary %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            if(op.isKGHBFromFile()) {
+            if(op.isGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
-                readGHB_elevation_conductivity(buildDir(op.getKGHBDir()));
+                readGHB_elevation_conductivity(buildDir(op.getGHBDir()));
             }
 
             /*

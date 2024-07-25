@@ -71,8 +71,9 @@ namespace GlobalFlow {
             pt::ptree numerics = tree.get_child("numerics");
             THREADS = numerics.get<int>("threads");
             SOLVER = numerics.get<std::string>("solver");
-            IITER = numerics.get<int>("iterations");
-            I_ITTER = numerics.get<int>("inner_itter");
+            MAX_INNER_ITERATIONS = numerics.get<int>("max_inner_iterations");
+            MAX_OUTER_ITERATIONS_HEAD = numerics.get<int>("max_outer_iterations_head");
+            MAX_OUTER_ITERATIONS_ZETA  = numerics.get<int>("max_outer_iterations_zeta");
             RCLOSE_HEAD = numerics.get<double>("closing_crit_head");
             RCLOSE_ZETA = numerics.get<double>("closing_crit_zeta");
             MAX_HEAD_CHANGE = numerics.get<double>("head_change");
@@ -85,7 +86,7 @@ namespace GlobalFlow {
 
             pt::ptree data_config = input.get_child("data_config");
             k_from_file = data_config.get<bool>("k_from_file");
-            k_ghb_from_file = data_config.get<bool>("k_ghb_from_file");
+            ghb_from_file = data_config.get<bool>("ghb_from_file");
             specificstorage_from_file = data_config.get<bool>("specific_storage_from_file");
             specificyield_from_file = data_config.get<bool>("specific_yield_from_file");
             k_river_from_file = data_config.get<bool>("k_river_from_file");
@@ -140,7 +141,6 @@ namespace GlobalFlow {
             LITHOLOGY = getOptional("lithology", data);
             RECHARGE = getOptional("recharge", data);
             ZONES_SOURCES_FILE = getOptional("zones_sources", data);
-            PSEUDO_SOURCE_FLOW = getOptional("pseudo_source_flow", data);
             RIVER = getOptional("river_extent", data);
             GLOBAL_WETLANDS = getOptional("global_wetlands", data);
             GLOBAL_LAKES = getOptional("global_lakes", data);
@@ -150,7 +150,7 @@ namespace GlobalFlow {
             //Optional
             K_DIR = getOptional("conductance", data);
             RIVER_K = getOptional("river_conductance", data);
-            GHB_K_DIR = getOptional("ghb_conductance", data);
+            GHB_DIR = getOptional("ghb", data);
             SS_FILE = getOptional("specific_storage", data);
             SY_FILE = getOptional("specific_yield", data);
             AQ_DEPTH = getOptional("aquifer_depth", data);

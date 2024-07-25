@@ -180,16 +180,13 @@ namespace GlobalFlow {
         struct EffectivePorosity;
         struct Zetas;
         struct Zetas_TZero;
-        struct Zetas_Iter;
         struct ZetasChange;
         struct Delnus;
         struct NusInZones;
         struct SourceZoneGHB;
         struct SourceZoneRecharge;
-        // propperties for ghost node correction
-        struct RefID;
-        struct RefinedInto;
-        struct MaxRefinement;
+        struct ZetaStepSize;
+
 
 /**
  * Definition of type and unit for each field
@@ -215,8 +212,6 @@ namespace GlobalFlow {
             PhysicalProperty<t_vol_t, IN>,
             PhysicalProperty<t_vol_t, ZCHG_OUT>,
             PhysicalProperty<t_vol_t, ZCHG_IN>,
-            PhysicalProperty<t_vol_t, GNC_OUT>,
-            PhysicalProperty<t_vol_t, GNC_IN>,
             PhysicalProperty<t_meter, Head>,
             PhysicalProperty<t_meter, EQHead>,
             PhysicalProperty<t_meter, HeadChange>,
@@ -230,14 +225,10 @@ namespace GlobalFlow {
             PhysicalProperty<t_s_meter, SurfaceFrontBack>,
             PhysicalProperty<t_c_meter, VolumeOfCell>,
             PhysicalProperty<t_dim, EffectivePorosity>,
-            PhysicalProperty<large_num, RefID>,
-            PhysicalProperty<large_num, MaxRefinement>,
-            PhysicalProperty<large_num, RefinedInto>,
             PhysicalProperty<bool, IsSteadyState>,
             PhysicalProperty<bool, IsDensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
-            PhysicalProperty<std::vector<t_meter>, Zetas_Iter>,
             PhysicalProperty<std::vector<t_meter>, ZetasChange>,
             PhysicalProperty<std::vector<t_dim>, Delnus>,
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
@@ -247,8 +238,9 @@ namespace GlobalFlow {
             PhysicalProperty<t_dim, MaxToeSlope>,
             PhysicalProperty<t_dim, MinDepthFactor>,
             PhysicalProperty<t_dim, SlopeAdjFactor>,
-            PhysicalProperty<t_meter, VDFLock>
-            >;
+            PhysicalProperty<t_meter, VDFLock>,
+            PhysicalProperty<t_dim, ZetaStepSize>
+        >;
     }
 }//ns
 #endif

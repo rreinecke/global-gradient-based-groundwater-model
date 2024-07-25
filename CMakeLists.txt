@@ -22,7 +22,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread")
 
 ################# Libs ################
 # Boost
-find_package(Boost 1.80.0 COMPONENTS system filesystem serialization log REQUIRED)
+find_package(Boost 1.80.0 REQUIRED COMPONENTS system filesystem serialization log )
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")

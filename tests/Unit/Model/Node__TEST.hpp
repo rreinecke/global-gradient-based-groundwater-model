@@ -12,22 +12,22 @@ public:
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
 
@@ -46,7 +46,7 @@ public:
     p_node &at(int pos) { return nodes->at(pos); }
 };
 
-TEST_F(StandardNodeFixture, setElevation) {
+TEST_F(StandardNodeFixture, setElevation_allLayers) {
     at(0)->setElevation_allLayers(10 * si::meter);
     ASSERT_EQ((at(0)->getProperties().get<t_meter, Elevation>().value()), 10);
     ASSERT_EQ((at(2)->getProperties().get<t_meter, Elevation>().value()), 0);
@@ -54,7 +54,7 @@ TEST_F(StandardNodeFixture, setElevation) {
     ASSERT_EQ((at(3)->getProperties().get<t_meter, TopElevation>().value()), 10);
 }
 
-TEST_F(StandardNodeFixture, setEfolding) {
+TEST_F(StandardNodeFixture, setEfold) {
     at(0)->setEfold(10);
     ASSERT_EQ((at(0)->getProperties().get<t_meter, EFolding>().value()), 10);
     ASSERT_EQ((at(2)->getProperties().get<t_meter, EFolding>().value()), 10);
@@ -169,18 +169,18 @@ TEST_F(StandardNodeFixture, getP) {
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-    ASSERT_EQ((at(0)->getP().value()), 0);
+    ASSERT_EQ((at(0)->getP_aboveFlowBottom().value()), 0);
     at(0)->setHead(-50 * si::meter);
-    ASSERT_EQ((at(0)->getP().value()), 0);
+    ASSERT_EQ((at(0)->getP_aboveFlowBottom().value()), 0);
 }
 
 TEST_F(StandardNodeFixture, calculateNotHeadDependandFlows) {
     at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
     at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
     at(0)->setHead(100 * si::meter);
-    ASSERT_EQ(at(0)->calculateNotHeadDependentFlows().value(), 0);
+    ASSERT_EQ(at(0)->getP_belowFlowBottom().value(), 0);
     at(0)->setHead(0 * si::meter);
-    ASSERT_EQ(at(0)->calculateNotHeadDependentFlows().value(), -50);
+    ASSERT_EQ(at(0)->getP_belowFlowBottom().value(), -50);
 }
 
 TEST_F(StandardNodeFixture, getConductance) {

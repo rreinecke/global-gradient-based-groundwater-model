@@ -53,7 +53,7 @@ namespace GlobalFlow {
                 readGWRecharge(buildDir(op.getRecharge()));
 
                 LOG(userinfo) << "Reading the boundary condition";
-                readGHB_elevation_conductance(buildDir(op.getKGHBDir()));
+                readGHB_elevation_conductance(buildDir(op.getGHBDir()));
 
                 if (op.isEffectivePorosityFromFile()){
                     LOG(userinfo) << "Reading effective porosity";

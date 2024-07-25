@@ -31,6 +31,7 @@ void StandaloneRunner::setupSimulation() {
                    sim.getNodes()->at(j)->getZeta(1).value() <<
                    std::endl;
         }
+        myfile.close();
     }
 
 void StandaloneRunner::simulate() {

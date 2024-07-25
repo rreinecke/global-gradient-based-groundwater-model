@@ -13,22 +13,22 @@ public:
         nodes = std::move(ptr);
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, true, 0, 1, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, true, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, true, 0, 1, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, true, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.05 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, true, 0, 1, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, true, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
-                1 * si::meter, 10, 1, 0.2, 0.1, true, true, 0, 1, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                1 * si::meter, 10, 1, 0.2, 0.1, true, true, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
         ));
 
@@ -137,7 +137,7 @@ TEST_F(StandardNodeVDFFixture, setTopZetaToHead) {
     // add and test unconfined node
     nodes->emplace_back(new GlobalFlow::Model::StandardNode(
             nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
-            1 * si::meter, 10, 1, 0.2, 0.1, false, true, 0, 1, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+            1 * si::meter, 10, 1, 0.2, 0.1, false, true, true, true, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
             0.001, 0.4, 0.001 * si::meter, 0, 0
     ));
     at(4)->setElevation_allLayers(10 * si::meter);
@@ -169,7 +169,8 @@ TEST_F(StandardNodeVDFFixture, getZoneConductances) {
 
     neighbourList = at(0)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
-    zoneThicknesses = at(0)->calculateZoneThicknessesIter(got->first, got->second);
+    zoneThicknesses = at(0)->calculateZoneThicknesses(got->first, got->second, nodes->at(0)->getZetas_TZero(),
+                                                      nodes->at(got->second)->getZetas_TZero());
 
     ASSERT_NEAR((at(0)->getZoneConductances(got->first, got->second, zoneThicknesses)[0].value()), 0.199, 0.01);
     ASSERT_NEAR((at(0)->getZoneConductances(got->first, got->second, zoneThicknesses)[1].value()), 0.466, 0.01);
@@ -192,14 +193,16 @@ TEST_F(StandardNodeVDFFixture, getZoneConductanceCum) {
 
     neighbourList = at(0)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
-    zoneThicknesses = at(2)->calculateZoneThicknessesIter(got->first, got->second);
+    zoneThicknesses = at(2)->calculateZoneThicknesses(got->first, got->second, nodes->at(0)->getZetas_TZero(),
+                                                      nodes->at(got->second)->getZetas_TZero());
     ASSERT_NEAR((at(0)->getZoneConductanceCum(0, at(0)->getZoneConductances(got->first, got->second, zoneThicknesses)).value()), 0.666, 0.01);
     ASSERT_NEAR((at(0)->getZoneConductanceCum(1, at(0)->getZoneConductances(got->first, got->second, zoneThicknesses)).value()), 0.466, 0.01);
     ASSERT_NEAR((at(0)->getZoneConductanceCum(2, at(0)->getZoneConductances(got->first, got->second, zoneThicknesses)).value()), 0.0, 0.01);
 
     neighbourList = at(2)->getListOfNeighbours();
     got = neighbourList.find(RIGHT);
-    zoneThicknesses = at(2)->calculateZoneThicknessesIter(got->first, got->second);
+    zoneThicknesses = at(2)->calculateZoneThicknesses(got->first, got->second, nodes->at(0)->getZetas_TZero(),
+                                                      nodes->at(got->second)->getZetas_TZero());
     ASSERT_NEAR((at(2)->getZoneConductanceCum(0, at(2)->getZoneConductances(got->first, got->second, zoneThicknesses)).value()), 0.333, 0.01);
     ASSERT_NEAR((at(2)->getZoneConductanceCum(2, at(2)->getZoneConductances(got->first, got->second, zoneThicknesses)).value()), 0.333, 0.01);
 }

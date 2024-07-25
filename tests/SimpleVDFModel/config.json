@@ -66,7 +66,7 @@
         "initial_head_from_file": "false",
         "initial_zetas_as_array": "true",
         "k_from_file": "true",
-        "k_ghb_from_file": "true",
+        "ghb_from_file": "true",
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
@@ -94,7 +94,7 @@
       },
       "data": {
         "elevation": "elevation_simpleVDF.csv",
-        "ghb_conductance": "ghb_conductance_simpleVDF.csv",
+        "ghb": "ghb_conductance_simpleVDF.csv",
         "initial_zetas": "initial_zetas_simpleVDF.csv",
         "lithology": "lithology_simpleVDF.csv",
         "recharge": "recharge_simpleVDF.csv",

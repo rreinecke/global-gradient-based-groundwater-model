@@ -103,10 +103,10 @@ class GlobalDataReader : public DataReader {
              * %%% General Head Boundary %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
-            if (op.isKGHBFromFile()) {
+            if (op.isGHBFromFile()) {
                 LOG(userinfo) << "Reading General Head Boundary";
-                readGHB_elevation_conductivity(
-                        buildDir(op.getKGHBDir())); // should be placed before reading recharge, heads, elevation
+                readGHB_elevation_conductivity(buildDir(op.getGHBDir()));
+                // should be placed before reading recharge, heads, elevation
             }
 
             /*

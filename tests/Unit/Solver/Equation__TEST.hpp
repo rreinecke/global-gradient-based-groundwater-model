@@ -18,25 +18,25 @@ public:
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 0, 0, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 0, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 1, 1, 0.2 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 0, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 2, 2, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
         nodes->emplace_back(new GlobalFlow::Model::StandardNode(
                 nodes, 1, 1, 1 * si::square_meter, 1 * si::meter, 1 * si::meter, 3, 3, 0.1 * si::meter / day,
                 1 * si::meter, 10, 1,
-                0.2, 0.1, true, false, 0, 1, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
+                0.2, 0.1, true, false, true, false, {0, 0.25}, {0, 0.025}, 0.2, 0.1, 0.1,
                 0.001, 0.4, 0.001 * si::meter, 0, 0
                 ));
 
@@ -80,7 +80,7 @@ TEST_F(EquationFixture, solve) {
 
 TEST_F(EquationFixture, getResiduals) {
     eq->solve();
-    std::cout << eq->getResiduals();
+    // std::cout << eq->getResiduals();
     // todo ASSERT...
 }
 

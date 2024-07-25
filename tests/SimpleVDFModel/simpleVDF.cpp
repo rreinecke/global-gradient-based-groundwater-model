@@ -42,12 +42,6 @@ void StandaloneRunner::simulate() {
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
 
     int stepNumber{1};
-    boost::gregorian::date date = boost::gregorian::day_clock::universal_day();
-    std::stringstream ss;
-    ss << date.day() << date.month() << date.year();
-    std::string simDate = ss.str();
-    std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
-    std::vector<std::string> variablesToSave = {"head", "zeta0", "zeta1", "zeta2", "ghb", "sum_neig"};
 
     for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
         LOG(userinfo) << "Stress period " << strssPrd+1 << ": " << numberOfSteps[strssPrd] << " step(s), with stepsize " <<
@@ -67,7 +61,6 @@ void StandaloneRunner::simulate() {
         for (Simulation::step step : stepper) {
             step.first->solve();
             sim.printMassBalances(debug, isDensityVariable[strssPrd]);
-            sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
             LOG(userinfo) << "Step " << stepNumber << ": ";
             LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
             if (isDensityVariable[strssPrd]) {

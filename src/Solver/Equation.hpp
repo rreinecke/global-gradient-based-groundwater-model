@@ -62,7 +62,7 @@ namespace GlobalFlow {
             /**
              * Solve Zeta Surface Equation
              */
-            void solve_zetas();
+            double solve_zetas(int layer, int zetaStepSizeDepth);
 
             /**
              * @return The number of iterations groundwater flow solution
@@ -144,6 +144,7 @@ namespace GlobalFlow {
                               nodes->end(),
                               [stepSize](std::unique_ptr<Model::NodeInterface> const &node) {
                     node->updateStepSize(stepSize);
+                    node->alignZetaStepSize();
                 });
             }
 
@@ -200,16 +201,19 @@ namespace GlobalFlow {
         long_vector b_zetas;
         SparseMatrix<pr_t> A_zetas;
 
+        long_vector x_t0;
         long_vector x_zetas_t0;
+
+        long_vector headChanges;
         long_vector zetaChanges;
-        long_vector oldZetaChanges;
 
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
 
-        long MAX_OUTER_ITERATIONS{0};
+        long MAX_OUTER_ITERATIONS_HEAD{0};
+        long MAX_OUTER_ITERATIONS_ZETA{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
         Index threads;
@@ -224,13 +228,15 @@ namespace GlobalFlow {
         double currentMaxHeadChange{0};
         double maxAllowedHeadChange{0.01};
 
-        double currentMaxZetaChange{0};
         double maxAllowedZetaChange{0.01};
+        int numAboveMaxZetaChange{0};
 
         double dampMin{0.01};
         double dampMax{0.01};
 
-        std::unordered_map<large_num, std::unordered_map<large_num,long long>> nodeID_to_zetaID_to_rowID;
+        std::unordered_map<large_num, large_num> i_to_nodeID;
+
+        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_to_zetaID_to_rowID;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -270,11 +276,6 @@ namespace GlobalFlow {
         void inline updateHeadAndHeadChange();
 
         /**
-         * Update zetas in inner iteration
-         */
-        void inline updateZetaIter(int layer);
-
-        /**
          * Update zone change
          */
         void inline updateZoneChange();
@@ -309,16 +310,17 @@ namespace GlobalFlow {
          */
         void inline clipZetas();
 
-        void inline setZetasIter();
-
         void inline setZetasTZero();
 
         void inline checkAllZetaSlopes();
 
         void inline adjustZetaHeights();
 
-        void inline setUnconvergedZetasToZetas_TZero(int layer);
+        void inline resetZetas(int layer);
 
+        void inline updateZetaTimeStep(int layer, double multiplier);
+
+        void inline alignZetaTimeStep(int layer);
         };
 }
 }

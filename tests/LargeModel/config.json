@@ -8,9 +8,9 @@
         "true"
       ],
       "stress_period_time_steps": [
-        100,
-        100,
-        100,
+        1000,
+        1000,
+        1000,
         100000
       ],
       "stress_period_time_step_sizes": [
@@ -38,7 +38,6 @@
         "true"
       ],
       "use_efolding": "true",
-      "max_refinement": 1,
       "default_boundary_condition": "GeneralHeadBoundary",
       "sensitivity": "false"
     },
@@ -54,7 +53,7 @@
       "vdf_lock": 0.01
     },
     "numerics": {
-      "threads": 60,
+      "threads": 80,
       "solver": "PCG",
       "iterations": 10,
       "inner_itter": 10,
@@ -71,11 +70,11 @@
         "aquifer_depth_from_file": "false",
         "effective_porosity_from_file": "true",
         "efold_as_array": "false",
-        "eq_wtd_from_file": "false",
-        "initial_head_from_file": "true",
-        "initial_zetas_as_array": "true",
+        "eq_wtd_from_file": "true",
+        "ghb_from_file": "true",
+        "initial_head_from_file": "false",
+        "initial_zetas_as_array": "false",
         "k_from_file": "true",
-        "k_ghb_from_file": "true",
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
@@ -89,7 +88,7 @@
         ],
         "ghb_K": 10,
         "aquifer_thickness": [
-          50
+          100
         ],
         "anisotropy": [
           20
@@ -107,12 +106,12 @@
         "equal_water_table_depth": "mean_wtd.csv",
         "global_lakes": "G_GLOLAK.csv",
         "global_wetlands": "G_GLOWET.csv",
-        "ghb_conductance": "ghb_conductivity_continuous.csv",
-        "initial_head": "head_t_1001.csv",
+        "ghb": "ghb_conductivity_1861-1890.csv",
+        "initial_head": "",
         "lithology": "conductivity_continuous.csv",
         "local_lakes": "G_LOCLAK.csv",
         "local_wetlands": "G_LOCWET.csv",
-        "recharge": "recharge_mean.csv",
+        "recharge": "recharge_1861-1890.csv",
         "river_extent": "river_extent.csv",
         "river_elevation": "surface_water_elevation.csv",
         "e-folding": {
@@ -126,7 +125,7 @@
         },
         "zetas": {
           "Zetas": [
-            "zeta1_t_1001.csv"
+            ""
           ]
         }
       }

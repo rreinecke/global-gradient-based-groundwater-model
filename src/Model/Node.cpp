@@ -18,6 +18,7 @@ PhysicalProperties initProperties() {
     fields.emplace<double, Lon>(0);
     fields.emplace<int, Layer>(0);
     fields.emplace<quantity<Dimensionless>, StepSize>(1 * si::si_dimensionless);
+    fields.emplace<quantity<Dimensionless>, ZetaStepSize>(1 * si::si_dimensionless);
     fields.emplace<quantity<SquareMeter>, Area>(0 * si::square_meter);
     fields.emplace<quantity<Meter>, Elevation>(5 * si::meter);
     fields.emplace<quantity<Meter>, TopElevation>(5 * si::meter);
@@ -28,8 +29,6 @@ PhysicalProperties initProperties() {
     fields.emplace<quantity<Dimensionless>, Anisotropy>(10 * si::si_dimensionless);
     fields.emplace<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
     fields.emplace<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, GNC_OUT>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, GNC_IN>(0.0 * si::cubic_meter/day);
     fields.emplace<quantity<Meter>, Head>(1 * si::meter);
     fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);

@@ -25,7 +25,7 @@ namespace GlobalFlow {
         std::stringstream ss;
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
-        std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
+        std::string pathToOutput = "/mnt/storage/COASTGUARD/output_" + simDate + "/";
         std::vector<std::string> variablesToSave = {"head", "zeta1"};
 
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {
@@ -56,8 +56,7 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,layer,lon,lat,front,back,left,right,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
-               << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
+        myfile << "nodeID,spatID,lon,lat,front,back,left,right,area,n_neig,K,C$_{GHB}$,EL$_{GHB}$,Zone$_{GHB}$,Por$_{eff}$,Elevation,GWR" << std::endl;
         int front;
         int back;
         int left;
@@ -72,22 +71,19 @@ namespace GlobalFlow {
             const auto default_precision = (int) std::cout.precision();
             myfile << node->getID()
                    << "," << std::setprecision(7) << node->getSpatID() << std::setprecision(default_precision)
-                   << "," << node->getLayer()
                    << "," << node->getLon()
                    << "," << node->getLat()
                    << "," << front << "," << back << "," << left << "," << right
                    << "," << node->getArea().value()
                    << "," << node->getListOfNeighbours().size()
                    << "," << node->getK().value()
-                   << "," << node->hasGHB()
                    << "," << node->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
                    << "," << node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getSourceZoneGHB()
                    << "," << node->getEffectivePorosity()
                    << "," << node->getElevation().value()
-                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value() / node->getArea().value()
-                   << "," << node->getExternalFlowConductance(Model::RIVER_MM)
-                   << "," << node->getExternalFlowElevation(Model::RIVER_MM)
-                   << "," << node->getHead().value()
+                   // recharge: change units from m^3/stepsize to mm/day
+                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value() * 1000 / (node->getArea().value() * node->getStepSize())
                    << std::endl;
         }
         myfile.close();

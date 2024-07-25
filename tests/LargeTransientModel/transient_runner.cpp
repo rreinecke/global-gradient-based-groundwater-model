@@ -23,10 +23,11 @@ namespace GlobalFlow {
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
 
-        std::string pathToOutput = "/mnt/storage/output_transient_" + simDate + "/";
-        std::string pathToRecharge = "";
-        int year = 1900;
-        int month = 12;
+        std::string pathToOutput = "/mnt/storage/COASTGUARD/output_" + simDate + "/";
+        std::string pathToRecharge;
+        std::string pathToGHB;
+
+        int year = 1891;
 
         std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
         std::vector<int> numberOfSteps = op.getStressPeriodSteps();
@@ -42,16 +43,11 @@ namespace GlobalFlow {
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
-                if (month == 12) {
-                    year++;
-                    month = 1;
-                } else {
-                    month++;
-                }
-                pathToRecharge = "../../data/recharge/recharge_WaterGAP_" + std::to_string(year) +
-                               "-" + std::to_string(month) + ".csv";
-                LOG(debug) << "Reading current data: " << pathToRecharge;
+                pathToRecharge = "/mnt/storage/COASTGUARD/recharge/recharge_" + std::to_string(year) + ".csv";
+                pathToGHB = "/mnt/storage/COASTGUARD/ghb/ghb_conductivity_" + std::to_string(year) + ".csv";
+                LOG(debug) << "Reading current recharge: " << pathToRecharge << "and GHB (sea level): " << pathToGHB;
                 reader->readGWRecharge(pathToRecharge);
+                reader->readGHB_elevation_conductivity(pathToGHB);
                 step.first->solve();
                 sim.printMassBalances(debug, isDensityVariable[strssPrd]);
                 sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
@@ -61,6 +57,7 @@ namespace GlobalFlow {
                     LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
                 }
                 ++stepNumber;
+                year++;
             }
         }
         sim.saveNodeState();
@@ -71,34 +68,40 @@ namespace GlobalFlow {
     }
 
     void Runner::writeNodeInfosToCSV(){
-        // For node infos:
-        std::ofstream myfile("node_attributes_transient.csv");
-        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,neighbours,K,hasGHB,ghb,ghb_conductance,ghb_elevation,"
-               << "effPor,elevation,Qriver,river_conductance,river_elevation,initial_head" << std::endl;
-        for (int j = 0; j < sim.getNodes()->size(); ++j) {
+        std::ofstream myfile("node_attributes_large.csv");
+        myfile << "nodeID,spatID,layer,lon,lat,front,back,left,right,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+               << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
+        int front;
+        int back;
+        int left;
+        int right;
+
+        for (auto & node : *sim.getNodes()) {
+            try { front = node->getNeighbour(Model::FRONT)->getSpatID(); } catch (...) { front = -1;}
+            try { back = node->getNeighbour(Model::BACK)->getSpatID(); } catch (...) { back = -1;}
+            try { left = node->getNeighbour(Model::LEFT)->getSpatID(); } catch (...) { left = -1;}
+            try { right = node->getNeighbour(Model::RIGHT)->getSpatID(); } catch (...) { right = -1;}
+
             const auto default_precision = (int) std::cout.precision();
-            std::string neighboursStr;
-            for (auto neighbour : sim.getNodes()->at(j)->getListOfNeighbours()){
-                neighboursStr += "N:" + std::to_string(neighbour.first) + " ID:" + std::to_string(neighbour.second) + "; ";
-            }
-            myfile << sim.getNodes()->at(j)->getID()
-                   << "," << std::setprecision(7) << sim.getNodes()->at(j)->getSpatID() << std::setprecision(default_precision)
-                   << "," << sim.getNodes()->at(j)->getLon()
-                   << "," << sim.getNodes()->at(j)->getLat()
-                   << "," << sim.getNodes()->at(j)->getArea().value()
-                   << "," << sim.getNodes()->at(j)->getListOfNeighbours().size()
-                   << "," << neighboursStr
-                   << "," << sim.getNodes()->at(j)->getK().value()
-                   << "," << sim.getNodes()->at(j)->hasGHB()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
-                   << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
-                   << "," << sim.getNodes()->at(j)->getEffectivePorosity()
-                   << "," << sim.getNodes()->at(j)->getElevation().value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowVolumeByName(Model::RIVER_MM).value()
-                   << "," << sim.getNodes()->at(j)->getExternalFlowConductance(Model::RIVER_MM)
-                   << "," << sim.getNodes()->at(j)->getExternalFlowElevation(Model::RIVER_MM)
-                   << "," << sim.getNodes()->at(j)->getHead().value()
+            myfile << node->getID()
+                   << "," << std::setprecision(7) << node->getSpatID() << std::setprecision(default_precision)
+                   << "," << node->getLayer()
+                   << "," << node->getLon()
+                   << "," << node->getLat()
+                   << "," << front << "," << back << "," << left << "," << right
+                   << "," << node->getArea().value()
+                   << "," << node->getListOfNeighbours().size()
+                   << "," << node->getK().value()
+                   << "," << node->hasGHB()
+                   << "," << node->getExternalFlowConductance(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)
+                   << "," << node->getEffectivePorosity()
+                   << "," << node->getElevation().value()
+                   // recharge: change units from m^3/stepsize to mm/day
+                   << "," << node->getExternalFlowVolumeByName(Model::RECHARGE).value() * 1000 / (node->getArea().value() * node->getStepSize())
+                   << "," << node->getExternalFlowConductance(Model::RIVER_MM)
+                   << "," << node->getExternalFlowElevation(Model::RIVER_MM)
+                   << "," << node->getHead().value()
                    << std::endl;
         }
         myfile.close();

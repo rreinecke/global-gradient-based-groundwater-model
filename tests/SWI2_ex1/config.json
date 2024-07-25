@@ -62,7 +62,7 @@
         "initial_head_from_file": "false",
         "initial_zetas_as_array": "true",
         "k_from_file": "false",
-        "k_ghb_from_file": "true",
+        "ghb_from_file": "true",
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
@@ -91,7 +91,7 @@
       "data": {
         "effective_porosity": "effective_porosity_swi2_ex1.csv",
         "elevation": "elevation_swi2_ex1.csv",
-        "ghb_conductance": "ghb_conductance_swi2_ex1.csv",
+        "ghb": "ghb_conductance_swi2_ex1.csv",
         "recharge": "recharge_swi2_ex1.csv",
         "zetas": {
           "Zetas": [

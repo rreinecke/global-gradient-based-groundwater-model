@@ -53,7 +53,7 @@ namespace GlobalFlow {
             std::string LOCAL_WETLANDS{""};
             std::string K_DIR{""};
             std::string RIVER_K{""};
-            std::string GHB_K_DIR{""};
+            std::string GHB_DIR{""};
             std::string SS_FILE{""};
             std::string SY_FILE{""};
             std::string AQ_DEPTH{""};
@@ -74,8 +74,9 @@ namespace GlobalFlow {
             double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
             bool USE_EFOLDING{false};
-            int IITER{0};
-            int I_ITTER{0};
+            int MAX_OUTER_ITERATIONS_HEAD{0};
+            int MAX_OUTER_ITERATIONS_ZETA{0};
+            int MAX_INNER_ITERATIONS{0};
             double RCLOSE_HEAD{0.1};
             double RCLOSE_ZETA{0.1};
 
@@ -84,7 +85,7 @@ namespace GlobalFlow {
             std::vector<int> STRESS_PERIOD_STEPS{0};
             std::vector<std::string> STRESS_PERIOD_STEP_SIZES{""};
             std::vector<bool> STRESS_PERIOD_VARIABLE_DENSITY{false};
-            std::string NODES{""};
+            std::string NODES;
             int THREADS{0};
             bool CACHE{false};
             bool ADAPTIVE_STEP_SIZE{false};
@@ -109,12 +110,11 @@ namespace GlobalFlow {
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
-            int SINK_ZONE_GHB{0};
-            int SOURCE_ZONE_GHB{0};
-            int SOURCE_ZONE_RECHARGE{0};
+            int SOURCE_ZONE_GHB;
+            int SOURCE_ZONE_RECHARGE;
 
             bool k_from_file{false};
-            bool k_ghb_from_file{false};
+            bool ghb_from_file{false};
             bool specificstorage_from_file{false};
             bool specificyield_from_file{false};
             bool INITIAL_ZETAS_AS_ARRAY{false};
@@ -189,7 +189,7 @@ namespace GlobalFlow {
 
             bool isKFromFile() { return k_from_file; }
 
-            bool isKGHBFromFile() { return k_ghb_from_file; }
+            bool isGHBFromFile() { return ghb_from_file; }
 
             bool isSpecificStorageFile() { return specificstorage_from_file; }
 
@@ -213,7 +213,7 @@ namespace GlobalFlow {
 
             std::string getKRiver() { return RIVER_K; }
 
-            std::string getKGHBDir() { return GHB_K_DIR; }
+            std::string getGHBDir() { return GHB_DIR; }
 
             std::string getSSDir() { return SS_FILE; }
 
@@ -227,7 +227,7 @@ namespace GlobalFlow {
 
             bool isGlobal() { return IS_GLOBAL; }
 
-            int getInnerItter() { return I_ITTER; }
+            int getMaxInnerIterations() { return MAX_INNER_ITERATIONS; }
 
             unsigned long int
             getNumberOfNodesPerLayer() {
@@ -291,13 +291,16 @@ namespace GlobalFlow {
 
             int getSourceZoneGHB() { return SOURCE_ZONE_GHB; }
 
-            int getSinkZoneGHB() { return SINK_ZONE_GHB; }
-
             int getSourceZoneRecharge() { return SOURCE_ZONE_RECHARGE; }
 
             int
-            getMaxIterations() {
-                return IITER;
+            getMaxOuterIterationsHead() {
+                return MAX_OUTER_ITERATIONS_HEAD;
+            }
+
+            int
+            getMaxOuterIterationsZeta() {
+                return MAX_OUTER_ITERATIONS_ZETA;
             }
 
             double
@@ -377,11 +380,6 @@ namespace GlobalFlow {
             std::string
             getZonesOfSourcesDir() {
                 return ZONES_SOURCES_FILE;
-            }
-
-            std::string
-            getPseudoSourceFlow() {
-                return PSEUDO_SOURCE_FLOW;
             }
 
             std::string
