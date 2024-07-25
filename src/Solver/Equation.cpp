@@ -10,7 +10,9 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     LOG(userinfo) << "Setting up Equation for " << numberOfNodesPerLayer << " nodes"
                   << " on " << numberOfLayers << " layer(s) (in total " << numberOfNodesTotal << " nodes)";
 
-    this->MAX_OUTER_ITERATIONS = options.getMaxIterations();
+    this->MAX_OUTER_ITERATIONS_HEAD = options.getMaxOuterIterationsHead();
+    this->MAX_OUTER_ITERATIONS_ZETA = options.getMaxOuterIterationsZeta();
+
     this->RCLOSE_HEAD = options.getConverganceCriteriaHead();
     this->RCLOSE_ZETA = options.getConverganceCriteriaZeta();
     this->maxAllowedHeadChange = options.getMaxHeadChange();
@@ -18,9 +20,8 @@ Equation::Equation(NodeVector nodes, Simulation::Options options) : options(opti
     this->dampMin = options.getMinDamp();
     this->dampMax = options.getMaxDamp();
     this->threads = options.getThreads();
-    this->max_inner_iterations = options.getInnerItter();
+    this->max_inner_iterations = options.getMaxInnerIterations();
     this->nodes = std::move(nodes);
-
     this->numberOfZones = options.getDensityZones().size();
     this->maxAllowedZetaChange = options.getMaxZetaChange();
 
@@ -294,7 +295,7 @@ Equation::solve() {
     bool headFail{false};
     char smallHeadChangeCounter{0};
     bool headConverged{false};
-    while (outerIteration < MAX_OUTER_ITERATIONS) {
+    while (outerIteration < MAX_OUTER_ITERATIONS_HEAD) {
         //LOG(debug) << "A.block:\n" << A.block(0,0,50,50); // startRow, startCol, numRows, numCol
         //LOG(debug) << "b.block:\n" << b.block(0,0,50,1); // startRow, startCol, numRows, numCol
         //LOG(debug) << "x.block:\n" << x.block(0,0,50,1); // startRow, startCol, numRows, numCol
@@ -347,7 +348,7 @@ Equation::solve() {
         outerIteration++;
     }
 
-    if (outerIteration == MAX_OUTER_ITERATIONS) {
+    if (outerIteration == MAX_OUTER_ITERATIONS_HEAD) {
         std::cerr << "Fail in solving matrix with max iterations\n";
         LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
         LOG(numerics) << "|Residual|_l2: " << cg.error();
@@ -450,7 +451,7 @@ Equation::solve_zetas(){
         char smallZetaChanges{0};
         bool zetaConverged{false};
         int outOfBoundsCount{0};
-        while (outerIteration < MAX_OUTER_ITERATIONS) {
+        while (outerIteration < MAX_OUTER_ITERATIONS_ZETA) {
             LOG(numerics) << "Outer iteration: " << outerIteration;
             x_zetas_t0 = x_zetas;
             //Solve inner iterations
@@ -502,7 +503,7 @@ Equation::solve_zetas(){
             outerIteration++;
         } // end of outer iteration loop
 
-        if (outerIteration == MAX_OUTER_ITERATIONS) {
+        if (outerIteration == MAX_OUTER_ITERATIONS_ZETA) {
             LOG(userinfo) << "Fail in solving zeta matrix with max iteration (layer: " << layer << ")";
             LOG(userinfo) << "Setting unconverged zetas to their value before iteration (layer: " << layer << ")";
             setUnconvergedZetasToZetas_TZero(layer);

@@ -71,8 +71,9 @@ namespace GlobalFlow {
             pt::ptree numerics = tree.get_child("numerics");
             THREADS = numerics.get<int>("threads");
             SOLVER = numerics.get<std::string>("solver");
-            IITER = numerics.get<int>("iterations");
-            I_ITTER = numerics.get<int>("inner_itter");
+            MAX_INNER_ITERATIONS = numerics.get<int>("max_inner_iterations");
+            MAX_OUTER_ITERATIONS_HEAD = numerics.get<int>("max_outer_iterations_head");
+            MAX_OUTER_ITERATIONS_ZETA  = numerics.get<int>("max_outer_iterations_zeta");
             RCLOSE_HEAD = numerics.get<double>("closing_crit_head");
             RCLOSE_ZETA = numerics.get<double>("closing_crit_zeta");
             MAX_HEAD_CHANGE = numerics.get<double>("head_change");

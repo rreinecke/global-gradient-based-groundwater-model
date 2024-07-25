@@ -74,8 +74,9 @@ namespace GlobalFlow {
             double EDGE_LENGTH_FRONT_BACK{0.0};
             int LAYERS{0};
             bool USE_EFOLDING{false};
-            int IITER{0};
-            int I_ITTER{0};
+            int MAX_OUTER_ITERATIONS_HEAD{0};
+            int MAX_OUTER_ITERATIONS_ZETA{0};
+            int MAX_INNER_ITERATIONS{0};
             double RCLOSE_HEAD{0.1};
             double RCLOSE_ZETA{0.1};
 
@@ -227,7 +228,7 @@ namespace GlobalFlow {
 
             bool isGlobal() { return IS_GLOBAL; }
 
-            int getInnerItter() { return I_ITTER; }
+            int getMaxInnerIterations() { return MAX_INNER_ITERATIONS; }
 
             unsigned long int
             getNumberOfNodesPerLayer() {
@@ -296,8 +297,13 @@ namespace GlobalFlow {
             int getSourceZoneRecharge() { return SOURCE_ZONE_RECHARGE; }
 
             int
-            getMaxIterations() {
-                return IITER;
+            getMaxOuterIterationsHead() {
+                return MAX_OUTER_ITERATIONS_HEAD;
+            }
+
+            int
+            getMaxOuterIterationsZeta() {
+                return MAX_OUTER_ITERATIONS_ZETA;
             }
 
             double

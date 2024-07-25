@@ -12,29 +12,27 @@ namespace Model {
  */
 PhysicalProperties initProperties() {
     PhysicalProperties fields;
-    fields.emplace < large_num, ID > (0);
-    fields.emplace < large_num, SpatID > (0);
-    fields.emplace<double, Lat>(0);
-    fields.emplace<double, Lon>(0);
-    fields.emplace<int, Layer>(0);
-    fields.emplace<quantity<Dimensionless>, StepSize>(1 * si::si_dimensionless);
-    fields.emplace<quantity<SquareMeter>, Area>(0 * si::square_meter);
-    fields.emplace<quantity<Meter>, Elevation>(5 * si::meter);
-    fields.emplace<quantity<Meter>, TopElevation>(5 * si::meter);
-    fields.emplace<quantity<Meter>, VerticalSize>(10 * si::meter);
-    fields.emplace<quantity<Meter>, EFolding>(1 * si::meter);
-    fields.emplace<bool, Confinement>(true);
-    fields.emplace<quantity<Velocity>, K>(0.03 * (si::meter / day));
-    fields.emplace<quantity<Dimensionless>, Anisotropy>(10 * si::si_dimensionless);
-    fields.emplace<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, GNC_OUT>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, GNC_IN>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<Meter>, Head>(1 * si::meter);
-    fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
-    fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
-    fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
-    fields.emplace<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
+    fields.set < large_num, ID > (0);
+    fields.set < large_num, SpatID > (0);
+    fields.set<double, Lat>(0);
+    fields.set<double, Lon>(0);
+    fields.set<int, Layer>(0);
+    fields.set<quantity<Dimensionless>, StepSize>(1 * si::si_dimensionless);
+    fields.set<quantity<SquareMeter>, Area>(0 * si::square_meter);
+    fields.set<quantity<Meter>, Elevation>(5 * si::meter);
+    fields.set<quantity<Meter>, TopElevation>(5 * si::meter);
+    fields.set<quantity<Meter>, VerticalSize>(10 * si::meter);
+    fields.set<quantity<Meter>, EFolding>(1 * si::meter);
+    fields.set<bool, Confinement>(true);
+    fields.set<quantity<Velocity>, K>(0.03 * (si::meter / day));
+    fields.set<quantity<Dimensionless>, Anisotropy>(10 * si::si_dimensionless);
+    fields.set<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
+    fields.set<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
+    fields.set<quantity<Meter>, Head>(1 * si::meter);
+    fields.set<quantity<Meter>, EQHead>(1 * si::meter);
+    fields.set<quantity<Meter>, HeadChange>(0 * si::meter);
+    fields.set<quantity<Meter>, Head_TZero>(0 * si::meter);
+    fields.set<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
     return fields;
 }
 
@@ -76,17 +74,17 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<Meter>, Head>(head);
     fields.set<bool, UseEfolding>(useEfolding);
     fields.set<bool, Confinement>(confined);
-    fields.emplace<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
-    fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
-    fields.emplace<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
-    fields.emplace<quantity<Dimensionless>, Anisotropy>(anisotropy * si::si_dimensionless);
-    fields.emplace<quantity<Meter>, EdgeLengthLeftRight>(edgeLengthLeftRight);
-    fields.emplace<quantity<Meter>, EdgeLengthFrontBack>(edgeLengthFrontBack);
-    fields.emplace<quantity<SquareMeter>, SurfaceLeftRight>(
+    fields.set<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
+    fields.set<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
+    fields.set<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
+    fields.set<quantity<Dimensionless>, Anisotropy>(anisotropy * si::si_dimensionless);
+    fields.set<quantity<Meter>, EdgeLengthLeftRight>(edgeLengthLeftRight);
+    fields.set<quantity<Meter>, EdgeLengthFrontBack>(edgeLengthFrontBack);
+    fields.set<quantity<SquareMeter>, SurfaceLeftRight>(
             fields.get<quantity<Meter>, EdgeLengthLeftRight>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.emplace<quantity<SquareMeter>, SurfaceFrontBack>(
+    fields.set<quantity<SquareMeter>, SurfaceFrontBack>(
             fields.get<quantity<Meter>, EdgeLengthFrontBack>() * fields.get<quantity<Meter>, VerticalSize>());
-    fields.emplace<quantity<CubicMeter>, VolumeOfCell>(
+    fields.set<quantity<CubicMeter>, VolumeOfCell>(
             fields.get<quantity<SquareMeter>, Area>() * fields.get<quantity<Meter>, VerticalSize>());
     fields.set<bool, IsSteadyState> (isSteadyState);
     fields.set<bool, IsDensityVariable> (isDensityVariable);
@@ -97,9 +95,9 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<quantity<Dimensionless>, MaxToeSlope> (maxToeSlope * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, MinDepthFactor> (minDepthFactor * si::si_dimensionless);
     fields.set<quantity<Dimensionless>, SlopeAdjFactor> (slopeAdjFactor * si::si_dimensionless);
-    fields.emplace<quantity<Meter>, VDFLock> (vdfLock);
-    fields.emplace<int, SourceZoneGHB> (sourceZoneGHB);
-    fields.emplace<int, SourceZoneRecharge> (sourceZoneRecharge);
+    fields.set<quantity<Meter>, VDFLock> (vdfLock);
+    fields.set<int, SourceZoneGHB> (sourceZoneGHB);
+    fields.set<int, SourceZoneRecharge> (sourceZoneRecharge);
 }
 }
 }//ns

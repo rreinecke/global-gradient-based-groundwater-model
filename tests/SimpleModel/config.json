@@ -47,8 +47,9 @@
     "numerics": {
       "threads": 1,
       "solver": "PCG",
-      "iterations": 100,
-      "inner_itter": 10,
+      "max_outer_iterations_head": 10,
+      "max_outer_iterations_zeta": 3,
+      "max_inner_iterations": 10,
       "closing_crit_head": 1e-90,
       "closing_crit_zeta": 1e-90,
       "head_change": 0.000001,

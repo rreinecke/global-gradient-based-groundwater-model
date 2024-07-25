@@ -209,7 +209,8 @@ namespace GlobalFlow {
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
 
-        long MAX_OUTER_ITERATIONS{0};
+        long MAX_OUTER_ITERATIONS_ZETA{0};
+        long MAX_OUTER_ITERATIONS_HEAD{0};
         pr_t RCLOSE_HEAD{0};
         pr_t RCLOSE_ZETA{0};
         Index threads;

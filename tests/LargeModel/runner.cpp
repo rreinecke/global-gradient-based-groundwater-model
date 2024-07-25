@@ -25,7 +25,7 @@ namespace GlobalFlow {
         std::stringstream ss;
         ss << date.day() << date.month() << date.year();
         std::string simDate = ss.str();
-        std::string pathToOutput = "/mnt/storage/output_" + simDate + "/";
+        std::string pathToOutput = "/mnt/storage/COASTGUARD/output_" + simDate + "/";
         std::vector<std::string> variablesToSave = {"head", "zeta1"};
 
         for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {

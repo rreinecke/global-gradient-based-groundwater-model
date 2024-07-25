@@ -178,8 +178,7 @@ void buildBottomLayers(NodeVector nodes,
     size_t nodesPerLayer = nodes->size();
     nodes->reserve(numberOfLayers * nodesPerLayer);
 
-    //LOG(debug) << "Building additional layers with node count: " << nodesPerLayer << " for " << numberOfLayers
-    //           << " layers";
+    LOG(debug) << "Building additional layers for " << numberOfLayers << " layers";
 
     size_t id = nodesPerLayer;
     large_num spatID;
@@ -209,9 +208,9 @@ void buildBottomLayers(NodeVector nodes,
 
     for (int layer = 0; layer < numberOfLayers - 1; ++layer) {
         //1) Add a Model::similar node in z direction for each layer
-        //TODO Parallell?
         for (int i = 0; i < nodesPerLayer; ++i) {
             //for each node in top layer
+
             spatID = nodes->at(i)->getProperties().get<large_num, Model::SpatID>();
             lat = nodes->at(i)->getProperties().get<double, Model::Lat>();
             lon = nodes->at(i)->getProperties().get<double, Model::Lon>();
@@ -241,6 +240,7 @@ void buildBottomLayers(NodeVector nodes,
                     get<Model::quantity<Model::Dimensionless>, Model::MaxTipSlope>();
             maxToeSlope = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::MaxToeSlope>();
+
             minDepthFactor = nodes->at(i)->getProperties().
                     get<Model::quantity<Model::Dimensionless>, Model::MinDepthFactor>();
             slopeAdjFactor = nodes->at(i)->getProperties().
@@ -296,8 +296,7 @@ void buildBottomLayers(NodeVector nodes,
             }
         }
     }
-    //LOG(debug) << "Last nodeID was " << id << " with max ID (with non static nodes) "
-    //           << nodesPerLayer * numberOfLayers;
+    LOG(debug) << "Done: building additional layers";
 };
 
 }//ns
