@@ -1231,22 +1231,17 @@ Calculate
                     }
                 // all other zetas (except the last one) are limited by
                 //  - the zeta height of the top and bottom zetas (in SWI2: lines 660-680)
-                //  - the zeta height of the surrounding zetas
+                //  - the height of the GHB of this node (as upper limit)
+                //  - the zeta height of the zetas above and below
                 } else if (0 < zetaID < zetasSize()-1) {
                     if (getEffectivePorosity().value() == 0) { // no saline water is in node if the effective porosity is 0
                         return getBottom();
                     }
 
                     auto zetas = getZetas();
-                    /*if (zeta > 0 * si::meter) { // todo debug
-                        if (zetas.back() > 0 * si::meter) {
-                            return zetas.back();
-                        } else if (zetas.front() < 0 * si::meter) {
-                            return zetas.front();
-                        } else {
-                            return 0 * si::meter;
-                        }
-                    }*/
+                    if (hasGHB() and zeta.value() > getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY)) {
+                        return getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY) * si::meter;
+                    }
 
                     if (zeta > zetas[zetaID-1]) {
                         return zetas[zetaID-1];
@@ -1255,6 +1250,7 @@ Calculate
                     } else {
                         return zeta;
                     }
+                // the bottom zeta is always at the node bottom
                 } else { // if (zetaID == zetasSize()-1)
                     return getBottom();
                 }
@@ -1836,7 +1832,7 @@ Calculate
              * @note like G in SWI2 doc, but without vertical leakage; in SWI2 code: lines 3523-3569
              * G = RHS (of flow, for constant density) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
              */
-            t_vol_t getSources(int zetaID){
+            /*t_vol_t getSources(int zetaID){
                 // We use the following sink/source concept:
                 //  - the source zones of GHB and GWR are specified in config and/or in file, sink of GHB is the top zone
                 //  - the source/sink zone of SWBs depend on interface heights
@@ -1851,7 +1847,7 @@ Calculate
                     sources = externalSources + storageChange * getZoneFraction(zetaID); // see line 3535-3536
                 }
                 return sources;
-            }
+            }*/
 
             t_dim getZoneFraction(int zetaID) {
                 if (zetaID >= getZetas_TZero().size() -1) {
@@ -1907,17 +1903,16 @@ Calculate
                     }
                 }
 
-                int zoneID = zetaID;
-                // not in SWI2: add pseudo-source from GHB
+                // add pseudo-source from GHB
                 // (can be flow into or out of node, depends on the zeta height above the zone where GHB flows into)
-                /*if (hasGHB() and getSourceZoneGHB() == zoneID) {
+                if (hasGHB() and getSourceZoneGHB() == zetaID) { // zoneID is the same as the zetaID
                     auto ghbElevation = externalFlows.at(GENERAL_HEAD_BOUNDARY).getFlowHead();
                     auto ghbCondcutance = externalFlows.at(GENERAL_HEAD_BOUNDARY).getConductance();
-                    auto ghbZetaID = getSourceZoneGHB(); // get the zetaID above the density zone into which GHB flows
+                    auto ghbZetaID = getSourceZoneGHB();
 
-                    t_vol_t pseudoSourceGHB = delnus[ghbZetaID] * ghbCondcutance * (ghbElevation - getZeta_TZero(ghbZetaID));
+                    t_vol_t pseudoSourceGHB = delnus[zetaID] * ghbCondcutance * (ghbElevation - getZeta_TZero(zetaID));
                     out -= pseudoSourceGHB;
-                }*/
+                }
                 NANChecker(out.value(), "getPseudoSourceBelowZeta");
                 return out;
             }
@@ -2111,14 +2106,14 @@ Calculate
                 }
 
                 // not in SWI2: add pseudo-source from GHB
-                /*if (hasGHB()) {
+                if (hasGHB()) {
                     auto ghbElevation = externalFlows.at(GENERAL_HEAD_BOUNDARY).getFlowHead();
                     auto ghbCondcutance = externalFlows.at(GENERAL_HEAD_BOUNDARY).getConductance();
                     // get the zetaID at the top of the density zone into which GHB flows
                     auto ghbZetaID = getSourceZoneGHB(); // zetaID = id of zone below
                     t_vol_t pseudoSourceGHB = delnus[ghbZetaID] * ghbCondcutance * (ghbElevation - getZeta(ghbZetaID));
                     out -= pseudoSourceGHB;
-                }*/
+                }
                 return out;
             }
 
@@ -2590,14 +2585,13 @@ Calculate
                                 ex -= P;
                             }
                         }
-                        //LOG(debug) << "GHB P at node " << getID() << " is " << P.value();
                     }
                 }
                 return ex;
             }
 
 
-            double getFlowFractionOfZone(int zetaID, ExternalFlow extFlow) {
+            /*double getFlowFractionOfZone(int zetaID, ExternalFlow extFlow) {
                 t_meter bottomOfFlowInZone;
                 t_meter flowHeightInZone;
 
@@ -2636,7 +2630,7 @@ Calculate
                     }
                 }
                 return 0;
-            }
+            }*/
 
             /**
              * @brief Get flow which is not groundwater head dependent
@@ -2733,11 +2727,11 @@ Calculate
                 t_s_meter_t conductanceBelowZeta;
 
                 // if this zeta interface is not active: return directly
-                if (!isZetaTZeroActive(zetaID)){ return out; }
+                if (isZetaInactive(zetaID)){ return out; }
 
                 for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     zetaMovementConductance = 0 * (si::square_meter / day);
-                    if (at(neigNodeID)->isZetaTZeroActive(zetaID)) {
+                    if (at(neigNodeID)->isZetaActive(zetaID)) {
                         // on left hand side of equation -> need updated zeta heights
                         zoneThicknesses = calculateZoneThicknesses(neigPos, neigNodeID, getZetas(),
                                                                    at(neigNodeID)->getZetas());
@@ -2756,8 +2750,6 @@ Calculate
                 for (const auto &c: out) { conductNode -= c.second; }
                 // subtract effective porosity term
                 conductNode -= getEffectivePorosityTerm(); // subtracting effective porosity term (SWIHCOF)
-                //LOG(debug) << "effectivePorosityTerm = " << getEffectivePorosityTerm().value() << std::endl;
-
                 // add conductance of this node to out, the key in the unordered map is the ID of this node
                 out[get<large_num, ID>()] = conductNode;
                 return out;
@@ -2802,11 +2794,8 @@ Calculate
              * @return volume per time
              */
             t_vol_t getRHS(int zetaID){
-                if (!isZetaTZeroActive(zetaID)) {
-                    LOG(userinfo) << "getRHS(int zetaID) was called for inactive zeta(" << zetaID <<
-                                  ") at node(" << getID() << ")";
-                    throw "getRHS(int zetaID) was called for inactive zeta";
-                } // (line 3571)
+                t_vol_t out = 0 * si::cubic_meter / day;
+                if (isZetaTZeroInactive(zetaID)) { return out; } // (line 3571)
 
                 t_vol_t porosityTerm = getEffectivePorosityTerm() * getZeta_TZero(zetaID);
                 t_vol_t pseudoSourceBelowZeta = getPseudoSourceBelowZeta(zetaID); // in SWI2 code: SSWI2_SD and SSWI2_SR
@@ -2821,7 +2810,7 @@ Calculate
                                             (day * get<t_dim, StepSize>()) * getZoneFraction(zetaID);
                 }
                 t_vol_t tipToeFlow = getTipToeFlow(zetaID); // in SWI2 code: SSWI2_QR and SSWI2_QC
-                t_vol_t out = - porosityTerm + pseudoSourceBelowZeta + externalFlow + storageChange + tipToeFlow;
+                out = - porosityTerm + pseudoSourceBelowZeta + externalFlow + storageChange + tipToeFlow;
                 NANChecker(out.value(), "getRHS(int zetaID)");
                 return out;
             }

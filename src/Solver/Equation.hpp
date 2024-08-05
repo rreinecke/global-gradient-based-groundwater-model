@@ -62,7 +62,7 @@ namespace GlobalFlow {
             /**
              * Solve Zeta Surface Equation
              */
-            double solve_zetas(int layer, int zetaStepSizeDepth);
+            void solve_zetas(int layer, bool isAdditionalSteps);
 
             /**
              * @return The number of iterations groundwater flow solution
@@ -139,11 +139,12 @@ namespace GlobalFlow {
              * Set the correct stepsize (default is DAY) //
              * @param mod
              */
-            void updateStepSize(double stepSize) {
+            void updateStepSize(double step_size) {
+                stepSize = step_size;
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [stepSize](std::unique_ptr<Model::NodeInterface> const &node) {
-                    node->updateStepSize(stepSize);
+                              [step_size](std::unique_ptr<Model::NodeInterface> const &node) {
+                    node->updateStepSize(step_size);
                     node->alignZetaStepSize();
                 });
             }
@@ -184,9 +185,9 @@ namespace GlobalFlow {
 
         large_num numberOfLayers;
 
-        long numberOfNodesTotal;
+        long numberOfNodesTotal; // type is long to assign A, b, and x
 
-        long numberOfActiveZetas;
+        long numberOfActiveZetas; // type is long to assign A_zetas, b_zetas, and x_zetas
 
         /**
          * _var_ only used if disabling of cells is required
@@ -206,11 +207,15 @@ namespace GlobalFlow {
 
         long_vector headChanges;
         long_vector zetaChanges;
+        long_vector zetaChanges_t0;
+        long_vector zetaChangesSum;
+        bool continueToNextStep{false};
 
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
+        AdaptiveDamping adaptiveDamping_zetas;
 
         long MAX_OUTER_ITERATIONS_HEAD{0};
         long MAX_OUTER_ITERATIONS_ZETA{0};
@@ -218,7 +223,6 @@ namespace GlobalFlow {
         pr_t RCLOSE_ZETA{0};
         Index threads;
         long max_inner_iterations{0};
-        long max_inner_iterations_zetas{0};
 
         //From current run
         long __itter{0};
@@ -229,14 +233,17 @@ namespace GlobalFlow {
         double maxAllowedHeadChange{0.01};
 
         double maxAllowedZetaChange{0.01};
-        int numAboveMaxZetaChange{0};
+        double maxAllowedZetaChange_addStep{0.01};
 
         double dampMin{0.01};
         double dampMax{0.01};
 
         std::unordered_map<large_num, large_num> i_to_nodeID;
+        std::unordered_map<large_num, int> active_zeta_archive;
 
-        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_to_zetaID_to_rowID;
+
+        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID;
+        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID_TZero;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -244,13 +251,11 @@ namespace GlobalFlow {
 
         bool isSteadyState = false;
 
-        bool isGNC{false};
-
         bool isDensityVariable{false};
 
         int numberOfZones{0};
 
-        int maxRefinement{1};
+        double stepSize{0};
 
         /**
          * Update the matrix for the current iteration
@@ -303,7 +308,9 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline updateZetas(const int layer);
+        void inline updateZetas();
+
+        void inline updateZetasTotal();
 
         /**
          * Write the final zeta surface heights to the nodes
@@ -318,7 +325,7 @@ namespace GlobalFlow {
 
         void inline resetZetas(int layer);
 
-        void inline updateZetaTimeStep(int layer, double multiplier);
+        void inline updateZetaTimeStep(int layer, double additionalSteps);
 
         void inline alignZetaTimeStep(int layer);
         };

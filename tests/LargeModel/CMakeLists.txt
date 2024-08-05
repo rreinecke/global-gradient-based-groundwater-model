@@ -27,6 +27,7 @@ configure_file(../../data_5min/effective_porosity.csv ${CMAKE_CURRENT_BINARY_DIR
 configure_file(../../data_5min/elevation.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation.csv COPYONLY)
 configure_file(../../data_5min/elevation_for_variable_sea_level.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/elevation_for_variable_sea_level.csv COPYONLY)
 configure_file(../../data_5min/ghb_conductivity.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity.csv COPYONLY)
+configure_file(../../data_5min/ghb_conductivity_CoPerm.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity_CoPerm.csv COPYONLY)
 configure_file(../../data_5min/ghb_conductivity_1861-1890.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/ghb_conductivity_1861-1890.csv COPYONLY)
 
 # rivers

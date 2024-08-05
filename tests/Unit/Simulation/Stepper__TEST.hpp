@@ -90,7 +90,7 @@ TEST_F(StepperFixture,DayLoop){
 TEST_F(StepperFixture,MonthLoop){
     MockEquation equation(nodes, op);
     Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, 10);
-    ASSERT_EQ(stepper.getStepSize(),MONTH);
+    ASSERT_EQ(stepper.getStepSize(),30.0);
     int p{0};
     double a{0};
     for (step step : stepper) {
@@ -113,7 +113,7 @@ TEST_F(StepperFixture,DynmicStepsRand){
 
     for(int p : make_rnd()){
         Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, p);
-        ASSERT_EQ(stepper.getStepSize(),MONTH);
+        ASSERT_EQ(stepper.getStepSize(),30.0);
         int i{0};
         double a{0};
         for (step step : stepper) {
