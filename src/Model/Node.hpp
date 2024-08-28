@@ -328,6 +328,17 @@ Modify Properties
          */
         void
         setSlope(double slope_percent) {
+            //adaptive aquifer depth depending on slope of node
+//            double aq_depth = get<t_meter, VerticalSize>().value();
+//            if(slope_percent != 0.)
+//                aq_depth *= 1/slope_percent;
+//            if(aq_depth < 1.)
+//                aq_depth = 1;
+//            set<t_meter, VerticalSize>(aq_depth*si::meter);
+//            set<t_s_meter, SurfaceLeftRight>(get<t_meter, EdgeLengthLeftRight>() * aq_depth*si::meter);
+//            set<t_s_meter, SurfaceFrontBack>(get<t_meter, EdgeLengthFrontBack>() * aq_depth*si::meter);
+//            set<t_c_meter, VolumeOfCell>(get<t_s_meter, Area>() * aq_depth*si::meter);
+
             set < t_dim, Slope > ((slope_percent / 100) * si::si_dimensionless);
             applyToAllLayers([slope_percent](NodeInterface *nodeInterface) {
                 try {
@@ -536,12 +547,12 @@ Modify Properties
          * @return hydraulic conductivity (scaled by e-folding)
          */
         t_vel getK() noexcept {
-            if (simpleK) { return get<t_vel, K>() * get<t_dim, StepModifier>(); }
+            if (simpleK) { return get<t_vel, K>(); }
             t_dim e_fold = 1 * si::si_dimensionless;
             if (get<int, Layer>() > 0) {
                 e_fold = efoldingFromData(get<t_meter, VerticalSize>());
             }
-            t_vel out = get<t_vel, K>() * e_fold * get<t_dim, StepModifier>();
+            t_vel out = get<t_vel, K>() * e_fold;
             if (out < 1e-20 * si::meter / day) {
                 out = 1e-20 * si::meter / day;
             }
@@ -667,7 +678,7 @@ Modify Properties
          */
         t_vol_t calculateExternalFlowVolume(const ExternalFlow &flow) {
             if (is(flow.getType()).in(RECHARGE, NET_ABSTRACTION)) {
-                return flow.getRecharge() * get<t_dim, StepModifier>();
+                return flow.getRecharge();
             }
             t_vol_t ex;
             t_meter eq_head = get<t_meter, EQHead>();
@@ -682,16 +693,16 @@ Modify Properties
             t_vol_t eqFlow = getEqFlow();
             if (is(flow.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                 if (flow.flowIsHeadDependant(head)) {
-                    ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head * get<t_dim, StepModifier>()
-                         + flow.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                    ex = flow.getP(eq_head, head, recharge, slope, eqFlow) * head
+                         + flow.getQ(eq_head, head, recharge, slope, eqFlow);
                 } else {
                     ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * flow.getBottom()
                           +
-                          flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                          flow.getQ(eq_head, head, recharge, slope, eqFlow));
                 }
             } else {
                 ex = (flow.getP(eq_head, head, recharge, slope, eqFlow) * head +
-                      flow.getQ(eq_head, head, recharge, slope, eqFlow)) * get<t_dim, StepModifier>();
+                      flow.getQ(eq_head, head, recharge, slope, eqFlow));
             }
             return ex;
         }
@@ -713,7 +724,7 @@ Modify Properties
                 //Check if a dewatered condition is present
                 if (head_n < elev and get<t_meter, Head>() > elev) {
                     t_s_meter_t conductance_below = mechanics.calculateVerticalConductance(createDataTuple(hasDown));
-                    out += conductance_below * (head_n - elev) * get<t_dim, StepModifier>();
+                    out += conductance_below * (head_n - elev);
                 }
             }
 
@@ -724,8 +735,7 @@ Modify Properties
                 if (get<t_meter, Head>() < get<t_meter, Elevation>() and head_n > elev) {
                     t_s_meter_t conductance_above =
                             mechanics.calculateVerticalConductance(createDataTuple(hasUp));
-                    out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>()) *
-                           get<t_dim, StepModifier>();
+                    out += conductance_above * (get<t_meter, Elevation>() - get<t_meter, Head>());
                 }
             }
             NANChecker(out.value(), "Dewatered flow");
@@ -736,16 +746,16 @@ Modify Properties
          * @brief Get all current IN flow
          * @return Flow volume
          */
-        t_vol_t getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; }); }
+        t_vol_t getCurrentIN() noexcept { return getFlow([](double a) -> bool { return a > 0; }) * getProperties().get<t_dim, StepModifier>(); }
 
         /**
          * @brief Get all current OUT flow
          * @return Flow volume
          */
-        t_vol_t getCurrentOUT() noexcept { return getFlow([](double a) -> bool { return a < 0; }); }
+        t_vol_t getCurrentOUT() noexcept { return getFlow([](double a) -> bool { return a < 0; }) * getProperties().get<t_dim, StepModifier>(); }
 
         /**
-         * @brief Tell cell to save its flow budget
+         * @brief Tell cell to save its flow budget per timeframe
          */
         void saveMassBalance() noexcept {
             fields.addTo<t_c_meter, OUT>(getCurrentOUT().value() * si::cubic_meter);
@@ -880,7 +890,7 @@ Modify Properties
                     //get current recharge and lock it before setting new recharge
                     //in arid regions recharge might be 0
                     t_vol_t recharge{0 * si::cubic_meter /day};
-                    if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();}
+                    if(hasTypeOfExternalFlow(RECHARGE)){recharge = getExternalFlowByName(RECHARGE).getRecharge();} //recharge from steady state so mean WG22c diffuse recharge btw 1901-2013
                     //also lock conductance value
                     getExternalFlowByName(RIVER_MM).getERC(recharge,get<t_meter, EQHead>(),get<t_meter, Head>(),getEqFlow());
                     getExternalFlowByName(RIVER_MM).setLockRecharge(recharge); //TODO: never used; in calcERC read but not used
@@ -916,6 +926,7 @@ Modify Properties
          */
         void updateExternalFlowConduct(double reductionFactor, FlowType type) {
             if (hasTypeOfExternalFlow(type)) {
+                //TODO: ?integrate logic that if gwhead > flowhead then conduct set to max? -> to gw dependent on area of swb but gw to swb on whole area of swb
                 t_meter flowHead = getExternalFlowByName(type).getFlowHead();
                 t_meter bottom = getExternalFlowByName(type).getBottom();
                 double RiverDepth = getExternalFlowByName(type).getRiverDepthSteadyState();
@@ -1007,12 +1018,163 @@ Modify Properties
             }
         }
 
-        /**
-       * @brief adds delta to flowHead An. wetlands, lakes, rivers
-       * @note Also checks for locked recharge
-       * @param amount
-       * @param type
-       */
+/**
+* @brief resets all swb of node to initial values for flowHead, bottom and conduct
+*/
+void resetSwbInNode(){
+    if (hasTypeOfExternalFlow(Model::RIVER_MM)) {
+        ExternalFlow& externalFlow = getExternalFlowByName(Model::RIVER_MM);
+        t_meter bottom{externalFlow.getBottom()};
+        t_meter flowHead{externalFlow.getFlowHead()};
+        double conduct{externalFlow.getConductance().value()};
+        bool lock{externalFlow.getLock()};
+        t_vol_t recharge{externalFlow.getLockRecharge()};
+        t_s_meter_t l_cond{externalFlow.getLockConduct()};
+        double RiverDepth = getExternalFlowByName(Model::RIVER_MM).getRiverDepthSteadyState();
+        double initConduct = externalFlow.getInitConductance().value();
+
+        flowHead = bottom + (RiverDepth * si::meter);
+
+        removeExternalFlow(Model::RIVER_MM);
+
+        NANChecker(flowHead.value(), "Stage value");
+        NANChecker(l_cond.value(), "Conduct value");
+        NANChecker(bottom.value(), "Bottom value");
+
+        addExternalFlow(Model::RIVER_MM, flowHead, conduct, bottom);
+        getExternalFlowByName(Model::RIVER_MM).setInitConductance(initConduct);
+        getExternalFlowByName(Model::RIVER_MM).setRiverDepthSteadyState(RiverDepth);
+        if (lock) {
+            getExternalFlowByName(Model::RIVER_MM).setLock();
+            getExternalFlowByName(Model::RIVER_MM).setLockRecharge(recharge);
+            getExternalFlowByName(Model::RIVER_MM).setLockConduct(l_cond);
+        }
+    }
+    // for other swb: head cannot be above the initial flowHead=elevation of the swb which is bottom + depth
+    // depth value from GlobalDataReader.hpp::readLakesandWetlands
+    if (hasTypeOfExternalFlow(Model::WETLAND)) {
+        ExternalFlow& externalFlow = getExternalFlowByName(Model::WETLAND);
+        t_meter bottom{externalFlow.getBottom()};
+        t_meter flowHead{externalFlow.getFlowHead()};
+        double conduct{externalFlow.getConductance().value()};
+        bool lock{externalFlow.getLock()};
+        t_vol_t recharge{externalFlow.getLockRecharge()};
+        t_s_meter_t l_cond{externalFlow.getLockConduct()};
+        double RiverDepth = getExternalFlowByName(Model::WETLAND).getRiverDepthSteadyState();
+        double initConduct = externalFlow.getInitConductance().value();
+
+        flowHead = bottom + (2.0 * si::meter);
+
+        removeExternalFlow(Model::WETLAND);
+
+        NANChecker(flowHead.value(), "Stage value");
+        NANChecker(l_cond.value(), "Conduct value");
+        NANChecker(bottom.value(), "Bottom value");
+
+        addExternalFlow(Model::WETLAND, flowHead, conduct, bottom);
+        getExternalFlowByName(Model::WETLAND).setInitConductance(initConduct);
+        getExternalFlowByName(Model::WETLAND).setRiverDepthSteadyState(RiverDepth);
+        if (lock) {
+            getExternalFlowByName(Model::WETLAND).setLock();
+            getExternalFlowByName(Model::WETLAND).setLockRecharge(recharge);
+            getExternalFlowByName(Model::WETLAND).setLockConduct(l_cond);
+        }
+    }
+
+    if (hasTypeOfExternalFlow(Model::GLOBAL_WETLAND)) {
+        ExternalFlow& externalFlow = getExternalFlowByName(Model::GLOBAL_WETLAND);
+        t_meter bottom{externalFlow.getBottom()};
+        t_meter flowHead{externalFlow.getFlowHead()};
+        double conduct{externalFlow.getConductance().value()};
+        bool lock{externalFlow.getLock()};
+        t_vol_t recharge{externalFlow.getLockRecharge()};
+        t_s_meter_t l_cond{externalFlow.getLockConduct()};
+        double RiverDepth = getExternalFlowByName(Model::GLOBAL_WETLAND).getRiverDepthSteadyState();
+        double initConduct = externalFlow.getInitConductance().value();
+
+        flowHead = bottom + (2.0 * si::meter);
+
+        removeExternalFlow(Model::GLOBAL_WETLAND);
+
+        NANChecker(flowHead.value(), "Stage value");
+        NANChecker(l_cond.value(), "Conduct value");
+        NANChecker(bottom.value(), "Bottom value");
+
+        addExternalFlow(Model::GLOBAL_WETLAND, flowHead, conduct, bottom);
+        getExternalFlowByName(Model::GLOBAL_WETLAND).setInitConductance(initConduct);
+        getExternalFlowByName(Model::GLOBAL_WETLAND).setRiverDepthSteadyState(RiverDepth);
+        if (lock) {
+            getExternalFlowByName(Model::GLOBAL_WETLAND).setLock();
+            getExternalFlowByName(Model::GLOBAL_WETLAND).setLockRecharge(recharge);
+            getExternalFlowByName(Model::GLOBAL_WETLAND).setLockConduct(l_cond);
+        }
+    }
+
+    if (hasTypeOfExternalFlow(Model::LAKE)) {
+        ExternalFlow& externalFlow = getExternalFlowByName(Model::LAKE);
+        t_meter bottom{externalFlow.getBottom()};
+        t_meter flowHead{externalFlow.getFlowHead()};
+        double conduct{externalFlow.getConductance().value()};
+        bool lock{externalFlow.getLock()};
+        t_vol_t recharge{externalFlow.getLockRecharge()};
+        t_s_meter_t l_cond{externalFlow.getLockConduct()};
+        double RiverDepth = getExternalFlowByName(Model::LAKE).getRiverDepthSteadyState();
+        double initConduct = externalFlow.getInitConductance().value();
+
+        flowHead = bottom + (10.0 * si::meter);
+
+        removeExternalFlow(Model::LAKE);
+
+        NANChecker(flowHead.value(), "Stage value");
+        NANChecker(l_cond.value(), "Conduct value");
+        NANChecker(bottom.value(), "Bottom value");
+
+        addExternalFlow(Model::LAKE, flowHead, conduct, bottom);
+        getExternalFlowByName(Model::LAKE).setInitConductance(initConduct);
+        getExternalFlowByName(Model::LAKE).setRiverDepthSteadyState(RiverDepth);
+        if (lock) {
+            getExternalFlowByName(Model::LAKE).setLock();
+            getExternalFlowByName(Model::LAKE).setLockRecharge(recharge);
+            getExternalFlowByName(Model::LAKE).setLockConduct(l_cond);
+        }
+    }
+
+    if (hasTypeOfExternalFlow(Model::GLOBAL_LAKE)) {
+        ExternalFlow& externalFlow = getExternalFlowByName(Model::GLOBAL_LAKE);
+        t_meter bottom{externalFlow.getBottom()};
+        t_meter flowHead{externalFlow.getFlowHead()};
+        double conduct{externalFlow.getConductance().value()};
+        bool lock{externalFlow.getLock()};
+        t_vol_t recharge{externalFlow.getLockRecharge()};
+        t_s_meter_t l_cond{externalFlow.getLockConduct()};
+        double RiverDepth = getExternalFlowByName(Model::GLOBAL_LAKE).getRiverDepthSteadyState();
+        double initConduct = externalFlow.getInitConductance().value();
+
+        flowHead = bottom + (10.0 * si::meter);
+
+        removeExternalFlow(Model::GLOBAL_LAKE);
+
+        NANChecker(flowHead.value(), "Stage value");
+        NANChecker(l_cond.value(), "Conduct value");
+        NANChecker(bottom.value(), "Bottom value");
+
+        addExternalFlow(Model::GLOBAL_LAKE, flowHead, conduct, bottom);
+        getExternalFlowByName(Model::GLOBAL_LAKE).setInitConductance(initConduct);
+        getExternalFlowByName(Model::GLOBAL_LAKE).setRiverDepthSteadyState(RiverDepth);
+        if (lock) {
+            getExternalFlowByName(Model::GLOBAL_LAKE).setLock();
+            getExternalFlowByName(Model::GLOBAL_LAKE).setLockRecharge(recharge);
+            getExternalFlowByName(Model::GLOBAL_LAKE).setLockConduct(l_cond);
+        }
+    }
+}
+
+/**
+* @brief adds delta to flowHead An. wetlands, lakes, rivers
+* @note Also checks for locked recharge
+* @param amount
+* @param type
+*/
         void addExternalFlowFlowHead(double amount, FlowType type) {
             if (hasTypeOfExternalFlow(type)) {
                 ExternalFlow& externalFlow = getExternalFlowByName(type);
@@ -1033,6 +1195,15 @@ Modify Properties
                 // for river: head cannot be above the bankfull flow height of the river which is bottom + depth
                 if ((type == Model::RIVER_MM) and (flowHead.value() > (bottom.value() + RiverDepth)))
                     flowHead = bottom + (RiverDepth * si::meter);
+                // for other swb: head cannot be above the initial flowHead=elevation of the swb which is bottom + depth
+                if ((type == Model::WETLAND) and (flowHead.value() > (bottom.value() + 2.0))) // depth value from GlobalDataReader.hpp::readLakesandWetlands
+                    flowHead = bottom + (2.0 * si::meter);
+                if ((type == Model::GLOBAL_WETLAND) and (flowHead.value() > (bottom.value() + 2.0)))
+                    flowHead = bottom + (2.0 * si::meter);
+                if ((type == Model::LAKE) and (flowHead.value() > (bottom.value() + 10.0)))
+                    flowHead = bottom + (10.0 * si::meter);
+                if ((type == Model::GLOBAL_LAKE) and (flowHead.value() > (bottom.value() + 10.0)))
+                    flowHead = bottom + (10.0 * si::meter);
 
                 NANChecker(flowHead.value(), "Stage value");
                 NANChecker(l_cond.value(), "Conduct value");
@@ -1124,7 +1295,7 @@ Modify Properties
             t_vol_t eqFlow = getEqFlow();
             t_vol_t out = 0.0 * (si::cubic_meter / day);
             for (const auto &flow : externalFlows) {
-                out += flow.second.getQ(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                out += flow.second.getQ(eq_head, head, recharge, slope, eqFlow);
             }
             return out;
         }
@@ -1147,10 +1318,10 @@ Modify Properties
             for (const auto &flow : externalFlows) {
                 if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
-                        out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                        out += flow.second.getP(eq_head, head, recharge, slope, eqFlow);
                     }
                 } else {
-                    out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>();
+                    out += flow.second.getP(eq_head, head, recharge, slope, eqFlow);
                 }
             }
             return out;
@@ -1177,8 +1348,7 @@ Modify Properties
             for (const auto &flow : externalFlows) {
                 if (is(flow.second.getType()).in(RIVER, DRAIN, RIVER_MM, LAKE, GLOBAL_LAKE, WETLAND, GLOBAL_WETLAND)) {
                     if (not flow.second.flowIsHeadDependant(get<t_meter, Head>())) {
-                        out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * get<t_dim, StepModifier>() *
-                               flow.second.getBottom();
+                        out += flow.second.getP(eq_head, head, recharge, slope, eqFlow) * flow.second.getBottom();
                     }
                 }
             }
@@ -1332,6 +1502,14 @@ Modify Properties
             __setHead(head);
         }
 
+        void setGwHead(double delta){
+            t_meter current_head = get<t_meter, Head>();
+            t_meter HeadDelta = (delta * si::meter);
+            NANChecker(current_head.value() + HeadDelta.value(), "Set GwHead");
+            set<t_meter, Head>(current_head + HeadDelta);
+            set<t_meter, HeadChange>(HeadDelta);
+        }
+
         t_meter calcInitialHead(t_meter initialParam) noexcept { return __calcInitialHead(initialParam); }
 
         bool isStaticNode() noexcept { return __isStaticNode(); }
@@ -1453,9 +1631,14 @@ class StandardNode : public NodeInterface {
          * @param head
          */
         virtual void __setHead(t_meter delta) {
+            //t_meter temp_head;
+            //t_meter elev = get<quantity<Model::Meter>, Model::Elevation>();
             NANChecker(delta.value(), "Set Head");
             //t_meter deltaH__old = get<t_meter, HeadChange>();
             t_meter current_head = get<t_meter, Head>();
+            //temp_head = current_head + delta;
+            //if (elev.value() < temp_head.value())
+            //    delta = elev - current_head;
             //t_meter delta = head - current_head;
             set<t_meter, HeadChange>(delta);
             set<t_meter, Head>(current_head + delta);

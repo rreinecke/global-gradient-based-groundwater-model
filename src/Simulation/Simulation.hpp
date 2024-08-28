@@ -165,15 +165,14 @@ namespace GlobalFlow {
                         to_string(nodeInterface->getProperties().get<quantity<Model::SquareMeter>,
                                 Model::Area>().value());
                 out += "\nStorageFlow: ";
-                out += to_string(nodeInterface->getTotalStorageFlow().value());
+                out += to_string(nodeInterface->getTotalStorageFlow().value() * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += "\nNONStorageFlowIN: ";
-                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {
-                    return a > 0;
-                }).value());
+                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {return a > 0;}).value() * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += "\nNONStorageFlowOUT: ";
-                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {
-                    return a < 0;
-                }).value());
+                out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {return a < 0;}).value() * nodes->at(nodeID)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += "\n";
                 std::ostringstream strs;
                 strs << nodeInterface;
@@ -183,7 +182,7 @@ namespace GlobalFlow {
             }
 
             /**
-             * Get budget per node
+             * Get budget per node for timeframe
              * @param ids
              * @return
              */
@@ -230,17 +229,23 @@ namespace GlobalFlow {
                 out += ",";
                 out += to_string(nodeInterface->getOUT().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::RECHARGE).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::RECHARGE).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::RIVER_MM).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::RIVER_MM).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::LAKE).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::LAKE).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::WETLAND).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::WETLAND).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 out += ",";
-                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value());
+                out += to_string(nodeInterface->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() * nodes->at(id)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                        Model::StepModifier>().value());
                 return out;
             }
 
@@ -350,65 +355,77 @@ namespace GlobalFlow {
                 switch (flow) {
                     case GENERAL_HEAD_BOUNDARY:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case RECHARGE:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case FASTSURFACE:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::FAST_SURFACE_RUNOFF).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case NAG:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::NET_ABSTRACTION).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case RIVERS:
                         tmp = getError([this](int i) {
-                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();} catch(...){return 0.0;}
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                                Model::StepModifier>().value();} catch(...){return 0.0;}
                                 });
                         break;
                     case DRAINS:
                         tmp = getError(
                                 [this](int i) {
-                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value();} catch(...){return 0.0;}
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::DRAIN).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                                Model::StepModifier>().value();} catch(...){return 0.0;}
                                 });
                         break;
                     case RIVER_MM:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case LAKES:
                         tmp = getError(
                                 [this](int i) {
-                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();} catch(...){return 0.0;}
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::LAKE).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                                Model::StepModifier>().value();} catch(...){return 0.0;}
                                 });
                         break;
                     case GLOBAL_LAKES:
                         tmp = getError(
                                 [this](int i) {
-                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();} catch(...){return 0.0;}
+                                    try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                                Model::StepModifier>().value();} catch(...){return 0.0;}
                                 });
                         break;
                     case WETLANDS:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case GLOBAL_WETLANDS:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                     case STORAGE:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getTotalStorageFlow().value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->getTotalStorageFlow().value() * nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value();} catch(...){return 0.0;}
                         });
                         break;
                 }
@@ -428,7 +445,7 @@ namespace GlobalFlow {
             void printMassBalances(custom_severity_level level) {
                 MassError currentErr = getCurrentMassError();
                 MassError totalErr = getMassError();
-                LOG(level) << "All units in meter per stepsize";
+                LOG(level) << "All units in meter per stepsize with stepsize: "<<nodes->at(0)->getProperties().get<Model::t_dim, Model::StepModifier>();
                 LOG(level) << "Step mass error: " << currentErr.ERR << "  IN: " << currentErr.IN << "  Out: "
                               << currentErr.OUT;
                 LOG(level) << "Total mass error: " << totalErr.ERR << "  IN: " << totalErr.IN << "  Out: "

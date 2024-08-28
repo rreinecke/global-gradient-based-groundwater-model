@@ -69,6 +69,7 @@ namespace GlobalFlow {
                 LAKE_CONDUCT, /*!< Conductance of lake */
                 GL_LAKE_CONDUCT, /*!< Conductance of global lake */
                 GHB_OUT, /*!< General Head Boundary condition outflow */
+                GHB_IN, /*!< General Head Boundary condition inflow */
                 GL_WETLAND_OUT, /*!< Global wetland outflow */
                 WETLAND_OUT, /*!< Wetland outflow */
                 LAKE_OUT, /*!< Lake outflow */
@@ -118,6 +119,7 @@ namespace GlobalFlow {
                     {"Lake_Conduct",       FieldType::LAKE_CONDUCT},
                     {"Gl_Lake_Conduct",    FieldType::GL_LAKE_CONDUCT},
                     {"GHB_Outflow",        FieldType::GHB_OUT},
+                    {"GHB_Inflow",        FieldType::GHB_IN},
                     {"Gl_Wetland_Outflow", FieldType::GL_WETLAND_OUT},
                     {"Wetland_Outflow",    FieldType::WETLAND_OUT},
                     {"Lake_Outflow",       FieldType::LAKE_OUT},
@@ -287,27 +289,26 @@ namespace GlobalFlow {
                         }
                         case FieldType::EQ_FLOW : {
                             return getData<T>(simulation, [&simulation, this](int i) {
-                                return convert<T>(simulation.getNodes()->at(i)->getEqFlow().value());
+                                return convert<T>(simulation.getNodes()->at(i)->getEqFlow().value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                        Model::StepModifier>().value());
                             });
                         }
                         case FieldType::LATERAL_FLOW : {
                             return getData<T>(simulation, [&simulation, this](int i) {
-                                return convert<T>((simulation.getNodes()->at(i)->getLateralFlows().value() /
-                                                   simulation.getNodes()->at(
-                                                           i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                return convert<T>(simulation.getNodes()->at(i)->getLateralFlows().value()
+//                                                            /simulation.getNodes()->at(i)
+//                                                            ->getProperties().get<Model::quantity<Model::SquareMeter>,
+//                                                           Model::Area>().value() * 1000
+                                                  );
                             });
                         }
                         case FieldType::LATERAL_OUT_FLOW : {
                             return getData<T>(simulation, [&simulation, this](int i) {
-                                return convert<T>((simulation.getNodes()->at(i)->getLateralOutFlows().value() /
-                                                   simulation.getNodes()->at(
-                                                           i)->getProperties().get<Model::quantity<Model::SquareMeter>,
-                                                           Model::Area>
-                                                           ().value()) *
-                                                  1000);
+                                return convert<T>(simulation.getNodes()->at(i)->getLateralOutFlows().value()
+//                                                            /simulation.getNodes()->at(i)
+//                                                            ->getProperties().get<Model::quantity<Model::SquareMeter>,
+//                                                           Model::Area>().value() * 1000
+                                                  );
                             });
                         }
                         case FieldType::WETLANDS : {
@@ -346,11 +347,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{NAN};
                                 try {
-                                    out = simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out = simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RECHARGE).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {
                                 }
@@ -389,13 +391,14 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::RIVER_MM).value();
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER_MM).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {
                                 }
@@ -411,12 +414,14 @@ namespace GlobalFlow {
                                 double out{0};
                                 try {
                                     out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::RIVER_MM).value();
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                            Model::RIVER_MM).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::RIVER).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {
                                 }
@@ -526,15 +531,33 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::GENERAL_HEAD_BOUNDARY).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out > 0) {
+                                    out = 0;
+                                }
+                                return convert<T>(out);
+                            });
+                        }
+                        case FieldType::GHB_IN : {
+                            return getData<T>(simulation, [&simulation, this](int i) {
+                                double out{0};
+                                try {
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
+                                }
+                                catch (exception &e) {}
+                                if (out < 0) {
                                     out = 0;
                                 }
                                 return convert<T>(out);
@@ -544,12 +567,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::GLOBAL_WETLAND).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out > 0) {
@@ -563,11 +586,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out > 0) {
@@ -580,11 +604,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out > 0) {
@@ -597,11 +622,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out > 0) {
@@ -614,12 +640,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
-                                            Model::GLOBAL_WETLAND).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out < 0) {
@@ -633,11 +659,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::WETLAND).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out < 0) {
@@ -650,11 +677,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::LAKE).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out < 0) {
@@ -667,11 +695,12 @@ namespace GlobalFlow {
                             return getData<T>(simulation, [&simulation, this](int i) {
                                 double out{0};
                                 try {
-                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
-                                    out = (out / simulation.getNodes()->at(
-                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
-                                            ().value()) *
-                                          1000;
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value() * simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
+                                            Model::StepModifier>().value();
+//                                    out = (out / simulation.getNodes()->at(
+//                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+//                                            ().value()) *
+//                                          1000;
                                 }
                                 catch (exception &e) {}
                                 if (out < 0) {

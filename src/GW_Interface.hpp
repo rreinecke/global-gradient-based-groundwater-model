@@ -63,7 +63,7 @@ namespace GlobalFlow {
         /**
          * Simulate/Run the model
          */
-        virtual void simulate(bool *simulationDay) = 0;
+        virtual void simulate() = 0;
 
         void initInterface(CouplingInterface<T> *intf_ptr) {
             interface = intf_ptr;

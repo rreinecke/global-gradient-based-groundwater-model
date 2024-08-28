@@ -46,7 +46,9 @@ namespace GlobalFlow {
 
         virtual void updateNetAbstractionInGW(Container data, short month, int numberOfGridCells) {}
 
-        virtual void updateRiversInGW(Container data, short month, int numberOfGridCells) {}
+        virtual void weightedSwbHead(std::vector<double> river_head, std::vector<double> riverdepth_bf, std::vector<double> wetland_head, std::vector<double> gl_wetland_head, std::vector<double> lake_head, std::vector<double> gl_lake_head){}
+
+        virtual void updateRiversInGW(Container data, std::vector<double> RiverDepth_bf, short month, int numberOfGridCells) {}
 
         virtual void updateGlobalWetlandsInGW(Container data, short month, int numberOfGridCells) {}
 
@@ -83,6 +85,8 @@ namespace GlobalFlow {
         virtual void updateSwbConduct(int cell, int numberOfGridCells, std::array<double, 4> changeSwb){}
 
         virtual void saveSteadyStateConduct(int cell){}
+
+        virtual void resetSwb(int cell){}
 
         virtual void saveSteadyStateRiverDepth(int cell){}
 

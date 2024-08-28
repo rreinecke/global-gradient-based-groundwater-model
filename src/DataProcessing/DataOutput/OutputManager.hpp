@@ -160,6 +160,7 @@ namespace GlobalFlow {
                     {FieldType::LAKE_CONDUCT,       InternalType::DOUBLE},
                     {FieldType::GL_LAKE_CONDUCT,    InternalType::DOUBLE},
                     {FieldType::GHB_OUT,            InternalType::DOUBLE},
+                    {FieldType::GHB_IN,            InternalType::DOUBLE},
                     {FieldType::GL_WETLAND_OUT,     InternalType::DOUBLE},
                     {FieldType::WETLAND_OUT,        InternalType::DOUBLE},
                     {FieldType::LAKE_OUT,           InternalType::DOUBLE},

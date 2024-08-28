@@ -35,14 +35,14 @@ t_s_meter_t ExternalFlow::getP(t_meter eq_head, t_meter head,
             return -calcERC(recharge, eq_head, head, eqFlow);
         case WETLAND:
             //Can happen in transient coupling
-            if (flowHead <= bottom) {
-		        if (head >= bottom) {
+            if (flowHead <= bottom) { //leer -> nur gaining
+		        if (head >= bottom) { //-> gaining
                     return -conductance;
                 } else {
-                    return out;
+                    return out;//-> losing aber kein wasser also nix
                 }
             } else {
-                return -conductance;
+                return -conductance;//-> gaining/losing je nach head -> flowhead-bottom<0?conduct=0 wenn losing; conduct=initconduct wenn gaining -> läuft nicht leer und generiert Wasser durch zu hohen gw head im next step
             }
         case GLOBAL_WETLAND:
             //Can happen in transient coupling
