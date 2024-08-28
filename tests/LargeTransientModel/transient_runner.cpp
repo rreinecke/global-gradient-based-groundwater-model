@@ -43,21 +43,27 @@ namespace GlobalFlow {
             Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
-                pathToRecharge = "/mnt/storage/COASTGUARD/recharge/recharge_" + std::to_string(year) + ".csv";
-                pathToGHB = "/mnt/storage/COASTGUARD/ghb/ghb_conductivity_" + std::to_string(year) + ".csv";
-                LOG(debug) << "Reading current recharge: " << pathToRecharge << "and GHB (sea level): " << pathToGHB;
-                reader->readGWRecharge(pathToRecharge);
-                reader->readGHB_elevation_conductivity(pathToGHB);
+                if (!isSteadyState[strssPrd]){
+                    pathToRecharge = "/mnt/storage/COASTGUARD/recharge/recharge_" + std::to_string(year) + ".csv";
+                    pathToGHB = "/mnt/storage/COASTGUARD/ghb/ghb_conductivity_" + std::to_string(year) + ".csv";
+                    LOG(debug) << "Reading current recharge and GHB (sea level)";
+                    reader->readGWRecharge(pathToRecharge);
+                    reader->readGHB_elevation_conductivity(pathToGHB);
+                    LOG(userinfo) << "Year " << year << ": ";
+                    ++year;
+                } else {
+                    LOG(userinfo) << "Step " << stepNumber << ": ";
+                    ++stepNumber;
+                }
+
                 step.first->solve();
                 sim.printMassBalances(debug, isDensityVariable[strssPrd]);
                 sim.saveStepResults(pathToOutput, stepNumber, variablesToSave, isDensityVariable[strssPrd]);
-                LOG(userinfo) << "Step " << stepNumber << ": ";
+
                 LOG(userinfo) << " - Groundwater flow solved with " << step.first->getItter() << " iteration(s)";
                 if (isDensityVariable[strssPrd]) {
                     LOG(userinfo) << " - Variable density solved with " << step.first->getItter_zetas() << " iteration(s)";
                 }
-                ++stepNumber;
-                year++;
             }
         }
         sim.saveNodeState();
@@ -69,7 +75,7 @@ namespace GlobalFlow {
 
     void Runner::writeNodeInfosToCSV(){
         std::ofstream myfile("node_attributes_large.csv");
-        myfile << "nodeID,spatID,layer,lon,lat,front,back,left,right,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
+        myfile << "nodeID,spatID,lon,lat,area,neighbour_count,K,hasGHB,C$_{GHB}$,EL$_{GHB}$,Por$_{eff}$,EL,GWR,"
                << "C$_{river}$,EL$_{river}$,H$_{ini}$" << std::endl;
         int front;
         int back;
@@ -85,10 +91,8 @@ namespace GlobalFlow {
             const auto default_precision = (int) std::cout.precision();
             myfile << node->getID()
                    << "," << std::setprecision(7) << node->getSpatID() << std::setprecision(default_precision)
-                   << "," << node->getLayer()
                    << "," << node->getLon()
                    << "," << node->getLat()
-                   << "," << front << "," << back << "," << left << "," << right
                    << "," << node->getArea().value()
                    << "," << node->getListOfNeighbours().size()
                    << "," << node->getK().value()

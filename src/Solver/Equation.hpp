@@ -238,12 +238,12 @@ namespace GlobalFlow {
         double dampMin{0.01};
         double dampMax{0.01};
 
-        std::unordered_map<large_num, large_num> i_to_nodeID;
+        std::unordered_map<large_num, large_num> rowID_to_nodeID;
+        std::unordered_map<large_num, int> rowID_to_zetaID;
         std::unordered_map<large_num, int> active_zeta_archive;
 
 
         std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID;
-        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID_TZero;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 

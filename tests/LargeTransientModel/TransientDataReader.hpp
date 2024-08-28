@@ -97,6 +97,7 @@ class TransientDataReader : public DataReader {
             if(op.isGHBFromFile()) {
                 LOG(userinfo) << "Reading the boundary condition (only where boundary exists)";
                 readGHB_elevation_conductivity(buildDir(op.getGHBDir()));
+                // should be placed before reading recharge, heads, elevation
             }
 
             /*
@@ -158,16 +159,19 @@ class TransientDataReader : public DataReader {
              * %%% read data for variable density %%%
              * %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
              */
+            if (op.isEffectivePorosityFromFile()) {
+                LOG(userinfo) << "Reading effective porosity";
+                readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+            }
+
             if (op.isInitialZetasAsArray()) {
                 LOG(userinfo) << "Reading initial heights of " << op.getDensityZones().size()-1 <<
                               " active zeta surfaces from file"; // requires elevation to be set
                 readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
                                  buildDir(op.getInitialZetas()), op.getInitialZetas_a());
-            }
-
-            if (op.isEffectivePorosityFromFile()) {
-                LOG(userinfo) << "Reading effective porosity";
-                readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+            } else {
+                LOG(userinfo) << "Set initial zetas to default (bottom of nodes)";
+                setDefaultZetas(op.getDensityZones().size());
             }
         }
     };

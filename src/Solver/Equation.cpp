@@ -90,15 +90,13 @@ Equation::updateEquation() {
 void inline
 Equation::updateEquation_zetas(const int layer) {
 
-#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) num_threads(threads) default(none)
-    for (large_num i = 0; i < i_to_nodeID.size(); ++i) {
-        auto nodeID = i_to_nodeID[i];
-        auto zetaID_to_rowID = nodeID_zetaID_rowID[nodeID];
-        for (auto const &[zetaID, rowID]: zetaID_to_rowID){
-            addToA_zetas(nodes->at(nodeID), zetaID);
-            x_zetas(rowID) = nodes->at(nodeID)->getZeta(zetaID).value();
-            b_zetas(rowID) = nodes->at(nodeID)->getRHS(zetaID).value();
-        }
+//#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) num_threads(threads) default(none)
+    for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
+        auto nodeID = rowID_to_nodeID[rowID];
+        auto zetaID = rowID_to_zetaID[rowID];
+        addToA_zetas(nodes->at(nodeID), zetaID);
+        x_zetas(rowID) = nodes->at(nodeID)->getZeta(zetaID).value();
+        b_zetas(rowID) = nodes->at(nodeID)->getRHS(zetaID).value();
     }
 
     //LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
@@ -129,13 +127,10 @@ Equation::updateHeadAndHeadChange() {
 void inline
 Equation::updateZetas() {
 // no parallel here
-    for (large_num i = 0; i < i_to_nodeID.size(); ++i) {
-        auto nodeID = i_to_nodeID[i];
-        auto zetaID_to_rowID = nodeID_zetaID_rowID[nodeID];
-        for (auto const &[zetaID, rowID]: zetaID_to_rowID){
-            auto newZeta = nodes->at(nodeID)->getZeta(zetaID).value() + zetaChanges[rowID];
-            nodes->at(nodeID)->setZeta(zetaID, newZeta * si::meter);
-        }
+    for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
+        auto nodeID = rowID_to_nodeID[rowID];
+        auto zetaID = rowID_to_zetaID[rowID];
+        nodes->at(nodeID)->setZeta(zetaID, x_zetas[rowID] * si::meter);
     }
 }
 
@@ -164,24 +159,16 @@ Equation::clipZetas() {
         }
 }
 
-void inline
-Equation::setZetasTZero() {
-#pragma omp parallel for num_threads(threads) default(none)
-    for (large_num nodeID = 0; nodeID < numberOfNodesTotal; ++nodeID) {
-        nodes->at(nodeID)->setZetas_TZero();
-    }
-}
-
 
 void inline
 Equation::adjustZetaHeights() {
-/*
+
     LOG(debug) << "Vertical zeta movement";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->zetaMovementBetweenLayers();
     }
-*/
+
     LOG(debug) << "Horizontal zeta movement";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -199,17 +186,24 @@ Equation::adjustZetaHeights() {
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->preventZetaLocking();
     }
-/*
+
     LOG(debug) << "Correct crossing zetas";
 # pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->correctCrossingZetas();
     }
-*/
+
     LOG(debug) << "Check zeta order and whether front and back are in correct position";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->checkZetas();
+    }
+
+    LOG(debug) << "Set Zetas_TZero for next step";
+#pragma omp parallel for num_threads(threads) default(none)
+    for (large_num nodeID = 0; nodeID < numberOfNodesTotal; ++nodeID) {
+        auto zetas = nodes->at(nodeID)->getZetas();
+        nodes->at(nodeID)->setZetas_TZero(zetas);
     }
 }
 
@@ -246,6 +240,7 @@ Equation::solve() {
     bool headFail{false};
     char smallHeadChangeCounter{0};
     bool headConverged{false};
+    double currentMaxHead{0};
     while (outerIteration < MAX_OUTER_ITERATIONS_HEAD) {
         x = cg.solveWithGuess(b, x); // solving inner iterations
         headChanges = adaptiveDamping.getChanges(getResiduals(), x, isAdaptiveDamping);
@@ -258,6 +253,9 @@ Equation::solve() {
         updateHeadAndHeadChange(); // needs to be before "head change convergence"
         currentMaxHeadChange = std::max(std::abs(headChanges.maxCoeff()), std::abs(headChanges.minCoeff()));
         LOG(numerics) << "Max Absolute Head Change: " << currentMaxHeadChange;
+        currentMaxHead = std::max(std::abs(x.maxCoeff()), std::abs(x.minCoeff()));
+        LOG(numerics) << "Max Absolute Head: " << currentMaxHead;
+
         /**
          * @brief head change convergence
          */
@@ -272,6 +270,7 @@ Equation::solve() {
                 smallHeadChangeCounter++;
                 if (smallHeadChangeCounter >= 2) {
                     LOG(numerics) << "Reached head change convergence";
+                    //LOG(debug) << "x.block:\n" << x.block(0,0,30,1); // startRow, startCol, numRows, numCol
                     break;
                 }
             }
@@ -282,6 +281,7 @@ Equation::solve() {
          */
         if (cg.info() == Success and outerIteration != 0) {
             LOG(numerics) << "cg solver success";
+            //LOG(debug) << "x:\n" << x;
             break;
         }
 
@@ -315,7 +315,6 @@ Equation::solve() {
          __itter_zetas = 0;
          // If unconfined: clipping top zeta to current groundwater level
          clipZetas();
-         setZetasTZero();
          for (int layer = 0; layer < numberOfLayers; layer++) {
              LOG(numerics) << "Finding zeta surface heights in layer " << layer;
              prepareEquation_zetas(layer);
@@ -344,25 +343,21 @@ void inline
 Equation::resetZetas(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
 #pragma omp parallel for num_threads(threads) default(none) shared(offset)
-    for (large_num i = 0; i < i_to_nodeID.size(); ++i) {
-        auto nodeID = i_to_nodeID[i];
-        auto zetaID_to_rowID = nodeID_zetaID_rowID[nodeID];
-        for (auto const &[zetaID, rowID]: zetaID_to_rowID){
-                auto zetaTZero = nodes->at(nodeID)->getZeta_TZero(zetaID);
-                nodes->at(nodeID)->setZeta(zetaID, zetaTZero);
-        }
+    for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
+        auto nodeID = rowID_to_nodeID[rowID];
+        auto zetaID = rowID_to_zetaID[rowID];
+        auto zetaTZero = nodes->at(nodeID)->getZeta_TZero(zetaID);
+        nodes->at(nodeID)->setZeta(zetaID, zetaTZero);
     }
 }
 
 void inline
 Equation::updateZetaTimeStep(int layer, double additionalSteps) {
 #pragma omp parallel for num_threads(threads) default(none) shared(additionalSteps)
-    for (large_num i = 0; i < i_to_nodeID.size(); ++i) {
-        auto nodeID = i_to_nodeID[i];
-        auto zetaID_to_rowID = nodeID_zetaID_rowID[nodeID];
-        for (auto const &[zetaID, rowID]: zetaID_to_rowID){
-            nodes->at(nodeID)->updateZetaStepSize(nodes->at(nodeID)->getStepSize().value() / additionalSteps);
-        }
+    for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
+        auto nodeID = rowID_to_nodeID[rowID];
+        auto zetaID = rowID_to_zetaID[rowID];
+        nodes->at(nodeID)->updateZetaStepSize(nodes->at(nodeID)->getStepSize().value() / additionalSteps);
     }
 }
 
@@ -370,12 +365,9 @@ void inline
 Equation::alignZetaTimeStep(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
 #pragma omp parallel for num_threads(threads) default(none) shared(offset)
-    for (large_num i = 0; i < i_to_nodeID.size(); ++i) {
-        auto nodeID = i_to_nodeID[i];
-        auto zetaID_to_rowID = nodeID_zetaID_rowID[nodeID];
-        for (auto const &[zetaID, rowID]: zetaID_to_rowID){
-            nodes->at(nodeID)->alignZetaStepSize();
-        }
+    for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
+        auto nodeID = rowID_to_nodeID[rowID];
+        nodes->at(nodeID)->alignZetaStepSize();
     }
 }
 
@@ -415,6 +407,11 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
                 LOG(numerics) << "Reached zeta change convergence";
                 break;
             }
+            if (cg_zetas.info() == Success) {
+                LOG(numerics) << "cg_zetas solver success";
+                //LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
+                break;
+            }
         } else {
             minorChangeCount = 0;
         }
@@ -432,8 +429,8 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
                 // make non-converging nodes inactive
                 for (long rowID = 0; rowID < zetaChanges.size(); ++rowID) {
                     if (std::abs(zetaChanges(rowID)) > curMaxAllowedZetaChange) {
-                        LOG(debug) << "Deactivating zetas for nodeID = " << i_to_nodeID[rowID];
-                        nodes->at(i_to_nodeID[rowID])->setEffectivePorosity(0 * si::si_dimensionless);
+                        LOG(debug) << "Deactivating zetas for nodeID = " << rowID_to_nodeID[rowID];
+                        nodes->at(rowID_to_nodeID[rowID])->setEffectivePorosity(0 * si::si_dimensionless);
                     }
                 }
                 // rerun solve_zeta without deactivated nodes
@@ -441,9 +438,6 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
                 solve_zetas(layer, false); // isAdditionalStep=false
             }
         }
-        //LOG(debug) << "A:\n" << A << std::endl;
-        //LOG(debug) << "x:\n" << x << std::endl;
-        //LOG(debug) << "b (= rhs):\n" << b << std::endl;
     } // end of outer iteration loop
     __itter_zetas += outerIteration;
 }
@@ -451,51 +445,30 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
 
 void inline
 Equation::prepareEquation_zetas(const int layer) {
-    nodeID_zetaID_rowID_TZero = nodeID_zetaID_rowID;
-    nodeID_zetaID_rowID.clear();
-    i_to_nodeID.clear();
+    auto numberOfActiveZetas_TZero = rowID_to_nodeID.size();
+    rowID_to_nodeID.clear();
     large_num offset = layer * numberOfNodesPerLayer;
     numberOfActiveZetas = 0;
     int count_no_new_nodes{0};
     long rowID{0};
-    int active_zeta_archive_size_t0 = active_zeta_archive.size();
 
     // finding nodes with active/inactive interfaces
-    for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
-        for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+    for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
+        for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
             if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
-                i_to_nodeID[numberOfActiveZetas] = nodeID;
-                nodeID_zetaID_rowID[nodeID][zetaID] = rowID;
-
+                rowID_to_nodeID[rowID] = nodeID;
+                rowID_to_zetaID[rowID] = zetaID;
+                nodeID_zetaID_rowID[nodeID][zetaID] = rowID;  // for addToA_zetas()
                 ++rowID;
-                ++numberOfActiveZetas; // tracking how many have been set inactive at this zetaID
-
-                if (nodeID_zetaID_rowID_TZero.size() > 0 and
-                    nodeID_zetaID_rowID_TZero.find(nodeID) == nodeID_zetaID_rowID_TZero.end()) {
-                    LOG(debug) << "New in nodeID_zetaID_rowID: " << nodeID;
-                    if (active_zeta_archive.find(nodeID) == active_zeta_archive.end()) {
-                        active_zeta_archive[nodeID] = 1;
-                    } else {
-                        active_zeta_archive[nodeID] = active_zeta_archive[nodeID] + 1;
-                    }
-                }
             }
         }
     }
-
-    if (active_zeta_archive_size_t0 == active_zeta_archive.size()){
-        count_no_new_nodes++;
-        LOG(debug) << "Number of consecutive timesteps without new active zetas: " << count_no_new_nodes;
-        int count_threshold = 1000;
-        if (count_no_new_nodes >= count_threshold) {  // if node has been active for
-            LOG(userinfo) << "No new node has been salinized for " << count_threshold << " timesteps";
-            throw "No new node has been salinized for 1000 timesteps";
-        }
-    } else {
-        count_no_new_nodes = 0;
-    }
-
+    numberOfActiveZetas = rowID_to_nodeID.size();
     LOG(debug) << "Number of active zetas on layer " << layer << ":  " << numberOfActiveZetas;
+
+    auto changeOfActiveZetas =  numberOfActiveZetas - numberOfActiveZetas_TZero;
+    LOG(debug) << "Number of active zetas changed by: " << changeOfActiveZetas;
+
     Eigen::SparseMatrix<pr_t> __A_zetas(numberOfActiveZetas, numberOfActiveZetas);
     A_zetas = std::move(__A_zetas);
     int numberOfEntries = (int) 4 + 1; // + 1 for this node

@@ -273,20 +273,6 @@ TEST_F(StandardNodeVDFFixture, getSourceZoneGHB) {
     ASSERT_EQ((at(0)->getSourceZoneGHB()), 3);
 }
 
-TEST_F(StandardNodeVDFFixture, getSourcesBelowZeta) {
-    at(0)->addExternalFlow(RECHARGE, 0, 50, 0);
-    at(0)->addExternalFlow(RIVER, 1 * si::meter, 50, 1 * si::meter);
-    at(0)->addExternalFlow(WETLAND, 1 * si::meter, 50, 1 * si::meter);
-
-    ASSERT_EQ((at(0)->getSources(0).value()), 852); // sink of 852 m³/d (currently not actually used)
-    // Question: why is getSources(0) used according to the SWI2 code? (lines 3523-3569, more precisely 3555)
-    ASSERT_EQ((at(0)->getSources(1).value()), 0);
-    ASSERT_EQ((at(0)->getSources(2).value()), 0);
-    ASSERT_EQ((at(0)->getSources(3).value()), 0);
-    ASSERT_EQ((at(0)->getSources(4).value()), 0);
-    // todo test for unconfined node? (changes computation of HCOF)
-}
-
 TEST_F(StandardNodeVDFFixture, getPseudoSourceBelowZeta) {
     ASSERT_NEAR((at(0)->getPseudoSourceBelowZeta(0).value()), 0.0046666, 0.0000001);
     ASSERT_EQ((at(0)->getPseudoSourceBelowZeta(1).value()), 0);

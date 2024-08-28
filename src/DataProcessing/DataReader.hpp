@@ -555,7 +555,7 @@ namespace GlobalFlow {
                     }
                 }
                 nodes->at(nodeID)->setEqHead_allLayers(data * Model::si::meter);
-                nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
+                nodes->at(nodeID)->setHead_TZero_allLayers_wtd(data * Model::si::meter);
             });
         };
 
@@ -1023,6 +1023,7 @@ namespace GlobalFlow {
                             continue;
                         }
                         nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
+                        nodes->at(nodeID)->setZeta_TZero(zetaID, zeta * Model::si::meter);
                     }
                 }
             });

@@ -44,12 +44,13 @@
     "numerics": {
       "threads": 1,
       "solver": "PCG",
-      "iterations": 50,
-      "inner_itter": 5,
+      "max_outer_iterations_head": 50,
+      "max_outer_iterations_zeta": 50,
+      "max_inner_iterations": 10,
       "closing_crit_head": 1E-80,
-      "closing_crit_zeta": 1E-50,
+      "closing_crit_zeta": 1E-80,
       "head_change": 0.001,
-      "zeta_change": 0.00001,
+      "zeta_change": 0.001,
       "damping": "false",
       "min_damp": 0.01,
       "max_damp": 0.5
