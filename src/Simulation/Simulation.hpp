@@ -164,13 +164,13 @@ namespace GlobalFlow {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "zeta1") {
-                            if (isDensityVariable and node->isZetaActive(1)) {
+                            if (isDensityVariable and node->isZetaOutput(1)) {
                                 value = node->getZeta(1).value();
                             } else {
                                 value = std::nan("1");
                             }
                         } else if(variable ==  "zeta2") {
-                            if (isDensityVariable and (node->getZeta(2) > (node->getBottom() + node->getVDFLock()))) {
+                            if (isDensityVariable and node->isZetaOutput(2)) {
                                 value = node->getZeta(2).value();
                             } else {
                                 value = std::nan("1");

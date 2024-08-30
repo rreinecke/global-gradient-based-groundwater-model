@@ -180,7 +180,6 @@ namespace GlobalFlow {
         struct EffectivePorosity;
         struct Zetas;
         struct Zetas_TZero;
-        struct ZetasChange;
         struct Delnus;
         struct NusInZones;
         struct SourceZoneGHB;
@@ -229,7 +228,6 @@ namespace GlobalFlow {
             PhysicalProperty<bool, IsDensityVariable>,
             PhysicalProperty<std::vector<t_meter>, Zetas>,
             PhysicalProperty<std::vector<t_meter>, Zetas_TZero>,
-            PhysicalProperty<std::vector<t_meter>, ZetasChange>,
             PhysicalProperty<std::vector<t_dim>, Delnus>,
             PhysicalProperty<std::vector<t_dim>, NusInZones>,
             PhysicalProperty<int, SourceZoneGHB>,

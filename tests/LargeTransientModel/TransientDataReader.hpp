@@ -108,11 +108,12 @@ class TransientDataReader : public DataReader {
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
 
-            // read either initial head (default) or equilibrium water table depth from file, if available
-            if (op.isInitialHeadFromFile()){
+            // read initial head (default) and/or equilibrium water table depth from file, if available
+            if (op.isInitialHeadFromFile()){ // set initial head and use the same to initialize equilibrium head
                 LOG(userinfo) << "Reading initial head";
                 readInitialHeads((buildDir(op.getInitialHeadsDir())));
-            } else if (op.isEqWTDFromFile()){
+            }
+            if (op.isEqWTDFromFile()){ // set equilibrium head only
                 LOG(userinfo) << "Reading equal water table depth";
                 readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
             }

@@ -555,7 +555,6 @@ namespace GlobalFlow {
                     }
                 }
                 nodes->at(nodeID)->setEqHead_allLayers(data * Model::si::meter);
-                nodes->at(nodeID)->setHead_TZero_allLayers_wtd(data * Model::si::meter);
             });
         };
 
@@ -925,62 +924,6 @@ namespace GlobalFlow {
             }
             LOG(debug) << "    ... for " << i << " nodes";
         };
-
-
-        /**
-         * @brief Compute initial density surfaces using Ghyben-Herzberg relation for interface
-         * @param numberOfLayers Number of layers in model
-         * @param numberOfNodesPerLayer Number of nodes per layer
-         * @param maxDistance Maximum distance from the Ghyben-Herzberg line
-         * @param densityZones Density in density zones (from fresh to saline)
-         * @note Ghyben-Herzberg: zeta surface = - (density_fresh / (density_saline) - density_fresh)) * GW_head
-         */
-        /*void setZetasGhybenHerzberg(int numberOfLayers, large_num numberOfNodesPerLayer,
-                                    std::vector<double> densityZones) {
-            double ghybenHerzberg{0.0};
-            double minDensity = densityZones.front();
-            double maxDensity = densityZones.back();
-            double meanDensity = (maxDensity + minDensity) * 0.5;
-            double maxDifDensity = (maxDensity - minDensity) * 0.5; // calculate maximum difference from mean to min/max
-            double zeta{0.0};
-            std::vector<double> zetaDeltas;
-            double ghbElevation;
-            large_num numberOfNodes = numberOfLayers * numberOfNodesPerLayer;
-
-            double maxDistance = 10;
-            for (double densityZone : densityZones) {
-                zetaDeltas.push_back( ((meanDensity - densityZone) / maxDifDensity) * maxDistance );
-                //LOG(debug) << "zetaDeltas[zetaID = " << zetaID << "]: " << zetaDeltas[zetaID];
-            }
-
-            // loop through nodes
-            for (const auto &node : *nodes) {
-                // 1. initialize zeta surface at top and bottom
-                node->initializeZetas();
-
-                // 2. use Ghyben-Herzberg relation to derive 50% interface elevation
-                ghybenHerzberg = - (minDensity / (maxDensity - minDensity)) * node->getHead().value();
-                //LOG(debug) << "zetaGhybenHerzberg: " << zetaGhybenHerzberg << ", head: " << initial_head;
-
-                // 3. set zeta surfaces (potentially between top and bottom)
-                for (int zetaID = 1; zetaID < densityZones.size(); ++zetaID){
-                    // if node has a GHB
-                    if (node->hasGHB()){
-                        zeta = ghybenHerzberg + zetaDeltas[zetaID];
-                        // if zeta above GHB: set to GHB elevation
-                        ghbElevation = node->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                        if (zeta > ghbElevation) { zeta = ghbElevation; }
-
-                    // if node has no GHB: set to node bottom
-                    } else {
-                        zeta = node->getBottom().value();
-                    }
-
-                    node->addZeta(zetaID, zeta * Model::si::meter);
-                }
-            }
-        }*/
-
 
         void setDefaultZetas(large_num numberOfZones) {
             for (const auto &node : *nodes) {

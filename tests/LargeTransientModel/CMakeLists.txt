@@ -10,11 +10,11 @@ set(HEADERS
    PARENT_SCOPE
 )
 configure_file(config_transient.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_transient.json COPYONLY)
-configure_file(config_transient_na.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/config_transient_na.json COPYONLY)
 configure_file(out.json ${CMAKE_CURRENT_BINARY_DIR}/../../data/out.json COPYONLY)
 
 # read the grid and initial head
 configure_file(../../data_5min/grid.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid.csv COPYONLY)
+configure_file(../../data_5min/mean_wtd.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/mean_wtd.csv COPYONLY)
 configure_file(data_5min/grid_na_dk.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/grid_na_dk.csv COPYONLY)
 configure_file(data_5min/head_stable.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/head_stable.csv COPYONLY)
 configure_file(data_5min/zeta1_stable.csv ${CMAKE_CURRENT_BINARY_DIR}/../../data/Zetas/zeta1_stable.csv COPYONLY)

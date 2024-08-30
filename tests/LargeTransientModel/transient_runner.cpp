@@ -44,12 +44,13 @@ namespace GlobalFlow {
                                                               isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
             for (Simulation::step step : stepper) {
                 if (!isSteadyState[strssPrd]){
+                    LOG(userinfo) << "Year " << year << ": ";
                     pathToRecharge = "/mnt/storage/COASTGUARD/recharge/recharge_" + std::to_string(year) + ".csv";
                     pathToGHB = "/mnt/storage/COASTGUARD/ghb/ghb_conductivity_" + std::to_string(year) + ".csv";
-                    LOG(debug) << "Reading current recharge and GHB (sea level)";
+                    LOG(debug) << "Reading current recharge";
                     reader->readGWRecharge(pathToRecharge);
+                    LOG(debug) << "Reading current GHB (sea level)";
                     reader->readGHB_elevation_conductivity(pathToGHB);
-                    LOG(userinfo) << "Year " << year << ": ";
                     ++year;
                 } else {
                     LOG(userinfo) << "Step " << stepNumber << ": ";

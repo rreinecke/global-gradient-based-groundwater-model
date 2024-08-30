@@ -126,11 +126,11 @@ Equation::updateHeadAndHeadChange() {
 
 void inline
 Equation::updateZetas() {
-// no parallel here
+// todo parallel here
     for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
         auto nodeID = rowID_to_nodeID[rowID];
         auto zetaID = rowID_to_zetaID[rowID];
-        nodes->at(nodeID)->setZeta(zetaID, x_zetas[rowID] * si::meter);
+        nodes->at(nodeID)->setZeta(zetaID, x_zetas[long(rowID)] * si::meter);
     }
 }
 
@@ -152,17 +152,16 @@ Equation::updateHeadTZero() {
     }
 
 void inline
-Equation::clipZetas() {
-#pragma omp parallel for num_threads(threads) default(none)
+Equation::clipFrontZeta() {
+//#pragma omp parallel for num_threads(threads) default(none)
         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->clipZetas();
+            nodes->at(k)->clipFrontZeta();
         }
 }
 
 
 void inline
 Equation::adjustZetaHeights() {
-
     LOG(debug) << "Vertical zeta movement";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
@@ -313,8 +312,14 @@ Equation::solve() {
      */
      if(isDensityVariable) {
          __itter_zetas = 0;
-         // If unconfined: clipping top zeta to current groundwater level
-         clipZetas();
+         // Clipping top zeta to current groundwater level
+         clipFrontZeta();
+         LOG(debug) << "Check zeta order and whether front and back are in correct position";
+#pragma omp parallel for num_threads(threads) default(none)
+         for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+             nodes->at(k)->checkZetas();
+         }
+
          for (int layer = 0; layer < numberOfLayers; layer++) {
              LOG(numerics) << "Finding zeta surface heights in layer " << layer;
              prepareEquation_zetas(layer);
@@ -426,11 +431,11 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
                 alignZetaTimeStep(layer); // re-align zeta time step with head time step
                 break;
             } else {
-                // make non-converging nodes inactive
+                // Deactivate zetas at non-converging node: set effective porosity to 0, and zetas to bottom
                 for (long rowID = 0; rowID < zetaChanges.size(); ++rowID) {
                     if (std::abs(zetaChanges(rowID)) > curMaxAllowedZetaChange) {
                         LOG(debug) << "Deactivating zetas for nodeID = " << rowID_to_nodeID[rowID];
-                        nodes->at(rowID_to_nodeID[rowID])->setEffectivePorosity(0 * si::si_dimensionless);
+                        nodes->at(rowID_to_nodeID[rowID])->deactivateZetas();
                     }
                 }
                 // rerun solve_zeta without deactivated nodes
@@ -463,10 +468,10 @@ Equation::prepareEquation_zetas(const int layer) {
             }
         }
     }
-    numberOfActiveZetas = rowID_to_nodeID.size();
+    numberOfActiveZetas = long(rowID_to_nodeID.size());
     LOG(debug) << "Number of active zetas on layer " << layer << ":  " << numberOfActiveZetas;
 
-    auto changeOfActiveZetas =  numberOfActiveZetas - numberOfActiveZetas_TZero;
+    int changeOfActiveZetas = int(numberOfActiveZetas - numberOfActiveZetas_TZero);
     LOG(debug) << "Number of active zetas changed by: " << changeOfActiveZetas;
 
     Eigen::SparseMatrix<pr_t> __A_zetas(numberOfActiveZetas, numberOfActiveZetas);

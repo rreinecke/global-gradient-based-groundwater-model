@@ -315,7 +315,7 @@ namespace GlobalFlow {
         /**
          * Write the final zeta surface heights to the nodes
          */
-        void inline clipZetas();
+        void inline clipFrontZeta();
 
         void inline setZetasTZero();
 
