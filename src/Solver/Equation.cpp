@@ -90,7 +90,7 @@ Equation::updateEquation() {
 void inline
 Equation::updateEquation_zetas(const int layer) {
 
-//#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) num_threads(threads) default(none)
+#pragma omp parallel for if(numberOfActiveZetas > threads) schedule(dynamic, (numberOfNodesPerLayer/threads)) num_threads(threads) default(none)
     for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
         auto nodeID = rowID_to_nodeID[rowID];
         auto zetaID = rowID_to_zetaID[rowID];
@@ -117,7 +117,7 @@ Equation::updateEquation_zetas(const int layer) {
 
 void inline
 Equation::updateHeadAndHeadChange() {
-// no parallel here
+#pragma omp parallel for num_threads(threads) default(none)
     for (long rowID = 0; rowID < numberOfNodesTotal; rowID++) {
         nodes->at(rowID)->setHeadAndHeadChange(headChanges[rowID] * si::meter);
     }
@@ -126,7 +126,7 @@ Equation::updateHeadAndHeadChange() {
 
 void inline
 Equation::updateZetas() {
-// todo parallel here
+#pragma omp parallel for num_threads(threads) default(none)
     for (large_num rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
         auto nodeID = rowID_to_nodeID[rowID];
         auto zetaID = rowID_to_zetaID[rowID];
@@ -146,17 +146,17 @@ Equation::updateHeadChangeTZero() {
 void inline
 Equation::updateHeadTZero() {
 #pragma omp parallel for num_threads(threads) default(none)
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->updateHead_TZero();
-        }
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->updateHead_TZero();
     }
+}
 
 void inline
 Equation::clipFrontZeta() {
-//#pragma omp parallel for num_threads(threads) default(none)
-        for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-            nodes->at(k)->clipFrontZeta();
-        }
+#pragma omp parallel for num_threads(threads) default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->clipFrontZeta();
+    }
 }
 
 
