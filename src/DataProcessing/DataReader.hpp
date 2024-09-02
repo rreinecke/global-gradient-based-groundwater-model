@@ -421,17 +421,39 @@ namespace GlobalFlow {
          * @brief Read in a custom definition file for initial heads
          * @param path Where to read the file from
          */
-        virtual void readInitialHeads(std::string path) {
-            readTwoColumns(path, [this](double data, int nodeID) {
-                if (nodes->at(nodeID)->hasGHB()){
-                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                    if (data < ghbElevation) {
-                        data = ghbElevation;
-                    }
+        virtual void readInitialHeads(std::string path, bool isEqHeadFromFile) {
+            io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "data");
+            large_num spatID{0};
+            double head{0};
+            large_num nodeID;
+            int layer{0};
+
+            int i{0};
+            while (in.read_row(spatID, head)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
-                nodes->at(nodeID)->setHead_allLayers(data * Model::si::meter);
-                nodes->at(nodeID)->setHead_TZero_allLayers(data * Model::si::meter);
-            });
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+
+                /*if (nodes->at(nodeID)->hasGHB()){
+                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
+                    if (head < ghbElevation) {
+                        head = ghbElevation;
+                    }
+                }*/
+
+                nodes->at(nodeID)->setHead_allLayers(head * Model::si::meter);
+                nodes->at(nodeID)->setHead_TZero_allLayers(head * Model::si::meter);
+                if (!isEqHeadFromFile){
+                    nodes->at(nodeID)->setEqHeadToHead_allLayers();
+                }
+                i++;
+            }
+            LOG(debug) << "    ... for " << i << " nodes";
         };
 
         /**
@@ -546,16 +568,38 @@ namespace GlobalFlow {
          * @brief Read equilibrium water-table information used for the dynamic river computation
          * @param path Where to read the file from
          */
-        void readEqWTD(std::string path) {
-            readTwoColumns(path, [this](double data, int nodeID) {
-                if (nodes->at(nodeID)->hasGHB()){
+        void readEqWTD(std::string path, bool isInitialHeadFromFile) {
+            io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "data");
+            large_num spatID{0};
+            int layer{0};
+            double wtd{0};
+            large_num nodeID{0};
+
+            int i{0};
+            while (in.read_row(spatID, wtd)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
+                }
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+
+                /*if (nodes->at(nodeID)->hasGHB()){
                     double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
                     if (data < ghbElevation) {
                         data = ghbElevation;
                     }
+                }*/
+
+                nodes->at(nodeID)->setEqHead_allLayers(wtd * Model::si::meter);
+                if (!isInitialHeadFromFile){
+                    nodes->at(nodeID)->setHeadToEqHead_allLayers();
                 }
-                nodes->at(nodeID)->setEqHead_allLayers(data * Model::si::meter);
-            });
+                i++;
+            }
+            LOG(debug) << "    ... for " << i << " nodes";
         };
 
         /**

@@ -27,7 +27,7 @@ namespace GlobalFlow {
         std::string pathToRecharge;
         std::string pathToGHB;
 
-        int year = 1891;
+        int year =  2048; // 1891;
 
         std::vector<bool> isSteadyState = op.getStressPeriodSteadyState();
         std::vector<int> numberOfSteps = op.getStressPeriodSteps();

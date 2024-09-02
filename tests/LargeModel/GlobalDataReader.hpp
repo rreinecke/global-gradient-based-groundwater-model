@@ -117,13 +117,16 @@ class GlobalDataReader : public DataReader {
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));
 
-            // read either initial head (default) or equilibrium water table depth from file, if available
+            // Read initial head from file (sets EqHead to initial head if EqHead not from file)
             if (op.isInitialHeadFromFile()) {
                 LOG(userinfo) << "Reading initial head";
-                readInitialHeads((buildDir(op.getInitialHeadsDir())));
-            } else if (op.isEqWTDFromFile()) {
+                readInitialHeads(buildDir(op.getInitialHeadsDir()), op.isEqWTDFromFile());
+            }
+
+            // Read equilibrium water table depth from file (sets head to EqHead if head not from file)
+            if (op.isEqWTDFromFile()) {
                 LOG(userinfo) << "Reading equal water table depth";
-                readEqWTD(buildDir(op.getEqWTD())); // requires elevation to be set
+                readEqWTD(buildDir(op.getEqWTD()), op.isInitialHeadFromFile()); // requires elevation to be set
             }
 
             /*

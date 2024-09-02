@@ -341,9 +341,22 @@ Set Properties
                 });
             };
 
+            void setHead(const t_meter& head) noexcept {
+                NANChecker(head.value(), "Set Head");
+                set<t_meter, Head>(head);
+            }
+
+            void setHead_allLayers(t_meter head) noexcept {
+                setHead(head);
+                set<t_meter, EQHead>(head);
+                applyToAllLayers([&head](NodeInterface *nodeInterface) {
+                    nodeInterface->setHead(head);
+                    nodeInterface->set<t_meter, EQHead>(head);
+                });
+            }
+
             /**
              * @brief Calculated equilibrium groundwater-head from eq_wtd
-             * Assumes that if initialhead = false that the eq_head is also used as initial head
              * @param head
              */
             void setEqHead_allLayers(const t_meter& wtd) {
@@ -352,6 +365,38 @@ Set Properties
                 applyToAllLayers([eqhead](NodeInterface *nodeInterface) {
                     try {
                         nodeInterface->set<t_meter, EQHead>(eqhead);
+                    }
+                    catch (...) {}
+                });
+            }
+
+            /**
+             * @brief Calculated equilibrium groundwater-head is used as initial head
+             * Assumes that if initialhead = false that the eq_head is also used as initial head
+             * @param head
+             */
+            void setHeadToEqHead_allLayers() {
+                t_meter eqhead = get<t_meter, EQHead>();
+                setHead(eqhead);
+                applyToAllLayers([eqhead](NodeInterface *nodeInterface) {
+                    try {
+                        nodeInterface->setHead(eqhead);
+                    }
+                    catch (...) {}
+                });
+            }
+
+            /**
+             * @brief Initial groundwater-head is used as equilibrium head
+             * Assumes that if eqhead = false that the initial head is also used as eqhead
+             * @param head
+             */
+            void setEqHeadToHead_allLayers() {
+                t_meter head = getHead();
+                set<t_meter, EQHead>(head);
+                applyToAllLayers([head](NodeInterface *nodeInterface) {
+                    try {
+                        nodeInterface->set<t_meter, EQHead>(head);
                     }
                     catch (...) {}
                 });
@@ -377,20 +422,6 @@ Set Properties
             }
 
             void setSourceZoneGHB(int sourceZoneGHB) { set<int, SourceZoneGHB>(sourceZoneGHB); }
-
-            void setHead(const t_meter& head) noexcept {
-                NANChecker(head.value(), "Set Head");
-                set<t_meter, Head>(head);
-            }
-
-            void setHead_allLayers(t_meter head) noexcept {
-                setHead(head);
-                set<t_meter, EQHead>(head);
-                applyToAllLayers([&head](NodeInterface *nodeInterface) {
-                    nodeInterface->setHead(head);
-                    nodeInterface->set<t_meter, EQHead>(head);
-                });
-            }
 
 /*****************************************************************
 Helpers
