@@ -74,7 +74,7 @@ class SimpleDataReader : public DataReader {
             readGWRecharge(buildDir(op.getRecharge()));
 
             LOG(userinfo) << "Initializing head";
-            readInitialHeads((buildDir(op.getInitialHeadsDir())));
+            readInitialHeads(buildDir(op.getInitialHeadsDir()), op.isEqWTDFromFile());
 
             LOG(userinfo) << "Defining rivers";
             readRiverConductance(buildDir(op.getKRiver()));

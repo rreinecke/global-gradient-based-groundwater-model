@@ -40,7 +40,7 @@ namespace GlobalFlow {
 
                 if (op.isInitialHeadFromFile()){
                     LOG(userinfo) << "Initializing head";
-                    readInitialHeads((buildDir(op.getInitialHeadsDir())));
+                    readInitialHeads(buildDir(op.getInitialHeadsDir()), op.isEqWTDFromFile());
                 }
 
                 if (op.isKFromFile()) {
