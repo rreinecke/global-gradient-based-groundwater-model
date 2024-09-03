@@ -240,8 +240,7 @@ namespace GlobalFlow {
 
         std::unordered_map<large_num, large_num> rowID_to_nodeID;
         std::unordered_map<large_num, int> rowID_to_zetaID;
-        std::unordered_map<large_num, int> active_zeta_archive;
-
+        std::vector<large_num> nodeIDs_newly_salinized;
 
         std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID;
 

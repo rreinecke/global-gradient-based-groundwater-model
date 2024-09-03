@@ -109,24 +109,12 @@ Equation::updateEquation_zetas(const int layer) {
         auto nodeID = rowID_to_nodeID[rowID];
         auto zetaID = rowID_to_zetaID[rowID];
         addToA_zetas(nodes->at(nodeID), zetaID);
-        x_zetas(rowID) = nodes->at(nodeID)->getZeta(zetaID).value();
-        b_zetas(rowID) = nodes->at(nodeID)->getRHS(zetaID).value();
+        x_zetas(long(rowID)) = nodes->at(nodeID)->getZeta(zetaID).value();
+        b_zetas(long(rowID)) = nodes->at(nodeID)->getRHS(zetaID).value();
     }
-
     //LOG(debug) << "A_zetas.block:\n" << A_zetas.block(0,0,numberOfActiveZetas,numberOfActiveZetas); // startRow, startCol, numRows, numCol
     //LOG(debug) << "b_zetas.block:\n" << b_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
     //LOG(debug) << "x_zetas.block:\n" << x_zetas.block(0,0,numberOfActiveZetas,1); // startRow, startCol, numRows, numCol
-
-    //LOG(numerics) << "Preconditioning matrix before iteration (zetas)";
-    if (A_zetas.size() != 0) {
-        //LOG(numerics) << "Compressing Matrix (zetas)";
-        A_zetas.makeCompressed();
-        cg_zetas.compute(A_zetas);
-        if (cg_zetas.info() != Success) {
-            LOG(userinfo) << "Fail in preconditioning matrix (zetas)";
-            throw "Fail in preconditioning matrix (zetas)";
-        }
-    }
 }
 
 /**
@@ -135,8 +123,8 @@ Equation::updateEquation_zetas(const int layer) {
 void inline
 Equation::updateHeadAndHeadChange() {
 #pragma omp parallel for num_threads(threads) default(none)
-    for (long rowID = 0; rowID < numberOfNodesTotal; rowID++) {
-        nodes->at(rowID)->setHeadAndHeadChange(headChanges[rowID] * si::meter);
+    for (large_num rowID = 0; rowID < numberOfNodesTotal; rowID++) {
+        nodes->at(rowID)->setHeadAndHeadChange(headChanges[long(rowID)] * si::meter);
     }
 }
 
@@ -445,6 +433,25 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
     while (outerIteration < MAX_OUTER_ITERATIONS_ZETA) {
         outerIteration++;
         updateEquation_zetas(layer);
+        if (A_zetas.size() != 0) {
+            A_zetas.makeCompressed();
+            cg_zetas.compute(A_zetas);
+            if (cg_zetas.info() != Success) {
+                LOG(userinfo) << "Fail in preconditioning matrix (zetas)";
+                if (nodeIDs_newly_salinized.empty()) {
+                    throw "Fail in preconditioning matrix (zetas)";
+                } else {
+                    LOG(userinfo) << "  -> Removing newly salinized nodes, then calling solve zetas again";
+                    for (auto const &nodeID: nodeIDs_newly_salinized) {
+                        LOG(debug) << "Deactivating zetas in nodeID: " << nodeID;
+                        nodes->at(nodeID)->deactivateZetas();
+                    }
+                    solve_zetas(layer, isAdditionalStep);
+                    break;
+                }
+            }
+        }
+
         x_zetas_t0 = x_zetas;
         x_zetas = cg_zetas.solveWithGuess(b_zetas, x_zetas); // solving inner iterations
         zetaChanges = x_zetas - x_zetas_t0;
@@ -483,7 +490,7 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
                 // Deactivate zetas at non-converging node: set effective porosity to 0, and zetas to bottom
                 for (long rowID = 0; rowID < zetaChanges.size(); ++rowID) {
                     if (std::abs(zetaChanges(rowID)) > curMaxAllowedZetaChange) {
-                        LOG(debug) << "Deactivating zetas for nodeID = " << rowID_to_nodeID[rowID];
+                        LOG(debug) << "Deactivating zetas in nodeID: " << rowID_to_nodeID[rowID];
                         nodes->at(rowID_to_nodeID[rowID])->deactivateZetas();
                     }
                 }
@@ -504,6 +511,7 @@ void inline
 Equation::prepareEquation_zetas(const int layer) {
     auto numberOfActiveZetas_TZero = rowID_to_nodeID.size();
     rowID_to_nodeID.clear();
+    nodeIDs_newly_salinized.clear();
     large_num offset = layer * numberOfNodesPerLayer;
     numberOfActiveZetas = 0;
     int count_no_new_nodes{0};
@@ -516,6 +524,7 @@ Equation::prepareEquation_zetas(const int layer) {
                 rowID_to_nodeID[rowID] = nodeID;
                 rowID_to_zetaID[rowID] = zetaID;
                 nodeID_zetaID_rowID[nodeID][zetaID] = rowID;  // for addToA_zetas()
+                nodeIDs_newly_salinized.push_back(nodeID);
                 ++rowID;
             }
         }
