@@ -46,6 +46,10 @@ Equation::~Equation() {
     LOG(debug) << "Destroying equation\n" << std::endl;
 }
 
+/**
+ * @brief Add entries (conductances to neighbours and storage change within node) to matrix A
+ * @param node interface for the current model node within the grid
+ */
 void inline
 Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
     large_num nodeID = node->getID();
@@ -54,6 +58,11 @@ Equation::addToA(std::unique_ptr<Model::NodeInterface> const &node) {
     }
 }
 
+/**
+ * @brief Add entries (conductances to neighbours and storage change within node) to matrix A
+ * @param node interface for the current model node within the grid
+ * @param zetaID identifier of the density surface
+ */
 void inline
 Equation::addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID) {
     large_num nodeID = node->getID();
@@ -63,9 +72,12 @@ Equation::addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int ze
     }
 }
 
+/**
+ * @brief Update the groundwater flow equation:
+ * A - the matrix, b - external flows & storage changes, x - the groundwater heads
+ */
 void inline
 Equation::updateEquation() {
-    //LOG(debug) << "Updating equation";
 #ifdef EIGEN_HAS_OPENMP
     Eigen::initParallel();
 #endif
@@ -77,16 +89,18 @@ Equation::updateEquation() {
     }
 
     if (!A.isCompressed()) { A.makeCompressed(); }
-    //LOG(debug) << "Compressed A";
     cg.compute(A);
-    //LOG(debug) << "Computed conjugate gradients for A";
     if (cg.info() != Success) {
         LOG(numerics) << "Fail in preconditioning matrix";
         throw "Fail in preconditioning matrix";
     }
 }
 
-
+/**
+ * @brief Update the variable density equation:
+ * A_zetas - the matrix, b_zetas - external flows & storage changes, x_zetas - the density surface heights
+ * @param layer aquifer layer number (increases with depth)
+ */
 void inline
 Equation::updateEquation_zetas(const int layer) {
 
@@ -115,6 +129,9 @@ Equation::updateEquation_zetas(const int layer) {
     }
 }
 
+/**
+ * @brief Update head change and head after each outer iteration
+ */
 void inline
 Equation::updateHeadAndHeadChange() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -123,7 +140,9 @@ Equation::updateHeadAndHeadChange() {
     }
 }
 
-
+/**
+ * @brief Update density surface heights after each outer iteration
+ */
 void inline
 Equation::updateZetas() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -134,7 +153,9 @@ Equation::updateZetas() {
     }
 }
 
-
+/**
+ * @brief After new heads were found: save the new heads as previous heads (are used in next time step)
+ */
 void inline
 Equation::updateHeadChangeTZero() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -143,6 +164,9 @@ Equation::updateHeadChangeTZero() {
     }
 }
 
+/**
+ * @brief After new density surfaces were found: save the new surfaces as previous surfaces (are used in next time step)
+ */
 void inline
 Equation::updateHeadTZero() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -151,6 +175,11 @@ Equation::updateHeadTZero() {
     }
 }
 
+/**
+ * @brief Apply limits to the front density surface after groundwater heads were found and before new density
+ * surface heights are computed
+ * @
+ */
 void inline
 Equation::clipFrontZeta() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -159,7 +188,10 @@ Equation::clipFrontZeta() {
     }
 }
 
-
+/**
+ * @brief Perform density surface adjustments (e.g. surface movements between layers, activating of surface in
+ * neighboring nodes)
+ */
 void inline
 Equation::adjustZetaHeights() {
     LOG(debug) << "Vertical zeta movement";
@@ -206,6 +238,9 @@ Equation::adjustZetaHeights() {
     }
 }
 
+/**
+ * @brief Update the zone change after variable density equation was solved
+ */
 void inline
 Equation::updateZoneChange() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -214,6 +249,9 @@ Equation::updateZoneChange() {
     }
 }
 
+/**
+ * @brief Update the mass balance of groundwater flow after the groundwater flow equation was solved
+ */
 void inline
 Equation::updateBudget() {
 #pragma omp parallel for num_threads(threads) default(none)
@@ -223,8 +261,7 @@ Equation::updateBudget() {
 }
 
 /**
- * Solve Equation
- *
+ * @brief Solve flow equation and (if variable density is activated) solve variable density equation
  */
 void
 Equation::solve() {
@@ -306,9 +343,9 @@ Equation::solve() {
     __error = cg.error_inf();
 
     /**
-     * ###############################
-     * # Solve Zeta Surface Equation #
-     * ###############################
+     * ###################################
+     * # Solve Variable Density Equation #
+     * ###################################
      */
      if(isDensityVariable) {
          __itter_zetas = 0;
@@ -344,6 +381,10 @@ Equation::solve() {
     updateBudget();
 }
 
+/**
+ * @brief Reset surface heights to the state before iteration
+ * @param layer aquifer layer number (increases with depth)
+ */
 void inline
 Equation::resetZetas(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
@@ -356,6 +397,11 @@ Equation::resetZetas(int layer) {
     }
 }
 
+/**
+ * @brief Update the time step of density surfaces
+ * @param layer aquifer layer number (increases with depth)
+ * @param additionalSteps number of additional time steps
+ */
 void inline
 Equation::updateZetaTimeStep(int layer, double additionalSteps) {
 #pragma omp parallel for num_threads(threads) default(none) shared(additionalSteps)
@@ -366,6 +412,10 @@ Equation::updateZetaTimeStep(int layer, double additionalSteps) {
     }
 }
 
+/**
+ * @brief re-align density surface time step with the time step of groundwater flow
+ * @param layer aquifer layer number (increases with depth)
+ */
 void inline
 Equation::alignZetaTimeStep(int layer) {
     large_num offset = layer * numberOfNodesPerLayer;
@@ -376,11 +426,10 @@ Equation::alignZetaTimeStep(int layer) {
     }
 }
 
-
-
-
 /**
- * Solve Zeta Surface Equation
+ * Solve density surface equation
+ * @param layer aquifer layer number (increases with depth)
+ * @param isAdditionalStep info whether surface heights are solved using smaller additional time steps
  */
 void
 Equation::solve_zetas(int layer, bool isAdditionalStep){
@@ -447,7 +496,10 @@ Equation::solve_zetas(int layer, bool isAdditionalStep){
     __itter_zetas += outerIteration;
 }
 
-
+/**
+ * @brief Prepare density surface for variable density solver
+ * @param layer aquifer layer number (increases with depth)
+ */
 void inline
 Equation::prepareEquation_zetas(const int layer) {
     auto numberOfActiveZetas_TZero = rowID_to_nodeID.size();
@@ -457,7 +509,7 @@ Equation::prepareEquation_zetas(const int layer) {
     int count_no_new_nodes{0};
     long rowID{0};
 
-    // finding nodes with active/inactive interfaces
+    // finding nodes with active/inactive surface
     for (int zetaID = 1; zetaID < numberOfZones; zetaID++) {
         for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; nodeID++) {
             if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {

@@ -253,7 +253,7 @@ namespace GlobalFlow {
                 out += "\nArea: ";
                 out += to_string(nodeInterface->getProperties().get<quantity<Model::SquareMeter>, Model::Area>().value());
                 out += "\nStorageFlow: ";
-                out += to_string(nodeInterface->getStorageFlow().value());
+                out += to_string(nodeInterface->calculateStorageFlow().value());
                 out += "\nNONStorageFlowIN: ";
                 out += to_string(nodeInterface->getNonStorageFlow([](double a) -> bool {return a > 0; }).value());
                 out += "\nNONStorageFlowOUT: ";
@@ -384,12 +384,8 @@ namespace GlobalFlow {
              */
             MassError getCurrentMassError() {
                 return calculateError(
-                           [this](int pos) {
-                               return nodes->at(pos)->getCurrentOUT().value();
-                           },
-                           [this](int pos) {
-                               return nodes->at(pos)->getCurrentIN().value();
-                           });
+                           [this](int pos) { return nodes->at(pos)->getCurrentOUT().value(); },
+                           [this](int pos) { return nodes->at(pos)->getCurrentIN().value(); });
             }
 
             /**
@@ -514,7 +510,7 @@ namespace GlobalFlow {
                         break;
                     case STORAGE:
                         tmp = getError([this](int i) {
-                            try{return nodes->at(i)->getStorageFlow().value();} catch(...){return 0.0;}
+                            try{return nodes->at(i)->calculateStorageFlow().value();} catch(...){return 0.0;}
                         });
                         break;
                 }
