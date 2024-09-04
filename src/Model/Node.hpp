@@ -2984,6 +2984,7 @@ Calculate
                 for (const auto &c: out) { conductNode -= c.second; }
                 // subtract effective porosity term
                 conductNode -= getEffectivePorosityTerm(); // subtracting effective porosity term (SWIHCOF)
+                NANChecker(conductNode.value(), "conductNode");
                 // add conductance of this node to out, the key in the unordered map is the ID of this node
                 out[get<large_num, ID>()] = conductNode;
                 return out;

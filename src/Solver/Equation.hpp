@@ -62,7 +62,7 @@ namespace GlobalFlow {
             /**
              * Solve Zeta Surface Equation
              */
-            void solve_zetas(int layer, bool isAdditionalSteps);
+            void solve_zetas(const int& layer, bool isAdditionalSteps);
 
             /**
              * @return The number of iterations groundwater flow solution
@@ -156,15 +156,7 @@ namespace GlobalFlow {
                 return cg.getResiduals();
             }
 
-            VectorType& getResiduals_zetas() const {
-                return cg_zetas.getResiduals();
-            }
-
             void updateClosingCrit(double crit) { cg.setTolerance(crit); }
-
-            //void updateAllowedMaxHeadChange(double head){
-            //    maxAllowedHeadChange = head;
-            //}
 
             void updateMaxInnerItter(int iter){
                 max_inner_iterations = iter;
@@ -202,20 +194,15 @@ namespace GlobalFlow {
         long_vector b_zetas;
         SparseMatrix<pr_t> A_zetas;
 
-        long_vector x_t0;
         long_vector x_zetas_t0;
 
         long_vector headChanges;
         long_vector zetaChanges;
-        long_vector zetaChanges_t0;
-        long_vector zetaChangesSum;
-        bool continueToNextStep{false};
 
         const Simulation::Options options;
 
         bool isAdaptiveDamping{true};
         AdaptiveDamping adaptiveDamping;
-        AdaptiveDamping adaptiveDamping_zetas;
 
         long MAX_OUTER_ITERATIONS_HEAD{0};
         long MAX_OUTER_ITERATIONS_ZETA{0};
@@ -233,14 +220,12 @@ namespace GlobalFlow {
         double maxAllowedHeadChange{0.01};
 
         double maxAllowedZetaChange{0.01};
-        double maxAllowedZetaChange_addStep{0.01};
 
         double dampMin{0.01};
         double dampMax{0.01};
 
         std::unordered_map<large_num, large_num> rowID_to_nodeID;
         std::unordered_map<large_num, int> rowID_to_zetaID;
-        std::vector<large_num> nodeIDs_newly_salinized;
 
         std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID;
 
@@ -248,7 +233,7 @@ namespace GlobalFlow {
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg_zetas;
 
-        bool isSteadyState = false;
+        bool isSteadyState{false};
 
         bool isDensityVariable{false};
 
@@ -262,17 +247,11 @@ namespace GlobalFlow {
 
         void inline updateEquation();
 
-        void inline preconditionA();
+        void inline updateEquation_zetas(const int& layer);
 
-        void inline updateEquation_zetas(const int layer);
+        void inline addToA(const std::unique_ptr<Model::NodeInterface>& node);
 
-        void inline addToA(std::unique_ptr<Model::NodeInterface> const &node);
-
-        void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, int zetaID);
-
-        void inline prepareEquation_zetas(const int layer);
-
-        bool inline isHeadChangeGreater();
+        void inline prepareEquation_zetas(const int& layer);
 
         /**
          * Update heads in inner iteration
@@ -283,11 +262,6 @@ namespace GlobalFlow {
          * Update zone change
          */
         void inline updateZoneChange();
-
-        /**
-        * Calculate the ghost node correction flow budget
-        */
-        void inline updateGNCBudget();
 
         /**
          * Calculate the final budget
@@ -309,26 +283,22 @@ namespace GlobalFlow {
          */
         void inline updateZetas();
 
-        void inline updateZetasTotal();
-
         /**
          * Write the final zeta surface heights to the nodes
          */
         void inline clipFrontZeta();
 
-        void inline setZetasTZero();
-
-        void inline checkAllZetaSlopes();
+        // void inline checkAllZetaSlopes();
 
         void inline adjustZetaHeights();
 
-        void inline resetZetas(int layer);
+        void inline resetZetas(const int& layer);
 
-        void inline updateZetaTimeStep(int layer, double additionalSteps);
+        void inline updateZetaTimeStep(const int& layer, const double& additionalSteps);
 
-        void inline alignZetaTimeStep(int layer);
+        void inline alignZetaTimeStep(const int& layer);
         };
-}
+    }
 }
 
 #endif
