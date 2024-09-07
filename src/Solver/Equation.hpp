@@ -62,7 +62,7 @@ namespace GlobalFlow {
             /**
              * Solve Zeta Surface Equation
              */
-            void solve_zetas(const int& layer, bool isAdditionalSteps);
+            void solve_zetas(const int& layer);
 
             /**
              * @return The number of iterations groundwater flow solution
@@ -224,10 +224,10 @@ namespace GlobalFlow {
         double dampMin{0.01};
         double dampMax{0.01};
 
-        std::unordered_map<large_num, large_num> rowID_to_nodeID;
-        std::unordered_map<large_num, int> rowID_to_zetaID;
+        std::unordered_map<long, large_num> rowID_to_nodeID;
+        std::unordered_map<long, large_num> rowID_to_zetaID;
 
-        std::unordered_map<large_num, std::unordered_map<int,long long>> nodeID_zetaID_rowID;
+        std::unordered_map<large_num, std::unordered_map<large_num,long>> nodeID_zetaID_locID;
 
         ConjugateGradient<SparseMatrix<pr_t>, Lower | Upper, IncompleteLUT<SparseMatrix<pr_t>::Scalar>> cg;
 
@@ -237,7 +237,7 @@ namespace GlobalFlow {
 
         bool isDensityVariable{false};
 
-        int numberOfZones{0};
+        large_num numberOfZones{0};
 
         double stepSize{0};
 
@@ -250,6 +250,8 @@ namespace GlobalFlow {
         void inline updateEquation_zetas(const int& layer);
 
         void inline addToA(const std::unique_ptr<Model::NodeInterface>& node);
+
+        void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, large_num zetaID);
 
         void inline prepareEquation_zetas(const int& layer);
 
@@ -292,11 +294,11 @@ namespace GlobalFlow {
 
         void inline adjustZetaHeights();
 
-        void inline resetZetas(const int& layer);
+        //void inline resetZetas(const int& layer);
 
-        void inline updateZetaTimeStep(const int& layer, const double& additionalSteps);
+        //void inline updateZetaTimeStep(const int& layer, const double& additionalSteps);
 
-        void inline alignZetaTimeStep(const int& layer);
+        //void inline alignZetaTimeStep(const int& layer);
         };
     }
 }

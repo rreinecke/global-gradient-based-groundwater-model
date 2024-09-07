@@ -584,6 +584,18 @@ Get Properties
                 }
             }
 
+            void setNewExternalFlowElevation(FlowType type, double head) {
+                if (hasTypeOfExternalFlow(type)) {
+                    auto conductance = externalFlows.at(type).getConductance().value();
+                    auto bottom = externalFlows.at(type).getBottomElev();
+                    removeExternalFlow(type);
+                    addExternalFlow(type,
+                                    head * Model::si::meter,
+                                    conductance,
+                                    bottom);
+                }
+            }
+
             /**
             * @brief Get bottom of an external flow by its FlowType
             * @param type The flow type
@@ -1055,7 +1067,7 @@ Calculate
              * @return cubic meters per time
              * @note in SWI2 code: SSWI2_ZCHG
              */
-            t_vol_t calculateZoneChange(int zetaID) {
+            t_vol_t calculateZoneChange(large_num zetaID) {
                 t_vol_t out = 0.0 * si::cubic_meter / day;
 
                 t_meter zeta = getZeta(zetaID);
@@ -1104,7 +1116,7 @@ Calculate
              * @param zetaID
              * @note in SWI2 code: SSWI2_IMIX, comments referring to lines (at each "if"), refer to lines in gwf2swi27.f
              */
-            t_c_meter calculateInstantaneousMixing(int zetaID) {
+            t_c_meter calculateInstantaneousMixing(large_num zetaID) {
                 t_c_meter out = 0.0 * si::cubic_meter;
                 // skip nodes that do not have a down neighbour
                 if (neighbours.find(DOWN) == neighbours.end()) { return out; } // line 4142
@@ -1147,7 +1159,7 @@ Calculate
             t_vol_t getInstantaneousMixing(bool in) noexcept {
                 t_c_meter iMix_in;
                 t_c_meter iMix_out;
-                for (int zetaID = 0; zetaID < zetasSize() - 1; ++zetaID) {
+                for (large_num zetaID = 0; zetaID < zetasSize() - 1; ++zetaID) {
                     t_c_meter iMix = calculateInstantaneousMixing(zetaID);
                     if (iMix.value() > 0) { iMix_in += iMix; } else { iMix_out += iMix; }
                 }
@@ -1170,7 +1182,7 @@ Calculate
             t_vol_t getZoneChange(bool in) noexcept {
                 t_vol_t zoneChange_in = 0 * si::cubic_meters / day;
                 t_vol_t zoneChange_out = 0 * si::cubic_meters / day;
-                for (int zetaID = 0; zetaID < zetasSize() - 1; ++zetaID) {
+                for (large_num zetaID = 0; zetaID < zetasSize() - 1; ++zetaID) {
                     t_vol_t zoneChange = calculateZoneChange(zetaID);
                     if (zoneChange.value() > 0) { zoneChange_in += zoneChange; } else { zoneChange_out += zoneChange; }
                 }
@@ -1303,7 +1315,7 @@ Calculate
                 zetas.push_back(applyFrontZetaLimits());
                 // add bottom zeta at node bottom
                 zetas.push_back(getBottom());
-                setZetas(zetas);
+                setZetas_direct(zetas);
             }
 
             /**
@@ -1311,7 +1323,7 @@ Calculate
              * @param zetaID
              * @param zeta the zeta surface height in meters
              */
-            void addZeta(int zetaID, t_meter zeta){
+            void addZeta(large_num zetaID, t_meter zeta){
                 NANChecker(zeta.value(), "zeta (in addZeta)");
                 if (zetaID == 0) {
                     LOG(userinfo) << "zetaID should not be 0 when adding zetas";
@@ -1332,8 +1344,8 @@ Calculate
                     throw "Zeta at back must be at the bottom of the node!";
                 }
 
-                setZetas(zetas);
-                setZetas_TZero(zetas); // give zetas before the iteration an initial value
+                setZetas_direct(zetas);
+                setZetas_TZero_direct(zetas); // give zetas before the iteration an initial value
             }
 
             void checkZetas() {
@@ -1362,12 +1374,25 @@ Calculate
              * @param zetaID zeta surface id in this node
              * @param zeta zeta surface height in meter
              */
-            void setZeta(int zetaID, const t_meter& zeta) {
+            void setZeta(large_num zetaID, const t_meter& zeta, bool setZetaTZero = false) {
                 NANChecker(zeta.value(), "zeta (in setZeta)");
                 auto zetas = getZetas();
                 if (0 < zetaID < zetasSize()-1) {
                     zetas[zetaID] = applyInnerZetaLimits(zetaID, zeta);
-                    setZetas(zetas);
+                    setZetas_direct(zetas);
+                    if (setZetaTZero) { setZetas_TZero_direct(zetas); }
+                } else {
+                    LOG(userinfo) << "zetaID too large in setZeta";
+                    throw "zetaID too large in setZeta";
+                }
+            }
+
+            void setZeta_direct(large_num zetaID, const t_meter& zeta) {
+                NANChecker(zeta.value(), "zeta (in setZeta)");
+                auto zetas = getZetas();
+                if (0 < zetaID < zetasSize()-1) {
+                    zetas[zetaID] = zeta;
+                    setZetas_direct(zetas);
                 } else {
                     LOG(userinfo) << "zetaID too large in setZeta";
                     throw "zetaID too large in setZeta";
@@ -1398,7 +1423,7 @@ Calculate
              * @param zeta zeta surface height in meter
              * @return the limited zeta surface height
              */
-            t_meter applyInnerZetaLimits(int zetaID, const t_meter& zeta) {
+            t_meter applyInnerZetaLimits(large_num zetaID, const t_meter& zeta) {
                 // all inner zetas (except the last one) are limited by
                 //  - the zeta height of the top and bottom zetas (in SWI2: lines 660-680)
                 //  - the height of the GHB of this node (can not be higher than GHB)
@@ -1406,45 +1431,64 @@ Calculate
                 if (getEffectivePorosity().value() == 0) { // no saline water is in node if the effective porosity is 0
                     return getBottom();
                 }
-
+                auto zeta_tmp = zeta;
                 auto zetas = getZetas();
-                // if attempting to set zeta below the lower zeta: set equal to lower zeta
-                if (zeta < zetas[zetaID + 1]) {
-                    return zetas[zetaID + 1];
-                }
-                // if attempting to set zeta above the higher zeta: set equal to higher zeta
-                if (zeta > zetas[zetaID - 1]) {
-                    return zetas[zetaID - 1];
-                }
 
+                // upper limit of zetas at the coast: the elevation of the ocean (= GHB elevation)
                 if (hasGHB()) {
                     auto ghbElevation = getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                    if (getBottom().value() < ghbElevation) {
-                        if (ghbElevation < zeta.value()) {
-                            return ghbElevation * si::meter;
+                    if (zetas.back().value() < ghbElevation and ghbElevation < zeta_tmp.value()) {
+                        zeta_tmp = ghbElevation * si::meter;
+                    }
+                } else {
+                    // upper limit of zetas inland (i.e., not at the coast): the highest neighbouring zeta
+                    // -> 1) find the highest neighbouring zeta
+                    t_meter max_neig_zeta = zetas.back(); // lower limit of the new height: the lowest zeta (= node bottom)
+                    t_meter neig_zeta;for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
+                        neig_zeta = at(neigNodeID)->getZeta(zetaID);
+                        if (neig_zeta > max_neig_zeta) {
+                            max_neig_zeta = neig_zeta;
                         }
                     }
+                    // -> 2) limit zeta
+                    if (zeta_tmp > max_neig_zeta) { zeta_tmp = max_neig_zeta; }
                 }
-                // if no limit applies, return zeta
-                return zeta;
+
+                // lower limit of the new height: the lowest zeta (= node bottom)
+                if (zeta_tmp < zetas.back() + getVDFLock()) {
+                    zeta_tmp = zetas.back();
+                }
+                // upper limit of the new height: the highest zeta (= node top or groundwater head)
+                if (zeta_tmp > zetas.front() - getVDFLock()) {
+                    zeta_tmp = zetas.front();
+                }
+                return zeta_tmp;
             }
 
             /**
              * @brief Deactivate density interfaces in node (set effective porosity to zero and interfaces to bottom)
              */
-            void deactivateZetas(){
+            /*void deactivateZetas(){
                 setEffectivePorosity(0 * si::si_dimensionless);
-                for (int zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
+                for (large_num zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
                     setZeta(zetaID, getBottom());
                 }
-            }
+            }*/
 
             /**
              * @brief Set density interfaces directly (without applying limits)
              * @param zetas vector of density interfaces
              */
-            void setZetas(const std::vector<t_meter>& zetas) { set<std::vector<t_meter>, Zetas>(zetas); }
+            void setZetas_direct(const std::vector<t_meter>& zetas) { set<std::vector<t_meter>, Zetas>(zetas); }
 
+            void limitZetas(bool limitZetasTZero = false) {
+                auto zetas = getZetas();
+                for (large_num zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
+                    zetas[zetaID] = applyInnerZetaLimits(zetaID, zetas[zetaID]);
+                }
+                setZetas_direct(zetas);
+                if (limitZetasTZero) { setZetas_TZero_direct(zetas); }
+            }
 
             /**
              * @brief Adjust zeta surfaces if they have crossed or their height difference is below a minimum value
@@ -1459,9 +1503,9 @@ Calculate
             void correctCrossingZetas(){
                 t_meter zetaAverage;
                 t_meter zetaSum;
-                int zetaID_above;
+                large_num zetaID_above;
                 int counter;
-                for (int zetaID = 1; zetaID < zetasSize() - 2; ++zetaID) {
+                for (large_num zetaID = 1; zetaID < zetasSize() - 2; ++zetaID) {
                     // if zeta surface is very close to or lower than the zeta surface that SHOULD be below
                     if (getZeta(zetaID) - getZeta(zetaID + 1) < getVDFLock()) {
                         // make the zeta height of both surfaces their average
@@ -1507,7 +1551,7 @@ Calculate
              * @param zetaID
              * @return meter
              */
-            t_meter getZeta(int zetaID) {
+            t_meter getZeta(large_num zetaID) {
                 auto zetas = getZetas();
                 if (zetaID < zetasSize()){
                     auto zeta = zetas[zetaID];
@@ -1522,7 +1566,7 @@ Calculate
 
             std::vector<t_meter> getZetas_TZero() { return get<std::vector<t_meter>, Zetas_TZero>();}
 
-            t_meter getZeta_TZero(int zetaID){
+            t_meter getZeta_TZero(large_num zetaID){
                 if (zetaID < get<std::vector<t_meter>, Zetas_TZero>().size()){
                     return get<std::vector<t_meter>, Zetas_TZero>()[zetaID];
                 } else {
@@ -1813,17 +1857,13 @@ Calculate
              * @return volume over time
              * @note The source zones of GHB and GWR are specified in config and/or in file, sink of GHB is the top zone
              */
-            t_vol_t getQ(int zetaID) noexcept {
-                int densityZone = zetaID; // the denity zone has the same ID as the zeta interface
+            t_vol_t getQ(large_num zetaID) noexcept {
+                large_num densityZone = zetaID; // the denity zone has the same ID as the zeta interface
                 t_vol_t ex = 0.0 * (si::cubic_meter / day);
                 t_vol_t Q = 0.0 * (si::cubic_meter / day);
 
                 auto eq_head = get<t_meter, EQHead>();
                 t_meter head = getHead(); // need the previous head
-                t_meter flowHeight;
-                t_meter bottomOfFlowInZone;
-                t_meter flowHeightInZone;
-                t_dim flowFractionOfZone;
                 t_vol_t recharge = 0 * si::cubic_meter / day;
                 if (hasTypeOfExternalFlow(RECHARGE)) {
                     recharge = getExternalFlowByName(RECHARGE).getRecharge();
@@ -1875,7 +1915,7 @@ Calculate
             t_dim getNusTop(){
                 auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                 t_dim out = nusInZones.front();
-                for (int zetaID = 1; zetaID < getZetas_TZero().size() - 1; zetaID++){
+                for (large_num zetaID = 1; zetaID < getZetas_TZero().size() - 1; zetaID++){
                     if (isZetaTZeroAtFront(zetaID) and getEffectivePorosity().value() > 0){
                         auto delnus = get<std::vector<t_dim>, Delnus>();
                         out += delnus[zetaID];
@@ -1892,7 +1932,7 @@ Calculate
             t_dim getNusBot(){
                 auto nusInZones = get<std::vector<t_dim>, NusInZones>();
                 t_dim out = nusInZones.back();
-                for (int zetaID = 1; zetaID < getZetas_TZero().size() - 1; zetaID++){
+                for (large_num zetaID = 1; zetaID < getZetas_TZero().size() - 1; zetaID++){
                     if (isZetaTZeroAtBottom(zetaID) and getEffectivePorosity().value() > 0){
                         auto delnus = get<std::vector<t_dim>, Delnus>();
                         out -= delnus[zetaID];
@@ -1906,11 +1946,11 @@ Calculate
              * @param zeta
              * @return bool
              */
-            bool isZetaAtElevation(const int& zetaID){
+            bool isZetaAtElevation(const large_num& zetaID){
                 return (getZeta(zetaID) >= getElevation() - getVDFLock());
             }
 
-            bool isZetaTZeroAtElevation(const int& zetaID){
+            bool isZetaTZeroAtElevation(const large_num& zetaID){
                 return ((getZeta_TZero(zetaID) >= getElevation() - getVDFLock()));
             }
 
@@ -1920,11 +1960,11 @@ Calculate
              * @param zeta
              * @return bool
              */
-            bool isZetaAtFront(const int& zetaID){
+            bool isZetaAtFront(const large_num& zetaID){
                 return (getZeta(zetaID) >= getZetas().front() - getVDFLock());
             }
 
-            bool isZetaTZeroAtFront(const int& zetaID){
+            bool isZetaTZeroAtFront(const large_num& zetaID){
                 return (getZeta_TZero(zetaID) >= getZetas_TZero().front() - getVDFLock());
             }
 
@@ -1933,7 +1973,7 @@ Calculate
              * @param zetaID density interface identifier
              * @return boolean
              */
-            bool isZetaAtBottom(const int& zetaID){
+            bool isZetaAtBottom(const large_num& zetaID){
                 return (getZeta(zetaID) <= getZetas().back() + getVDFLock());
             }
 
@@ -1942,7 +1982,7 @@ Calculate
              * @param zetaID density interface identifier
              * @return boolean
              */
-            bool isZetaTZeroAtBottom(const int& zetaID){
+            bool isZetaTZeroAtBottom(const large_num& zetaID){
                 return (getZeta_TZero(zetaID) <= getZetas_TZero().back() + getVDFLock());
             }
 
@@ -1951,7 +1991,7 @@ Calculate
              * @param zetaID density interface identifier
              * @return bool
              */
-            bool isZetaBetween(const int& zetaID){
+            bool isZetaBetween(const large_num& zetaID){
                 return (!isZetaAtFront(zetaID) and !isZetaAtBottom(zetaID));
             }
 
@@ -1960,7 +2000,7 @@ Calculate
              * @param zetaID density interface identifier
              * @return bool
              */
-            bool isZetaTZeroBetween(const int& zetaID){
+            bool isZetaTZeroBetween(const large_num& zetaID){
                 return (!isZetaTZeroAtFront(zetaID) and !isZetaTZeroAtBottom(zetaID));
             }
 
@@ -1969,7 +2009,7 @@ Calculate
              * @return bool
              */
             bool isAnyZetaActive(){
-                for (int zetaID = 0; zetaID < zetasSize(); ++zetaID){
+                for (large_num zetaID = 0; zetaID < zetasSize(); ++zetaID){
                     if (isZetaActive(zetaID)){ return true;}
                 }
                 return false;
@@ -1980,7 +2020,7 @@ Calculate
              * @param zetaID  density interface identifier
              * @return bool
              */
-            bool isZetaActive(int zetaID){
+            bool isZetaActive(large_num zetaID){
                 return (isZetaBetween(zetaID) and getEffectivePorosity().value() > 0);
             }
 
@@ -1989,7 +2029,7 @@ Calculate
              * @param zetaID  density interface identifier
              * @return bool
              */
-            bool isZetaInactive(int zetaID) {
+            bool isZetaInactive(large_num zetaID) {
                 return !isZetaActive(zetaID);
             }
 
@@ -1998,7 +2038,7 @@ Calculate
              * @param zetaID  density interface identifier
              * @return bool
              */
-            bool isZetaTZeroActive(int zetaID) {
+            bool isZetaTZeroActive(large_num zetaID) {
                 return (isZetaTZeroBetween(zetaID) and getEffectivePorosity().value() > 0);
             }
 
@@ -2007,7 +2047,7 @@ Calculate
              * @param zetaID  density interface identifier
              * @return bool
              */
-            bool isZetaTZeroInactive(int zetaID) {
+            bool isZetaTZeroInactive(large_num zetaID) {
                 return !isZetaTZeroActive(zetaID);
             }
 
@@ -2016,7 +2056,7 @@ Calculate
              * @param zetaID  density interface identifier
              * @return bool
              */
-            bool isZetaOutput(int zetaID){
+            bool isZetaOutput(large_num zetaID){
                 return (!isZetaAtBottom(zetaID) and getEffectivePorosity().value() > 0);
             }
 
@@ -2027,7 +2067,7 @@ Calculate
              * @note like G in SWI2 doc, but without vertical leakage; in SWI2 code: lines 3523-3569
              * G = RHS (of flow, for constant density) - HCOF_(i,j,k,n)*h^(m)_(i,j,k) + (verticalLeakage_(i,j,k-1,n) - verticalLeakage_(i,j,k,n))
              */
-            /*t_vol_t getSources(int zetaID){
+            /*t_vol_t getSources(large_num zetaID){
                 // We use the following sink/source concept:
                 //  - the source zones of GHB and GWR are specified in config and/or in file, sink of GHB is the top zone
                 //  - the source/sink zone of SWBs depend on interface heights
@@ -2044,7 +2084,7 @@ Calculate
                 return sources;
             }*/
 
-            t_dim getZoneFraction(int zetaID) {
+            t_dim getZoneFraction(large_num zetaID) {
                 if (zetaID >= getZetas_TZero().size() -1) {
                     LOG(userinfo) << "getZoneFraction(): zetaID too high";
                     throw "getZoneFraction(): zetaID too high";
@@ -2060,7 +2100,7 @@ Calculate
              * @return cubic meters per time
              * @note in SWI2 code lines 3574-3635, using SSWI2_SD and SSWI2_SR)
              */
-            t_vol_t getPseudoSourceBelowZeta(int zetaID) {
+            t_vol_t getPseudoSourceBelowZeta(large_num zetaID) {
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
@@ -2081,7 +2121,7 @@ Calculate
                         //LOG(debug) << "head_part (pseudo source): " << head_part.value() << std::endl;
 
                         t_s_meter_t zoneCondCumDelnus;
-                        for (int zetaID_delnus = 0; zetaID_delnus < getZetas_TZero().size() - 1; zetaID_delnus++) {
+                        for (large_num zetaID_delnus = 0; zetaID_delnus < getZetas_TZero().size() - 1; zetaID_delnus++) {
                             //%% delnus part %%
                             if (zetaID_delnus < zetaID) {
                                 zoneCondCumDelnus = zoneCondCum;
@@ -2100,14 +2140,14 @@ Calculate
 
                 // add pseudo-source from GHB
                 // (can be flow into or out of node, depends on the zeta height above the zone where GHB flows into)
-                if (hasGHB() and getSourceZoneGHB() == zetaID) { // zoneID is the same as the zetaID
+                /*if (hasGHB() and getSourceZoneGHB() == zetaID) { // zoneID is the same as the zetaID
                     auto ghbElevation = externalFlows.at(GENERAL_HEAD_BOUNDARY).getFlowHead();
-                    auto ghbCondcutance = externalFlows.at(GENERAL_HEAD_BOUNDARY).getConductance();
+                    auto ghbConductance = externalFlows.at(GENERAL_HEAD_BOUNDARY).getConductance();
                     auto ghbZetaID = getSourceZoneGHB();
 
-                    t_vol_t pseudoSourceGHB = delnus[zetaID] * ghbCondcutance * (ghbElevation - getZeta_TZero(zetaID));
+                    t_vol_t pseudoSourceGHB = delnus[zetaID] * ghbConductance * (ghbElevation - getZeta_TZero(zetaID));
                     out -= pseudoSourceGHB;
-                }
+                }*/
                 NANChecker(out.value(), "getPseudoSourceBelowZeta");
                 return out;
             }
@@ -2118,7 +2158,7 @@ Calculate
              * @param zetaID zeta surface id in this node
              * @return cubic meters per time
              */
-            t_vol_t getFluxHorizontal(NeighbourPosition neigPos, large_num neigNodeID, int zetaID){
+            t_vol_t getFluxHorizontal(NeighbourPosition neigPos, large_num neigNodeID, large_num zetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
 
@@ -2136,7 +2176,7 @@ Calculate
 
                 // %%delnus part %%
                 t_s_meter_t zoneCondCumDelnus;
-                for (int zetaID_delnus = 0; zetaID_delnus < getZetas_TZero().size() - 1; zetaID_delnus++) {
+                for (large_num zetaID_delnus = 0; zetaID_delnus < getZetas_TZero().size() - 1; zetaID_delnus++) {
                     if (zetaID_delnus <= zetaID){
                         zoneCondCumDelnus = zoneCondCum;
                     } else {
@@ -2156,7 +2196,7 @@ Calculate
              * @return cubic meters per time
              * @note adapted from SWI2 code lines 3637-3703 (includes usage of SSWI2_QR and SSWI2_QC)
              */
-            t_vol_t getTipToeFlow(int zetaID){
+            t_vol_t getTipToeFlow(large_num zetaID){
                 t_vol_t out = 0.0 * (si::cubic_meter / day);
 
                 t_meter zeta_neig;
@@ -2241,7 +2281,7 @@ Calculate
                 t_meter zoneThickness;
                 t_meter deltaZeta;
                 t_meter deltaZeta_neig;
-                for (int zetaID = 0; zetaID < zetas.size() - 1; zetaID++) {
+                for (large_num zetaID = 0; zetaID < zetas.size() - 1; zetaID++) {
                     deltaZeta = zetas[zetaID] - zetas[zetaID + 1];
                     deltaZeta_neig = zetas_neig[zetaID] - zetas_neig[zetaID + 1];
                     //LOG(debug) << "nodeID: " << getID() << ", zetas[" << zetaID << "]: " << zetas[zetaID].value() <<
@@ -2270,7 +2310,7 @@ Calculate
              * @param zoneConductances density zone conductances
              * @return square meter per time
              */
-            static t_s_meter_t getZoneConductanceCum(int zetaID, std::vector<t_s_meter_t> zoneConductances) {
+            static t_s_meter_t getZoneConductanceCum(large_num zetaID, std::vector<t_s_meter_t> zoneConductances) {
                 // calculate the sum of density zone conductances below a zeta surface n and add to vector out
                 t_s_meter_t out = 0 * si::square_meter / day;
 
@@ -2300,7 +2340,7 @@ Calculate
                                                                                         at(neigNodeID)->getZetas_TZero());
                         std::vector<t_s_meter_t> zoneConductances = getZoneConductances(neigPos, neigNodeID,
                                                                                         zoneThicknesses);
-                        for (int zetaID = 0; zetaID < zetasSize() - 1; zetaID++) {
+                        for (large_num zetaID = 0; zetaID < zetasSize() - 1; zetaID++) {
                             t_s_meter_t zoneConductanceCum = getZoneConductanceCum(zetaID, zoneConductances);
                             //LOG(debug) << "zoneConductanceCum: " << zoneConductanceCum.value();
                             t_vol_t pseudoSource = delnus[zetaID] * zoneConductanceCum *
@@ -2312,14 +2352,14 @@ Calculate
                 }
 
                 // not in SWI2: add pseudo-source from GHB
-                if (hasGHB()) {
+                /*if (hasGHB()) {
                     auto ghbElevation = externalFlows.at(GENERAL_HEAD_BOUNDARY).getFlowHead();
                     auto ghbCondcutance = externalFlows.at(GENERAL_HEAD_BOUNDARY).getConductance();
                     // get the zetaID at the top of the density zone into which GHB flows
                     auto ghbZetaID = getSourceZoneGHB(); // zetaID = id of zone below
                     t_vol_t pseudoSourceGHB = delnus[ghbZetaID] * ghbCondcutance * (ghbElevation - getZeta(ghbZetaID));
                     out -= pseudoSourceGHB;
-                }
+                }*/
                 return out;
             }
 
@@ -2336,7 +2376,7 @@ Calculate
                 if (neighbours.find(TOP) != neighbours.end()){ //Current node has a top node
                     large_num topNodeID = neighbours[TOP];
                     // first part of the flux correction term
-                    for (int zetaID = 0; zetaID < getZetas_TZero().size() - 1; zetaID++){
+                    for (large_num zetaID = 0; zetaID < getZetas_TZero().size() - 1; zetaID++){
                         headdiff -= nusInZones[zetaID] *
                                     (at(topNodeID)->getZeta_TZero(zetaID + 1) - at(topNodeID)->getZeta_TZero(zetaID));
                         // Note: in SWI2 documentation is, BOUY is calculated by adding headdiff (would be out +=),
@@ -2416,32 +2456,17 @@ Calculate
                 // update the first zeta surface
                 auto zetas = getZetas();
                 zetas[0] = frontZeta;
-                setZetas(zetas);
+                setZetas_direct(zetas);
                 // update all other zeta surfaces if they are ABOVE the new height of the first zeta surface
-                for (int zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
-                    if (getZeta(zetaID) > frontZeta) {
-                        setZeta(zetaID, frontZeta);
-                    }
-                }
+                bool limitZetasTZero{true};
+                limitZetas(limitZetasTZero);
             }
 
             /**
              * @brief save the density interfaces from previous time step
              * @param zetas vector of density interface heights
              */
-            void setZetas_TZero(std::vector<t_meter> zetas) { set<std::vector<t_meter>, Zetas_TZero>(zetas); };
-
-            void setZeta_TZero(int zetaID, const t_meter& zetaTZero) {
-                NANChecker(zetaTZero.value(), "zetaTZero (in setZeta_TZero)");
-                auto zetasTZero = getZetas_TZero();
-                if (0 < zetaID < zetasTZero.size()-1) {
-                    zetasTZero[zetaID] = applyInnerZetaLimits(zetaID, zetaTZero);
-                    setZetas_TZero(zetasTZero);
-                } else {
-                    LOG(userinfo) << "zetaID too large in setZeta_TZero";
-                    throw "zetaID too large in setZeta_TZero";
-                }
-            };
+            void setZetas_TZero_direct(std::vector<t_meter>& zetas) { set<std::vector<t_meter>, Zetas_TZero>(zetas); };
 
             /**
              * @brief Vertical movement of zeta surfaces through top of this node. This function is required to move a
@@ -2467,7 +2492,7 @@ Calculate
                     if (get<t_meter, Head>() >= getBottom() and
                         getAt<t_meter, Head>(topNodeID) >= at(topNodeID)->getBottom()) {
 
-                        for (int zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
+                        for (large_num zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
                             // zeta only moves through the top of a node if there is a ZETA surface
                             // - at the top of the current node (in SWI2: IPLPOS_(i,j,k,n) = 1)
                             // - AND at the bottom of the top node (in SWI2: IPLPOS_(i,j,k-1,n) = 2)
@@ -2509,7 +2534,7 @@ Calculate
                 t_meter zeta_neig;
                 if (getHead() < getBottom()) { return; }
 
-                for (int zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
+                for (large_num zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
                     if (isZetaActive(zetaID)) {
                         for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                             if (at(neigNodeID)->isZetaInactive(zetaID)) {
@@ -2619,7 +2644,7 @@ Calculate
              * @note in SWI2 code: SSWI2_ZETACLIP
              */
             void clipInnerZetas() {
-                for (int zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
+                for (large_num zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
                     if (isZetaActive(zetaID)) {
                         if (getZeta(zetaID) < getZetas().back()) { setZeta(zetaID, getZetas().back()); }
                         if (getZeta(zetaID) > getZetas().front()) { setZeta(zetaID, getZetas().front()); }
@@ -2642,7 +2667,7 @@ Calculate
                 t_meter zeta_neig;
                 t_meter zeta_self_new;
                 t_meter zeta_neig_new;
-                for (int zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
+                for (large_num zetaID = 1; zetaID < zetasSize() - 1; zetaID++) {
                     if (isZetaInactive(zetaID) and getEffectivePorosity().value() > 0) {
                         // iterate through horizontal neighbours
                         for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
@@ -2791,8 +2816,8 @@ Calculate
              * @return volume over time
              * @note The source zones of GHB and GWR are specified in config and/or in file, sink of GHB is the top zone
              */
-            t_s_meter_t getP_aboveFlowBottom(int zetaID) noexcept {
-                int densityZone = zetaID; // the denity zone has the same ID as the zeta interface
+            t_s_meter_t getP_aboveFlowBottom(large_num zetaID) noexcept {
+                large_num densityZone = zetaID; // the density zone has the same ID as the zeta interface
                 t_s_meter_t ex = 0.0 * (si::square_meter / day);
                 t_s_meter_t P = 0.0 * (si::square_meter / day);
 
@@ -2826,7 +2851,7 @@ Calculate
             }
 
 
-            /*double getFlowFractionOfZone(int zetaID, ExternalFlow extFlow) {
+            /*double getFlowFractionOfZone(large_num zetaID, ExternalFlow extFlow) {
                 t_meter bottomOfFlowInZone;
                 t_meter flowHeightInZone;
 
@@ -2951,7 +2976,7 @@ Calculate
              * @param zetaID zeta surface id in this node
              * @return map <CellID,Conductance>
              */
-            std::unordered_map<large_num, t_s_meter_t> getMatrixEntries(int zetaID) {
+            std::unordered_map<large_num, t_s_meter_t> getMatrixEntries(large_num zetaID) {
                 std::unordered_map<large_num, t_s_meter_t> out;
                 out.reserve(horizontal_neighbours.size()+1);
                 auto delnus = get<std::vector<t_dim>, Delnus>();
@@ -2961,7 +2986,10 @@ Calculate
                 std::vector<t_meter> zoneThicknesses;
 
                 // if this zeta interface is not active: return directly
-                if (isZetaInactive(zetaID)){ return out; }
+                if (isZetaInactive(zetaID)){
+                    LOG(userinfo) << "Asking for matrix entry at inactive zeta, causing matrix row of zeros, and unsolvable equation";
+                    throw "Asking for matrix entry at inactive zeta, causing matrix row of zeros, and unsolvable equation";
+                }
 
                 for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     zetaMovementConductance = 0 * (si::square_meter / day);
@@ -2974,7 +3002,9 @@ Calculate
                         zetaMovementConductance += delnus[zetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
-                        out[neigNodeID] = zetaMovementConductance;
+                        //if (std::abs(zetaMovementConductance.value()) > 1e-20) {
+                            out[neigNodeID] = zetaMovementConductance;
+                        //}
                     }
                 }
 
@@ -3028,7 +3058,7 @@ Calculate
              * @param zetaID zeta surface id in this node
              * @return cubic meters per time
              */
-            t_vol_t getRHS(int zetaID){
+            t_vol_t getRHS(large_num zetaID){
                 t_vol_t out = 0 * si::cubic_meter / day;
                 if (isZetaTZeroInactive(zetaID)) { return out; } // (line 3571)
 
@@ -3053,7 +3083,7 @@ Calculate
                 //LOG(debug) << "tipToeFlow: " << tipToeFlow.value();
 
                 out = - porosityTerm + pseudoSourceBelowZeta + externalFlow + storageChange + tipToeFlow;
-                NANChecker(out.value(), "getRHS(int zetaID)");
+                NANChecker(out.value(), "getRHS(large_num zetaID)");
                 return out;
             }
 

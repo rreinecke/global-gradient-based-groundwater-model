@@ -329,6 +329,7 @@ namespace GlobalFlow {
             double ghbLength{0};
             double ghbDistance{0};
             double ghbVerticalSize{0};
+            double conductivity_of_clay = pow(10,-11) * 24 * 60 * 60; // = 8.64e-7 m/day
 
             std::vector<Model::NeighbourPosition> neigPos_LRFB;
             std::unordered_map<Model::NeighbourPosition, large_num> horizontal_neighbours;
@@ -366,10 +367,11 @@ namespace GlobalFlow {
                         }
                     }
                 }
-                ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value();
+                ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value() -
+                                    (nodes->at(nodeID)->getElevation().value() - elevation);
 
-                if (conductivity < 1e-11) {
-                    conductivity = 1e-11; // set conductivity to a min of 1e-11 m/day
+                if (conductivity < conductivity_of_clay) {
+                    conductivity = conductivity_of_clay;
                 }
                 conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance; // m/day to m^2/day
 
@@ -466,13 +468,13 @@ namespace GlobalFlow {
             in.read_header(io::ignore_no_column, "spatID", "Head", "Bottom", "Conduct");
             large_num spatID{0};
             double head{0};
-            double conduct{0};
+            double conductance{0};
             double bottom{0};
             large_num nodeID;
             int layer{0};
 
             int i{0};
-            while (in.read_row(spatID, head, bottom, conduct)) {
+            while (in.read_row(spatID, head, bottom, conductance)) {
                 try {
                     nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                 }
@@ -482,7 +484,7 @@ namespace GlobalFlow {
                 }
                 nodes->at(nodeID)->addExternalFlow(Model::RIVER,
                                                    head * Model::si::meter,
-                                                   conduct,
+                                                   conductance,
                                                    bottom * Model::si::meter);
                 i++;
             }
@@ -690,9 +692,8 @@ namespace GlobalFlow {
             int layer{0};
             double conductivity{0};
             large_num nodeID{0};
-            //double threshold{1e-11}; // todo debug Equation: make preconditioner run with threshold (or delete such nodes)
+            double conductivity_of_clay = pow(10,-11) * 24 * 60 * 60; // = 8.64e-7 m/day
             int i{0};
-            int j{0};
             while (in.read_row(spatID, layer, conductivity)) {
                 try {
                     nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
@@ -701,8 +702,8 @@ namespace GlobalFlow {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                if (conductivity < 1e-11){
-                    conductivity = 1e-11;
+                if (conductivity < conductivity_of_clay){
+                    conductivity = conductivity_of_clay;
                 }
                 nodes->at(nodeID)->setK_allLayers(conductivity * (Model::si::meter / Model::day));
 
@@ -791,9 +792,9 @@ namespace GlobalFlow {
                 if (riverConductance <= 1) { riverConductance = 1; } // river conductance is at least 1
 
                 nodes->at(nodeID)->addExternalFlow(Model::RIVER_MM,
-                                                          riverElevation * Model::si::meter,
-                                                          riverConductance,
-                                                          riverBottom * Model::si::meter);
+                                                   riverElevation * Model::si::meter,
+                                                   riverConductance,
+                                                   riverBottom * Model::si::meter);
                 //LOG(debug) << "nodeID = " << nodeID << ", conduct = " << conduct << ", bottom = " <<
                 //              riverBottom << ", riverElevation = " << riverElevation;
                 //LOG(debug) << "K = " << K << ", length = " << length << ", width = " << width << ", bankfull_depth = "
@@ -853,7 +854,7 @@ namespace GlobalFlow {
                     }
 
                     double flowElevation = elevation;
-                    double bottom = elevation;
+                    double bottom = flowElevation;
                     double K_s = nodes->at(nodeID)->getK().value();
                     if (itter == 1) {
                         //global wetlands
@@ -872,14 +873,14 @@ namespace GlobalFlow {
                         //Global LAKE
                         //nodes->at(i)->removeExternalFlow(Model::RIVER_MM);
                         //flowElevation -= 10;
-                        bottom -= 100;
+                        bottom = flowElevation - 100;
                         nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_LAKE,
                                                            flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     } else if (itter == 1) {
                         //Global WETLANDS
-                        bottom -= 2;
+                        bottom = flowElevation - 2;
                         nodes->at(nodeID)->addExternalFlow(Model::GLOBAL_WETLAND,
                                                            flowElevation * Model::si::meter,
                                                            conduct,
@@ -887,14 +888,14 @@ namespace GlobalFlow {
                     } else if (itter == 2) {
                         //Local LAKE
                         //flowElevation -= 10;
-                        bottom -= 10;
+                        bottom = flowElevation - 10;
                         nodes->at(nodeID)->addExternalFlow(Model::LAKE,
                                                            flowElevation * Model::si::meter,
                                                            conduct,
                                                            bottom * Model::si::meter);
                     } else {
                         //Local WETLANDS
-                        bottom -= 2;
+                        bottom = flowElevation - 2;
                         nodes->at(nodeID)->addExternalFlow(Model::WETLAND,
                                                            flowElevation * Model::si::meter,
                                                            conduct,
@@ -996,7 +997,7 @@ namespace GlobalFlow {
                 large_num spatID{0};
                 large_num nodeID;
                 double zeta{0};
-
+                bool setZetaTZero{true};
                 // loop through layers
                 for (int layer = 0; layer < numberOfLayers; ++layer) {
                     io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> inZetas(path);
@@ -1009,8 +1010,7 @@ namespace GlobalFlow {
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter);
-                        nodes->at(nodeID)->setZeta_TZero(zetaID, zeta * Model::si::meter);
+                        nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter, setZetaTZero);
                     }
                 }
             });
@@ -1019,9 +1019,9 @@ namespace GlobalFlow {
 
         void readEffectivePorosity(std::string path) {
             readTwoColumns(path, [this](double data, int nodeID) {
-                // snap very low porosity values to 0
-                if (data < 1e-3){ data = 0; }
-                nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
+                // snap low porosity values to 0
+                if (data < 1e-2){ data = 0; }
+                nodes->at(nodeID)->setEffectivePorosity(0.2 * Model::si::si_dimensionless);
             });
         };
     };
