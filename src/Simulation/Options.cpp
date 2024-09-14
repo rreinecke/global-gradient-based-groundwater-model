@@ -90,7 +90,7 @@ namespace GlobalFlow {
             specificstorage_from_file = data_config.get<bool>("specific_storage_from_file");
             specificyield_from_file = data_config.get<bool>("specific_yield_from_file");
             k_river_from_file = data_config.get<bool>("k_river_from_file");
-            aquifer_depth_from_file = data_config.get<bool>("aquifer_depth_from_file");
+            vertical_size_as_array = data_config.get<bool>("vertical_size_as_array");
             eq_wtd_from_file = data_config.get<bool>("eq_wtd_from_file");
             initial_head_from_file = data_config.get<bool>("initial_head_from_file");
             effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
@@ -102,7 +102,7 @@ namespace GlobalFlow {
             GHB_K = default_data.get<double>("ghb_K");
             RIVER_CONDUCTIVITY = default_data.get<double>("river_conductivity");
             SWB_ELEVATION_FACTOR = default_data.get<double>("swb_elevation_factor");
-            AQUIFER_DEPTH = getTypeArray<int>("aquifer_thickness", default_data);
+            VERTICAL_SIZES = getTypeArray<double>("vertical_size", default_data);
 
             ANISOTROPY = getTypeArray<double>("anisotropy", default_data);
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
@@ -122,42 +122,45 @@ namespace GlobalFlow {
 
             pt::ptree data = input.get_child("data");
 
-            bool efoldAsArray = data_config.get<bool>("efold_as_array");
-            if (efoldAsArray){
+            efold_as_array = data_config.get<bool>("efold_as_array");
+            if (efold_as_array){
                 EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));
             }
-            EFOLDING = getOptional("e-folding", data);
+            EFOLDING_DIR = getOptional("e-folding", data);
 
-            INITIAL_ZETAS_AS_ARRAY = data_config.get<bool>("initial_zetas_as_array");
-            if (INITIAL_ZETAS_AS_ARRAY){
+            initial_zetas_as_array = data_config.get<bool>("initial_zetas_as_array");
+            if (initial_zetas_as_array){
                 INITIAL_ZETAS_a = getArray("Zetas", data.get_child("zetas"));
             }
-            INITIAL_ZETAS = getOptional("zetas", data);
+            INITIAL_ZETAS_DIR = getOptional("zetas", data);
 
-            ELEVATION = getOptional("elevation", data);
-            EQUAL_WATER_TABLE_DEPTH = getOptional("equal_water_table_depth", data);
-            RIVER_ELEVATION = getOptional("river_elevation", data);
+            vertical_size_as_array = data_config.get<bool>("vertical_size_as_array");
+            if (vertical_size_as_array){
+                VERTICAL_SIZE_a = getArray("VerticalSize", data.get_child("vertical_size"));
+            }
+            VERTICAL_SIZE_DIR = getOptional("vertical_size", data);
 
-            LITHOLOGY = getOptional("lithology", data);
-            RECHARGE = getOptional("recharge", data);
+            ELEVATION_FILE = getOptional("elevation", data);
+            EQUAL_WATER_TABLE_DEPTH_FILE = getOptional("equal_water_table_depth", data);
+            RIVER_ELEVATION_FILE = getOptional("river_elevation", data);
+
+            LITHOLOGY_FILE = getOptional("lithology", data);
+            RECHARGE_FILE = getOptional("recharge", data);
             ZONES_SOURCES_FILE = getOptional("zones_sources", data);
-            RIVER = getOptional("river_extent", data);
-            GLOBAL_WETLANDS = getOptional("global_wetlands", data);
-            GLOBAL_LAKES = getOptional("global_lakes", data);
-            LOCAL_LAKES = getOptional("local_lakes", data);
-            LOCAL_WETLANDS = getOptional("local_wetlands", data);
+            RIVER_FILE = getOptional("river_extent", data);
+            GLOBAL_WETLANDS_FILE = getOptional("global_wetlands", data);
+            GLOBAL_LAKES_FILE = getOptional("global_lakes", data);
+            LOCAL_LAKES_FILE = getOptional("local_lakes", data);
+            LOCAL_WETLANDS_FILE = getOptional("local_wetlands", data);
 
             //Optional
-            K_DIR = getOptional("conductance", data);
-            RIVER_K = getOptional("river_conductance", data);
-            GHB_DIR = getOptional("ghb", data);
+            K_FILE = getOptional("conductance", data);
+            RIVER_K_FILE = getOptional("river_conductance", data);
+            GHB_FILE = getOptional("ghb", data);
             SS_FILE = getOptional("specific_storage", data);
             SY_FILE = getOptional("specific_yield", data);
-            AQ_DEPTH = getOptional("aquifer_depth", data);
 
             INITIAL_HEAD_FILE = getOptional("initial_head", data);
-
-            INITIAL_ZONES = getOptional("initial_zones", data);
 
             EFFECTIVE_POROSITY_FILE = getOptional("effective_porosity", data);
 

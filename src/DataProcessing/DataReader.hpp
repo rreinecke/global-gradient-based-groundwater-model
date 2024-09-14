@@ -237,7 +237,7 @@ namespace GlobalFlow {
                      int numberOfLayers,
                      double defaultK,
                      double initialHead,
-                     double aquiferDepth,
+                     double verticalSize,
                      double anisotropy,
                      double specificYield,
                      double specificStorage,
@@ -282,7 +282,7 @@ namespace GlobalFlow {
                                                             nodeID,
                                                             defaultK * (Model::si::meter / Model::day),
                                                             initialHead * Model::si::meter,
-                                                            aquiferDepth,
+                                                            verticalSize,
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage,
@@ -369,6 +369,7 @@ namespace GlobalFlow {
                 }
                 ghbVerticalSize = nodes->at(nodeID)->getVerticalSize().value() -
                                     (nodes->at(nodeID)->getElevation().value() - elevation);
+                if (ghbVerticalSize < 0) { ghbVerticalSize = 0; }
 
                 if (conductivity < conductivity_of_clay) {
                     conductivity = conductivity_of_clay;
@@ -968,6 +969,42 @@ namespace GlobalFlow {
                 i++;
             }
             LOG(debug) << "    ... for " << i << " nodes";
+        };
+
+        /**
+         * @brief Read elevation data from a specified path
+         * Used for multiple files
+         * @note !Uses setElevation() function. Should only be called after all layers are build
+         * as it affects layers below
+         * @param path Where to read the file from
+         * @param files If different files for different regions are given
+         */
+        void readVerticalSize(std::string path, std::vector<std::string> files) {
+            loopFiles(path, files, [this](std::string path) {
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+                in.read_header(io::ignore_no_column, "spatID", "layer", "vertical_size");
+                large_num spatID{0};
+                int layer{0};
+                double vertical_size{0};
+                large_num nodeID;
+
+                int i{0};
+                while (in.read_row(spatID, layer, vertical_size)) {
+                    try {
+                        nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
+                    }
+                    catch (const std::out_of_range &ex) {
+                        //if Node does not exist ignore entry
+                        continue;
+                    }
+                    if (vertical_size < 1) {
+                        vertical_size = 1;
+                    }
+                    nodes->at(nodeID)->setVerticalSize(vertical_size * Model::si::meter);
+                    i++;
+                }
+                LOG(debug) << "    ... for " << i << " nodes";
+            });
         };
 
         void setDefaultZetas(large_num numberOfZones) {

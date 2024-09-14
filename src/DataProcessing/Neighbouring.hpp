@@ -98,7 +98,7 @@ void
 buildBottomLayers(NodeVector nodes,
                   int layers,
                   std::vector<bool> confined,
-                  std::vector<int> aquifer_depth,
+                  std::vector<double> aquifer_depth,
                   std::vector<double> conductances,
                   std::vector<double> anisotropies);
 }

@@ -30,36 +30,33 @@ namespace GlobalFlow {
         class Options {
 
             //++Input data++//
-            std::vector<std::string> ELEVATION_a;
             std::vector<std::string> EFOLDING_a;
             std::vector<std::string> EQUAL_WATER_TABLE_DEPTH_a;
             std::vector<std::string> RIVER_ELEVATION_a;
             std::vector<std::string> INITIAL_ZETAS_a;
+            std::vector<std::string> VERTICAL_SIZE_a;
 
-            std::string ELEVATION{""};
-            std::string EFOLDING{""};
-            std::string EQUAL_WATER_TABLE_DEPTH{""};
-            std::string RIVER_ELEVATION{""};
-            std::string INITIAL_ZETAS{""};
+            std::string EFOLDING_DIR{""};
+            std::string INITIAL_ZETAS_DIR{""};
+            std::string VERTICAL_SIZE_DIR{""};
 
-            std::string RECHARGE{""};
+            std::string RIVER_ELEVATION_FILE{""};
+            std::string ELEVATION_FILE{""};
+            std::string EQUAL_WATER_TABLE_DEPTH_FILE{""};
+            std::string RECHARGE_FILE{""};
             std::string ZONES_SOURCES_FILE{""};
-            std::string PSEUDO_SOURCE_FLOW{""};
-            std::string LITHOLOGY{""};
-            std::string RIVER{""};
-            std::string GLOBAL_LAKES{""};
-            std::string GLOBAL_WETLANDS{""};
-            std::string LOCAL_LAKES{""};
-            std::string LOCAL_WETLANDS{""};
-            std::string K_DIR{""};
-            std::string RIVER_K{""};
-            std::string GHB_DIR{""};
+            std::string LITHOLOGY_FILE{""};
+            std::string RIVER_FILE{""};
+            std::string GLOBAL_LAKES_FILE{""};
+            std::string GLOBAL_WETLANDS_FILE{""};
+            std::string LOCAL_LAKES_FILE{""};
+            std::string LOCAL_WETLANDS_FILE{""};
+            std::string K_FILE{""};
+            std::string RIVER_K_FILE{""};
+            std::string GHB_FILE{""};
             std::string SS_FILE{""};
             std::string SY_FILE{""};
-            std::string AQ_DEPTH{""};
             std::string INITIAL_HEAD_FILE{""};
-            std::string INITIAL_ZETAS_FILE{""};
-            std::string INITIAL_ZONES{""};
             std::string EFFECTIVE_POROSITY_FILE{""};
 
             //++Special mappings++//
@@ -94,7 +91,7 @@ namespace GlobalFlow {
             double GHB_K{0.1};
             double RIVER_CONDUCTIVITY{10.0};
             double SWB_ELEVATION_FACTOR{0.8};
-            std::vector<int> AQUIFER_DEPTH{100};
+            std::vector<double> VERTICAL_SIZES{100};
             std::vector<double> ANISOTROPY{10};
             double SPECIFIC_YIELD{0.15};
             double SPECIFIC_STORAGE{0.000015};
@@ -117,13 +114,15 @@ namespace GlobalFlow {
             bool ghb_from_file{false};
             bool specificstorage_from_file{false};
             bool specificyield_from_file{false};
-            bool INITIAL_ZETAS_AS_ARRAY{false};
             bool k_river_from_file{false};
-            bool aquifer_depth_from_file{false};
             bool eq_wtd_from_file{false};
             bool initial_head_from_file{false};
             bool effective_porosity_from_file{false};
             bool zones_sources_from_file{false};
+
+            bool vertical_size_as_array{false};
+            bool initial_zetas_as_array{false};
+            bool efold_as_array{false};
 
             bool IS_GLOBAL{false};
             double MAX_HEAD_CHANGE{0.01};
@@ -197,7 +196,7 @@ namespace GlobalFlow {
 
             bool isKRiverFromFile() { return k_river_from_file; }
 
-            bool isAquiferDepthFile() { return aquifer_depth_from_file; }
+            bool isVerticalSizeAsArray() { return vertical_size_as_array; }
 
             bool isEqWTDFromFile() { return eq_wtd_from_file;}
 
@@ -207,19 +206,17 @@ namespace GlobalFlow {
 
             bool isZonesSourcesFromFile() { return zones_sources_from_file;}
 
-            bool isInitialZetasAsArray(){ return INITIAL_ZETAS_AS_ARRAY; }
+            bool isInitialZetasAsArray(){ return initial_zetas_as_array; }
 
-            std::string getKDir() { return K_DIR; }
+            std::string getKDir() { return K_FILE; }
 
-            std::string getKRiver() { return RIVER_K; }
+            std::string getKRiver() { return RIVER_K_FILE; }
 
-            std::string getGHBDir() { return GHB_DIR; }
+            std::string getGHBDir() { return GHB_FILE; }
 
             std::string getSSDir() { return SS_FILE; }
 
             std::string getSYDir() { return SY_FILE; }
-
-            std::string getAQDepthDir() { return AQ_DEPTH; }
 
             std::string getInitialHeadsDir() {return INITIAL_HEAD_FILE;}
 
@@ -325,31 +322,31 @@ namespace GlobalFlow {
 
             std::string
             getElevation() {
-                return ELEVATION;
+                return ELEVATION_FILE;
             }
 
             std::string
             getEfolding() {
-                return EFOLDING;
+                return EFOLDING_DIR;
             }
 
             std::string
             getEqWTD() {
-                return EQUAL_WATER_TABLE_DEPTH;
+                return EQUAL_WATER_TABLE_DEPTH_FILE;
             }
 
             std::string
-            getInitialZetas() {
-                return INITIAL_ZETAS;
+            getInitialZetasDir() {
+                return INITIAL_ZETAS_DIR;
             }
 
             std::string getRiverElevation() {
-                return RIVER_ELEVATION;
+                return RIVER_ELEVATION_FILE;
             }
 
             std::vector<std::string>
-            getElevation_A() {
-                return ELEVATION_a;
+            getVerticalSize_a() {
+                return VERTICAL_SIZE_a;
             }
 
             std::vector<std::string>
@@ -374,42 +371,42 @@ namespace GlobalFlow {
 
             std::string
             getRecharge() {
-                return RECHARGE;
+                return RECHARGE_FILE;
             }
 
             std::string
-            getZonesOfSourcesDir() {
-                return ZONES_SOURCES_FILE;
+            getVerticalSizeDir() {
+                return VERTICAL_SIZE_DIR;
             }
 
             std::string
             getLithology() {
-                return LITHOLOGY;
+                return LITHOLOGY_FILE;
             }
 
             std::string
             getRiverExtent() {
-                return RIVER;
+                return RIVER_FILE;
             }
 
             std::string
             getGlobalLakes() {
-                return GLOBAL_LAKES;
+                return GLOBAL_LAKES_FILE;
             }
 
             std::string
             getGlobalWetlands() {
-                return GLOBAL_WETLANDS;
+                return GLOBAL_WETLANDS_FILE;
             }
 
             std::string
             getLocalLakes() {
-                return LOCAL_LAKES;
+                return LOCAL_LAKES_FILE;
             }
 
             std::string
             getLocalWetlands() {
-                return LOCAL_WETLANDS;
+                return LOCAL_WETLANDS_FILE;
             }
 
             std::string
@@ -454,9 +451,9 @@ namespace GlobalFlow {
 
             double getSWBElevationFactor() { return SWB_ELEVATION_FACTOR; }
 
-            std::vector<int>
-            getAquiferDepth() {
-                return AQUIFER_DEPTH;
+            std::vector<double>
+            getVerticalSizes() {
+                return VERTICAL_SIZES;
             }
 
             std::vector<double>

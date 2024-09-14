@@ -109,13 +109,13 @@ namespace GlobalFlow {
              *
              * E-Folding function as defined by Ying Fan et al. e^(-Depth / E-Folding Depth).
              */
-            t_dim efoldingFromData(t_meter depth) {
-                t_meter folding = get<t_meter, EFolding>();
+            t_dim efoldingFromData(t_meter verticalSize) {
+                auto folding = get<t_meter, EFolding>();
                 if (folding == 0.0 * si::meter)
                     return 1 * si::si_dimensionless;
                 //Alter if a different size should be used and not full vertical size
                 //depth = (depth / (2 * si::si_dimensionless));
-                t_dim out = exp(-depth / folding);
+                t_dim out = exp(-verticalSize / folding);
                 if (out == 0 * si::si_dimensionless)
                     return 1e-7 * si::si_dimensionless;
                 return out;
@@ -678,6 +678,12 @@ Set Properties
                     catch (...) {}
                 });
             };
+
+            /**
+             * @brief Set aquifer depth from data
+             * @param aquifer_depth aquifer depth value in meters
+             */
+            void setVerticalSize(const t_meter& aquifer_depth) { set < t_meter, VerticalSize > (aquifer_depth); };
 
             /**
              * @brief Set e-folding factor from data on all layers
@@ -2947,6 +2953,9 @@ Calculate
                                                                              getAt<t_meter, EFolding>(neigNodeID));
                         } else {
                             conduct = mechanics.calculateHarmonicMeanConductance(createDataTuple<Head>(neigPos, neigNodeID));
+                            if (conduct.value() <= 0) {
+                                LOG(debug) << "conduct = " << conduct.value();
+                            }
                         }
                     }
                     NANChecker(conduct.value(), "Conductances");
@@ -2986,14 +2995,14 @@ Calculate
                 std::vector<t_meter> zoneThicknesses;
 
                 // if this zeta interface is not active: return directly
-                if (isZetaInactive(zetaID)){
+                /*if (isZetaInactive(zetaID)){
                     LOG(userinfo) << "Asking for matrix entry at inactive zeta, causing matrix row of zeros, and unsolvable equation";
                     throw "Asking for matrix entry at inactive zeta, causing matrix row of zeros, and unsolvable equation";
-                }
+                }*/
 
                 for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                     zetaMovementConductance = 0 * (si::square_meter / day);
-                    if (at(neigNodeID)->isZetaActive(zetaID)) {
+                    if (at(neigNodeID)->isZetaTZeroActive(zetaID)) {
                         // on left hand side of equation -> need updated zeta heights
                         zoneThicknesses = calculateZoneThicknesses(neigPos, neigNodeID, getZetas(),
                                                                    at(neigNodeID)->getZetas());
@@ -3002,9 +3011,7 @@ Calculate
                         zetaMovementConductance += delnus[zetaID] * zoneConductanceCum; // in SWI2: SWISOLCC/R
                         NANChecker(zetaMovementConductance.value(), "zetaMovementConductance");
                         // add conductance to out, the key in the unordered map is the ID of the neighbouring node
-                        //if (std::abs(zetaMovementConductance.value()) > 1e-20) {
-                            out[neigNodeID] = zetaMovementConductance;
-                        //}
+                        out[neigNodeID] = zetaMovementConductance;
                     }
                 }
 

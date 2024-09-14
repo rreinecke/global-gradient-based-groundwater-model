@@ -47,7 +47,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
                              unsigned long int identifier,
                              quantity<Velocity> conduct,
                              quantity<Meter> head,
-                             double aquiferDepth,
+                             double verticalSize,
                              double anisotropy,
                              double specificYield,
                              double specificStorage,
@@ -77,7 +77,7 @@ NodeInterface::NodeInterface(NodeVector nodes,
     fields.set<bool, Confinement>(confined);
     fields.emplace<quantity<Dimensionless>, SpecificYield>(specificYield * si::si_dimensionless);
     fields.emplace<quantity<perUnit>, SpecificStorage>(specificStorage * perMeter);
-    fields.emplace<quantity<Meter>, VerticalSize>(aquiferDepth * si::meter);
+    fields.emplace<quantity<Meter>, VerticalSize>(verticalSize * si::meter);
     fields.emplace<quantity<Dimensionless>, Anisotropy>(anisotropy * si::si_dimensionless);
     fields.emplace<quantity<Meter>, EdgeLengthLeftRight>(edgeLengthLeftRight);
     fields.emplace<quantity<Meter>, EdgeLengthFrontBack>(edgeLengthFrontBack);

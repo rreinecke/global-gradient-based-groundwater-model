@@ -167,7 +167,7 @@ void copyNeighboursToBottomLayers(NodeVector nodes, int numberOfLayers) {
 void buildBottomLayers(NodeVector nodes,
                        int numberOfLayers,
                        std::vector<bool> confined,
-                       std::vector<int> aquifer_thickness,
+                       std::vector<double> verticalSizes,
                        std::vector<double> conductances,
                        std::vector<double> anisotropies) {
     assert(numberOfLayers && "AsModel::signing 0 layers does not make any sense");
@@ -189,7 +189,7 @@ void buildBottomLayers(NodeVector nodes,
     Model::quantity<Model::Meter> edgeLengthFrontBack;
     Model::quantity<Model::Velocity> K;
     Model::quantity<Model::Meter> head;
-    double aquiferDepth;
+    double verticalSize;
     double anisotropy;
     double specificYield;
     double specificStorage;
@@ -222,7 +222,7 @@ void buildBottomLayers(NodeVector nodes,
                     i)->getProperties().get<Model::quantity<Model::Meter>, Model::EdgeLengthFrontBack>();
             K = conductances[layer + 1] * Model::si::meter / Model::day; // or: nodes->at(i)->getK__pure();
             head = nodes->at(i)->getProperties().get<Model::quantity<Model::Meter>, Model::Head>();
-            aquiferDepth = aquifer_thickness[layer + 1];
+            verticalSize = verticalSizes[layer + 1];
             anisotropy = anisotropies[layer + 1]; // or nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>, Model::Anisotropy>().value();
             specificYield = nodes->at(i)->getProperties().get<Model::quantity<Model::Dimensionless>,
                             Model::SpecificYield>().value();
@@ -263,7 +263,7 @@ void buildBottomLayers(NodeVector nodes,
                                                             id,
                                                             K,
                                                             head,
-                                                            aquiferDepth,
+                                                            verticalSize,
                                                             anisotropy,
                                                             specificYield,
                                                             specificStorage,
@@ -284,7 +284,7 @@ void buildBottomLayers(NodeVector nodes,
                 nodes->at(id)->getProperties().set<int, Model::Layer>(layer + 1);
                 nodes->at(id)->getProperties().set<Model::quantity<Model::Meter>, Model::Elevation>(
                         nodes->at(id)->getProperties().get<Model::quantity<Model::Meter>, Model::Elevation>()
-                        - (aquiferDepth * Model::si::meter));
+                        - (verticalSize * Model::si::meter));
             }
             //2) Neighbouring for top and bottom
             nodes->at(id)->setNeighbour(i + (layer * nodesPerLayer), Model::TOP);

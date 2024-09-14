@@ -113,8 +113,8 @@ namespace GlobalFlow {
             //Transmissivity = K * thickness of prism
             quantity<MeterSquaredPerTime> transmissivity_self = deltaV_self * k_self;
             quantity<MeterSquaredPerTime> transmissivity_neig = deltaV_neig * k_neig;
-            if (transmissivity_neig != 0 * si::square_meter / day and
-                transmissivity_self != 0 * si::square_meter / day) {
+            if (transmissivity_neig > 0 * si::square_meter / day and
+                transmissivity_self > 0 * si::square_meter / day) {
                 out = nodeWidth * ((transmissivity_self * transmissivity_neig)
                         / (transmissivity_self * nodeLength_neig * 0.5 + // half of neighbour node's length
                         transmissivity_neig * nodeLength_self * 0.5)); // half of this node's length

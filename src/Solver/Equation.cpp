@@ -91,8 +91,8 @@ Equation::updateEquation() {
     if (!A.isCompressed()) { A.makeCompressed(); }
     cg.compute(A);
     if (cg.info() != Eigen::Success) {
-        LOG(numerics) << "Fail in preconditioning: matrix appears to be negative";
-        throw "Fail in preconditioning matrix";
+        LOG(numerics) << "Fail in preconditioning. Perhaps A is asymmetric or a row is all zero!";
+        throw "Fail in preconditioning. Perhaps A is asymmetric or a row is all zero!";
     }
 }
 
@@ -124,7 +124,7 @@ Equation::updateEquation_zetas(const int& layer) {
         if (cg_zetas.info() != Eigen::Success) {
             // https://eigen.tuxfamily.org/dox/classEigen_1_1IncompleteLUT.html
             LOG(userinfo) << "Fail in preconditioning. Perhaps A_zetas is asymmetric or a row is all zero!";
-            throw "Fail in preconditioning matrix (zetas)";
+            throw "Fail in preconditioning. Perhaps A_zetas is asymmetric or a row is all zero!";
         }
     }
 }
@@ -332,14 +332,14 @@ Equation::solve() {
         oldMaxHeadChange = currentMaxHeadChange;
 
         updateEquation();
-        //LOG(debug) << "Updated A, x and b";
         outerIteration++;
     }
 
     if (outerIteration == MAX_OUTER_ITERATIONS_HEAD) {
-        std::cerr << "Fail in solving matrix with max iterations\n";
+        LOG(userinfo) << "Fail in solving groundwater flow equation with max iterations";
         LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg.error_inf();
         LOG(numerics) << "|Residual|_l2: " << cg.error();
+        std::cerr << "Fail in solving matrix with max iterations\n";
     }
 
     __itter = outerIteration;
@@ -383,50 +383,6 @@ Equation::solve() {
 }
 
 /**
- * @brief Reset surface heights to the state before iteration
- * @param layer aquifer layer number (increases with depth)
- */
-void inline
-Equation::resetZetas(const int& layer) {
-    large_num offset = layer * numberOfNodesPerLayer;
-#pragma omp parallel for num_threads(threads) default(none) shared(offset)
-    for (long rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
-        auto nodeID = rowID_to_nodeID[rowID];
-        auto zetaID = rowID_to_zetaID[rowID];
-        auto zetaTZero = nodes->at(nodeID)->getZeta_TZero(zetaID);
-        nodes->at(nodeID)->setZeta(zetaID, zetaTZero);
-    }
-}
-
-/**
- * @brief Update the time step of density surfaces
- * @param layer aquifer layer number (increases with depth)
- * @param additionalSteps number of additional time steps
- */
-void inline
-Equation::updateZetaTimeStep(const int& layer, const double& additionalSteps) {
-#pragma omp parallel for num_threads(threads) default(none) shared(additionalSteps)
-    for (long rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
-        auto nodeID = rowID_to_nodeID[rowID];
-        nodes->at(nodeID)->updateZetaStepSize(nodes->at(nodeID)->getStepSize().value() / additionalSteps);
-    }
-}
-
-/**
- * @brief re-align density surface time step with the time step of groundwater flow
- * @param layer aquifer layer number (increases with depth)
- */
-void inline
-Equation::alignZetaTimeStep(const int& layer) {
-    large_num offset = layer * numberOfNodesPerLayer;
-#pragma omp parallel for num_threads(threads) default(none) shared(offset)
-    for (long rowID = 0; rowID < rowID_to_nodeID.size(); ++rowID) {
-        auto nodeID = rowID_to_nodeID[rowID];
-        nodes->at(nodeID)->alignZetaStepSize();
-    }
-}
-
-/**
  * Solve density surface equation
  * @param layer aquifer layer number (increases with depth)
  * @param isAdditionalStep info whether surface heights are solved using smaller additional time steps
@@ -461,14 +417,19 @@ Equation::solve_zetas(const int& layer){
                 LOG(numerics) << "Reached zeta change convergence";
                 break;
             }
-            /*if (cg_zetas.info() == Success) {
-                LOG(numerics) << "cg_zetas solver success";
-                break;
-            }*/
         } else {
             minorChangeCount = 0;
         }
     } // end of outer iteration loop
+
+    if (outerIteration >= MAX_OUTER_ITERATIONS_ZETA) {
+        LOG(userinfo) << "Fail in solving variable density equation with max iterations";
+        LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg_zetas.error_inf();
+        LOG(numerics) << "|Residual|_l2: " << cg_zetas.error();
+        std::cerr << "Fail in solving matrix with max iterations\n";
+
+    }
+
     __itter_zetas += outerIteration;
 }
 
@@ -488,7 +449,7 @@ Equation::prepareEquation_zetas(const int& layer) {
     for (large_num nodeID = offset; nodeID < numberOfNodesPerLayer + offset; ++nodeID) {
         zetaID_to_locID.clear();
         for (large_num zetaID = 1; zetaID < numberOfZones; zetaID++) {
-            if (nodes->at(nodeID)->isZetaActive(zetaID)) {
+            if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
                 rowID_to_nodeID.insert(std::pair<long, large_num>(id, nodeID));
                 rowID_to_zetaID.insert(std::pair<long, large_num>(id, zetaID));
                 zetaID_to_locID.insert(std::pair<large_num, long>(zetaID, id));
