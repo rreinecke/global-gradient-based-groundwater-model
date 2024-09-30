@@ -1058,7 +1058,7 @@ namespace GlobalFlow {
             readTwoColumns(path, [this](double data, int nodeID) {
                 // snap low porosity values to 0
                 if (data < 1e-2){ data = 0; }
-                nodes->at(nodeID)->setEffectivePorosity(0.2 * Model::si::si_dimensionless);
+                nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
             });
         };
     };

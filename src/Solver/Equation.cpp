@@ -426,8 +426,6 @@ Equation::solve_zetas(const int& layer){
         LOG(userinfo) << "Fail in solving variable density equation with max iterations";
         LOG(numerics) << "|Residual|_inf / |RHS|_inf: " << cg_zetas.error_inf();
         LOG(numerics) << "|Residual|_l2: " << cg_zetas.error();
-        std::cerr << "Fail in solving matrix with max iterations\n";
-
     }
 
     __itter_zetas += outerIteration;

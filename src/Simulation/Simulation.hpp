@@ -41,6 +41,7 @@
 #include "../Model/Node.hpp"
 #include "../DataProcessing/Neighbouring.hpp"
 #include "../Misc/Helpers.hpp"
+#include <stdio.h>
 
 namespace boost { namespace serialization {
 
@@ -133,7 +134,8 @@ namespace GlobalFlow {
                     if (stepNumber == 1) {
                         // create new file / replace old file.
                         std::ofstream newFile(filename);
-                        // at top of file: add nodeIDs
+
+                        // at top of file: add spatIDs
                         for (int j = 0; j < nodes->size(); ++j) {
                             if (nodes->at(j)->getLayer() != layerToSave) { continue; }
                             if (j == 0) {
