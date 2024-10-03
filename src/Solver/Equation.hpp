@@ -139,13 +139,13 @@ namespace GlobalFlow {
              * Set the correct stepsize (default is DAY) //
              * @param mod
              */
-            void updateStepSize(double step_size) {
+            void updateStepSize(double step_size, int vdf_steps_per_head_step) {
                 stepSize = step_size;
                 std::for_each(nodes->begin(),
                               nodes->end(),
-                              [step_size](std::unique_ptr<Model::NodeInterface> const &node) {
+                              [step_size, vdf_steps_per_head_step](std::unique_ptr<Model::NodeInterface> const &node) {
                     node->updateStepSize(step_size);
-                    node->alignZetaStepSize();
+                    node->updateZetaStepSize(vdf_steps_per_head_step);
                 });
             }
 
@@ -180,6 +180,8 @@ namespace GlobalFlow {
         long numberOfNodesTotal; // type is long to assign A, b, and x
 
         long numberOfActiveZetas; // type is long to assign A_zetas, b_zetas, and x_zetas
+
+        int vdfStepsPerHeadStep{1};
 
         /**
          * _var_ only used if disabling of cells is required

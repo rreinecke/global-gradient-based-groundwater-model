@@ -119,6 +119,7 @@ namespace GlobalFlow {
             MIN_DEPTH_FACTOR = vdf.get<double>("min_depth_factor");
             SLOPE_ADJ_FACTOR = vdf.get<double>("slope_adj_factor");
             VDF_LOCK = vdf.get<double>("vdf_lock");
+            VDF_STEPS_PER_HEAD_STEP = vdf.get<int>("vdf_steps_per_head_step");
 
             pt::ptree data = input.get_child("data");
 

@@ -39,6 +39,7 @@ void StandaloneRunner::simulate() {
     std::vector<int> numberOfSteps = op.getStressPeriodSteps();
     std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
+    int vdfStepsPerHeadStep = op.getVDFStepsPerHeadStep();
 
     int stepNumber{1};
 
@@ -47,7 +48,8 @@ void StandaloneRunner::simulate() {
                       stepSizes[strssPrd];
 
         Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
-                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
+                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd],
+                                                          vdfStepsPerHeadStep);
         for (Simulation::step step : stepper) {
             step.first->solve();
             LOG(userinfo) << "Step " << stepNumber << ": ";

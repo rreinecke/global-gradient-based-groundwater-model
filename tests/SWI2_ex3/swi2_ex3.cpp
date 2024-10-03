@@ -50,7 +50,6 @@ void StandaloneRunner::simulate() {
     std::vector<int> numberOfSteps = op.getStressPeriodSteps();
     std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
-
     int stepNumber{1};
 
     for (int strssPrd = 0; strssPrd < isSteadyState.size(); ++strssPrd) {

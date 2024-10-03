@@ -42,7 +42,8 @@
       "max_toe_slope": 0.0,
       "min_depth_factor": 0.0,
       "slope_adj_factor": 0.0,
-      "vdf_lock": 0.0
+      "vdf_lock": 0.0,
+      "vdf_steps_per_head_step": 1
     },
     "numerics": {
       "threads": 1,

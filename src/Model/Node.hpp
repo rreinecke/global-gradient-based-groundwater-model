@@ -838,15 +838,11 @@ Set Properties
             void updateStepSize(double stepSize) { set<t_dim, StepSize>(stepSize * si::si_dimensionless); }
 
             /**
-             * @brief Update step size of variable density evolution
-             * @param zetaStepSize time passing in one time step
+             * @brief Adapt step size of variable density evolution
              */
-            void updateZetaStepSize(double zetaStepSize) { set<t_dim, ZetaStepSize>(zetaStepSize * si::si_dimensionless); }
-
-            /**
-             * @brief Update step size of variable density evolution back to step size of groundwater flow
-             */
-            void alignZetaStepSize() { set<t_dim, ZetaStepSize>(getStepSize()); }
+            void updateZetaStepSize(int vdf_steps_per_head_step) {
+                set<t_dim, ZetaStepSize>( getStepSize() / vdf_steps_per_head_step );
+            }
 
             /**
              * @brief Tell cell to save its flow budget

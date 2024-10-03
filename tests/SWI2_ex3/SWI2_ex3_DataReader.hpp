@@ -16,7 +16,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading land mask (with default values from config)";
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
-                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
+                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getVerticalSizes()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
                              op.isConfined(0),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
@@ -27,7 +27,7 @@ namespace GlobalFlow {
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
-                                                  op.getAquiferDepth(),
+                                                  op.getVerticalSizes(),
                                                   op.getInitialK(),
                                                   op.getAnisotropy());
 
@@ -66,7 +66,7 @@ namespace GlobalFlow {
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
                     readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
-                                     buildDir(op.getInitialZetas()), op.getInitialZetas_a()); // requires elevation to be set
+                                     buildDir(op.getInitialZetasDir()), op.getInitialZetas_a()); // requires elevation to be set
                 }
                 if (op.isEffectivePorosityFromFile()){
                     LOG(userinfo) << "Reading effective porosity";

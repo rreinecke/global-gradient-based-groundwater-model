@@ -44,7 +44,8 @@
       "max_toe_slope": 0.01,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
-      "vdf_lock": 0.001
+      "vdf_lock": 0.001,
+      "vdf_steps_per_head_step": 1
     },
     "numerics": {
       "threads": 40,
@@ -62,7 +63,6 @@
     },
     "input": {
       "data_config": {
-        "aquifer_depth_from_file": "false",
         "effective_porosity_from_file": "true",
         "efold_as_array": "false",
         "eq_wtd_from_file": "false",
@@ -73,6 +73,7 @@
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
+        "vertical_size_as_array": "false",
         "zones_sources_from_file": "false"
       },
       "default_data": {
@@ -84,7 +85,7 @@
           4
         ],
         "ghb_K": 800,
-        "aquifer_thickness": [
+        "vertical_size": [
           20,
           1,
           20

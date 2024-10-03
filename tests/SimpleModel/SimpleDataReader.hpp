@@ -21,7 +21,7 @@ class SimpleDataReader : public DataReader {
                          op.getNumberOfLayers(),
                          op.getInitialK()[0],
                          op.getInitialHead(),
-                         op.getAquiferDepth()[0],
+                         op.getVerticalSizes()[0],
                          op.getAnisotropy()[0],
                          op.getSpecificYield(),
                          op.getSpecificStorage(),
@@ -42,7 +42,7 @@ class SimpleDataReader : public DataReader {
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
-                                                  op.getAquiferDepth(),
+                                                  op.getVerticalSizes(),
                                                   op.getInitialK(),
                                                   op.getAnisotropy());
             }

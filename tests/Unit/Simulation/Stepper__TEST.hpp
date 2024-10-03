@@ -66,7 +66,7 @@ public:
     void IwillCrash(){
         MockEquation equation(nodes, op);
 
-        Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, 1);
+        Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, 1, 1);
         for (step step : stepper) {writeMe = static_cast<int>(10);}
     }
 
@@ -75,7 +75,7 @@ public:
 //FIXME currently boost log causes a free(): invalid pointer
 TEST_F(StepperFixture,DayLoop){
     MockEquation equation(nodes, op);
-    Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "DAY", true, false, 2);
+    Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "DAY", true, false, 2, 1);
     int p{0};
     double a{0};
     for (step step : stepper) {
@@ -89,7 +89,7 @@ TEST_F(StepperFixture,DayLoop){
 
 TEST_F(StepperFixture,MonthLoop){
     MockEquation equation(nodes, op);
-    Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, 10);
+    Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, 10, 1);
     ASSERT_EQ(stepper.getStepSize(),30.0);
     int p{0};
     double a{0};
@@ -112,7 +112,7 @@ TEST_F(StepperFixture,DynmicStepsRand){
     MockEquation equation(nodes, op);
 
     for(int p : make_rnd()){
-        Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, p);
+        Stepper stepper = Stepper(reinterpret_cast<GlobalFlow::Solver::Equation *>(&equation), "MONTH", true, false, p, 1);
         ASSERT_EQ(stepper.getStepSize(),30.0);
         int i{0};
         double a{0};

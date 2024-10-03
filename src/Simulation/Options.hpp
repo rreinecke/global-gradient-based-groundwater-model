@@ -107,6 +107,7 @@ namespace GlobalFlow {
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
+            int VDF_STEPS_PER_HEAD_STEP{1};
             int SOURCE_ZONE_GHB;
             int SOURCE_ZONE_RECHARGE;
 
@@ -285,6 +286,8 @@ namespace GlobalFlow {
             getVDFLock() {
                 return VDF_LOCK;
             }
+
+            int getVDFStepsPerHeadStep() { return VDF_STEPS_PER_HEAD_STEP; }
 
             int getSourceZoneGHB() { return SOURCE_ZONE_GHB; }
 

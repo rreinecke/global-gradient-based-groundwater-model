@@ -66,7 +66,7 @@ namespace GlobalFlow {
 
                     LOG(debug) << "Stepsize delta " << __delta;
                     LOG(debug) << "Stepsize: " << _step_size *  __delta;
-                    _stepper->get(0)->updateStepSize(_step_size * __delta);
+                    _stepper->get(0)->updateStepSize(_step_size * __delta, 1);
                     _delta_t = _delta_t + __delta;
                     LOG(debug) << "Current position " << _delta_t;
 
@@ -80,8 +80,8 @@ namespace GlobalFlow {
                 double __delta{0};
                 __delta = _totalSteps * ((_p - 1) / (std::pow(_p, _totalSteps) - 1));
                 _delta_t0 = __delta;
-                _stepper->get(0)->updateStepSize(_step_size * __delta);
-		            LOG(debug) << "Stepsize: " << _step_size * __delta;
+                _stepper->get(0)->updateStepSize(_step_size * __delta, 1);
+                LOG(debug) << "Stepsize: " << _step_size * __delta;
                 _delta_t = _delta_t + __delta;
             }
 
@@ -102,19 +102,21 @@ namespace GlobalFlow {
         public:
             //Stepper(Solver::Equation *eq, const TimeFrame time, const size_t steps, bool dynStep = false)
             Stepper(Solver::Equation *eq, const double stepSize, bool isSteadyState, bool isDensityVariable,
-                    const size_t steps, bool dynStep = false)
+                    const size_t steps, const int vdfStepsPerHeadStep = 1, bool dynStep = false)
                     : _equation(eq), _stepSize(stepSize), _isSteadyState(isSteadyState),
-                      _isDensityVariable(isDensityVariable), _steps(steps), _dyn(dynStep) {
-                _equation->updateStepSize(_stepSize);
+                      _isDensityVariable(isDensityVariable), _steps(steps), _vdfStepsPerHeadStep(vdfStepsPerHeadStep),
+                      _dyn(dynStep) {
+                _equation->updateStepSize(_stepSize, _vdfStepsPerHeadStep);
                 _equation->updateIsSteadyState(_isSteadyState);
                 _equation->updateIsDensityVariable(_isDensityVariable);
             }
 
             Stepper(Solver::Equation *eq, const std::string& stepSize, bool isSteadyState,
-                    bool isDensityVariable, const size_t steps, bool dynStep = false)
+                    bool isDensityVariable, const size_t steps, const int vdfStepsPerHeadStep = 1, bool dynStep = false)
                     : _equation(eq), _stepSize(getStepSizeWithString(stepSize)), _isSteadyState(isSteadyState),
-                      _isDensityVariable(isDensityVariable), _steps(steps), _dyn(dynStep) {
-                _equation->updateStepSize(_stepSize);
+                      _isDensityVariable(isDensityVariable), _steps(steps), _vdfStepsPerHeadStep(vdfStepsPerHeadStep),
+                      _dyn(dynStep) {
+                _equation->updateStepSize(_stepSize, _vdfStepsPerHeadStep);
                 _equation->updateIsSteadyState(_isSteadyState);
                 _equation->updateIsDensityVariable(_isDensityVariable);
             }
@@ -161,6 +163,7 @@ namespace GlobalFlow {
             const bool _isDensityVariable;
             const size_t _steps;
             const bool _dyn;
+            const int _vdfStepsPerHeadStep;
         };
 
     }
