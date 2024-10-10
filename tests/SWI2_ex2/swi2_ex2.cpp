@@ -16,7 +16,7 @@ void StandaloneRunner::setupSimulation() {
     void StandaloneRunner::writeNodeInfosToCSV() {
         // For node infos:
         std::ofstream myfile;
-        myfile.open ("swi2_node_attributes.csv");
+        myfile.open ("swi2_ex2_node_attributes.csv");
         myfile << "nodeID,spatID,lon,lat,neig_count,EL,bottom,K,zeta1_ini" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {

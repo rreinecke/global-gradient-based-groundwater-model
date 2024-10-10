@@ -455,17 +455,29 @@ Get Properties
              */
             t_vol_t getCurrentOUT() noexcept { return -getFlow([](double a) -> bool { return a < 0; }); }
 
+            t_vol_t getVDF_IN() { return get<t_vol_t, VDF_IN>(); }
+
+            t_vol_t getVDF_OUT() { return get<t_vol_t, VDF_OUT>(); }
+
             /**
              * @brief Get the zone change out of node
              * @return cubic meters per time
              */
-            t_vol_t getZCHG_OUT() { return get<t_vol_t, ZCHG_OUT>(); }
+            t_vol_t getZCHG_OUT() { return get<t_vol_t, VDF_ZCHG_OUT>(); }
 
             /**
              * @brief Get the zone change into node
              * @return cubic meters per time
              */
-            t_vol_t getZCHG_IN() { return get<t_vol_t, ZCHG_IN>(); }
+            t_vol_t getZCHG_IN() { return get<t_vol_t, VDF_ZCHG_IN>(); }
+
+            t_vol_t getVDF_INST_OUT() { return get<t_vol_t, VDF_INST_OUT>(); }
+
+            t_vol_t getVDF_INST_IN() { return get<t_vol_t, VDF_INST_IN>(); }
+
+            t_vol_t getVDF_TTT_OUT() { return get<t_vol_t, VDF_TTT_OUT>(); }
+
+            t_vol_t getVDF_TTT_IN() { return get<t_vol_t, VDF_TTT_IN>(); }
 
             /**
              * Calculate the lateral groundwater flow to (-)/from (+) a neighbouring node
@@ -852,6 +864,17 @@ Set Properties
                 fields.addTo<t_vol_t, IN>(getCurrentIN());
             }
 
+            void saveVDFMassBalance() noexcept {
+                fields.addTo<t_vol_t, VDF_OUT>(calculateOUT_VDF());
+                fields.addTo<t_vol_t, VDF_OUT>(calculateIN_VDF());
+                fields.addTo<t_vol_t, VDF_ZCHG_OUT>(get< t_vol_t, VDF_ZCHG_CUR_OUT>());
+                fields.addTo<t_vol_t, VDF_ZCHG_IN>(get< t_vol_t, VDF_ZCHG_CUR_IN>());
+                fields.addTo<t_vol_t, VDF_INST_OUT>(calculateInstantaneousMixing(false));
+                fields.addTo<t_vol_t, VDF_INST_IN>(calculateInstantaneousMixing(true));
+                fields.addTo<t_vol_t, VDF_TTT_OUT>(calculateTipToeTrackingZoneChange(false));
+                fields.addTo<t_vol_t, VDF_TTT_IN>(calculateTipToeTrackingZoneChange(true));
+            }
+
 /*****************************************************************
 Helpers
 ******************************************************************/
@@ -907,6 +930,19 @@ Helpers
                 }
                 return false;
             }
+
+
+            void resetVDFBudget() {
+                set < t_vol_t, VDF_OUT > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_OUT > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_ZCHG_OUT > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_ZCHG_IN > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_INST_OUT > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_INST_IN > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_TTT_OUT > (0 * si::cubic_meter / day);
+                set < t_vol_t, VDF_TTT_IN > (0 * si::cubic_meter / day);
+            }
+
 
             /**
              * @brief Scales river conduct by 50%
@@ -1118,7 +1154,7 @@ Calculate
              * @param zetaID
              * @note in SWI2 code: SSWI2_IMIX, comments referring to lines (at each "if"), refer to lines in gwf2swi27.f
              */
-            t_c_meter calculateInstantaneousMixing(large_num zetaID) {
+            t_c_meter calcInstMix(large_num zetaID) {
                 t_c_meter out = 0.0 * si::cubic_meter;
                 // skip nodes that do not have a down neighbour
                 if (neighbours.find(DOWN) == neighbours.end()) { return out; } // line 4142
@@ -1158,11 +1194,11 @@ Calculate
              * @param in boolean defining if flow in or out should be returned
              * @return cubic meters per time
              */
-            t_vol_t getInstantaneousMixing(bool in) noexcept {
+            t_vol_t calculateInstantaneousMixing(bool in) noexcept {
                 t_c_meter iMix_in;
                 t_c_meter iMix_out;
                 for (large_num zetaID = 0; zetaID < zetasSize() - 1; ++zetaID) {
-                    t_c_meter iMix = calculateInstantaneousMixing(zetaID);
+                    t_c_meter iMix = calcInstMix(zetaID);
                     if (iMix.value() > 0) { iMix_in += iMix; } else { iMix_out += iMix; }
                 }
                 if (in) { return iMix_in / day; } else { return iMix_out / day; }
@@ -1171,9 +1207,9 @@ Calculate
             /**
              * @brief Save volumetric density zone change between last and new time step
              */
-            void saveZoneChange() noexcept {
-                set<t_vol_t, ZCHG_IN>(getZoneChange(true));
-                set<t_vol_t, ZCHG_OUT>(getZoneChange(false));
+            void saveCurrentZoneChange() noexcept {
+                set<t_vol_t, VDF_ZCHG_CUR_IN>(getZoneChange(true));
+                set<t_vol_t, VDF_ZCHG_CUR_OUT>(getZoneChange(false));
             }
 
             /**
@@ -1196,10 +1232,10 @@ Calculate
              * @param in boolean defining if flow in or out should be returned
              * @return cubic meters per time
              */
-            t_vol_t getTipToeTrackingZoneChange(bool in) {
+            t_vol_t calculateTipToeTrackingZoneChange(bool in) {
                 t_vol_t result = 0 * si::cubic_meters / day;
-                t_vol_t tttOut = getZoneChange(false) - getZCHG_OUT();
-                t_vol_t tttIn = getZoneChange(true) - getZCHG_IN();
+                t_vol_t tttOut = getZoneChange(false) - get< t_vol_t, VDF_ZCHG_CUR_OUT>();
+                t_vol_t tttIn = getZoneChange(true) - get< t_vol_t, VDF_ZCHG_CUR_IN>();
                 if (in) {
                     if (tttOut.value() > 0) { result += tttOut; } // higher by 3 orders of magnitude
                     if (tttIn.value() > 0) { result += tttIn; }
@@ -1214,12 +1250,12 @@ Calculate
              * @brief Calculate the variable density mass change into node
              * @return cubic meters per time
              */
-            t_vol_t getCurrentIN_VDF() {
+            t_vol_t calculateIN_VDF() {
                 t_vol_t vdfIn = 0 * si::cubic_meter / day;
                 bool in = true;
-                vdfIn += getZCHG_IN(); // add current zone change before tip toe tracking
-                vdfIn += getInstantaneousMixing(in); // add instantaneous mixing
-                vdfIn += getTipToeTrackingZoneChange(in); // add zone change from tiptoetracking
+                vdfIn += get< t_vol_t, VDF_ZCHG_CUR_IN>(); // add current zone change before tip toe tracking
+                vdfIn += calculateInstantaneousMixing(in); // add instantaneous mixing
+                vdfIn += calculateTipToeTrackingZoneChange(in); // add zone change from tiptoetracking
                 return vdfIn;
             }
 
@@ -1227,12 +1263,12 @@ Calculate
              * @brief Calculate the variable density mass change out of node
              * @return cubic meters per time
              */
-            t_vol_t getCurrentOUT_VDF() {
+            t_vol_t calculateOUT_VDF() {
                 t_vol_t vdfOut = 0 * si::cubic_meter / day;
                 bool isIn = false;
-                vdfOut += getZCHG_OUT(); // add current zone change before tip toe tracking
-                vdfOut += getInstantaneousMixing(isIn); // add instantaneous mixing
-                vdfOut += getTipToeTrackingZoneChange(isIn); // add zone change from tiptoetracking
+                vdfOut += get< t_vol_t, VDF_ZCHG_CUR_OUT>(); // add current zone change before tip toe tracking
+                vdfOut += calculateInstantaneousMixing(isIn); // add instantaneous mixing
+                vdfOut += calculateTipToeTrackingZoneChange(isIn); // add zone change from tiptoetracking
                 return vdfOut;
             }
 
@@ -1389,12 +1425,13 @@ Calculate
                 }
             }
 
-            void setZeta_direct(large_num zetaID, const t_meter& zeta) {
+            void setZeta_direct(large_num zetaID, const t_meter& zeta, bool setZetaTZero = false) {
                 NANChecker(zeta.value(), "zeta (in setZeta)");
                 auto zetas = getZetas();
                 if (0 < zetaID < zetasSize()-1) {
                     zetas[zetaID] = zeta;
                     setZetas_direct(zetas);
+                    if (setZetaTZero) { setZetas_TZero_direct(zetas); }
                 } else {
                     LOG(userinfo) << "zetaID too large in setZeta";
                     throw "zetaID too large in setZeta";
@@ -1446,7 +1483,8 @@ Calculate
                     // upper limit of zetas inland (i.e., not at the coast): the highest neighbouring zeta
                     // -> 1) find the highest neighbouring zeta
                     t_meter max_neig_zeta = zetas.back(); // lower limit of the new height: the lowest zeta (= node bottom)
-                    t_meter neig_zeta;for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
+                    t_meter neig_zeta;
+                    for (auto const &[neigPos, neigNodeID]: horizontal_neighbours) {
                         neig_zeta = at(neigNodeID)->getZeta(zetaID);
                         if (neig_zeta > max_neig_zeta) {
                             max_neig_zeta = neig_zeta;
@@ -1466,16 +1504,6 @@ Calculate
                 }
                 return zeta_tmp;
             }
-
-            /**
-             * @brief Deactivate density interfaces in node (set effective porosity to zero and interfaces to bottom)
-             */
-            /*void deactivateZetas(){
-                setEffectivePorosity(0 * si::si_dimensionless);
-                for (large_num zetaID = 1; zetaID < zetasSize() - 1; ++zetaID) {
-                    setZeta(zetaID, getBottom());
-                }
-            }*/
 
             /**
              * @brief Set density interfaces directly (without applying limits)

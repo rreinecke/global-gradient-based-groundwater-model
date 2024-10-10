@@ -204,7 +204,7 @@ Equation::adjustZetaHeights() {
     //LOG(numerics) << "    Save zone change without horizontal tip/toe movement";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
-        nodes->at(k)->saveZoneChange();
+        nodes->at(k)->saveCurrentZoneChange();
     }
 
     //LOG(numerics) << "    Vertical zeta movement";
@@ -219,23 +219,23 @@ Equation::adjustZetaHeights() {
         nodes->at(k)->horizontalZetaMovement();
     }
 
-    /*LOG(numerics) << "    Clipping inner zetas";
+    //LOG(numerics) << "    Clipping inner zetas";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->clipInnerZetas();
     }
 
-    LOG(numerics) << "    Preventing zeta locking";
+    //LOG(numerics) << "    Preventing zeta locking";
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->preventZetaLocking();
     }
 
-    LOG(numerics) << "    Correct crossing zetas";
+    //LOG(numerics) << "    Correct crossing zetas";
 # pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->correctCrossingZetas();
-    }*/
+    }
 
     //LOG(numerics) << "    Check zeta order and whether front and back are in correct position";
 #pragma omp parallel for num_threads(threads) default(none)
@@ -249,6 +249,12 @@ Equation::adjustZetaHeights() {
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->limitZetas(setZetasTZero);
     }
+
+    //LOG(numerics) << "    Save zone change without horizontal tip/toe movement";
+#pragma omp parallel for num_threads(threads) default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->saveVDFMassBalance();
+    }
 }
 
 /**
@@ -259,6 +265,15 @@ Equation::updateBudget() {
 #pragma omp parallel for num_threads(threads) default(none)
     for (large_num k = 0; k < numberOfNodesTotal; ++k) {
         nodes->at(k)->saveMassBalance();
+    }
+}
+
+
+void inline
+Equation::resetVDFBudget() {
+#pragma omp parallel for num_threads(threads) default(none)
+    for (large_num k = 0; k < numberOfNodesTotal; ++k) {
+        nodes->at(k)->resetVDFBudget();
     }
 }
 
@@ -353,6 +368,7 @@ Equation::solve() {
      if(isDensityVariable) {
          __itter_zetas = 0;
          LOG(numerics) << "Finding zeta surface heights";
+         resetVDFBudget();
          for (int vdfStep = 1; vdfStep <= vdfStepsPerHeadStep; ++vdfStep) {
              LOG(numerics) << "  Sub-step " << vdfStep << " of " << vdfStepsPerHeadStep;
 
@@ -361,12 +377,15 @@ Equation::solve() {
              std::unordered_map<int, large_num> numberOfActiveZetas_TZero;
              for (int layer = 0; layer < numberOfLayers; layer++) {
                  numberOfActiveZetas_TZero[layer] = rowID_to_nodeID.size();
-                 prepareEquation_zetas(layer);
-                 int changeOfActiveZetas = int(numberOfActiveZetas - numberOfActiveZetas_TZero[layer]);
+                 prepareSolveZetas(layer);
+                 //int changeOfActiveZetas = int(numberOfActiveZetas - numberOfActiveZetas_TZero[layer]);
                  //LOG(numerics) << "    Number of active zetas on layer " << layer << ":  " << numberOfActiveZetas
                  //               << " (changed by: " << changeOfActiveZetas << ")";
-                 if (A_zetas.size() == 0) { continue; } // if matrix empty: continue with next layer
-                 solve_zetas(layer);
+                 if (A_zetas.size() == 0) { // if matrix empty: continue with next layer
+                     LOG(debug) << "A_zetas is empty on layer " << layer;
+                     continue;
+                 }
+                 solveZetas(layer);
              }
              LOG(numerics) << "    Adjusting zeta heights (after zeta height convergence)";
              adjustZetaHeights();
@@ -392,7 +411,7 @@ Equation::solve() {
  * @param isAdditionalStep info whether surface heights are solved using smaller additional time steps
  */
 void
-Equation::solve_zetas(const int& layer){
+Equation::solveZetas(const int& layer){
     int outerIteration{0};
     double currentMaxZetaChange{0.0};
     int minorChangeCount{0};
@@ -440,7 +459,7 @@ Equation::solve_zetas(const int& layer){
  * @param layer aquifer layer number (increases with depth)
  */
 void inline
-Equation::prepareEquation_zetas(const int& layer) {
+Equation::prepareSolveZetas(const int& layer) {
     rowID_to_nodeID.clear();
     rowID_to_zetaID.clear();
     nodeID_zetaID_locID.clear();
@@ -454,14 +473,16 @@ Equation::prepareEquation_zetas(const int& layer) {
             if (nodes->at(nodeID)->isZetaTZeroActive(zetaID)) {
                 rowID_to_nodeID.insert(std::pair<long, large_num>(id, nodeID));
                 rowID_to_zetaID.insert(std::pair<long, large_num>(id, zetaID));
-                zetaID_to_locID.insert(std::pair<large_num, long>(zetaID, id));
-                nodeID_zetaID_locID.insert(std::pair<large_num, std::unordered_map<large_num, long>>(nodeID, zetaID_to_locID));  // (only) for addToA_zetas()
+                zetaID_to_locID.insert(std::pair<large_num, long>(zetaID, id)); // building map for nodeID_zetaID_locID
                 ++id;
             }
         }
+        if (!zetaID_to_locID.empty()) {
+            nodeID_zetaID_locID.insert(std::pair<large_num, std::unordered_map<large_num,long>>(nodeID, zetaID_to_locID));
+        }
     }
     numberOfActiveZetas = long(rowID_to_nodeID.size());
-
+    LOG(debug) << "numberOfActiveZetas " << numberOfActiveZetas;
     Eigen::SparseMatrix<pr_t> empty_A_zetas(numberOfActiveZetas, numberOfActiveZetas);
     A_zetas = std::move(empty_A_zetas);
     int numberOfEntries = (int) 4 + 1; // + 1 for this node

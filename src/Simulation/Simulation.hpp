@@ -177,12 +177,6 @@ namespace GlobalFlow {
                             } else {
                                 value = std::nan("1");
                             }
-                        } else if(variable ==  "zeta3") {
-                            if (isDensityVariable) {
-                                value = node->getZeta(3).value();
-                            } else {
-                                value = std::nan("1");
-                            }
                         } else if(variable ==  "ghb") {
                             value = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
                         } else if(variable ==  "sum_neig") {
@@ -395,8 +389,8 @@ namespace GlobalFlow {
              * @return
              */
             MassError getVDFMassError() {
-                return calculateError([this](int pos) { return nodes->at(pos)->getCurrentOUT_VDF().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getCurrentIN_VDF().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_OUT().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getVDF_IN().value(); } );
             }
 
             MassError getZoneChangeMassError() {
@@ -405,13 +399,13 @@ namespace GlobalFlow {
             }
 
             MassError getInstantaneousMixingMassError(){
-                return calculateError([this](int pos) { return nodes->at(pos)->getInstantaneousMixing(false).value(); },
-                                      [this](int pos) { return nodes->at(pos)->getInstantaneousMixing(true).value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_INST_OUT().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getVDF_INST_IN().value(); } );
             }
 
             MassError getTipToeTrackingMassError(){
-                return calculateError([this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(false).value(); },
-                                      [this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(true).value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_TTT_OUT().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getVDF_TTT_IN().value(); } );
             }
 
             /**

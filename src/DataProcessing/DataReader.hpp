@@ -316,7 +316,7 @@ namespace GlobalFlow {
          * @param path Where to read from
          * @note transforms hydraulic conductivity [m/day] to conductance [m^2/day]
          */
-        virtual void readGHB_elevation_conductivity(std::string path) {
+        virtual void readGHB_elevation_conductivity(std::string path, double minConductivity) {
             io::CSVReader<5, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity", "elevation", "source_zone");
             large_num spatID{0};
@@ -329,7 +329,6 @@ namespace GlobalFlow {
             double ghbLength{0};
             double ghbDistance{0};
             double ghbVerticalSize{0};
-            double conductivity_of_clay = pow(10,-11) * 24 * 60 * 60; // = 8.64e-7 m/day
 
             std::vector<Model::NeighbourPosition> neigPos_LRFB;
             std::unordered_map<Model::NeighbourPosition, large_num> horizontal_neighbours;
@@ -371,8 +370,8 @@ namespace GlobalFlow {
                                     (nodes->at(nodeID)->getElevation().value() - elevation);
                 if (ghbVerticalSize < 0) { ghbVerticalSize = 0; }
 
-                if (conductivity < conductivity_of_clay) {
-                    conductivity = conductivity_of_clay;
+                if (conductivity < minConductivity) { // suggested: pow(10,-11) * 24 * 60 * 60 = 8.64e-7 m/day
+                    conductivity = minConductivity;
                 }
                 conductance = conductivity * ghbLength * ghbVerticalSize / ghbDistance; // m/day to m^2/day
 
@@ -441,13 +440,6 @@ namespace GlobalFlow {
                     //if Node does not exist ignore entry
                     continue;
                 }
-
-                /*if (nodes->at(nodeID)->hasGHB()){
-                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                    if (head < ghbElevation) {
-                        head = ghbElevation;
-                    }
-                }*/
 
                 nodes->at(nodeID)->setHead_allLayers(head * Model::si::meter);
                 nodes->at(nodeID)->setHead_TZero_allLayers(head * Model::si::meter);
@@ -589,13 +581,6 @@ namespace GlobalFlow {
                     continue;
                 }
 
-                /*if (nodes->at(nodeID)->hasGHB()){
-                    double ghbElevation = nodes->at(nodeID)->getExternalFlowElevation(Model::GENERAL_HEAD_BOUNDARY);
-                    if (data < ghbElevation) {
-                        data = ghbElevation;
-                    }
-                }*/
-
                 nodes->at(nodeID)->setEqHead_allLayers(wtd * Model::si::meter);
                 if (!isInitialHeadFromFile){
                     nodes->at(nodeID)->setHeadToEqHead_allLayers();
@@ -686,14 +671,13 @@ namespace GlobalFlow {
          * @brief Read cell conductivity definition
          * @param path Where to read the file from
          */
-        virtual void readConductivity(std::string path) {
+        virtual void readConductivity(std::string path, double minConductivity) {
             io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
             in.read_header(io::ignore_no_column, "spatID", "layer", "conductivity");
             large_num spatID{0};
             int layer{0};
             double conductivity{0};
             large_num nodeID{0};
-            double conductivity_of_clay = pow(10,-11) * 24 * 60 * 60; // = 8.64e-7 m/day
             int i{0};
             while (in.read_row(spatID, layer, conductivity)) {
                 try {
@@ -703,8 +687,8 @@ namespace GlobalFlow {
                     //if Node does not exist ignore entry
                     continue;
                 }
-                if (conductivity < conductivity_of_clay){
-                    conductivity = conductivity_of_clay;
+                if (conductivity < minConductivity){
+                    conductivity = minConductivity;
                 }
                 nodes->at(nodeID)->setK_allLayers(conductivity * (Model::si::meter / Model::day));
 
@@ -979,17 +963,18 @@ namespace GlobalFlow {
          * @param path Where to read the file from
          * @param files If different files for different regions are given
          */
-        void readVerticalSize(std::string path, std::vector<std::string> files) {
-            loopFiles(path, files, [this](std::string path) {
-                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+        void readVerticalSize(std::string path, std::vector<std::string> files, double minVerticalSize) {
+            for (std::string file : files) {
+                std::string real_path = path + '/' + file;
+                io::CSVReader<3, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(real_path);
                 in.read_header(io::ignore_no_column, "spatID", "layer", "vertical_size");
                 large_num spatID{0};
                 int layer{0};
-                double vertical_size{0};
+                double verticalSize{0};
                 large_num nodeID;
 
                 int i{0};
-                while (in.read_row(spatID, layer, vertical_size)) {
+                while (in.read_row(spatID, layer, verticalSize)) {
                     try {
                         nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
                     }
@@ -997,10 +982,10 @@ namespace GlobalFlow {
                         //if Node does not exist ignore entry
                         continue;
                     }
-                    if (vertical_size < 1) {
-                        vertical_size = 1;
+                    if (verticalSize < minVerticalSize) {
+                        verticalSize = minVerticalSize;
                     }
-                    nodes->at(nodeID)->setVerticalSize(vertical_size * Model::si::meter);
+                    nodes->at(nodeID)->setVerticalSize(verticalSize * Model::si::meter);
                     i++;
                 }
                 LOG(debug) << "    ... for " << i << " nodes";
@@ -1047,19 +1032,39 @@ namespace GlobalFlow {
                         catch (const std::out_of_range &ex) { // if node does not exist ignore entry
                             continue;
                         }
-                        nodes->at(nodeID)->setZeta(zetaID, zeta * Model::si::meter, setZetaTZero);
+                        nodes->at(nodeID)->setZeta_direct(zetaID, zeta * Model::si::meter, setZetaTZero);
                     }
                 }
             });
 
         };
 
-        void readEffectivePorosity(std::string path) {
-            readTwoColumns(path, [this](double data, int nodeID) {
+        void readEffectivePorosity(std::string path, double minEffPor) {
+            io::CSVReader<2, io::trim_chars<' ', '\t'>, io::no_quote_escape<','>> in(path);
+            in.read_header(io::ignore_no_column, "spatID", "data");
+            large_num spatID{0};
+            int layer{0};
+            double data = 0;
+            large_num nodeID;
+
+            int i{0};
+            while (in.read_row(spatID, data)) {
+                try {
+                    nodeID = lookupSpatIDtoNodeID.at(spatID).at(layer);
+                }
+                catch (const std::out_of_range &ex) {
+                    //if Node does not exist ignore entry
+                    continue;
+                }
+                if (nodes->at(nodeID)->getProperties().get<large_num, Model::SpatID>() != spatID) {
+                    throw "Error in reading spatID";
+                }
                 // snap low porosity values to 0
-                if (data < 1e-2){ data = 0; }
+                if (data < minEffPor){ data = 0; }
                 nodes->at(nodeID)->setEffectivePorosity(data * Model::si::si_dimensionless);
-            });
+                i++;
+            }
+            LOG(debug) << "    ... for " << i << " nodes";
         };
     };
 }

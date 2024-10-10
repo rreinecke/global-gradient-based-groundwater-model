@@ -88,7 +88,11 @@
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
         "source_zone_ghb": 0,
-        "source_zone_recharge": 1
+        "source_zone_recharge": 1,
+        "min_ghb_K": 8.64e-7,
+        "min_K": 8.64e-7,
+        "min_effective_porosity": 1e-2,
+        "min_vertical_size": 1.0
       },
       "data": {
         "effective_porosity": "effective_porosity_swi2_ex1.csv",
