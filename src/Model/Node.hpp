@@ -463,13 +463,13 @@ Get Properties
              * @brief Get the zone change out of node
              * @return cubic meters per time
              */
-            t_vol_t getZCHG_OUT() { return get<t_vol_t, VDF_ZCHG_OUT>(); }
+            t_vol_t getVDF_ZCHG_OUT() { return get<t_vol_t, VDF_ZCHG_OUT>(); }
 
             /**
              * @brief Get the zone change into node
              * @return cubic meters per time
              */
-            t_vol_t getZCHG_IN() { return get<t_vol_t, VDF_ZCHG_IN>(); }
+            t_vol_t getVDF_ZCHG_IN() { return get<t_vol_t, VDF_ZCHG_IN>(); }
 
             t_vol_t getVDF_INST_OUT() { return get<t_vol_t, VDF_INST_OUT>(); }
 
@@ -865,14 +865,15 @@ Set Properties
             }
 
             void saveVDFMassBalance() noexcept {
-                fields.addTo<t_vol_t, VDF_OUT>(calculateOUT_VDF());
-                fields.addTo<t_vol_t, VDF_OUT>(calculateIN_VDF());
                 fields.addTo<t_vol_t, VDF_ZCHG_OUT>(get< t_vol_t, VDF_ZCHG_CUR_OUT>());
-                fields.addTo<t_vol_t, VDF_ZCHG_IN>(get< t_vol_t, VDF_ZCHG_CUR_IN>());
                 fields.addTo<t_vol_t, VDF_INST_OUT>(calculateInstantaneousMixing(false));
-                fields.addTo<t_vol_t, VDF_INST_IN>(calculateInstantaneousMixing(true));
                 fields.addTo<t_vol_t, VDF_TTT_OUT>(calculateTipToeTrackingZoneChange(false));
+                set<t_vol_t, VDF_OUT>(getVDF_ZCHG_OUT() + getVDF_INST_OUT() + getVDF_TTT_OUT());
+
+                fields.addTo<t_vol_t, VDF_ZCHG_IN>(get< t_vol_t, VDF_ZCHG_CUR_IN>());
+                fields.addTo<t_vol_t, VDF_INST_IN>(calculateInstantaneousMixing(true));
                 fields.addTo<t_vol_t, VDF_TTT_IN>(calculateTipToeTrackingZoneChange(true));
+                set<t_vol_t, VDF_IN>(getVDF_ZCHG_IN() + getVDF_INST_IN() + getVDF_TTT_IN());
             }
 
 /*****************************************************************
@@ -1244,32 +1245,6 @@ Calculate
                     if (tttIn.value() < 0) { result += tttIn; }
                 }
                 return result;
-            }
-
-            /**
-             * @brief Calculate the variable density mass change into node
-             * @return cubic meters per time
-             */
-            t_vol_t calculateIN_VDF() {
-                t_vol_t vdfIn = 0 * si::cubic_meter / day;
-                bool in = true;
-                vdfIn += get< t_vol_t, VDF_ZCHG_CUR_IN>(); // add current zone change before tip toe tracking
-                vdfIn += calculateInstantaneousMixing(in); // add instantaneous mixing
-                vdfIn += calculateTipToeTrackingZoneChange(in); // add zone change from tiptoetracking
-                return vdfIn;
-            }
-
-            /**
-             * @brief Calculate the variable density mass change out of node
-             * @return cubic meters per time
-             */
-            t_vol_t calculateOUT_VDF() {
-                t_vol_t vdfOut = 0 * si::cubic_meter / day;
-                bool isIn = false;
-                vdfOut += get< t_vol_t, VDF_ZCHG_CUR_OUT>(); // add current zone change before tip toe tracking
-                vdfOut += calculateInstantaneousMixing(isIn); // add instantaneous mixing
-                vdfOut += calculateTipToeTrackingZoneChange(isIn); // add zone change from tiptoetracking
-                return vdfOut;
             }
 
             /**

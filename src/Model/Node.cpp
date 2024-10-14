@@ -27,13 +27,23 @@ PhysicalProperties initProperties() {
     fields.emplace<bool, Confinement>(true);
     fields.emplace<quantity<Velocity>, K>(0.03 * (si::meter / day));
     fields.emplace<quantity<Dimensionless>, Anisotropy>(10 * si::si_dimensionless);
-    fields.emplace<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
-    fields.emplace<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
     fields.emplace<quantity<Meter>, Head>(1 * si::meter);
     fields.emplace<quantity<Meter>, EQHead>(1 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange>(0 * si::meter);
     fields.emplace<quantity<Meter>, Head_TZero>(0 * si::meter);
     fields.emplace<quantity<Meter>, HeadChange_TZero>(0 * si::meter);
+    fields.emplace<quantity<VolumePerTime>, OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_ZCHG_CUR_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_ZCHG_CUR_IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_ZCHG_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_ZCHG_IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_INST_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_INST_IN>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_TTT_OUT>(0.0 * si::cubic_meter/day);
+    fields.emplace<quantity<VolumePerTime>, VDF_TTT_IN>(0.0 * si::cubic_meter/day);
     return fields;
 }
 

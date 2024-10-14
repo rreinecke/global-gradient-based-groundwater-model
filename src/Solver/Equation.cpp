@@ -482,7 +482,7 @@ Equation::prepareSolveZetas(const int& layer) {
         }
     }
     numberOfActiveZetas = long(rowID_to_nodeID.size());
-    LOG(debug) << "numberOfActiveZetas " << numberOfActiveZetas;
+    // LOG(debug) << "numberOfActiveZetas " << numberOfActiveZetas;
     Eigen::SparseMatrix<pr_t> empty_A_zetas(numberOfActiveZetas, numberOfActiveZetas);
     A_zetas = std::move(empty_A_zetas);
     int numberOfEntries = (int) 4 + 1; // + 1 for this node

@@ -989,7 +989,7 @@ namespace GlobalFlow {
                     i++;
                 }
                 LOG(debug) << "    ... for " << i << " nodes";
-            });
+            };
         };
 
         void setDefaultZetas(large_num numberOfZones) {

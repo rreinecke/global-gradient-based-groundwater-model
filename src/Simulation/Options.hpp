@@ -268,8 +268,6 @@ namespace GlobalFlow {
                 return LAYERS;
             }
 
-            bool isDensityVariable() { return DENSITY_VARIABLE; }
-
             std::vector<double>
             getDensityZones() {
                 return DENSITY_ZONES;
@@ -431,11 +429,6 @@ namespace GlobalFlow {
             const bool
             adaptiveStepSizeEnabled() {
                 return ADAPTIVE_STEP_SIZE;
-            }
-
-            bool
-            cacheEnabled() {
-                return CACHE;
             }
 
             double

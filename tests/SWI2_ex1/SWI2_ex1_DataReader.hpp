@@ -41,7 +41,7 @@ namespace GlobalFlow {
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConductivity(buildDir(op.getLithology()));
+                    readConductivity(buildDir(op.getLithology()), op.getMinK());
                 }
 
                 if (op.isInitialHeadFromFile()){
@@ -57,7 +57,7 @@ namespace GlobalFlow {
 
                 if (op.isEffectivePorosityFromFile()){
                     LOG(userinfo) << "Reading effective porosity";
-                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()), op.getMinEffectivePorosity());
                 }
 
                 if (op.isInitialZetasAsArray()) {

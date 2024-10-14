@@ -65,7 +65,7 @@ class SimpleDataReader : public DataReader {
             }
 
             LOG(userinfo) << "Reading lithology";
-            readConductivity(buildDir(op.getLithology()));
+            readConductivity(buildDir(op.getLithology()), op.getMinK());
 
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));

@@ -394,8 +394,8 @@ namespace GlobalFlow {
             }
 
             MassError getZoneChangeMassError() {
-                return calculateError([this](int pos) { return nodes->at(pos)->getZCHG_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getZCHG_IN().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_ZCHG_OUT().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getVDF_ZCHG_IN().value(); } );
             }
 
             MassError getInstantaneousMixingMassError(){
@@ -547,8 +547,7 @@ namespace GlobalFlow {
                 }
                 if (isDensityVariable){
                     MassError vdfErr = getVDFMassError();
-                    LOG(level) << "VDF step mass error (sum over all zones): " << vdfErr.ERR <<
-                               "  In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
+                    LOG(level) << "VDF step total (sum over all zones): In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
                     MassError zchgErr = getZoneChangeMassError();
                     LOG(level) << "Zone change (sum over all zones): In: " << zchgErr.IN << "  Out: " << zchgErr.OUT;
                     MassError imixErr = getInstantaneousMixingMassError();
