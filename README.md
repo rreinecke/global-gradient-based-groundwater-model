@@ -276,13 +276,16 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors and Contributors
 
 * **Robert Reinecke** - *Initial work* *Maintainer*
-* **Daniel Kretschmer** - *Maintainer*
-* **Sebastian Ackermann** - *Maintainer*
+* **Ricarda Dietrich** - *Maintainer*
+* **Marie Illgen** - *Maintainer*
+* **Anna-Tabea Pippardt** - *Maintainer*
 
 ### Past Contributors
 
 * **Alexander Wachholz** - *Documentation review*
-* **Christoph Niemann** - *Spatial IDs* *Developer*
+* **Christoph Niemann** - *Developer*
+* **Sebastian Ackermann** - *Developer*
+* **Daniel Kretschmer** - *Developer*
 
 ## License  
 This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
