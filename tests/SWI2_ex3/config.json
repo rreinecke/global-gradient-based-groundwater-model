@@ -44,8 +44,7 @@
       "max_toe_slope": 0.01,
       "min_depth_factor": 0.1,
       "slope_adj_factor": 0.1,
-      "vdf_lock": 0.001,
-      "vdf_steps_per_head_step": 1
+      "vdf_lock": 0.001
     },
     "numerics": {
       "threads": 40,
@@ -63,6 +62,7 @@
     },
     "input": {
       "data_config": {
+        "aquifer_depth_from_file": "false",
         "effective_porosity_from_file": "true",
         "efold_as_array": "false",
         "eq_wtd_from_file": "false",
@@ -73,7 +73,6 @@
         "k_river_from_file": "false",
         "specific_storage_from_file": "false",
         "specific_yield_from_file": "false",
-        "vertical_size_as_array": "false",
         "zones_sources_from_file": "false"
       },
       "default_data": {
@@ -85,7 +84,7 @@
           4
         ],
         "ghb_K": 800,
-        "vertical_size": [
+        "aquifer_thickness": [
           20,
           1,
           20
@@ -100,11 +99,7 @@
         "specific_yield": 0.2,
         "specific_storage": 0.000015,
         "source_zone_ghb": 1,
-        "source_zone_recharge": 0,
-        "min_ghb_K": 8.64e-7,
-        "min_K": 8.64e-7,
-        "min_effective_porosity": 1e-2,
-        "min_vertical_size": 1.0
+        "source_zone_recharge": 0
       },
       "data": {
         "effective_porosity": "effective_porosity_swi2_ex3.csv",

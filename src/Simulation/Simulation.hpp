@@ -129,76 +129,295 @@ namespace GlobalFlow {
                 int layerToSave{0};
                 const auto default_precision = (int) std::cout.precision();
 
+
+
                 for (auto & variable : variables) {
                     std::string filename = pathToOutput + variable + ".csv";
-                    if (stepNumber == 1) {
+                    //if (stepNumber == 1) {
                         // create new file / replace old file.
-                        std::ofstream newFile(filename);
+                    std::ofstream newFile(filename);
+                    newFile << "spatID,lat,lon,data\n";
+                    newFile.close();
+                    //}
+                    std::ofstream ofs(filename, std::ios::app); // an bestehende Datei anhängen
 
-                        // at top of file: add spatIDs
-                        for (int j = 0; j < nodes->size(); ++j) {
-                            if (nodes->at(j)->getLayer() != layerToSave) { continue; }
-                            if (j == 0) {
-                                newFile << "spatID";
-                            }
-                            newFile << "," << std::setprecision(7) << nodes->at(j)->getSpatID()
-                                           << std::setprecision(default_precision);
-
-                        }
-                        newFile << std::endl;
-                        newFile.close();
-                    }
-
-                    // in all other lines: add step number followed be the variable values
-                    std::stringstream newLine;
-                    newLine << "step " << stepNumber;
                     for (auto & node : *nodes) {
-                        // for now: only extract top layer
                         if (node->getLayer() != layerToSave) { continue; }
 
-                        double value{0};
-                        if(variable == "head") {
+                        double value = std::numeric_limits<double>::quiet_NaN();
+
+                        if (variable == "HEAD") {
                             value = node->getHead().value();
-                        } else if(variable ==  "zeta0") {
-                            if (isDensityVariable) {
-                                value = node->getZeta(0).value();
-                            } else {
-                                value = std::nan("1");
+
+                        } else if (variable == "WTD") {
+                            value = node->getWTD().value();
+
+
+                        } else if (variable == "GHB_IN") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
                             }
-                        } else if(variable ==  "zeta1") {
-                            if (isDensityVariable and node->isZetaOutput(1)) {
-                                value = node->getZeta(1).value();
-                            } else {
-                                value = std::nan("1");
+                            catch (const std::exception& e) {
+                                converted = 0.0;
                             }
-                        } else if(variable ==  "zeta2") {
-                            if (isDensityVariable and node->isZetaOutput(2)) {
-                                value = node->getZeta(2).value();
-                            } else {
-                                value = std::nan("1");
+                            // nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted < 0.0) {
+                                converted = 0.0;
                             }
-                        } else if(variable ==  "ghb") {
+                            value = converted;
+
+                        } else if (variable == "GHB_OUT") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur Abflüsse (negativ) ausgeben
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "GL_WETLANDS_IN") {
+                            // 1) rohen Volumenstrom holen
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            // 2) Fläche des Knotens holen (m²)
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            // 3) Umrechnung auf m (m³/m² = m)
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                // falls etwas schiefgeht, bleiben wir bei 0
+                                converted = 0.0;
+                            }
+                            // 4) nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted < 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "GL_WETLANDS_OUT") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur Abflüsse (negativ) ausgeben
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "GL_LAKE_IN") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            if (converted < 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "GL_LAKE_OUT") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur Abflüsse (negativ) ausgeben
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "LAKES_IN") {
+                            double raw = node->getExternalFlowVolumeByName(Model::LAKE).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted < 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "LAKES_OUT") {
+                            double raw = node->getExternalFlowVolumeByName(Model::LAKE).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur Abflüsse (negativ) ausgeben
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "RIVERS_IN") {
+                            double raw = 0.0;
+                            try {
+                                    raw += node->getExternalFlowVolumeByName(Model::RIVER_MM).value();
+                                    raw += node->getExternalFlowVolumeByName(Model::RIVER).value();
+                            }
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted < 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "RIVERS_OUT") {
+                            double raw = 0.0;
+                            try {
+                                    raw += node->getExternalFlowVolumeByName(Model::RIVER_MM).value();
+                                    raw += node->getExternalFlowVolumeByName(Model::RIVER).value();
+                            }
+
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "WETLANDS_IN") {
+                            double raw = node->getExternalFlowVolumeByName(Model::WETLAND).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur positive Zuflüsse ausgeben (alles Negative = 0)
+                            if (converted < 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "WETLANDS_OUT") {
+                            double raw = node->getExternalFlowVolumeByName(Model::WETLAND).value();
+                            double area = node->getProperties()
+                                              .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                              .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            // nur Abflüsse (negativ) ausgeben
+                            if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "ghb") {
                             value = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
-                        } else if(variable ==  "sum_neig") {
+
+                        } else if (variable == "sum_neig") {
+                            value = 0.0;
                             auto flowMap = node->getFlowToOrFromNeighbours();
-                            for (auto it=flowMap.begin(); it != flowMap.end(); ++it) {
+                            for (auto it = flowMap.begin(); it != flowMap.end(); ++it) {
                                 double flow = flowMap[it->first];
-                                if (!std::isnan(flow)){ // if flow from/to neighbours is nan, do not add it to "value"
-                                    value += flow;
-                                }
+                                if (!std::isnan(flow)) value += flow;
                             }
                         }
-                        if (std::isnan(value)){
-                            newLine << ",";
+
+
+                        ofs << std::setprecision(7)  << node->getSpatID() << ","
+                                                     << node->getLat()    << ","
+                                                     << node->getLon()
+                                                     << std::setprecision(default_precision) << ",";
+
+                        if (std::isnan(value)) {
+                            ofs << ""; // leeres Feld für NaN
                         } else {
-                            newLine << "," << value;
+                            ofs << value;
                         }
+
+                        ofs << "\n";
                     }
 
-                    std::ofstream file(filename, std::ios::app); // open file, ready to append
-                    file << newLine.str() << std::endl; // append new line to file
-                    file.close();
-                }
+                    ofs.close();
+}
             };
 
             /**
@@ -389,23 +608,23 @@ namespace GlobalFlow {
              * @return
              */
             MassError getVDFMassError() {
-                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getVDF_IN().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getCurrentOUT_VDF().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getCurrentIN_VDF().value(); } );
             }
 
             MassError getZoneChangeMassError() {
-                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_ZCHG_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getVDF_ZCHG_IN().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getZCHG_OUT().value(); },
+                                      [this](int pos) { return nodes->at(pos)->getZCHG_IN().value(); } );
             }
 
             MassError getInstantaneousMixingMassError(){
-                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_INST_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getVDF_INST_IN().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getInstantaneousMixing(false).value(); },
+                                      [this](int pos) { return nodes->at(pos)->getInstantaneousMixing(true).value(); } );
             }
 
             MassError getTipToeTrackingMassError(){
-                return calculateError([this](int pos) { return nodes->at(pos)->getVDF_TTT_OUT().value(); },
-                                      [this](int pos) { return nodes->at(pos)->getVDF_TTT_IN().value(); } );
+                return calculateError([this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(false).value(); },
+                                      [this](int pos) { return nodes->at(pos)->getTipToeTrackingZoneChange(true).value(); } );
             }
 
             /**
@@ -547,7 +766,8 @@ namespace GlobalFlow {
                 }
                 if (isDensityVariable){
                     MassError vdfErr = getVDFMassError();
-                    LOG(level) << "VDF step total (sum over all zones): In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
+                    LOG(level) << "VDF step mass error (sum over all zones): " << vdfErr.ERR <<
+                               "  In: " << vdfErr.IN << "  Out: " << vdfErr.OUT;
                     MassError zchgErr = getZoneChangeMassError();
                     LOG(level) << "Zone change (sum over all zones): In: " << zchgErr.IN << "  Out: " << zchgErr.OUT;
                     MassError imixErr = getInstantaneousMixingMassError();

@@ -62,7 +62,7 @@ namespace GlobalFlow {
             /**
              * Solve Zeta Surface Equation
              */
-            void solveZetas(const int& layer);
+            void solve_zetas(const int& layer);
 
             /**
              * @return The number of iterations groundwater flow solution
@@ -255,7 +255,7 @@ namespace GlobalFlow {
 
         void inline addToA_zetas(std::unique_ptr<Model::NodeInterface> const &node, large_num zetaID);
 
-        void inline prepareSolveZetas(const int& layer);
+        void inline prepareEquation_zetas(const int& layer);
 
         /**
          * Update heads in inner iteration
@@ -271,8 +271,6 @@ namespace GlobalFlow {
          * Calculate the final budget
          */
         void inline updateBudget();
-
-        void inline resetVDFBudget();
 
         /**
          * Update head change of previous time step

@@ -21,7 +21,7 @@ class SimpleDataReader : public DataReader {
                          op.getNumberOfLayers(),
                          op.getInitialK()[0],
                          op.getInitialHead(),
-                         op.getVerticalSizes()[0],
+                         op.getAquiferDepth()[0],
                          op.getAnisotropy()[0],
                          op.getSpecificYield(),
                          op.getSpecificStorage(),
@@ -42,7 +42,7 @@ class SimpleDataReader : public DataReader {
                 DataProcessing::buildBottomLayers(nodes,
                                                   op.getNumberOfLayers(),
                                                   op.getConfinements(),
-                                                  op.getVerticalSizes(),
+                                                  op.getAquiferDepth(),
                                                   op.getInitialK(),
                                                   op.getAnisotropy());
             }
@@ -65,7 +65,7 @@ class SimpleDataReader : public DataReader {
             }
 
             LOG(userinfo) << "Reading lithology";
-            readConductivity(buildDir(op.getLithology()), op.getMinK());
+            readConductivity(buildDir(op.getLithology()));
 
             LOG(userinfo) << "Reading elevation";
             readElevation(buildDir(op.getElevation()));

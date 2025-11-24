@@ -16,7 +16,7 @@ void StandaloneRunner::setupSimulation() {
     void StandaloneRunner::writeNodeInfosToCSV() {
         // For node infos:
         std::ofstream myfile;
-        myfile.open ("swi2_ex2_node_attributes.csv");
+        myfile.open ("swi2_node_attributes.csv");
         myfile << "nodeID,spatID,lon,lat,neig_count,EL,bottom,K,zeta1_ini" << std::endl;
 
         for (int j = 0; j < sim.getNodes()->size(); ++j) {
@@ -39,7 +39,6 @@ void StandaloneRunner::simulate() {
     std::vector<int> numberOfSteps = op.getStressPeriodSteps();
     std::vector<std::string> stepSizes = op.getStressPeriodStepSizes();
     std::vector<bool> isDensityVariable = op.getStressPeriodVariableDensity();
-    int vdfStepsPerHeadStep = op.getVDFStepsPerHeadStep();
 
     int stepNumber{1};
 
@@ -48,8 +47,7 @@ void StandaloneRunner::simulate() {
                       stepSizes[strssPrd];
 
         Simulation::Stepper stepper = Simulation::Stepper(_eq, stepSizes[strssPrd], isSteadyState[strssPrd],
-                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd],
-                                                          vdfStepsPerHeadStep);
+                                                          isDensityVariable[strssPrd], numberOfSteps[strssPrd]);
         for (Simulation::step step : stepper) {
             step.first->solve();
             LOG(userinfo) << "Step " << stepNumber << ": ";

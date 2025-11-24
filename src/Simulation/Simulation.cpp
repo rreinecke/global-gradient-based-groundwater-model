@@ -10,6 +10,11 @@ namespace Simulation {
 Simulation::Simulation(Options op, DataReader *reader) : op(op), reader(reader) {
     Eigen::setNbThreads(op.getThreads());
 
+    if (op.cacheEnabled()) {
+        serialize = true;
+        loadNodes = true;
+    }
+
     //FIXME not pretty could be changed to https://jonasdevlieghere.com/containers-of-unique-pointers/
     //This might be a huge memory leak at the end :/
     NodeVector ptr(new  std::vector< std::unique_ptr<Model::NodeInterface>>);

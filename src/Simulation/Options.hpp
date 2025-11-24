@@ -63,80 +63,74 @@ namespace GlobalFlow {
             std::string SPATID_ARCID{""};
 
             //++General configuration++//
-            // model config
+            unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
+            long Y_RANGE{0};
+            long X_RANGE{0};
+            double RESOLUTION_IN_DEGREE{0.0};
+            double EDGE_LENGTH_LEFT_RIGHT{0.0};
+            double EDGE_LENGTH_FRONT_BACK{0.0};
+            int LAYERS{0};
+            bool USE_EFOLDING{false};
+            int MAX_OUTER_ITERATIONS_HEAD{0};
+            int MAX_OUTER_ITERATIONS_ZETA{0};
+            int MAX_INNER_ITERATIONS{0};
+            double RCLOSE_HEAD{0.1};
+            double RCLOSE_ZETA{0.1};
+
+            std::string SOLVER{"PCG"};
             std::vector<bool> STRESS_PERIOD_STEADY_STATE{true};
             std::vector<int> STRESS_PERIOD_STEPS{0};
             std::vector<std::string> STRESS_PERIOD_STEP_SIZES{""};
             std::vector<bool> STRESS_PERIOD_VARIABLE_DENSITY{false};
             std::string NODES;
-            unsigned long int NUMBER_OF_NODES_PER_LAYER{0};
-            long Y_RANGE{0};
-            long X_RANGE{0};
-            bool IS_GLOBAL{false};
-            double RESOLUTION_IN_DEGREE{0.0};
-            double EDGE_LENGTH_LEFT_RIGHT{0.0};
-            double EDGE_LENGTH_FRONT_BACK{0.0};
-            int LAYERS{0};
-            std::vector<bool> CONFINED{};
-            bool USE_EFOLDING{false};
+            int THREADS{0};
+            bool CACHE{false};
+            bool ADAPTIVE_STEP_SIZE{false};
+            double INITIAL_HEAD{0.0};
+            std::vector<double> K{0.001};
+            double GHB_K{0.1};
+            double RIVER_CONDUCTIVITY{10.0};
+            double SWB_ELEVATION_FACTOR{0.8};
+            std::vector<double> VERTICAL_SIZES{100};
+            std::vector<double> ANISOTROPY{10};
+            double SPECIFIC_YIELD{0.15};
+            double SPECIFIC_STORAGE{0.000015};
             std::string DEFAULT_BOUNDARY_CONDITION{"GeneralHeadBoundary"};
             bool SENSITIVITY{false};
-
-            // vdf config
+            std::vector<bool> CONFINED{};
+            // density information
+            bool DENSITY_VARIABLE{false};
             std::vector<double> DENSITY_ZONES{1000.0};
+            double EFFECTIVE_POROSITY{0.0};
             double MAX_TIP_SLOPE{0.2};
             double MAX_TOE_SLOPE{0.2};
             double MIN_DEPTH_FACTOR{0.1};
             double SLOPE_ADJ_FACTOR{0.1};
             double VDF_LOCK{0.001};
             int VDF_STEPS_PER_HEAD_STEP{1};
+            int SOURCE_ZONE_GHB;
+            int SOURCE_ZONE_RECHARGE;
 
-            // numerics
-            int THREADS{0};
-            std::string SOLVER{"PCG"};
-            int MAX_OUTER_ITERATIONS_HEAD{0};
-            int MAX_OUTER_ITERATIONS_ZETA{0};
-            int MAX_INNER_ITERATIONS{0};
-            double RCLOSE_HEAD{0.1};
-            double RCLOSE_ZETA{0.1};
+            bool k_from_file{false};
+            bool ghb_from_file{false};
+            bool specificstorage_from_file{false};
+            bool specificyield_from_file{false};
+            bool k_river_from_file{false};
+            bool eq_wtd_from_file{false};
+            bool initial_head_from_file{false};
+            bool effective_porosity_from_file{false};
+            bool zones_sources_from_file{false};
+
+            bool vertical_size_as_array{false};
+            bool initial_zetas_as_array{false};
+            bool efold_as_array{false};
+
+            bool IS_GLOBAL{false};
             double MAX_HEAD_CHANGE{0.01};
             double MAX_ZETA_CHANGE{0.01};
             bool DAMPING{false};
             double MIN_DAMP{0.01};
             double MAX_DAMP{0.5};
-
-            // input: data config
-            bool effective_porosity_from_file{false};
-            bool efold_as_array{false};
-            bool eq_wtd_from_file{false};
-            bool ghb_from_file{false};
-            bool initial_head_from_file{false};
-            bool initial_zetas_as_array{false};
-            bool k_from_file{false};
-            bool k_river_from_file{false};
-            bool specificstorage_from_file{false};
-            bool specificyield_from_file{false};
-            bool vertical_size_as_array{false};
-            bool zones_sources_from_file{false};
-
-            // input: default data
-            double EFFECTIVE_POROSITY{0.0};
-            double INITIAL_HEAD{0.0};
-            bool ADAPTIVE_STEP_SIZE{false};
-            std::vector<double> K{0.001};
-            double GHB_K{0.1};
-            std::vector<double> VERTICAL_SIZES{100};
-            std::vector<double> ANISOTROPY{10};
-            double RIVER_CONDUCTIVITY{10.0};
-            double SWB_ELEVATION_FACTOR{0.8};
-            double SPECIFIC_YIELD{0.15};
-            double SPECIFIC_STORAGE{0.000015};
-            int SOURCE_ZONE_GHB{0};
-            int SOURCE_ZONE_RECHARGE{0};
-            double MIN_GHB_K{0};
-            double MIN_K{0};
-            double MIN_EFFECTIVE_POROSITY{0};
-            double MIN_VERTICAL_SIZE{0};
 
         public:
 
@@ -267,6 +261,8 @@ namespace GlobalFlow {
             getNumberOfLayers() {
                 return LAYERS;
             }
+
+            bool isDensityVariable() { return DENSITY_VARIABLE; }
 
             std::vector<double>
             getDensityZones() {
@@ -431,6 +427,11 @@ namespace GlobalFlow {
                 return ADAPTIVE_STEP_SIZE;
             }
 
+            bool
+            cacheEnabled() {
+                return CACHE;
+            }
+
             double
             getInitialHead() {
                 return INITIAL_HEAD;
@@ -471,26 +472,6 @@ namespace GlobalFlow {
             double
             getSpecificStorage() {
                 return SPECIFIC_STORAGE;
-            }
-
-            double
-            getMinGHBK() {
-                return MIN_GHB_K;
-            }
-
-            double
-            getMinK() {
-                return MIN_K;
-            }
-
-            double
-            getMinEffectivePorosity() {
-                return MIN_EFFECTIVE_POROSITY;
-            }
-
-            double
-            getMinVerticalSize() {
-                return MIN_VERTICAL_SIZE;
             }
 
             void

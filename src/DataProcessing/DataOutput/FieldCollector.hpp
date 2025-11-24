@@ -69,6 +69,7 @@ namespace GlobalFlow {
                 LAKE_CONDUCT, /*!< Conductance of lake */
                 GL_LAKE_CONDUCT, /*!< Conductance of global lake */
                 GHB_OUT, /*!< General Head Boundary condition outflow */
+                GHB_IN, /*!< General Head Boundary condition inflow */
                 GL_WETLAND_OUT, /*!< Global wetland outflow */
                 WETLAND_OUT, /*!< Wetland outflow */
                 LAKE_OUT, /*!< Lake outflow */
@@ -119,6 +120,7 @@ namespace GlobalFlow {
                     {"Gl_Wetland_Conduct", FieldType::GL_WETLAND_CONDUCT},
                     {"Lake_Conduct",       FieldType::LAKE_CONDUCT},
                     {"Gl_Lake_Conduct",    FieldType::GL_LAKE_CONDUCT},
+                    {"GHB_Inflow",         FieldType::GHB_IN},
                     {"GHB_Outflow",        FieldType::GHB_OUT},
                     {"Gl_Wetland_Outflow", FieldType::GL_WETLAND_OUT},
                     {"Wetland_Outflow",    FieldType::WETLAND_OUT},
@@ -510,6 +512,25 @@ namespace GlobalFlow {
                                 return convert<T>(out);
                             });
                         }
+
+                        case FieldType::GHB_IN : {
+                            return getData<T>(simulation, allLayers, [&simulation, this](int i) {
+                                double out{0};
+                                try {
+                                    out += simulation.getNodes()->at(i)->getExternalFlowVolumeByName(
+                                            Model::GENERAL_HEAD_BOUNDARY).value();
+                                    out = (out / simulation.getNodes()->at(
+                                            i)->getProperties().get<Model::quantity<Model::SquareMeter>, Model::Area>
+                                            ().value()) * 1000;
+                                }
+                                catch ( std::exception &e) {}
+                                if (out < 0) {
+                                    out = 0;
+                                }
+                                return convert<T>(out);
+                            });
+                        }
+
                         case FieldType::GL_WETLAND_OUT : {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
                                 double out{0};

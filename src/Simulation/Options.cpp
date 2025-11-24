@@ -44,7 +44,6 @@ namespace GlobalFlow {
             pt::read_json(filename, tree);
             tree = tree.get_child("config");
 
-            // model config
             pt::ptree config = tree.get_child("model_config");
             STRESS_PERIOD_STEADY_STATE = getTypeArray<bool>("stress_period_steady_state", config);
             STRESS_PERIOD_STEPS = getTypeArray<int>("stress_period_time_steps", config);
@@ -65,10 +64,10 @@ namespace GlobalFlow {
                 LOG(critical) << "mismatching layers";
                 exit(3);
             }
+
             DEFAULT_BOUNDARY_CONDITION = config.get<std::string>("default_boundary_condition");
             SENSITIVITY = config.get<bool>("sensitivity");
 
-            // numerics
             pt::ptree numerics = tree.get_child("numerics");
             THREADS = numerics.get<int>("threads");
             SOLVER = numerics.get<std::string>("solver");
@@ -84,7 +83,7 @@ namespace GlobalFlow {
             MAX_DAMP = numerics.get<double>("max_damp");
 
             pt::ptree input = tree.get_child("input");
-            // input: data config
+
             pt::ptree data_config = input.get_child("data_config");
             k_from_file = data_config.get<bool>("k_from_file");
             ghb_from_file = data_config.get<bool>("ghb_from_file");
@@ -96,7 +95,7 @@ namespace GlobalFlow {
             initial_head_from_file = data_config.get<bool>("initial_head_from_file");
             effective_porosity_from_file = data_config.get<bool>("effective_porosity_from_file");
             zones_sources_from_file = data_config.get<bool>("zones_sources_from_file");
-            // input: default data
+
             pt::ptree default_data = input.get_child("default_data");
             K = getTypeArray<double>("K", default_data);
             INITIAL_HEAD = default_data.get<double>("initial_head");
@@ -104,18 +103,15 @@ namespace GlobalFlow {
             RIVER_CONDUCTIVITY = default_data.get<double>("river_conductivity");
             SWB_ELEVATION_FACTOR = default_data.get<double>("swb_elevation_factor");
             VERTICAL_SIZES = getTypeArray<double>("vertical_size", default_data);
+
             ANISOTROPY = getTypeArray<double>("anisotropy", default_data);
             SPECIFIC_YIELD = default_data.get<double>("specific_yield");
             SPECIFIC_STORAGE = default_data.get<double>("specific_storage");
+
             EFFECTIVE_POROSITY = default_data.get<double>("effective_porosity");
             SOURCE_ZONE_GHB = default_data.get<int>("source_zone_ghb");
             SOURCE_ZONE_RECHARGE = default_data.get<int>("source_zone_recharge");
-            MIN_GHB_K = default_data.get<double>("min_ghb_K");
-            MIN_K = default_data.get<double>("min_K");
-            MIN_EFFECTIVE_POROSITY = default_data.get<double>("min_effective_porosity");
-            MIN_VERTICAL_SIZE = default_data.get<double>("min_vertical_size");
 
-            // vdf config
             pt::ptree vdf = tree.get_child("vdf_config");
             DENSITY_ZONES = getTypeArray<double>("density_zones", vdf);
             MAX_TIP_SLOPE = vdf.get<double>("max_tip_slope");
@@ -125,8 +121,8 @@ namespace GlobalFlow {
             VDF_LOCK = vdf.get<double>("vdf_lock");
             VDF_STEPS_PER_HEAD_STEP = vdf.get<int>("vdf_steps_per_head_step");
 
-            // data
             pt::ptree data = input.get_child("data");
+
             efold_as_array = data_config.get<bool>("efold_as_array");
             if (efold_as_array){
                 EFOLDING_a = getArray("E-Folding", data.get_child("e-folding"));

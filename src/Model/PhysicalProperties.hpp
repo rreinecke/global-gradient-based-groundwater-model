@@ -151,9 +151,14 @@ namespace GlobalFlow {
         struct UseEfolding;
         struct Confinement;
         struct K;
+        struct HeadActive;
         struct Anisotropy;
         struct OUT;
         struct IN;
+        struct ZCHG_OUT;
+        struct ZCHG_IN;
+        struct GNC_OUT;
+        struct GNC_IN;
         struct Head;
         struct EQHead;
         struct HeadChange;
@@ -180,16 +185,7 @@ namespace GlobalFlow {
         struct SourceZoneGHB;
         struct SourceZoneRecharge;
         struct ZetaStepSize;
-        struct VDF_OUT;
-        struct VDF_IN;
-        struct VDF_ZCHG_OUT;
-        struct VDF_ZCHG_IN;
-        struct VDF_ZCHG_CUR_OUT;
-        struct VDF_ZCHG_CUR_IN;
-        struct VDF_INST_OUT;
-        struct VDF_INST_IN;
-        struct VDF_TTT_OUT;
-        struct VDF_TTT_IN;
+
 
 /**
  * Definition of type and unit for each field
@@ -209,19 +205,12 @@ namespace GlobalFlow {
             PhysicalProperty<bool, UseEfolding>,
             PhysicalProperty<bool, Confinement>,
             PhysicalProperty<t_vel, K>,
+            PhysicalProperty<bool, HeadActive>,
             PhysicalProperty<t_dim, Anisotropy>,
             PhysicalProperty<t_vol_t, OUT>,
             PhysicalProperty<t_vol_t, IN>,
-            PhysicalProperty<t_vol_t, VDF_OUT>,
-            PhysicalProperty<t_vol_t, VDF_IN>,
-            PhysicalProperty<t_vol_t, VDF_ZCHG_OUT>,
-            PhysicalProperty<t_vol_t, VDF_ZCHG_IN>,
-            PhysicalProperty<t_vol_t, VDF_ZCHG_CUR_OUT>,
-            PhysicalProperty<t_vol_t, VDF_ZCHG_CUR_IN>,
-            PhysicalProperty<t_vol_t, VDF_INST_OUT>,
-            PhysicalProperty<t_vol_t, VDF_INST_IN>,
-            PhysicalProperty<t_vol_t, VDF_TTT_OUT>,
-            PhysicalProperty<t_vol_t, VDF_TTT_IN>,
+            PhysicalProperty<t_vol_t, ZCHG_OUT>,
+            PhysicalProperty<t_vol_t, ZCHG_IN>,
             PhysicalProperty<t_meter, Head>,
             PhysicalProperty<t_meter, EQHead>,
             PhysicalProperty<t_meter, HeadChange>,

@@ -59,7 +59,7 @@ public:
 
 TEST_F(EquationFixture, updateStepSize) {
     ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 1);
-    eq->updateStepSize(10, 1);
+    eq->updateStepSize(10);
     ASSERT_EQ((at(0)->getProperties().get<t_dim, StepSize>().value()), 10);
 }
 

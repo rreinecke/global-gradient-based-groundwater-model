@@ -16,7 +16,7 @@ namespace GlobalFlow {
                 LOG(userinfo) << "Reading land mask (with default values from config)";
                 readLandMask(nodes, buildDir(op.getNodesDir()), op.getNumberOfNodesPerLayer(),
                              op.getEdgeLengthLeftRight(), op.getEdgeLengthFrontBack(),
-                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getVerticalSizes()[0],
+                             op.getNumberOfLayers(), op.getInitialK()[0], op.getInitialHead(),op.getAquiferDepth()[0],
                              op.getAnisotropy()[0], op.getSpecificYield(), op.getSpecificStorage(), op.useEfolding(),
                              op.isConfined(0),
                              op.getEffectivePorosity(), op.getMaxTipSlope(), op.getMaxToeSlope(),
@@ -41,7 +41,7 @@ namespace GlobalFlow {
 
                 if (op.isKFromFile()) {
                     LOG(userinfo) << "Reading hydraulic conductivity";
-                    readConductivity(buildDir(op.getLithology()), op.getMinK());
+                    readConductivity(buildDir(op.getLithology()));
                 }
 
                 if (op.isInitialHeadFromFile()){
@@ -57,13 +57,13 @@ namespace GlobalFlow {
 
                 if (op.isEffectivePorosityFromFile()){
                     LOG(userinfo) << "Reading effective porosity";
-                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()), op.getMinEffectivePorosity());
+                    readEffectivePorosity(buildDir(op.getEffectivePorosityDir()));
                 }
 
                 if (op.isInitialZetasAsArray()) {
                     LOG(userinfo) << "Reading zetas";
                     readInitialZetas(op.getNumberOfLayers(), op.getDensityZones().size(),
-                                     buildDir(op.getInitialZetasDir()), op.getInitialZetas_a());
+                                     buildDir(op.getInitialZetas()), op.getInitialZetas_a());
                 }
             }
 
