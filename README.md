@@ -278,7 +278,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Robert Reinecke** - *Initial work* *Maintainer*
 * **Ricarda Dietrich** - *Maintainer*
 * **Marie Illgen** - *Maintainer*
-* **Anna-Tabea Pippardt** - *Maintainer*
+* **Zahraa Obaidy** - *Developer*
 
 ### Past Contributors
 
@@ -286,6 +286,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 * **Christoph Niemann** - *Developer*
 * **Sebastian Ackermann** - *Developer*
 * **Daniel Kretschmer** - *Developer*
+* **Anna-Tabea Pippardt** - *Maintainer*
 
 ## License  
 This project is licensed under the GNU General Public License - see the [LICENSE](LICENSE) file for details.
