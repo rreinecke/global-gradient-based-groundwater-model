@@ -153,6 +153,51 @@ namespace GlobalFlow {
                             value = node->getWTD().value();
 
 
+                        }else if (variable == "RECHARGE") {
+                            double raw = 0.0;
+                            try {
+                                raw += node->getExternalFlowVolumeByName(Model::RECHARGE).value();
+                            }
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+
+                            if (area != 0.0) {
+                                converted = raw / area;
+                            } else {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+
+                        }else if (variable == "LATERAL_FLOW") {
+                            double raw = 0.0;
+                            try {
+                                raw = node->getLateralFlows().value();
+                            }
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+
+                            double converted = 0.0;
+                            if (area != 0.0) {
+                                converted = raw / area;
+                            } else {
+                                converted = 0.0;
+                            }
+
+                            value = converted;
+
+
                         } else if (variable == "GHB_IN") {
                             double raw = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
                             double area = node->getProperties()
@@ -185,6 +230,21 @@ namespace GlobalFlow {
                             }
                             // nur Abflüsse (negativ) ausgeben
                             if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+
+                        } else if (variable == "GHB") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GENERAL_HEAD_BOUNDARY).value();
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
                                 converted = 0.0;
                             }
                             value = converted;
@@ -229,6 +289,46 @@ namespace GlobalFlow {
                             }
                             value = converted;
 
+
+                        } else if (variable == "GL_WETLANDS") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+
+                        } else if (variable == "WETLAND_TOTAL") {
+                            double raw = 0.0;
+                            try {
+                                raw += node->getExternalFlowVolumeByName(Model::WETLAND).value();
+                                raw += node->getExternalFlowVolumeByName(Model::GLOBAL_WETLAND).value();
+                            }
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+
+                            value = converted;
+
                         } else if (variable == "GL_LAKE_IN") {
                             double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
                             double area = node->getProperties()
@@ -260,6 +360,20 @@ namespace GlobalFlow {
                             }
                             // nur Abflüsse (negativ) ausgeben
                             if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "GL_LAKE") {
+                            double raw = node->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
                                 converted = 0.0;
                             }
                             value = converted;
@@ -298,6 +412,44 @@ namespace GlobalFlow {
                             if (converted > 0.0) {
                                 converted = 0.0;
                             }
+                            value = converted;
+
+                        } else if (variable == "LAKES") {
+                            double raw = node->getExternalFlowVolumeByName(Model::LAKE).value();
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "LAKE_TOTAL") {
+                            double raw = 0.0;
+                            try {
+                                raw += node->getExternalFlowVolumeByName(Model::LAKE).value();
+                                raw += node->getExternalFlowVolumeByName(Model::GLOBAL_LAKE).value();
+                            }
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+
                             value = converted;
 
                         } else if (variable == "RIVERS_IN") {
@@ -353,6 +505,29 @@ namespace GlobalFlow {
                             }
                             value = converted;
 
+                        } else if (variable == "RIVERS") {
+                            double raw = 0.0;
+                            try {
+                                raw += node->getExternalFlowVolumeByName(Model::RIVER_MM).value();
+                                raw += node->getExternalFlowVolumeByName(Model::RIVER).value();
+                            }
+
+                            catch (const std::exception& e) {
+                                raw = 0.0;
+                            }
+
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
                         } else if (variable == "WETLANDS_IN") {
                             double raw = node->getExternalFlowVolumeByName(Model::WETLAND).value();
                             double area = node->getProperties()
@@ -385,6 +560,20 @@ namespace GlobalFlow {
                             }
                             // nur Abflüsse (negativ) ausgeben
                             if (converted > 0.0) {
+                                converted = 0.0;
+                            }
+                            value = converted;
+
+                        } else if (variable == "WETLANDS") {
+                            double raw = node->getExternalFlowVolumeByName(Model::WETLAND).value();
+                            double area = node->getProperties()
+                                    .get<Model::quantity<Model::SquareMeter>, Model::Area>()
+                                    .value();
+                            double converted = 0.0;
+                            try {
+                                converted = (raw / area);
+                            }
+                            catch (const std::exception& e) {
                                 converted = 0.0;
                             }
                             value = converted;

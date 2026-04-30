@@ -265,8 +265,7 @@ namespace GlobalFlow {
                         }
                         case FieldType::HEAD : {
                             return getData<T>(simulation, allLayers, [&simulation, this](int i) {
-                                return convert<T>(
-                                        simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
+                                return convert<T>(simulation.getNodes()->at(i)->getProperties().get<Model::quantity<Model::Meter>,
                                                 Model::Head>().value());
                             });
                         }
